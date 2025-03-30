@@ -25,6 +25,7 @@ router.post(
 router.post('/refresh', validateMiddleware(refreshTokenSchema), asyncHandler(authController.refreshToken));
 router.post('/employee/refresh', validateMiddleware(refreshTokenSchema), asyncHandler(authController.refreshEmployeeToken));
 router.post('/logout', authMiddleware, authController.logoutUser); // Single device
+router.post('/employee/logout', authMiddleware, authController.logoutEmployee);
 router.post('/logout/multiple', authMiddleware, authController.logoutMultipleDevices); // Multiple devices
 router.post('/logout/all', authMiddleware, authController.logoutAllDevices); // All devices
 export default router;
