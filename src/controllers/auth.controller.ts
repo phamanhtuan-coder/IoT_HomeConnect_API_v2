@@ -68,10 +68,11 @@ class AuthController {
     };
 
     loginEmployee = async (req: Request, res: Response, next: NextFunction) => {
-        const { email, password } = req.body as LoginRequestBody;
+        const { email, password } = req.body;
         const tokens = await this.authService.loginEmployee({ email, password });
         res.json(tokens);
     };
+
 
     refreshEmployeeToken = async (req: Request, res: Response, next: NextFunction) => {
         const { refreshToken } = req.body;
@@ -80,7 +81,9 @@ class AuthController {
     };
 
     refreshToken = async (req: Request, res: Response, next: NextFunction) => {
-        const { refreshToken } = req.body;
+        const { refreshToken } = req.body as { refreshToken: string };
+        if (!refreshToken) throwError(ErrorCodes.BAD_REQUEST, 'Refresh token required');
+
         const accessToken = await this.authService.refreshToken(refreshToken);
         res.json({ accessToken });
     };
@@ -99,6 +102,13 @@ class AuthController {
         res.status(201).json({ token });
     };
 
+    logoutEmployee = async (req: Request, res: Response, next: NextFunction) => {
+        const employeeId = req.user?.employeeId;
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+
+        await this.authService.logoutEmployee(employeeId);
+        res.status(204).send();
+    };
 
 
 }
