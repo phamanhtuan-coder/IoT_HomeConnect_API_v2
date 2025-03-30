@@ -249,6 +249,41 @@ class AuthService {
         });
     }
 
+    // Logout from a device (does not revoke, just logs out)
+    async logoutDevice(userDeviceId: number, userId: number, ipAddress?: string) {
+        const device = await this.prisma.user_devices.findUnique({
+            where: { UserDeviceID: userDeviceId },
+        });
+        if (!device || device.IsDeleted) {
+            throwError(ErrorCodes.NOT_FOUND, 'Device not found or already revoked');
+        }
+        if (device!.UserID !== userId) {
+            throwError(ErrorCodes.FORBIDDEN, 'You can only log out from your own devices');
+        }
+
+        // Record logout in synctracking
+        await this.prisma.synctracking.create({
+            data: {
+                UserID: userId,
+                UserDeviceID: userDeviceId,
+                IPAddress: ipAddress || 'unknown',
+                LastSyncedAt: new Date(),
+                SyncType: 'logout',
+                SyncStatus: 'success',
+            },
+        });
+
+        // Update LastLogoutAt and clear DeviceToken (if it’s a refresh token)
+        return this.prisma.user_devices.update({
+            where: { UserDeviceID: userDeviceId },
+            data: {
+                LastLogoutAt: new Date(),
+                DeviceToken: null, // Clear refresh token if stored here
+                UpdatedAt: new Date(),
+            },
+        });
+    }
+
 
 }
 
