@@ -58,18 +58,28 @@ export class UserDeviceService {
 
     // Revoke device login
     async revokeDevice(userDeviceId: number, requesterId: number, requesterRole: string) {
-        const device = await this.prisma.user_devices.findUnique({ where: { UserDeviceID: userDeviceId } });
+        const device = await this.prisma.user_devices.findUnique({
+            where: { UserDeviceID: userDeviceId },
+        });
         if (!device || device.IsDeleted) throwError(ErrorCodes.NOT_FOUND, 'Device not found or already revoked');
+
         if (device!.UserID !== requesterId && requesterRole !== 'admin') {
             throwError(ErrorCodes.FORBIDDEN, 'You can only revoke your own devices');
         }
+
         await this.prisma.synctracking.updateMany({
             where: { UserDeviceID: userDeviceId, IsDeleted: false },
             data: { IsDeleted: true },
         });
+
         return this.prisma.user_devices.update({
             where: { UserDeviceID: userDeviceId },
-            data: { IsDeleted: true, UpdatedAt: new Date() },
+            data: {
+                IsDeleted: true,
+                LastLogoutAt: new Date(),
+                UpdatedAt: new Date(),
+            },
         });
     }
+
 }
