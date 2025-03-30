@@ -4,7 +4,7 @@ import { createServer } from 'http';
 import errorMiddleware from './middleware/error.middleware';
 import loggerMiddleware from './middleware/logger.middleware';
 import routes from './routes';
-import {appConfig} from "./config/app"; // Import the aggregated routes
+import {appConfig} from "./config/app";
 
 export const initApp = (): { app: Application; io: Server } => {
     const app = express();
@@ -18,7 +18,7 @@ export const initApp = (): { app: Application; io: Server } => {
 
     app.use(express.json());
     app.use(loggerMiddleware);
-    app.use('/api', routes); // Mount all routes under /api
+    app.use('/api', routes);
     app.use(errorMiddleware);
 
     return { app, io };
