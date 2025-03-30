@@ -24,5 +24,6 @@ router.post(
 );
 router.post('/refresh', validateMiddleware(refreshTokenSchema), asyncHandler(authController.refreshToken));
 router.post('/employee/refresh', validateMiddleware(refreshTokenSchema), asyncHandler(authController.refreshEmployeeToken));
+router.post('/logout', authMiddleware, authController.logoutUser);
 
 export default router;
