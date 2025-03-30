@@ -18,9 +18,15 @@ class AuthController {
     };
 
     loginEmployee = async (req: Request, res: Response, next: NextFunction) => {
-        const { email, password, rememberMe } = req.body as LoginRequestBody;
-        const tokens = await this.authService.loginEmployee({ email, password, rememberMe });
+        const { email, password } = req.body as LoginRequestBody;
+        const tokens = await this.authService.loginEmployee({ email, password });
         res.json(tokens);
+    };
+
+    refreshEmployeeToken = async (req: Request, res: Response, next: NextFunction) => {
+        const { refreshToken } = req.body;
+        const accessToken = await this.authService.refreshEmployeeToken(refreshToken);
+        res.json({ accessToken });
     };
 
     refreshToken = async (req: Request, res: Response, next: NextFunction) => {
