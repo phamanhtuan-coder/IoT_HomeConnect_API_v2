@@ -454,6 +454,7 @@ model user_devices {
   DeviceID     String         @db.VarChar(255)
   DeviceToken  String?        @db.Text
   LastLogin    DateTime?      @default(dbgenerated("(now())")) @db.DateTime(0)
+  LastLogoutAt DateTime? @db.DateTime(0)
   CreatedAt    DateTime?      @default(dbgenerated("(now())")) @db.DateTime(0)
   UpdatedAt    DateTime?      @default(dbgenerated("(now())")) @db.DateTime(0)
   IsDeleted    Boolean?       @default(false)
