@@ -16,6 +16,7 @@ import {
 } from '../types/auth';
 import {UserDeviceService} from "./user-device.service";
 import {SyncTrackingService} from "./sync-tracking.service";
+import {isTokenBlacklisted} from "../utils/redis";
 
 
 class AuthService {
@@ -54,6 +55,9 @@ class AuthService {
                 appConfig.jwtSecret,
                 { expiresIn: '30d' }
             );
+            if (await isTokenBlacklisted(refreshToken)) {
+                throwError(ErrorCodes.FORBIDDEN, 'Refresh token is blacklisted');
+            }
             response.refreshToken = refreshToken;
             if (deviceId) {
                 await this.prisma.user_devices.updateMany({
