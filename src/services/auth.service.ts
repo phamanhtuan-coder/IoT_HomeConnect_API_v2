@@ -14,6 +14,8 @@ import type {
 import {
     EmployeeRole,
 } from '../types/auth';
+import {UserDeviceService} from "./user-device.service";
+import {SyncTrackingService} from "./sync-tracking.service";
 
 
 class AuthService {
@@ -23,7 +25,7 @@ class AuthService {
         this.prisma = new PrismaClient();
     }
 
-    async loginUser({ email, password, rememberMe = false }: LoginRequestBody): Promise<TokenResponse> {
+    async loginUser({ email, password, rememberMe = false, deviceName, deviceId, deviceToken, ipAddress }: LoginRequestBody & { deviceName?: string; deviceId?: string; deviceToken?: string; ipAddress?: string }): Promise<TokenResponse> {
         const user = await this.prisma.users.findUnique({ where: { Email: email } });
         if (!user) throwError(ErrorCodes.INVALID_CREDENTIALS, 'User not found');
         const isPasswordValid = await bcrypt.compare(password, user!.PasswordHash);
@@ -36,18 +38,30 @@ class AuthService {
         );
 
         const response: TokenResponse = { accessToken };
+
+        // Record device and sync
+        if (deviceName && deviceId) {
+            const userDeviceService = new UserDeviceService();
+            const syncTrackingService = new SyncTrackingService();
+            const device = await userDeviceService.upsertDevice(user!.UserID, deviceName, deviceId, deviceToken);
+            if (ipAddress) {
+                await syncTrackingService.recordLogin(user!.UserID, device.UserDeviceID, ipAddress);
+            }
+        }
+
         if (rememberMe) {
             const refreshToken = jwt.sign(
                 { userId: user!.UserID, type: 'refresh' } as RefreshTokenPayload,
                 appConfig.jwtSecret,
-                { expiresIn: '30d' } // Long-lived refresh token
+                { expiresIn: '30d' }
             );
             response.refreshToken = refreshToken;
-            // Optionally store refresh token in DB for revocation
-            await this.prisma.user_devices.updateMany({
-                where: { UserID: user!.UserID },
-                data: { DeviceToken: refreshToken },
-            });
+            if (deviceId) {
+                await this.prisma.user_devices.updateMany({
+                    where: { UserID: user!.UserID, DeviceID: deviceId },
+                    data: { DeviceToken: refreshToken }, // Store refresh token
+                });
+            }
         }
         return response;
     }
