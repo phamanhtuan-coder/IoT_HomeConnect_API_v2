@@ -248,6 +248,8 @@ class AuthService {
             data: { IsDeleted: true },
         });
     }
+
+
 }
 
 export default AuthService;
