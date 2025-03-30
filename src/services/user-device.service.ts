@@ -11,7 +11,7 @@ export class UserDeviceService {
     // Add or update device on login
     async upsertDevice(userId: number, deviceName: string, deviceId: string, deviceToken?: string) {
         const existingDevice = await this.prisma.user_devices.findFirst({
-            where: { UserID: userId, DeviceID: deviceId },
+            where: { UserID: userId, DeviceID: deviceId, IsDeleted: false },
         });
 
         if (existingDevice) {
@@ -26,6 +26,7 @@ export class UserDeviceService {
             });
         }
 
+        // If no active device exists (or was revoked), create a new one
         return this.prisma.user_devices.create({
             data: {
                 UserID: userId,
@@ -37,7 +38,7 @@ export class UserDeviceService {
         });
     }
 
-    // Get user's own devices
+    // Get user's own devices (only active)
     async getUserDevices(userId: number) {
         return this.prisma.user_devices.findMany({
             where: { UserID: userId, IsDeleted: false },
@@ -45,7 +46,7 @@ export class UserDeviceService {
         });
     }
 
-    // Get devices for any user (admin only)
+    // Get devices for any user (admin only, only active)
     async getDevicesByUserId(userId: number) {
         const userExists = await this.prisma.users.findUnique({ where: { UserID: userId } });
         if (!userExists) throwError(ErrorCodes.NOT_FOUND, 'User not found');
@@ -57,16 +58,15 @@ export class UserDeviceService {
 
     // Revoke device login
     async revokeDevice(userDeviceId: number, requesterId: number, requesterRole: string) {
-        const device = await this.prisma.user_devices.findUnique({
-            where: { UserDeviceID: userDeviceId },
-        });
-        if (!device) throwError(ErrorCodes.NOT_FOUND, 'Device not found');
-
-        // User can revoke their own device, admin can revoke any
+        const device = await this.prisma.user_devices.findUnique({ where: { UserDeviceID: userDeviceId } });
+        if (!device || device.IsDeleted) throwError(ErrorCodes.NOT_FOUND, 'Device not found or already revoked');
         if (device!.UserID !== requesterId && requesterRole !== 'admin') {
             throwError(ErrorCodes.FORBIDDEN, 'You can only revoke your own devices');
         }
-
+        await this.prisma.synctracking.updateMany({
+            where: { UserDeviceID: userDeviceId, IsDeleted: false },
+            data: { IsDeleted: true },
+        });
         return this.prisma.user_devices.update({
             where: { UserDeviceID: userDeviceId },
             data: { IsDeleted: true, UpdatedAt: new Date() },
