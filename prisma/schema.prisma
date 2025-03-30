@@ -1,0 +1,506 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model alerts {
+  AlertID      Int          @id @default(autoincrement())
+  DeviceSerial String?      @db.VarChar(50)
+  SpaceID      Int?
+  TypeID       Int?
+  Message      String?      @db.Text
+  Timestamp    DateTime?    @default(dbgenerated("(now())")) @db.DateTime(0)
+  Status       String?      @default("unread") @db.VarChar(20)
+  AlertTypeID  Int
+  CreatedAt    DateTime?    @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt    DateTime?    @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted    Boolean?     @default(false)
+  devices      devices?     @relation(fields: [DeviceSerial], references: [SerialNumber], onDelete: NoAction, onUpdate: NoAction, map: "alerts_ibfk_1")
+  spaces       spaces?      @relation(fields: [SpaceID], references: [SpaceID], onDelete: NoAction, onUpdate: NoAction, map: "alerts_ibfk_2")
+  devicetypes  devicetypes? @relation(fields: [TypeID], references: [TypeID], onDelete: NoAction, onUpdate: NoAction, map: "alerts_ibfk_3")
+  alerttypes   alerttypes   @relation(fields: [AlertTypeID], references: [AlertTypeID], onDelete: NoAction, onUpdate: NoAction, map: "alerts_ibfk_4")
+
+  @@index([AlertTypeID], map: "AlertTypeID")
+  @@index([DeviceSerial], map: "DeviceSerial")
+  @@index([SpaceID], map: "SpaceID")
+  @@index([TypeID], map: "TypeID")
+}
+
+model alerttypes {
+  AlertTypeID   Int       @id @default(autoincrement())
+  AlertTypeName String    @db.VarChar(500)
+  Priority      Int?      @default(1)
+  IsDeleted     Boolean?  @default(false)
+  CreatedAt     DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt     DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  alerts        alerts[]
+}
+
+model components {
+  ComponentID          Int                    @id @default(autoincrement())
+  Name                 String                 @db.VarChar(100)
+  Supplier             String?                @db.VarChar(100)
+  QuantityInStock      Int?                   @default(0)
+  UnitCost             Decimal?               @db.Decimal(10, 2)
+  CreatedAt            DateTime?              @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt            DateTime?              @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted            Boolean?               @default(false)
+  depreciationrecords  depreciationrecords[]
+  productioncomponents productioncomponents[]
+  templatecomponents   templatecomponents[]
+}
+
+model depreciationrecords {
+  DepreciationID     Int                 @id @default(autoincrement())
+  ProductionID       Int?
+  ComponentID        Int?
+  ExtraQuantity      Int?
+  ExtraCost          Decimal?            @db.Decimal(10, 2)
+  RecordedAt         DateTime?           @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt          DateTime?           @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted          Boolean?            @default(false)
+  productiontracking productiontracking? @relation(fields: [ProductionID], references: [ProductionID], onDelete: NoAction, onUpdate: NoAction, map: "depreciationrecords_ibfk_1")
+  components         components?         @relation(fields: [ComponentID], references: [ComponentID], onDelete: NoAction, onUpdate: NoAction, map: "depreciationrecords_ibfk_2")
+
+  @@index([ComponentID], map: "ComponentID")
+  @@index([ProductionID], map: "ProductionID")
+}
+
+model devices {
+  SerialNumber          String                  @id @unique(map: "SerialNumber") @db.VarChar(50)
+  TypeID                Int?
+  SpaceID               Int?
+  UserID                Int?
+  GroupID               Int?
+  HubID                 String?                 @db.VarChar(50)
+  FirmwareID            Int?
+  Name                  String                  @db.VarChar(100)
+  PowerStatus           Boolean?                @default(false)
+  Attribute             Json?
+  WifiSSID              String?                 @db.VarChar(50)
+  WifiPassword          String?                 @db.VarChar(50)
+  CurrentValue          Json?
+  LinkStatus            String?                 @default("unlinked") @db.VarChar(20)
+  LastResetAt           DateTime?               @db.DateTime(0)
+  LockStatus            String?                 @default("unlocked") @db.VarChar(20)
+  LockedAt              DateTime?               @db.DateTime(0)
+  CreatedAt             DateTime?               @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt             DateTime?               @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted             Boolean?                @default(false)
+  alerts                alerts[]
+  devicetypes           devicetypes?            @relation(fields: [TypeID], references: [TypeID], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_1")
+  spaces                spaces?                 @relation(fields: [SpaceID], references: [SpaceID], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_2")
+  users                 users?                  @relation(fields: [UserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_3")
+  groups                groups?                 @relation(fields: [GroupID], references: [GroupID], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_4")
+  devices               devices?                @relation("devicesTodevices", fields: [HubID], references: [SerialNumber], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_5")
+  other_devices         devices[]               @relation("devicesTodevices")
+  firmware              firmware?               @relation(fields: [FirmwareID], references: [FirmwareID], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_6")
+  firmwareupdatehistory firmwareupdatehistory[]
+  hourly_values         hourly_values[]
+  ownershiphistory      ownershiphistory[]
+  productiontracking    productiontracking[]
+  sharedpermissions     sharedpermissions[]
+  sharerequests         sharerequests[]
+  tickets               tickets[]
+
+  @@index([FirmwareID], map: "FirmwareID")
+  @@index([GroupID], map: "GroupID")
+  @@index([HubID], map: "HubID")
+  @@index([SpaceID], map: "SpaceID")
+  @@index([TypeID], map: "TypeID")
+  @@index([UserID], map: "UserID")
+}
+
+model devicetemplates {
+  TemplateID         Int                  @id @default(autoincrement())
+  TypeID             Int?
+  Name               String               @db.VarChar(100)
+  CreatedBy          Int?
+  CreatedAt          DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt          DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted          Boolean?             @default(false)
+  devicetypes        devicetypes?         @relation(fields: [TypeID], references: [TypeID], onDelete: NoAction, onUpdate: NoAction, map: "devicetemplates_ibfk_1")
+  employees          employees?           @relation(fields: [CreatedBy], references: [EmployeeID], onDelete: NoAction, onUpdate: NoAction, map: "devicetemplates_ibfk_2")
+  productionbatches  productionbatches[]
+  templatecomponents templatecomponents[]
+
+  @@index([CreatedBy], map: "CreatedBy")
+  @@index([TypeID], map: "TypeID")
+}
+
+model devicetypes {
+  TypeID          Int               @id @default(autoincrement())
+  TypeName        String            @db.VarChar(100)
+  Attributes      Json?
+  CreatedAt       DateTime?         @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt       DateTime?         @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted       Boolean?          @default(false)
+  alerts          alerts[]
+  devices         devices[]
+  devicetemplates devicetemplates[]
+  firmware        firmware[]
+}
+
+model employeepermissions {
+  PermissionID   Int        @id @default(autoincrement())
+  EmployeeID     Int?
+  PermissionType String     @db.VarChar(50)
+  GrantedAt      DateTime?  @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt      DateTime?  @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted      Boolean?   @default(false)
+  employees      employees? @relation(fields: [EmployeeID], references: [EmployeeID], onDelete: NoAction, onUpdate: NoAction, map: "employeepermissions_ibfk_1")
+
+  @@index([EmployeeID], map: "EmployeeID")
+}
+
+model employees {
+  EmployeeID          Int                   @id @default(autoincrement())
+  Name                String                @db.VarChar(100)
+  Email               String                @unique(map: "Email") @db.VarChar(100)
+  PasswordHash        String                @db.VarChar(255)
+  Role                String?               @default("employee") @db.VarChar(20)
+  Phone               String?               @db.VarChar(20)
+  CreatedAt           DateTime?             @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt           DateTime?             @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted           Boolean?              @default(false)
+  devicetemplates     devicetemplates[]
+  employeepermissions employeepermissions[]
+  productionbatches   productionbatches[]
+  productiontracking  productiontracking[]
+  tickets             tickets[]
+}
+
+model firmware {
+  FirmwareID            Int                     @id @default(autoincrement())
+  Version               String                  @db.VarChar(50)
+  FilePath              String                  @db.VarChar(255)
+  TypeID                Int?
+  IsMandatory           Boolean?                @default(false)
+  CreatedAt             DateTime?               @default(dbgenerated("(now())")) @db.DateTime(0)
+  TestedAt              DateTime?               @db.DateTime(0)
+  IsApproved            Boolean?                @default(false)
+  UpdatedAt             DateTime?               @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted             Boolean?                @default(false)
+  Note                  String?                 @db.Text
+  devices               devices[]
+  devicetypes           devicetypes?            @relation(fields: [TypeID], references: [TypeID], onDelete: NoAction, onUpdate: NoAction, map: "firmware_ibfk_1")
+  firmwareupdatehistory firmwareupdatehistory[]
+
+  @@index([TypeID], map: "TypeID")
+}
+
+model firmwareupdatehistory {
+  UpdateID     Int       @id @default(autoincrement())
+  DeviceSerial String?   @db.VarChar(50)
+  FirmwareID   Int?
+  UpdatedAt    DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  Status       String?   @default("success") @db.VarChar(20)
+  CreatedAt    DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted    Boolean?  @default(false)
+  devices      devices?  @relation(fields: [DeviceSerial], references: [SerialNumber], onDelete: NoAction, onUpdate: NoAction, map: "firmwareupdatehistory_ibfk_1")
+  firmware     firmware? @relation(fields: [FirmwareID], references: [FirmwareID], onDelete: NoAction, onUpdate: NoAction, map: "firmwareupdatehistory_ibfk_2")
+
+  @@index([DeviceSerial], map: "DeviceSerial")
+  @@index([FirmwareID], map: "FirmwareID")
+}
+
+model groups {
+  GroupID     Int           @id @default(autoincrement())
+  CreatedAt   DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt   DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted   Boolean?      @default(false)
+  devices     devices[]
+  houses      houses[]
+  user_groups user_groups[]
+}
+
+model hourly_values {
+  HourlyValueID Int       @id @default(autoincrement())
+  DeviceSerial  String?   @db.VarChar(50)
+  SpaceID       Int?
+  HourTimestamp DateTime? @db.DateTime(0)
+  AvgValue      Json?
+  SampleCount   Int?
+  CreatedAt     DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt     DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted     Boolean?  @default(false)
+  devices       devices?  @relation(fields: [DeviceSerial], references: [SerialNumber], onDelete: NoAction, onUpdate: NoAction, map: "hourly_values_ibfk_1")
+  spaces        spaces?   @relation(fields: [SpaceID], references: [SpaceID], onDelete: NoAction, onUpdate: NoAction, map: "hourly_values_ibfk_2")
+
+  @@index([DeviceSerial], map: "DeviceSerial")
+  @@index([SpaceID], map: "SpaceID")
+}
+
+model houses {
+  HouseID   Int       @id @default(autoincrement())
+  GroupID   Int?
+  Name      String    @db.VarChar(100)
+  Address   String?   @db.Text
+  IconName  String?   @db.VarChar(100)
+  IconColor String?   @db.VarChar(100)
+  CreatedAt DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted Boolean?  @default(false)
+  groups    groups?   @relation(fields: [GroupID], references: [GroupID], onDelete: NoAction, onUpdate: NoAction, map: "houses_ibfk_1")
+  spaces    spaces[]
+
+  @@index([GroupID], map: "GroupID")
+}
+
+model ownershiphistory {
+  HistoryID                                Int       @id @default(autoincrement())
+  DeviceSerial                             String?   @db.VarChar(50)
+  FromUserID                               Int?
+  ToUserID                                 Int?
+  TransferredAt                            DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  ExpiredDate                              DateTime? @db.DateTime(0)
+  IsExpired                                Boolean?  @default(false)
+  CreatedAt                                DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt                                DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted                                Boolean?  @default(false)
+  devices                                  devices?  @relation(fields: [DeviceSerial], references: [SerialNumber], onDelete: NoAction, onUpdate: NoAction, map: "ownershiphistory_ibfk_1")
+  users_ownershiphistory_FromUserIDTousers users?    @relation("ownershiphistory_FromUserIDTousers", fields: [FromUserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction, map: "ownershiphistory_ibfk_2")
+  users_ownershiphistory_ToUserIDTousers   users?    @relation("ownershiphistory_ToUserIDTousers", fields: [ToUserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction, map: "ownershiphistory_ibfk_3")
+
+  @@index([DeviceSerial], map: "DeviceSerial")
+  @@index([FromUserID], map: "FromUserID")
+  @@index([ToUserID], map: "ToUserID")
+}
+
+model productionbatches {
+  BatchID            Int                  @id @default(autoincrement())
+  TemplateID         Int?
+  Quantity           Int
+  Status             String?              @default("pending") @db.VarChar(20)
+  CreatedBy          Int?
+  CreatedAt          DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  ApprovedAt         DateTime?            @db.DateTime(0)
+  UpdatedAt          DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted          Boolean?             @default(false)
+  devicetemplates    devicetemplates?     @relation(fields: [TemplateID], references: [TemplateID], onDelete: NoAction, onUpdate: NoAction, map: "productionbatches_ibfk_1")
+  employees          employees?           @relation(fields: [CreatedBy], references: [EmployeeID], onDelete: NoAction, onUpdate: NoAction, map: "productionbatches_ibfk_2")
+  productiontracking productiontracking[]
+
+  @@index([CreatedBy], map: "CreatedBy")
+  @@index([TemplateID], map: "TemplateID")
+}
+
+model productioncomponents {
+  ProductionComponentID Int                 @id @default(autoincrement())
+  ProductionID          Int?
+  ComponentID           Int?
+  QuantityUsed          Int?                @default(1)
+  CreatedAt             DateTime?           @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt             DateTime?           @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted             Boolean?            @default(false)
+  productiontracking    productiontracking? @relation(fields: [ProductionID], references: [ProductionID], onDelete: NoAction, onUpdate: NoAction, map: "productioncomponents_ibfk_1")
+  components            components?         @relation(fields: [ComponentID], references: [ComponentID], onDelete: NoAction, onUpdate: NoAction, map: "productioncomponents_ibfk_2")
+
+  @@index([ComponentID], map: "ComponentID")
+  @@index([ProductionID], map: "ProductionID")
+}
+
+model productiontracking {
+  ProductionID         Int                    @id @default(autoincrement())
+  BatchID              Int?
+  DeviceSerial         String?                @db.VarChar(50)
+  Stage                String                 @db.VarChar(50)
+  Status               String?                @default("pending") @db.VarChar(20)
+  EmployeeID           Int?
+  StartedAt            DateTime?              @db.DateTime(0)
+  CompletedAt          DateTime?              @db.DateTime(0)
+  Cost                 Decimal?               @db.Decimal(10, 2)
+  CreatedAt            DateTime?              @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt            DateTime?              @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted            Boolean?               @default(false)
+  depreciationrecords  depreciationrecords[]
+  productioncomponents productioncomponents[]
+  productionbatches    productionbatches?     @relation(fields: [BatchID], references: [BatchID], onDelete: NoAction, onUpdate: NoAction, map: "productiontracking_ibfk_1")
+  devices              devices?               @relation(fields: [DeviceSerial], references: [SerialNumber], onDelete: NoAction, onUpdate: NoAction, map: "productiontracking_ibfk_2")
+  employees            employees?             @relation(fields: [EmployeeID], references: [EmployeeID], onDelete: NoAction, onUpdate: NoAction, map: "productiontracking_ibfk_3")
+
+  @@index([BatchID], map: "BatchID")
+  @@index([DeviceSerial], map: "DeviceSerial")
+  @@index([EmployeeID], map: "EmployeeID")
+}
+
+model sharedpermissions {
+  PermissionID     Int       @id @default(autoincrement())
+  DeviceSerial     String?   @db.VarChar(50)
+  SharedWithUserID Int?
+  PermissionType   String?   @default("readonly") @db.VarChar(20)
+  CreatedAt        DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt        DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted        Boolean?  @default(false)
+  devices          devices?  @relation(fields: [DeviceSerial], references: [SerialNumber], onDelete: NoAction, onUpdate: NoAction, map: "sharedpermissions_ibfk_1")
+  users            users?    @relation(fields: [SharedWithUserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction, map: "sharedpermissions_ibfk_2")
+
+  @@index([DeviceSerial], map: "DeviceSerial")
+  @@index([SharedWithUserID], map: "SharedWithUserID")
+}
+
+model sharerequests {
+  RequestID                             Int       @id @default(autoincrement())
+  DeviceSerial                          String?   @db.VarChar(50)
+  FromUserID                            Int?
+  ToUserID                              Int?
+  PermissionType                        String?   @default("readonly") @db.VarChar(20)
+  Status                                String?   @default("pending") @db.VarChar(20)
+  RequestedAt                           DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  ApprovedAt                            DateTime? @db.DateTime(0)
+  CreatedAt                             DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt                             DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted                             Boolean?  @default(false)
+  devices                               devices?  @relation(fields: [DeviceSerial], references: [SerialNumber], onDelete: NoAction, onUpdate: NoAction, map: "sharerequests_ibfk_1")
+  users_sharerequests_FromUserIDTousers users?    @relation("sharerequests_FromUserIDTousers", fields: [FromUserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction, map: "sharerequests_ibfk_2")
+  users_sharerequests_ToUserIDTousers   users?    @relation("sharerequests_ToUserIDTousers", fields: [ToUserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction, map: "sharerequests_ibfk_3")
+
+  @@index([DeviceSerial], map: "DeviceSerial")
+  @@index([FromUserID], map: "FromUserID")
+  @@index([ToUserID], map: "ToUserID")
+}
+
+model spaces {
+  SpaceID       Int             @id @default(autoincrement())
+  HouseID       Int?
+  Name          String          @db.VarChar(100)
+  CreatedAt     DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt     DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted     Boolean?        @default(false)
+  alerts        alerts[]
+  devices       devices[]
+  hourly_values hourly_values[]
+  houses        houses?         @relation(fields: [HouseID], references: [HouseID], onDelete: NoAction, onUpdate: NoAction, map: "spaces_ibfk_1")
+
+  @@index([HouseID], map: "HouseID")
+}
+
+model synctracking {
+  SyncID       Int           @id @default(autoincrement())
+  UserID       Int?
+  UserDeviceID Int?
+  IPAddress    String?       @db.VarChar(45)
+  LastSyncedAt DateTime?     @db.DateTime(0)
+  SyncType     String?       @db.VarChar(20)
+  SyncStatus   String?       @db.VarChar(20)
+  CreatedAt    DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt    DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted    Boolean?      @default(false)
+  users        users?        @relation(fields: [UserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction, map: "synctracking_ibfk_1")
+  user_devices user_devices? @relation(fields: [UserDeviceID], references: [UserDeviceID], onDelete: NoAction, onUpdate: NoAction, map: "synctracking_ibfk_2")
+
+  @@index([UserDeviceID], map: "UserDeviceID")
+  @@index([UserID], map: "UserID")
+}
+
+model templatecomponents {
+  TemplateComponentID Int              @id @default(autoincrement())
+  TemplateID          Int?
+  ComponentID         Int?
+  QuantityRequired    Int?             @default(1)
+  CreatedAt           DateTime?        @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt           DateTime?        @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted           Boolean?         @default(false)
+  devicetemplates     devicetemplates? @relation(fields: [TemplateID], references: [TemplateID], onDelete: NoAction, onUpdate: NoAction, map: "templatecomponents_ibfk_1")
+  components          components?      @relation(fields: [ComponentID], references: [ComponentID], onDelete: NoAction, onUpdate: NoAction, map: "templatecomponents_ibfk_2")
+
+  @@index([ComponentID], map: "ComponentID")
+  @@index([TemplateID], map: "TemplateID")
+}
+
+model tickets {
+  TicketID     Int         @id @default(autoincrement())
+  UserID       Int?
+  DeviceSerial String?     @db.VarChar(50)
+  TicketTypeID Int
+  Description  String?     @db.Text
+  Evidence     Json?
+  Status       String?     @default("pending") @db.VarChar(20)
+  CreatedAt    DateTime?   @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt    DateTime?   @default(dbgenerated("(now())")) @db.DateTime(0)
+  AssignedTo   Int?
+  ResolvedAt   DateTime?   @db.DateTime(0)
+  IsDeleted    Boolean?    @default(false)
+  users        users?      @relation(fields: [UserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction, map: "tickets_ibfk_1")
+  devices      devices?    @relation(fields: [DeviceSerial], references: [SerialNumber], onDelete: NoAction, onUpdate: NoAction, map: "tickets_ibfk_2")
+  tickettypes  tickettypes @relation(fields: [TicketTypeID], references: [TicketTypeID], onDelete: NoAction, onUpdate: NoAction, map: "tickets_ibfk_3")
+  employees    employees?  @relation(fields: [AssignedTo], references: [EmployeeID], onDelete: NoAction, onUpdate: NoAction, map: "tickets_ibfk_4")
+
+  @@index([AssignedTo], map: "AssignedTo")
+  @@index([DeviceSerial], map: "DeviceSerial")
+  @@index([TicketTypeID], map: "TicketTypeID")
+  @@index([UserID], map: "UserID")
+}
+
+model tickettypes {
+  TicketTypeID Int       @id @default(autoincrement())
+  TypeName     String    @db.VarChar(50)
+  Priority     Int?      @default(1)
+  IsActive     Boolean?  @default(true)
+  CreatedAt    DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt    DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted    Boolean?  @default(false)
+  tickets      tickets[]
+}
+
+model user_devices {
+  UserDeviceID Int            @id @default(autoincrement())
+  UserID       Int?
+  DeviceName   String         @db.VarChar(100)
+  DeviceID     String         @db.VarChar(255)
+  DeviceToken  String?        @db.Text
+  LastLogin    DateTime?      @default(dbgenerated("(now())")) @db.DateTime(0)
+  CreatedAt    DateTime?      @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt    DateTime?      @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted    Boolean?       @default(false)
+  synctracking synctracking[]
+  users        users?         @relation(fields: [UserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction, map: "user_devices_ibfk_1")
+
+  @@index([UserID], map: "UserID")
+}
+
+model user_groups {
+  UserGroupID Int       @id @default(autoincrement())
+  UserID      Int?
+  GroupID     Int?
+  Role        String?   @default("member") @db.VarChar(20)
+  JoinedAt    DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt   DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted   Boolean?  @default(false)
+  users       users?    @relation(fields: [UserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction, map: "user_groups_ibfk_1")
+  groups      groups?   @relation(fields: [GroupID], references: [GroupID], onDelete: NoAction, onUpdate: NoAction, map: "user_groups_ibfk_2")
+
+  @@index([GroupID], map: "GroupID")
+  @@index([UserID], map: "UserID")
+}
+
+model users {
+  UserID                                              Int                 @id @default(autoincrement())
+  Name                                                String              @db.VarChar(100)
+  Email                                               String              @unique(map: "Email") @db.VarChar(100)
+  EmailVerified                                       Boolean?            @default(false)
+  VerificationCode                                    String?             @db.VarChar(255)
+  VerificationExpiry                                  DateTime?           @db.DateTime(0)
+  PasswordHash                                        String              @db.VarChar(255)
+  Phone                                               String?             @db.VarChar(20)
+  Address                                             String?             @db.Text
+  DateOfBirth                                         DateTime?           @db.Date
+  ProfileImage                                        Bytes?              @db.Blob
+  CreatedAt                                           DateTime?           @default(dbgenerated("(now())")) @db.DateTime(0)
+  UpdatedAt                                           DateTime?           @default(dbgenerated("(now())")) @db.DateTime(0)
+  IsDeleted                                           Boolean?            @default(false)
+  devices                                             devices[]
+  ownershiphistory_ownershiphistory_FromUserIDTousers ownershiphistory[]  @relation("ownershiphistory_FromUserIDTousers")
+  ownershiphistory_ownershiphistory_ToUserIDTousers   ownershiphistory[]  @relation("ownershiphistory_ToUserIDTousers")
+  sharedpermissions                                   sharedpermissions[]
+  sharerequests_sharerequests_FromUserIDTousers       sharerequests[]     @relation("sharerequests_FromUserIDTousers")
+  sharerequests_sharerequests_ToUserIDTousers         sharerequests[]     @relation("sharerequests_ToUserIDTousers")
+  synctracking                                        synctracking[]
+  tickets                                             tickets[]
+  user_devices                                        user_devices[]
+  user_groups                                         user_groups[]
+}
