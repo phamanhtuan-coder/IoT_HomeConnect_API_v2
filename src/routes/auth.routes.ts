@@ -23,5 +23,6 @@ router.post(
     asyncHandler(authController.registerEmployee)
 );
 router.post('/refresh', validateMiddleware(refreshTokenSchema), asyncHandler(authController.refreshToken));
+router.post('/employee/refresh', validateMiddleware(refreshTokenSchema), asyncHandler(authController.refreshEmployeeToken));
 
 export default router;
