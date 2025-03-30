@@ -39,7 +39,6 @@ class AuthService {
 
         const response: TokenResponse = { accessToken };
 
-        // Record device and sync
         if (deviceName && deviceId) {
             const userDeviceService = new UserDeviceService();
             const syncTrackingService = new SyncTrackingService();
@@ -58,8 +57,8 @@ class AuthService {
             response.refreshToken = refreshToken;
             if (deviceId) {
                 await this.prisma.user_devices.updateMany({
-                    where: { UserID: user!.UserID, DeviceID: deviceId },
-                    data: { DeviceToken: refreshToken }, // Store refresh token
+                    where: { UserID: user!.UserID, DeviceID: deviceId, IsDeleted: false },
+                    data: { DeviceToken: refreshToken },
                 });
             }
         }
