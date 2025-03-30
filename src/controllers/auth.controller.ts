@@ -2,6 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import AuthService from '../services/auth.service';
 import { LoginRequestBody, UserRegisterRequestBody, EmployeeRegisterRequestBody } from '../types/auth';
+import {ErrorCodes, throwError} from "../utils/errors";
 
 class AuthController {
     private authService: AuthService;
@@ -49,44 +50,20 @@ class AuthController {
         res.status(201).json({ token });
     };
 
-    getUser = async (req: Request, res: Response, next: NextFunction) => {
-        const userId = parseInt(req.params.id, 10);
-        const user = await this.authService.getUser(userId);
-        res.json(user);
-    };
 
-    updateUser = async (req: Request, res: Response, next: NextFunction) => {
-        const userId = parseInt(req.params.id, 10);
-        const data = req.body as Partial<UserRegisterRequestBody>;
-        const updatedUser = await this.authService.updateUser(userId, data);
-        res.json(updatedUser);
-    };
 
-    deleteUser = async (req: Request, res: Response, next: NextFunction) => {
-        const userId = parseInt(req.params.id, 10);
-        await this.authService.deleteUser(userId);
-        res.status(204).send();
-    };
+    logoutUser = async (req: Request, res: Response, next: NextFunction) => {
+        const userId = req.user?.userId;
+        const userDeviceId = parseInt(req.body.userDeviceId, 10);
+        const ipAddress = req.ip;
 
-    getEmployee = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = parseInt(req.params.id, 10);
-        const employee = await this.authService.getEmployee(employeeId);
-        res.json(employee);
-    };
+        if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+        if (!userDeviceId || isNaN(userDeviceId)) {
+            throwError(ErrorCodes.BAD_REQUEST, 'Valid UserDeviceID is required');
+        }
 
-    updateEmployee = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = parseInt(req.params.id, 10);
-        const data = req.body as Partial<EmployeeRegisterRequestBody>;
-        const adminId = req.user?.employeeId!;
-        const updatedEmployee = await this.authService.updateEmployee(employeeId, data, adminId);
-        res.json(updatedEmployee);
-    };
-
-    deleteEmployee = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = parseInt(req.params.id, 10);
-        const adminId = req.user?.employeeId!;
-        await this.authService.deleteEmployee(employeeId, adminId);
-        res.status(204).send();
+        await this.authService.logoutDevice(userDeviceId, userId, ipAddress);
+        res.status(204).send(); // No content on success
     };
 }
 
