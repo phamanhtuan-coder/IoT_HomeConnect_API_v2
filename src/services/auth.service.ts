@@ -66,7 +66,7 @@ class AuthService {
         return response;
     }
 
-    async loginEmployee({ email, password, rememberMe = false }: LoginRequestBody): Promise<TokenResponse> {
+    async loginEmployee({ email, password }: LoginRequestBody): Promise<TokenResponse> {
         const employee = await this.prisma.employees.findUnique({ where: { Email: email } });
         if (!employee) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Employee not found');
         const isPasswordValid = await bcrypt.compare(password, employee!.PasswordHash);
@@ -78,17 +78,24 @@ class AuthService {
             { expiresIn: '1h' }
         );
 
-        const response: TokenResponse = { accessToken };
-        if (rememberMe) {
-            const refreshToken = jwt.sign(
-                { employeeId: employee!.EmployeeID, type: 'refresh' } as RefreshTokenPayload,
-                appConfig.jwtSecret,
-                { expiresIn: '30d' }
-            );
-            response.refreshToken = refreshToken;
-            // Optionally store refresh token in DB
+        // No persistent refresh token stored; client must re-login after session ends
+        return { accessToken };
+    }
+
+    async refreshEmployeeToken(refreshToken: string): Promise<string> {
+        const decoded = jwt.verify(refreshToken, appConfig.jwtSecret) as RefreshTokenPayload;
+        if (decoded.type !== 'refresh' || !decoded.employeeId) {
+            throwError(ErrorCodes.UNAUTHORIZED, 'Invalid refresh token');
         }
-        return response;
+
+        const employee = await this.prisma.employees.findUnique({ where: { EmployeeID: decoded.employeeId } });
+        if (!employee) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not found');
+
+        return jwt.sign(
+            { employeeId: employee!.EmployeeID, email: employee!.Email, role: employee!.Role } as EmployeeJwtPayload,
+            appConfig.jwtSecret,
+            { expiresIn: '1h' }
+        );
     }
 
     async refreshToken(refreshToken: string): Promise<string> {
@@ -100,14 +107,6 @@ class AuthService {
             if (!user) throwError(ErrorCodes.UNAUTHORIZED, 'User not found');
             return jwt.sign(
                 { userId: user!.UserID, email: user!.Email, role: 'user' } as UserJwtPayload,
-                appConfig.jwtSecret,
-                { expiresIn: '1h' }
-            );
-        } else if (decoded.employeeId) {
-            const employee = await this.prisma.employees.findUnique({ where: { EmployeeID: decoded.employeeId } });
-            if (!employee) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not found');
-            return jwt.sign(
-                { employeeId: employee!.EmployeeID, email: employee!.Email, role: employee!.Role } as EmployeeJwtPayload,
                 appConfig.jwtSecret,
                 { expiresIn: '1h' }
             );
