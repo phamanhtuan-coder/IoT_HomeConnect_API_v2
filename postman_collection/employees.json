@@ -1,0 +1,341 @@
+[
+  {
+    "name": "Employees",
+    "item": [
+      {
+        "name": "Get All Employees",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Get all employees successful', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  const response = pm.response.json();",
+                "  pm.expect(response.employees).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/employees?page=1&limit=10",
+            "host": ["{{baseUrl}}"],
+            "path": ["employees"],
+            "query": [
+              {"key": "page", "value": "1"},
+              {"key": "limit", "value": "10"}
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Filter Employees",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Filter employees successful', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  const response = pm.response.json();",
+                "  pm.expect(response.employees).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/employees/filter?role=admin&name=John&page=1&limit=10",
+            "host": ["{{baseUrl}}"],
+            "path": ["employees", "filter"],
+            "query": [
+              {"key": "role", "value": "admin"},
+              {"key": "name", "value": "John"},
+              {"key": "page", "value": "1"},
+              {"key": "limit", "value": "10"}
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Employee by ID",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Get employee by ID successful', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  const response = pm.response.json();",
+                "  pm.expect(response.EmployeeID).to.equal(1);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/employees/1",
+            "host": ["{{baseUrl}}"],
+            "path": ["employees", "1"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Update Employee",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Update employee successful', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  const response = pm.response.json();",
+                "  pm.expect(response.Name).to.equal('Updated Employee');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"name\": \"Updated Employee\",\n  \"phone\": \"0987654321\",\n  \"role\": \"technician\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/employees/1",
+            "host": ["{{baseUrl}}"],
+            "path": ["employees", "1"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Delete Employee",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Delete employee successful', () => {",
+                "  pm.expect(pm.response.code).to.equal(204);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/employees/1",
+            "host": ["{{baseUrl}}"],
+            "path": ["employees", "1"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Employee Permissions",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Get employee permissions successful', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  const response = pm.response.json();",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/employees/1/permissions",
+            "host": ["{{baseUrl}}"],
+            "path": ["employees", "1", "permissions"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get All Permissions",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Get all permissions successful', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  const response = pm.response.json();",
+                "  pm.expect(response.permissions).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/employees/permissions?page=1&limit=10",
+            "host": ["{{baseUrl}}"],
+            "path": ["employees", "permissions"],
+            "query": [
+              {"key": "page", "value": "1"},
+              {"key": "limit", "value": "10"}
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Update Employee Permission",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Update permission successful', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  const response = pm.response.json();",
+                "  pm.expect(response.PermissionType).to.equal('read:devices');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"permissionType\": \"read:devices\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/employees/permissions/1",
+            "host": ["{{baseUrl}}"],
+            "path": ["employees", "permissions", "1"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Delete Employee Permission",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Delete permission successful', () => {",
+                "  pm.expect(pm.response.code).to.equal(204);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/employees/permissions/1",
+            "host": ["{{baseUrl}}"],
+            "path": ["employees", "permissions", "1"]
+          }
+        },
+        "response": []
+      }
+    ]
+  }
+]

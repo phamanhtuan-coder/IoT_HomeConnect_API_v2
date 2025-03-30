@@ -1,0 +1,64 @@
+[
+  {
+    "name": "Sync Tracking",
+    "item": [
+      {
+        "name": "Get Own Sync History",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/sync/me",
+            "host": ["{{baseUrl}}"],
+            "path": ["sync", "me"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get User Sync History (Admin)",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/sync/1",
+            "host": ["{{baseUrl}}"],
+            "path": ["sync", "1"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Full User Sync History (Admin)",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/sync/1/full",
+            "host": ["{{baseUrl}}"],
+            "path": ["sync", "1", "full"]
+          }
+        },
+        "response": []
+      }
+    ]
+  }
+]

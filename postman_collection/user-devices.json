@@ -1,0 +1,64 @@
+[
+  {
+    "name": "User Devices",
+    "item": [
+      {
+        "name": "Get Own Devices",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/devices/me",
+            "host": ["{{baseUrl}}"],
+            "path": ["devices", "me"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get User Devices (Admin)",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/devices/1",
+            "host": ["{{baseUrl}}"],
+            "path": ["devices", "1"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Revoke Device",
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/devices/1",
+            "host": ["{{baseUrl}}"],
+            "path": ["devices", "1"]
+          }
+        },
+        "response": []
+      }
+    ]
+  }
+]
