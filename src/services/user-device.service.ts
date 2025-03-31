@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import { throwError, ErrorCodes } from '../utils/errors';
-import { blacklistToken } from '../utils/redis';
 
 export class UserDeviceService {
     private prisma: PrismaClient;
@@ -9,18 +8,46 @@ export class UserDeviceService {
         this.prisma = new PrismaClient();
     }
 
-    // Add or update device on login
-    async upsertDevice(userId: number, deviceName: string, deviceId: string, deviceToken?: string) {
-        const existingDevice = await this.prisma.user_devices.findFirst({
+    async upsertDevice(userId: number, deviceName: string, deviceId: string, deviceType: string, fcmToken?: string) {
+        if (!deviceId) throwError(ErrorCodes.BAD_REQUEST, 'Device ID is required');
+
+        const deviceCount = await this.prisma.user_devices.count({
+            where: { UserID: userId, IsDeleted: false },
+        });
+        if (deviceCount >= 5) {
+            throwError(ErrorCodes.FORBIDDEN, 'Maximum device limit reached. Please revoke an existing device.');
+        }
+
+        const existingByFingerprint = fcmToken
+            ? await this.prisma.user_devices.findFirst({
+                where: { UserID: userId, DeviceName: deviceName, FCMToken: fcmToken, IsDeleted: false },
+            })
+            : null;
+
+        if (existingByFingerprint && existingByFingerprint.DeviceID !== deviceId) {
+            return this.prisma.user_devices.update({
+                where: { UserDeviceID: existingByFingerprint.UserDeviceID },
+                data: {
+                    DeviceID: deviceId,
+                    DeviceType: deviceType,
+                    FCMToken: fcmToken || existingByFingerprint.FCMToken,
+                    LastLogin: new Date(),
+                    UpdatedAt: new Date(),
+                },
+            });
+        }
+
+        const existingByDeviceId = await this.prisma.user_devices.findFirst({
             where: { UserID: userId, DeviceID: deviceId, IsDeleted: false },
         });
 
-        if (existingDevice) {
+        if (existingByDeviceId) {
             return this.prisma.user_devices.update({
-                where: { UserDeviceID: existingDevice.UserDeviceID },
+                where: { UserDeviceID: existingByDeviceId.UserDeviceID },
                 data: {
                     DeviceName: deviceName,
-                    DeviceToken: deviceToken || existingDevice.DeviceToken,
+                    DeviceType: deviceType,
+                    FCMToken: fcmToken || existingByDeviceId.FCMToken,
                     LastLogin: new Date(),
                     UpdatedAt: new Date(),
                 },
@@ -32,13 +59,13 @@ export class UserDeviceService {
                 UserID: userId,
                 DeviceName: deviceName,
                 DeviceID: deviceId,
-                DeviceToken: deviceToken,
+                DeviceType: deviceType,
+                FCMToken: fcmToken,
                 LastLogin: new Date(),
             },
         });
     }
 
-    // Get user's own devices (only active)
     async getUserDevices(userId: number) {
         return this.prisma.user_devices.findMany({
             where: { UserID: userId, IsDeleted: false },
@@ -46,7 +73,6 @@ export class UserDeviceService {
         });
     }
 
-    // Get devices for any user (admin only, only active)
     async getDevicesByUserId(userId: number) {
         const userExists = await this.prisma.users.findUnique({ where: { UserID: userId } });
         if (!userExists) throwError(ErrorCodes.NOT_FOUND, 'User not found');
@@ -56,14 +82,14 @@ export class UserDeviceService {
         });
     }
 
-    // Revoke device login
     async revokeDevice(userDeviceId: number, requesterId: number, requesterRole: string) {
         const device = await this.prisma.user_devices.findUnique({
             where: { UserDeviceID: userDeviceId },
         });
-        if (!device || device!.IsDeleted) throwError(ErrorCodes.NOT_FOUND, 'Device not found or already revoked');
+        if (!device || device.IsDeleted) throwError(ErrorCodes.NOT_FOUND, 'Device not found or already revoked');
 
-        if (device!.UserID !== requesterId && requesterRole !== 'admin') {
+        // @ts-ignore
+        if (device.UserID !== requesterId && requesterRole !== 'admin') {
             throwError(ErrorCodes.FORBIDDEN, 'You can only revoke your own devices');
         }
 
@@ -72,30 +98,25 @@ export class UserDeviceService {
             data: { IsDeleted: true },
         });
 
-        if (device!.DeviceToken) {
-            await blacklistToken(device!.DeviceToken, 30 * 24 * 60 * 60); // 30 days in seconds
-        }
-
         return this.prisma.user_devices.update({
             where: { UserDeviceID: userDeviceId },
             data: {
                 IsDeleted: true,
                 LastLogoutAt: new Date(),
                 UpdatedAt: new Date(),
-                DeviceToken: null,
             },
         });
     }
 
-    // Logout from a device (does not revoke, just logs out)
     async logoutDevice(userDeviceId: number, userId: number, ipAddress?: string) {
         const device = await this.prisma.user_devices.findUnique({
             where: { UserDeviceID: userDeviceId },
         });
-        if (!device || device!.IsDeleted) {
+        if (!device || device.IsDeleted) {
             throwError(ErrorCodes.NOT_FOUND, 'Device not found or already revoked');
         }
-        if (device!.UserID !== userId) {
+        // @ts-ignore
+        if (device.UserID !== userId) {
             throwError(ErrorCodes.FORBIDDEN, 'You can only log out from your own devices');
         }
 
@@ -110,37 +131,31 @@ export class UserDeviceService {
             },
         });
 
-        if (device!.DeviceToken) {
-            await blacklistToken(device!.DeviceToken, 30 * 24 * 60 * 60); // Blacklist for 30 days
-        }
-
         return this.prisma.user_devices.update({
             where: { UserDeviceID: userDeviceId },
             data: {
                 LastLogoutAt: new Date(),
-                DeviceToken: null,
                 UpdatedAt: new Date(),
             },
         });
     }
 
-    // Logout multiple devices
     async logoutDevices(userDeviceIds: number[], userId: number, ipAddress?: string) {
         const devices = await this.prisma.user_devices.findMany({
             where: { UserDeviceID: { in: userDeviceIds }, IsDeleted: false },
         });
 
         if (devices.length === 0) throwError(ErrorCodes.NOT_FOUND, 'No valid devices found');
-        if (devices.some(device => device!.UserID !== userId)) {
+        if (devices.some(device => device.UserID !== userId)) {
             throwError(ErrorCodes.FORBIDDEN, 'You can only log out from your own devices');
         }
 
-        await Promise.all(
+        const updatedDevices = await Promise.all(
             devices.map(async (device) => {
                 await this.prisma.synctracking.create({
                     data: {
                         UserID: userId,
-                        UserDeviceID: device!.UserDeviceID,
+                        UserDeviceID: device.UserDeviceID,
                         IPAddress: ipAddress || 'unknown',
                         LastSyncedAt: new Date(),
                         SyncType: 'logout',
@@ -148,33 +163,29 @@ export class UserDeviceService {
                     },
                 });
 
-                if (device!.DeviceToken) {
-                    await blacklistToken(device!.DeviceToken, 30 * 24 * 60 * 60);
-                }
-
-                await this.prisma.user_devices.update({
-                    where: { UserDeviceID: device!.UserDeviceID },
+                return this.prisma.user_devices.update({
+                    where: { UserDeviceID: device.UserDeviceID },
                     data: {
                         LastLogoutAt: new Date(),
-                        DeviceToken: null,
                         UpdatedAt: new Date(),
                     },
                 });
             })
         );
+
+        return updatedDevices;
     }
 
-    // Logout all devices
     async logoutAllDevices(userId: number, ipAddress?: string) {
         const devices = await this.getUserDevices(userId);
-        if (devices.length === 0) return; // Nothing to logout
+        if (devices.length === 0) return [];
 
-        await Promise.all(
+        const updatedDevices = await Promise.all(
             devices.map(async (device) => {
                 await this.prisma.synctracking.create({
                     data: {
                         UserID: userId,
-                        UserDeviceID: device!.UserDeviceID,
+                        UserDeviceID: device.UserDeviceID,
                         IPAddress: ipAddress || 'unknown',
                         LastSyncedAt: new Date(),
                         SyncType: 'logout',
@@ -182,19 +193,16 @@ export class UserDeviceService {
                     },
                 });
 
-                if (device!.DeviceToken) {
-                    await blacklistToken(device!.DeviceToken, 30 * 24 * 60 * 60);
-                }
-
-                await this.prisma.user_devices.update({
-                    where: { UserDeviceID: device!.UserDeviceID },
+                return this.prisma.user_devices.update({
+                    where: { UserDeviceID: device.UserDeviceID },
                     data: {
                         LastLogoutAt: new Date(),
-                        DeviceToken: null,
                         UpdatedAt: new Date(),
                     },
                 });
             })
         );
+
+        return updatedDevices;
     }
 }
