@@ -1,19 +1,18 @@
-import { PrismaClient } from '@prisma/client';
+import {PrismaClient} from '@prisma/client';
 import * as jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcrypt';
-import { appConfig } from '../config/app';
-import { throwError, ErrorCodes } from '../utils/errors';
+import {appConfig} from '../config/app';
+import {ErrorCodes, throwError} from '../utils/errors';
 import type {
-    LoginRequestBody,
-    UserJwtPayload,
     EmployeeJwtPayload,
+    EmployeeRegisterRequestBody,
+    LoginRequestBody,
+    RefreshTokenPayload,
     TokenResponse,
-    RefreshTokenPayload, UserRegisterRequestBody, EmployeeRegisterRequestBody,
+    UserJwtPayload,
+    UserRegisterRequestBody,
 } from '../types/auth';
-
-import {
-    EmployeeRole,
-} from '../types/auth';
+import {EmployeeRole,} from '../types/auth';
 import {UserDeviceService} from "./user-device.service";
 import {SyncTrackingService} from "./sync-tracking.service";
 import redisClient, {blacklistToken, isTokenBlacklisted} from "../utils/redis";
@@ -26,11 +25,20 @@ class AuthService {
         this.prisma = new PrismaClient();
     }
 
-    async loginUser({ email, password, rememberMe = false, deviceName, deviceId, deviceToken, ipAddress }: LoginRequestBody & { deviceName?: string; deviceId?: string; deviceToken?: string; ipAddress?: string }): Promise<TokenResponse> {
+    async loginUser({ email, password, rememberMe = false, deviceName, deviceId, deviceType, fcmToken, ipAddress }: LoginRequestBody & { deviceName?: string; deviceId?: string; deviceType?: string; fcmToken?: string; ipAddress?: string }): Promise<TokenResponse> {
         const user = await this.prisma.users.findUnique({ where: { Email: email } });
         if (!user) throwError(ErrorCodes.INVALID_CREDENTIALS, 'User not found');
         const isPasswordValid = await bcrypt.compare(password, user!.PasswordHash);
         if (!isPasswordValid) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Invalid password');
+
+        if (!deviceId || !deviceName || !deviceType) throwError(ErrorCodes.BAD_REQUEST, 'Device ID, Name, and Type are required');
+
+        const userDeviceService = new UserDeviceService();
+        const syncTrackingService = new SyncTrackingService();
+        const device = await userDeviceService.upsertDevice(user!.UserID, deviceName!, deviceId!, deviceType!, fcmToken);
+        if (ipAddress) {
+            await syncTrackingService.recordLogin(user!.UserID, device.UserDeviceID, ipAddress);
+        }
 
         const accessToken = jwt.sign(
             { userId: user!.UserID, email: user!.Email, role: 'user' } as UserJwtPayload,
@@ -39,15 +47,6 @@ class AuthService {
         );
 
         const response: TokenResponse = { accessToken };
-
-        if (deviceName && deviceId) {
-            const userDeviceService = new UserDeviceService();
-            const syncTrackingService = new SyncTrackingService();
-            const device = await userDeviceService.upsertDevice(user!.UserID, deviceName, deviceId, deviceToken);
-            if (ipAddress) {
-                await syncTrackingService.recordLogin(user!.UserID, device.UserDeviceID, ipAddress);
-            }
-        }
 
         if (rememberMe) {
             const refreshToken = jwt.sign(
@@ -59,13 +58,8 @@ class AuthService {
                 throwError(ErrorCodes.FORBIDDEN, 'Refresh token is blacklisted');
             }
             response.refreshToken = refreshToken;
-            if (deviceId) {
-                await this.prisma.user_devices.updateMany({
-                    where: { UserID: user!.UserID, DeviceID: deviceId, IsDeleted: false },
-                    data: { DeviceToken: refreshToken },
-                });
-            }
         }
+
         return response;
     }
 
@@ -146,10 +140,9 @@ class AuthService {
         } else if (decoded.employeeId) {
             return this.refreshEmployeeToken(refreshToken);
         } else {
-            return throwError(ErrorCodes.UNAUTHORIZED, 'Invalid refresh token payload');
+           return throwError(ErrorCodes.UNAUTHORIZED, 'Invalid refresh token payload');
         }
     }
-
     async registerUser(data: UserRegisterRequestBody): Promise<string> {
         const { email, password, name, phone, address, dateOfBirth } = data;
 
@@ -168,12 +161,11 @@ class AuthService {
             },
         });
 
-        const token = jwt.sign(
-            { userId: user!.UserID, email: user!.Email, role: 'user' } as UserJwtPayload,
+        return jwt.sign(
+            {userId: user!.UserID, email: user!.Email, role: 'user'} as UserJwtPayload,
             appConfig.jwtSecret,
-            { expiresIn: '1h' }
+            {expiresIn: '1h'}
         );
-        return token;
     }
 
     async registerEmployee(data: EmployeeRegisterRequestBody, adminId: number): Promise<string> {
@@ -197,12 +189,11 @@ class AuthService {
             data: { EmployeeID: employee!.EmployeeID, PermissionType: permissionType },
         });
 
-        const token = jwt.sign(
-            { employeeId: employee!.EmployeeID, email: employee!.Email, role } as EmployeeJwtPayload,
+        return jwt.sign(
+            {employeeId: employee!.EmployeeID, email: employee!.Email, role} as EmployeeJwtPayload,
             appConfig.jwtSecret,
-            { expiresIn: '1h' }
+            {expiresIn: '1h'}
         );
-        return token;
     }
 
     private getPermissionTypeForRole(role: EmployeeRole): string {
@@ -224,39 +215,9 @@ class AuthService {
 
 
 
-    // Logout from a device (does not revoke, just logs out)
     async logoutDevice(userDeviceId: number, userId: number, ipAddress?: string) {
-        const device = await this.prisma.user_devices.findUnique({
-            where: { UserDeviceID: userDeviceId },
-        });
-        if (!device || device.IsDeleted) {
-            throwError(ErrorCodes.NOT_FOUND, 'Device not found or already revoked');
-        }
-        if (device!.UserID !== userId) {
-            throwError(ErrorCodes.FORBIDDEN, 'You can only log out from your own devices');
-        }
-
-        // Record logout in synctracking
-        await this.prisma.synctracking.create({
-            data: {
-                UserID: userId,
-                UserDeviceID: userDeviceId,
-                IPAddress: ipAddress || 'unknown',
-                LastSyncedAt: new Date(),
-                SyncType: 'logout',
-                SyncStatus: 'success',
-            },
-        });
-
-        // Update LastLogoutAt and clear DeviceToken (if it’s a refresh token)
-        return this.prisma.user_devices.update({
-            where: { UserDeviceID: userDeviceId },
-            data: {
-                LastLogoutAt: new Date(),
-                DeviceToken: null, // Clear refresh token if stored here
-                UpdatedAt: new Date(),
-            },
-        });
+        const userDeviceService = new UserDeviceService();
+        return userDeviceService.logoutDevice(userDeviceId, userId, ipAddress);
     }
 
     async logoutEmployee(employeeId: number) {
