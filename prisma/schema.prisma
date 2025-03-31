@@ -381,8 +381,8 @@ model spaces {
 
 model synctracking {
   SyncID       Int           @id @default(autoincrement())
-  UserID       Int?
-  UserDeviceID Int?
+  UserID       Int
+  UserDeviceID Int
   IPAddress    String?       @db.VarChar(45)
   LastSyncedAt DateTime?     @db.DateTime(0)
   SyncType     String?       @db.VarChar(20)
@@ -390,8 +390,8 @@ model synctracking {
   CreatedAt    DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
   UpdatedAt    DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
   IsDeleted    Boolean?      @default(false)
-  users        users?        @relation(fields: [UserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction, map: "synctracking_ibfk_1")
-  user_devices user_devices? @relation(fields: [UserDeviceID], references: [UserDeviceID], onDelete: NoAction, onUpdate: NoAction, map: "synctracking_ibfk_2")
+  users        users         @relation(fields: [UserID], references: [UserID], onDelete: Cascade, onUpdate: NoAction)
+  user_devices user_devices  @relation("SyncTrackingToUserDevices", fields: [UserDeviceID], references: [UserDeviceID], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([UserDeviceID], map: "UserDeviceID")
   @@index([UserID], map: "UserID")
@@ -448,20 +448,19 @@ model tickettypes {
 }
 
 model user_devices {
-  UserDeviceID Int            @id @default(autoincrement())
-  UserID       Int?
-  DeviceName   String         @db.VarChar(100)
-  DeviceID     String         @db.VarChar(255)
-  DeviceToken  String?        @db.Text
-  LastLogin    DateTime?      @default(dbgenerated("(now())")) @db.DateTime(0)
-  LastLogoutAt DateTime? @db.DateTime(0)
-  CreatedAt    DateTime?      @default(dbgenerated("(now())")) @db.DateTime(0)
-  UpdatedAt    DateTime?      @default(dbgenerated("(now())")) @db.DateTime(0)
-  IsDeleted    Boolean?       @default(false)
-  synctracking synctracking[]
-  users        users?         @relation(fields: [UserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction, map: "user_devices_ibfk_1")
-
-  @@index([UserID], map: "UserID")
+  UserDeviceID  Int           @id @default(autoincrement())
+  UserID        Int
+  DeviceName    String
+  DeviceID      String
+  DeviceType    String
+  FCMToken      String?
+  LastLogin     DateTime?
+  LastLogoutAt  DateTime?
+  CreatedAt     DateTime      @default(now())
+  UpdatedAt     DateTime      @updatedAt
+  IsDeleted     Boolean       @default(false)
+  users         users         @relation(fields: [UserID], references: [UserID])
+  synctracking  synctracking[] @relation("SyncTrackingToUserDevices") // Quan hệ ngược
 }
 
 model user_groups {
