@@ -20,9 +20,9 @@ class AuthController {
     }
 
     loginUser = async (req: Request, res: Response, next: NextFunction) => {
-        const { email, password, rememberMe, deviceName, deviceId, deviceToken } = req.body;
+        const { email, password, rememberMe, deviceName, deviceId, deviceType, fcmToken } = req.body;
         const ipAddress = req.ip;
-        const tokens = await this.authService.loginUser({ email, password, rememberMe, deviceName, deviceId, deviceToken, ipAddress });
+        const tokens = await this.authService.loginUser({ email, password, rememberMe, deviceName, deviceId, deviceType, fcmToken, ipAddress });
         res.json(tokens);
     };
 
