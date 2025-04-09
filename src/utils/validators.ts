@@ -1,10 +1,8 @@
-// src/utils/validators.ts
 import { z } from 'zod';
-import {EmployeeRole} from "../types/auth";
 
 export const loginSchema = z.object({
     body: z.object({
-        email: z.string().email('Invalid email format'),
+        email: z.string().email('Invalid email format'), // Giữ nguyên vì username được dùng như email
         password: z.string().min(6, 'Password must be at least 6 characters'),
         rememberMe: z.boolean().optional().default(false),
     }),
@@ -32,7 +30,7 @@ export const employeeRegisterSchema = z.object({
         name: z.string().min(1, 'Name is required'),
         email: z.string().email('Invalid email format'),
         password: z.string().min(6, 'Password must be at least 6 characters'),
-        role: z.nativeEnum(EmployeeRole).optional(),
+        role: z.enum(['ADMIN', 'PRODUCTION', 'TECHNICIAN', 'RND', 'EMPLOYEE']).optional(), // Đồng bộ với EmployeeRole
         phone: z.string().max(20, 'Phone must be 20 characters or less').optional(),
     }),
 });
@@ -46,7 +44,7 @@ export const paginationSchema = z.object({
 
 export const employeeFilterSchema = z.object({
     query: z.object({
-        role: z.nativeEnum(EmployeeRole).optional(),
+        role: z.enum(['ADMIN', 'PRODUCTION', 'TECHNICIAN', 'RND', 'EMPLOYEE']).optional(), // Đồng bộ với EmployeeRole
         name: z.string().optional(),
         page: z.string().optional().transform((val) => (val ? parseInt(val) : 1)),
         limit: z.string().optional().transform((val) => (val ? parseInt(val) : 10)),
@@ -67,13 +65,13 @@ export const updatePermissionSchema = z.object({
 
 export const userIdSchema = z.object({
     params: z.object({
-        id: z.string().transform((val) => parseInt(val)).refine((val) => val > 0, 'ID must be a positive number'),
+        id: z.string(), // Thay vì parseInt vì account_id là string
     }),
 });
 
 export const employeeIdSchema = z.object({
     params: z.object({
-        id: z.string().transform((val) => parseInt(val)).refine((val) => val > 0, 'ID must be a positive number'),
+        id: z.string(), // Thay vì parseInt vì account_id là string
     }),
 });
 
