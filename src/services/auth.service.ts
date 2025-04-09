@@ -1,8 +1,8 @@
-import {PrismaClient} from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import * as jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcrypt';
-import {appConfig} from '../config/app';
-import {ErrorCodes, throwError} from '../utils/errors';
+import { appConfig } from '../config/app';
+import { ErrorCodes, throwError } from '../utils/errors';
 import type {
     EmployeeJwtPayload,
     EmployeeRegisterRequestBody,
@@ -12,11 +12,9 @@ import type {
     UserJwtPayload,
     UserRegisterRequestBody,
 } from '../types/auth';
-import {EmployeeRole,} from '../types/auth';
-import {UserDeviceService} from "./user-device.service";
-import {SyncTrackingService} from "./sync-tracking.service";
-import redisClient, {blacklistToken, isTokenBlacklisted} from "../utils/redis";
-
+import { UserDeviceService } from './user-device.service';
+import { SyncTrackingService } from './sync-tracking.service';
+import redisClient, { blacklistToken, isTokenBlacklisted } from '../utils/redis';
 
 class AuthService {
     private prisma: PrismaClient;
@@ -25,23 +23,39 @@ class AuthService {
         this.prisma = new PrismaClient();
     }
 
-    async loginUser({ email, password, rememberMe = false, deviceName, deviceId, deviceType, fcmToken, ipAddress }: LoginRequestBody & { deviceName?: string; deviceId?: string; deviceType?: string; fcmToken?: string; ipAddress?: string }): Promise<TokenResponse> {
-        const user = await this.prisma.users.findUnique({ where: { Email: email } });
-        if (!user) throwError(ErrorCodes.INVALID_CREDENTIALS, 'User not found');
-        const isPasswordValid = await bcrypt.compare(password, user!.PasswordHash);
-        if (!isPasswordValid) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Invalid password');
+    async loginUser({
+                        email,
+                        password,
+                        rememberMe = false,
+                        deviceName,
+                        deviceId,
+                        deviceUuid,
+                        fcmToken,
+                        ipAddress,
+                    }: LoginRequestBody & { deviceName: string; deviceId: string; deviceUuid?: string; fcmToken?: string; ipAddress?: string }): Promise<TokenResponse> {
+        const account = await this.prisma.account.findFirst({ where: { username: email } });
+        if (!account) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Account not found');
 
-        if (!deviceId || !deviceName || !deviceType) throwError(ErrorCodes.BAD_REQUEST, 'Device ID, Name, and Type are required');
+        if (!account!.password) {
+            throwError(ErrorCodes.INVALID_CREDENTIALS, 'Account password not set');
+        } else {
+            const isPasswordValid = await bcrypt.compare(password, account!.password);
+            if (!isPasswordValid) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Invalid password');
+        }
+
+        if (!deviceId || !deviceName) {
+            throwError(ErrorCodes.BAD_REQUEST, 'Device ID and Name are required');
+        }
 
         const userDeviceService = new UserDeviceService();
         const syncTrackingService = new SyncTrackingService();
-        const device = await userDeviceService.upsertDevice(user!.UserID, deviceName!, deviceId!, deviceType!, fcmToken);
+        const device = await userDeviceService.upsertDevice(account!.account_id, deviceName, deviceId, deviceUuid || null, fcmToken);
         if (ipAddress) {
-            await syncTrackingService.recordLogin(user!.UserID, device.UserDeviceID, ipAddress);
+            await syncTrackingService.recordLogin(account!.account_id, device.user_device_id, ipAddress);
         }
 
         const accessToken = jwt.sign(
-            { userId: user!.UserID, email: user!.Email, role: 'user' } as UserJwtPayload,
+            { userId: account!.account_id, email: account!.username, role: account!.role_id || 'user' } as UserJwtPayload,
             appConfig.jwtSecret,
             { expiresIn: '1h' }
         );
@@ -50,50 +64,59 @@ class AuthService {
 
         if (rememberMe) {
             const refreshToken = jwt.sign(
-                { userId: user!.UserID, type: 'refresh' } as RefreshTokenPayload,
+                { userId: account!.account_id, type: 'refresh' } as RefreshTokenPayload,
                 appConfig.jwtSecret,
                 { expiresIn: '30d' }
             );
-            if (await isTokenBlacklisted(refreshToken)) {
+            const isBlacklisted = await isTokenBlacklisted(refreshToken);
+            if (isBlacklisted) {
                 throwError(ErrorCodes.FORBIDDEN, 'Refresh token is blacklisted');
+            } else {
+                response.refreshToken = refreshToken;
             }
-            response.refreshToken = refreshToken;
+        }
+
+        if (device.device_uuid) {
+            response.deviceUuid = device.device_uuid; // Chỉ gán nếu device_uuid tồn tại
         }
 
         return response;
     }
 
     async loginEmployee({ email, password }: LoginRequestBody): Promise<TokenResponse> {
-        const employee = await this.prisma.employees.findUnique({ where: { Email: email } });
-        if (!employee) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Employee not found');
-        const isPasswordValid = await bcrypt.compare(password, employee!.PasswordHash);
-        if (!isPasswordValid) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Invalid password');
+        const account = await this.prisma.account!.findFirst({ where: { username: email } });
+        if (!account!) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Account not found');
+
+        if (!account!.password) {
+            throwError(ErrorCodes.INVALID_CREDENTIALS, 'Account password not set');
+        } else {
+            const isPasswordValid = await bcrypt.compare(password, account!.password);
+            if (!isPasswordValid) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Invalid password');
+        }
 
         const accessToken = jwt.sign(
-            { employeeId: employee!.EmployeeID, email: employee!.Email, role: employee!.Role } as EmployeeJwtPayload,
+            { employeeId: account!.account_id, email: account!.username, role: account!.role_id || 'employee' } as EmployeeJwtPayload,
             appConfig.jwtSecret,
             { expiresIn: '8h' }
         );
 
         const refreshToken = jwt.sign(
-            { employeeId: employee!.EmployeeID, type: 'refresh' } as RefreshTokenPayload,
+            { employeeId: account!.account_id, type: 'refresh' } as RefreshTokenPayload,
             appConfig.jwtSecret,
             { expiresIn: '8h' }
         );
 
-        // Invalidate previous session
-        const previousAccessToken = await redisClient.get(`employee:token:${employee!.EmployeeID}`);
-        const previousRefreshToken = await redisClient.get(`employee:refresh:${employee!.EmployeeID}`);
+        // Redis logic - có thể comment để disable
+        const previousAccessToken = await redisClient.get(`employee:token:${account!.account_id}`);
+        const previousRefreshToken = await redisClient.get(`employee:refresh:${account!.account_id}`);
         if (previousAccessToken) {
             await blacklistToken(previousAccessToken, 8 * 60 * 60);
         }
         if (previousRefreshToken) {
             await blacklistToken(previousRefreshToken, 8 * 60 * 60);
         }
-
-        // Store new tokens in Redis
-        await redisClient.setEx(`employee:token:${employee!.EmployeeID}`, 8 * 60 * 60, accessToken);
-        await redisClient.setEx(`employee:refresh:${employee!.EmployeeID}`, 8 * 60 * 60, refreshToken);
+        await redisClient.setEx(`employee:token:${account!.account_id}`, 8 * 60 * 60, accessToken);
+        await redisClient.setEx(`employee:refresh:${account!.account_id}`, 8 * 60 * 60, refreshToken);
 
         return { accessToken, refreshToken };
     }
@@ -104,21 +127,28 @@ class AuthService {
             throwError(ErrorCodes.UNAUTHORIZED, 'Invalid refresh token');
         }
 
+        // Redis logic - có thể comment để disable
         const storedRefreshToken = await redisClient.get(`employee:refresh:${decoded.employeeId}`);
-        if (!storedRefreshToken || storedRefreshToken !== refreshToken || await isTokenBlacklisted(refreshToken)) {
-            throwError(ErrorCodes.UNAUTHORIZED, 'Refresh token is invalid, expired, or blacklisted');
+        if (!storedRefreshToken || storedRefreshToken !== refreshToken) {
+            throwError(ErrorCodes.UNAUTHORIZED, 'Refresh token is invalid or expired');
+        } else {
+            const isBlacklisted = await isTokenBlacklisted(refreshToken);
+            if (isBlacklisted) {
+                throwError(ErrorCodes.UNAUTHORIZED, 'Refresh token is blacklisted');
+            }
         }
 
-        const employee = await this.prisma.employees.findUnique({ where: { EmployeeID: decoded.employeeId } });
-        if (!employee) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not found');
+        const account = await this.prisma.account!.findUnique({ where: { account_id: decoded.employeeId } });
+        if (!account!) throwError(ErrorCodes.UNAUTHORIZED, 'Account not found');
 
         const newAccessToken = jwt.sign(
-            { employeeId: employee!.EmployeeID, email: employee!.Email, role: employee!.Role } as EmployeeJwtPayload,
+            { employeeId: account!.account_id, email: account!.username, role: account!.role_id || 'employee' } as EmployeeJwtPayload,
             appConfig.jwtSecret,
             { expiresIn: '8h' }
         );
 
-        await redisClient.setEx(`employee:token:${employee!.EmployeeID}`, 8 * 60 * 60, newAccessToken);
+        // Redis logic - có thể comment để disable
+        await redisClient.setEx(`employee:token:${account!.account_id}`, 8 * 60 * 60, newAccessToken);
         return newAccessToken;
     }
 
@@ -126,101 +156,101 @@ class AuthService {
         const decoded = jwt.verify(refreshToken, appConfig.jwtSecret) as RefreshTokenPayload;
         if (decoded.type !== 'refresh') throwError(ErrorCodes.UNAUTHORIZED, 'Invalid refresh token');
 
-        if (decoded.userId) {
-            const user = await this.prisma.users.findUnique({ where: { UserID: decoded.userId } });
-            if (!user) throwError(ErrorCodes.UNAUTHORIZED, 'User not found');
-            if (await isTokenBlacklisted(refreshToken)) {
-                throwError(ErrorCodes.UNAUTHORIZED, 'Refresh token is blacklisted');
-            }
-            return jwt.sign(
-                { userId: user!.UserID, email: user!.Email, role: 'user' } as UserJwtPayload,
-                appConfig.jwtSecret,
-                { expiresIn: '1h' }
-            );
-        } else if (decoded.employeeId) {
-            return this.refreshEmployeeToken(refreshToken);
-        } else {
-           return throwError(ErrorCodes.UNAUTHORIZED, 'Invalid refresh token payload');
+        const accountId = decoded.userId || decoded.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Invalid refresh token payload');
+
+        const account = await this.prisma.account!.findUnique({ where: { account_id: accountId } });
+        if (!account!) throwError(ErrorCodes.UNAUTHORIZED, 'Account not found');
+
+        // Redis logic - có thể comment để disable
+        const isBlacklisted = await isTokenBlacklisted(refreshToken);
+        if (isBlacklisted) {
+            throwError(ErrorCodes.UNAUTHORIZED, 'Refresh token is blacklisted');
         }
+
+        const role = account!.role_id || (decoded.userId ? 'user' : 'employee');
+        const payload = decoded.userId
+            ? { userId: account!.account_id, email: account!.username, role } as UserJwtPayload
+            : { employeeId: account!.account_id, email: account!.username, role } as EmployeeJwtPayload;
+
+        return jwt.sign(payload, appConfig.jwtSecret, { expiresIn: decoded.userId ? '1h' : '8h' });
     }
+
     async registerUser(data: UserRegisterRequestBody): Promise<string> {
         const { email, password, name, phone, address, dateOfBirth } = data;
 
-        const existingUser = await this.prisma.users.findUnique({ where: { Email: email } });
-        if (existingUser) throwError(ErrorCodes.CONFLICT, 'User already exists');
+        const existingAccount = await this.prisma.account!.findFirst({ where: { username: email } });
+        if (existingAccount) throwError(ErrorCodes.CONFLICT, 'Account already exists');
 
         const passwordHash = await bcrypt.hash(password, 10);
-        const user = await this.prisma.users.create({
+        const account = await this.prisma.account!.create({
             data: {
-                Email: email,
-                PasswordHash: passwordHash,
-                Name: name,
-                Phone: phone,
-                Address: address,
-                DateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+                account_id: `USR${Date.now()}`, // Tạo ID đơn giản, có thể thay bằng UUID
+                username: email,
+                password: passwordHash,
+                customer: {
+                    create: {
+                        id: `CUS${Date.now()}`,
+                        surname: name,
+                        phone,
+                        email,
+                        birthdate: dateOfBirth ? new Date(dateOfBirth) : undefined,
+                    },
+                },
             },
         });
 
-        return jwt.sign(
-            {userId: user!.UserID, email: user!.Email, role: 'user'} as UserJwtPayload,
+        const accessToken = jwt.sign(
+            { userId: account!.account_id, email: account!.username, role: 'user' } as UserJwtPayload,
             appConfig.jwtSecret,
-            {expiresIn: '1h'}
+            { expiresIn: '1h' }
         );
+
+        return accessToken;
     }
 
-    async registerEmployee(data: EmployeeRegisterRequestBody, adminId: number): Promise<string> {
-        const { name, email, password, role = EmployeeRole.EMPLOYEE, phone } = data;
+    // async registerEmployee(data: EmployeeRegisterRequestBody, adminId: string): Promise<string> {
+    //     const { name, email, password, role = 'EMPLOYEE', phone } = data;
+    //
+    //     const admin = await this.prisma.account!.findUnique({ where: { account_id: adminId } });
+    //     if (!admin) {
+    //         throwError(ErrorCodes.FORBIDDEN, 'Admin account not found');
+    //     } else if (admin.role_id !== 'ADMIN') {
+    //         throwError(ErrorCodes.FORBIDDEN, 'Only admins can create employees');
+    //     }
+    //
+    //     const existingAccount = await this.prisma.account!.findFirst({ where: { username: email } });
+    //     if (existingAccount) throwError(ErrorCodes.CONFLICT, 'Account already exists');
+    //
+    //     const passwordHash = await bcrypt.hash(password, 10);
+    //     const account = await this.prisma.account!.create({
+    //         data: {
+    //             account_id: `EMP${Date.now()}`, // Tạo ID đơn giản, có thể thay bằng UUID
+    //             username: email,
+    //             password: passwordHash,
+    //             role_id: role,
+    //             employee: {
+    //                 create: {
+    //                     id: `EMP${Date.now()}`,
+    //                     surname: name,
+    //                     phone,
+    //                     email,
+    //                 },
+    //             },
+    //         },
+    //     });
+    //
+    //     const accessToken = jwt.sign(
+    //         { employeeId: account!.account_id, email: account!.username, role } as EmployeeJwtPayload,
+    //         appConfig.jwtSecret,
+    //         { expiresIn: '1h' }
+    //     );
+    //
+    //     return accessToken;
+    // }
 
-        const admin = await this.prisma.employees.findUnique({ where: { EmployeeID: adminId } });
-        if (!admin || admin.Role !== EmployeeRole.ADMIN) {
-            throwError(ErrorCodes.FORBIDDEN, 'Only admins can create employees');
-        }
-
-        const existingEmployee = await this.prisma.employees.findUnique({ where: { Email: email } });
-        if (existingEmployee) throwError(ErrorCodes.CONFLICT, 'Employee already exists');
-
-        const passwordHash = await bcrypt.hash(password, 10);
-        const employee = await this.prisma.employees.create({
-            data: { Name: name, Email: email, PasswordHash: passwordHash, Role: role, Phone: phone },
-        });
-
-        const permissionType = this.getPermissionTypeForRole(role);
-        await this.prisma.employeepermissions.create({
-            data: { EmployeeID: employee!.EmployeeID, PermissionType: permissionType },
-        });
-
-        return jwt.sign(
-            {employeeId: employee!.EmployeeID, email: employee!.Email, role} as EmployeeJwtPayload,
-            appConfig.jwtSecret,
-            {expiresIn: '1h'}
-        );
-    }
-
-    private getPermissionTypeForRole(role: EmployeeRole): string {
-        switch (role) {
-            case EmployeeRole.ADMIN:
-                return 'all';
-            case EmployeeRole.PRODUCTION:
-                return 'edit_production';
-            case EmployeeRole.TECHNICIAN:
-                return 'view_hub';
-            case EmployeeRole.RND:
-                return 'edit_rnd';
-            case EmployeeRole.EMPLOYEE:
-                return 'view_only';
-            default:
-                return 'view_only';
-        }
-    }
-
-
-
-    async logoutDevice(userDeviceId: number, userId: number, ipAddress?: string) {
-        const userDeviceService = new UserDeviceService();
-        return userDeviceService.logoutDevice(userDeviceId, userId, ipAddress);
-    }
-
-    async logoutEmployee(employeeId: number) {
+    async logoutEmployee(employeeId: string) {
+        // Redis logic - có thể comment để disable
         const currentToken = await redisClient.get(`employee:token:${employeeId}`);
         const refreshToken = await redisClient.get(`employee:refresh:${employeeId}`);
 
@@ -233,8 +263,6 @@ class AuthService {
             await redisClient.del(`employee:refresh:${employeeId}`);
         }
     }
-
-
 }
 
 export default AuthService;
