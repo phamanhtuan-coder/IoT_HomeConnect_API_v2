@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "merge-postman": "ts-node postman_collection/merge-collection.ts"
   },
   "keywords": [],
   "author": "",
@@ -22,10 +22,8 @@
     "prisma": "^6.5.0",
     "redis": "^4.7.0",
     "socket.io": "^4.8.1",
+    "uuid": "^11.1.0",
     "zod": "^3.24.2"
-  },
-  "scripts": {
-    "merge-postman": "ts-node postman_collection/merge-collection.ts"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
