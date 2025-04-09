@@ -9,33 +9,34 @@ export class SyncTrackingController {
         this.syncTrackingService = new SyncTrackingService();
     }
 
-    // Get user's own sync history (latest per device)
     getOwnSyncHistory = async (req: Request, res: Response, next: NextFunction) => {
-        const userId = req.user?.userId;
-        if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User ID not found');
-        const history = await this.syncTrackingService.getUserSyncHistory(userId);
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Account ID not found');
+        const history = await this.syncTrackingService.getUserSyncHistory(accountId);
         res.json(history);
     };
 
-    // Get sync history for any user (admin only, latest per device)
     getUserSyncHistory = async (req: Request, res: Response, next: NextFunction) => {
         const requester = req.user;
-        if (!requester || requester.role !== 'admin') {
+        if (!requester) {
+            throwError(ErrorCodes.UNAUTHORIZED, 'Requester not authenticated');
+        } else if (requester.role !== 'ADMIN') {
             throwError(ErrorCodes.FORBIDDEN, 'Only admins can view other users\' sync history');
         }
-        const userId = parseInt(req.params.userId, 10);
-        const history = await this.syncTrackingService.getSyncHistoryByUserId(userId);
+        const accountId = req.params.userId;
+        const history = await this.syncTrackingService.getSyncHistoryByUserId(accountId);
         res.json(history);
     };
 
-    // Get full sync history (admin only)
     getFullUserSyncHistory = async (req: Request, res: Response, next: NextFunction) => {
         const requester = req.user;
-        if (!requester || requester.role !== 'admin') {
+        if (!requester) {
+            throwError(ErrorCodes.UNAUTHORIZED, 'Requester not authenticated');
+        } else if (requester.role !== 'ADMIN') {
             throwError(ErrorCodes.FORBIDDEN, 'Only admins can view full sync history');
         }
-        const userId = parseInt(req.params.userId, 10);
-        const history = await this.syncTrackingService.getFullSyncHistory(userId);
+        const accountId = req.params.userId;
+        const history = await this.syncTrackingService.getFullSyncHistory(accountId);
         res.json(history);
     };
 }
