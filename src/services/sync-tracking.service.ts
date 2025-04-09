@@ -8,67 +8,62 @@ export class SyncTrackingService {
         this.prisma = new PrismaClient();
     }
 
-    // Record login sync event
-    async recordLogin(userId: number, userDeviceId: number, ipAddress: string) {
-        return this.prisma.synctracking.create({
+    async recordLogin(accountId: string, userDeviceId: number, ipAddress: string) {
+        return this.prisma.sync_tracking.create({
             data: {
-                UserID: userId,
-                UserDeviceID: userDeviceId,
-                IPAddress: ipAddress,
-                LastSyncedAt: new Date(),
-                SyncType: 'login',
-                SyncStatus: 'success',
+                account_id: accountId,
+                user_device_id: userDeviceId,
+                ip_address: ipAddress,
+                last_synced_at: new Date(),
+                sync_type: 'login',
+                sync_status: 'success',
             },
         });
     }
 
-    // Private helper to get latest syncs per device
-    private async getLatestSyncsPerDevice(userId: number, devices: { UserDeviceID: number }[]) {
+    private async getLatestSyncsPerDevice(accountId: string, devices: { user_device_id: number }[]) {
         const latestSyncs = await Promise.all(
             devices.map(async (device) => {
-                return this.prisma.synctracking.findFirst({
+                return this.prisma.sync_tracking.findFirst({
                     where: {
-                        UserID: userId,
-                        UserDeviceID: device.UserDeviceID,
-                        IsDeleted: false,
+                        account_id: accountId,
+                        user_device_id: device.user_device_id,
+                        is_deleted: false,
                     },
-                    include: { user_devices: { select: { DeviceName: true, DeviceID: true } } },
-                    orderBy: { LastSyncedAt: 'desc' },
+                    include: { user_devices: { select: { device_name: true, device_id: true, device_uuid: true } } },
+                    orderBy: { last_synced_at: 'desc' },
                 });
             })
         );
         return latestSyncs.filter(sync => sync !== null);
     }
 
-    // Get user's own sync history (latest per device)
-    async getUserSyncHistory(userId: number) {
+    async getUserSyncHistory(accountId: string) {
         const devices = await this.prisma.user_devices.findMany({
-            where: { UserID: userId, IsDeleted: false },
-            select: { UserDeviceID: true },
+            where: { user_id: accountId, is_deleted: false },
+            select: { user_device_id: true },
         });
-        return this.getLatestSyncsPerDevice(userId, devices);
+        return this.getLatestSyncsPerDevice(accountId, devices);
     }
 
-    // Get sync history for any user (admin only, latest per device)
-    async getSyncHistoryByUserId(userId: number) {
-        const userExists = await this.prisma.users.findUnique({ where: { UserID: userId } });
-        if (!userExists) throwError(ErrorCodes.NOT_FOUND, 'User not found');
+    async getSyncHistoryByUserId(accountId: string) {
+        const accountExists = await this.prisma.account.findUnique({ where: { account_id: accountId } });
+        if (!accountExists) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
 
         const devices = await this.prisma.user_devices.findMany({
-            where: { UserID: userId, IsDeleted: false },
-            select: { UserDeviceID: true },
+            where: { user_id: accountId, is_deleted: false },
+            select: { user_device_id: true },
         });
-        return this.getLatestSyncsPerDevice(userId, devices);
+        return this.getLatestSyncsPerDevice(accountId, devices);
     }
 
-    // Get full sync history (for debugging, admin only)
-    async getFullSyncHistory(userId: number) {
-        const userExists = await this.prisma.users.findUnique({ where: { UserID: userId } });
-        if (!userExists) throwError(ErrorCodes.NOT_FOUND, 'User not found');
-        return this.prisma.synctracking.findMany({
-            where: { UserID: userId, IsDeleted: false },
-            include: { user_devices: { select: { DeviceName: true, DeviceID: true } } },
-            orderBy: { LastSyncedAt: 'desc' },
+    async getFullSyncHistory(accountId: string) {
+        const accountExists = await this.prisma.account.findUnique({ where: { account_id: accountId } });
+        if (!accountExists) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
+        return this.prisma.sync_tracking.findMany({
+            where: { account_id: accountId, is_deleted: false },
+            include: { user_devices: { select: { device_name: true, device_id: true, device_uuid: true } } },
+            orderBy: { last_synced_at: 'desc' },
         });
     }
 }
