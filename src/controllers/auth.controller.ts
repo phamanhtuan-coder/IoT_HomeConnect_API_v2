@@ -20,9 +20,9 @@ class AuthController {
     }
 
     loginUser = async (req: Request, res: Response, next: NextFunction) => {
-        const { email, password, rememberMe, deviceName, deviceId, deviceType, fcmToken } = req.body;
+        const { email, password, rememberMe, deviceName, deviceId, deviceUuid, fcmToken } = req.body;
         const ipAddress = req.ip;
-        const tokens = await this.authService.loginUser({ email, password, rememberMe, deviceName, deviceId, deviceType, fcmToken, ipAddress });
+        const tokens = await this.authService.loginUser({ email, password, rememberMe, deviceName, deviceId,deviceUuid, fcmToken, ipAddress });
         res.json(tokens);
     };
 
@@ -37,7 +37,7 @@ class AuthController {
             throwError(ErrorCodes.BAD_REQUEST, 'Valid UserDeviceID is required');
         }
 
-        await this.authService.logoutDevice(userDeviceId, userId, ipAddress);
+        await this.userDeviceService.logoutDevice(userDeviceId, userId, ipAddress);
         res.status(204).send();
     };
 
@@ -94,13 +94,6 @@ class AuthController {
         res.status(201).json({ token });
     };
 
-    registerEmployee = async (req: Request, res: Response, next: NextFunction) => {
-        const data = req.body as EmployeeRegisterRequestBody;
-        const adminId = req.user?.employeeId; // Assumes admin is authenticated
-        if (!adminId) throw new Error('Admin ID not found');
-        const token = await this.authService.registerEmployee(data, adminId);
-        res.status(201).json({ token });
-    };
 
     logoutEmployee = async (req: Request, res: Response, next: NextFunction) => {
         const employeeId = req.user?.employeeId;
