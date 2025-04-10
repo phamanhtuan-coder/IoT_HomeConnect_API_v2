@@ -7,7 +7,7 @@ export interface RefreshTokenPayload extends JwtPayload {
 }
 
 export interface LoginRequestBody {
-    email: string; // Giữ nguyên vì username trong schema được dùng như email
+    username: string;
     password: string;
     rememberMe?: boolean;
 }
@@ -19,39 +19,47 @@ export interface TokenResponse {
 }
 
 export interface UserJwtPayload extends JwtPayload {
-    userId: string; // Thay number bằng string
-    email: string;
-    role: string; // role_id trong schema là String, bỏ cứng 'user'
+    userId: string;
+    username: string;
+    role: string;
 }
 
 export interface EmployeeJwtPayload extends JwtPayload {
-    employeeId: string; // Thay number bằng string
-    email: string;
-    role: string; // role_id trong schema là String, bỏ enum EmployeeRole
+    employeeId: string;
+    username: string; // Thay email thành username
+    role: string;
 }
-
 export type AuthJwtPayload = UserJwtPayload | EmployeeJwtPayload;
 
 // Bỏ enum EmployeeRole vì role giờ được lấy từ role_id trong bảng role
 // Nếu vẫn muốn dùng enum, cần đồng bộ với dữ liệu trong bảng role
 // export type EmployeeRole = 'ADMIN' | 'PRODUCTION' | 'TECHNICIAN' | 'RND' | 'EMPLOYEE';
 
-export interface UserRegisterRequestBody {
-    email: string;
-    password: string;
-    name: string;
+export type UserRegisterRequestBody = {
+    username: string; // Bắt buộc
+    surname: string;
+    lastname?: string;
+    image?: string;
     phone?: string;
-    address?: string;
-    dateOfBirth?: string; // ISO date string (e.g., "1990-01-01")
-}
+    email: string;
+    birthdate?: string;
+    gender?: boolean;
+    password: string;
+};
 
-export interface EmployeeRegisterRequestBody {
-    name: string;
+export type EmployeeRegisterRequestBody = {
+    username: string; // Bắt buộc
+    surname: string;
+    lastname?: string;
+    image?: string;
     email: string;
     password: string;
-    role?: string;
+    birthdate?: string;
+    gender?: boolean;
     phone?: string;
-}
+    status?: number;
+    role: string;
+};
 
 declare global {
     namespace Express {
