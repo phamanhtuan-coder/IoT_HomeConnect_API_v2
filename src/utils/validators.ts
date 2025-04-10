@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const loginSchema = z.object({
     body: z.object({
-        email: z.string().email('Invalid email format'), // Giữ nguyên vì username được dùng như email
+        username: z.string().min(1, 'Username is required'), // Thay email thành username, bỏ kiểm tra email format
         password: z.string().min(6, 'Password must be at least 6 characters'),
         rememberMe: z.boolean().optional().default(false),
     }),
@@ -16,25 +16,31 @@ export const refreshTokenSchema = z.object({
 
 export const userRegisterSchema = z.object({
     body: z.object({
-        email: z.string().email('Invalid email format'),
+        username: z.string().min(1, 'Username is required'),
+        email: z.string().email('Invalid email format').optional(),
         password: z.string().min(6, 'Password must be at least 6 characters'),
-        name: z.string().min(1, 'Name is required'),
+        surname: z.string().min(1, 'Surname is required'),
+        lastname: z.string().optional(),
         phone: z.string().max(20, 'Phone must be 20 characters or less').optional(),
-        address: z.string().optional(),
-        dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date of birth must be in YYYY-MM-DD format').optional(),
+        birthdate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date of birth must be in YYYY-MM-DD format').optional(),
+        gender: z.boolean().optional(),
     }),
 });
 
 export const employeeRegisterSchema = z.object({
     body: z.object({
-        name: z.string().min(1, 'Name is required'),
-        email: z.string().email('Invalid email format'),
+        username: z.string().min(1, 'Username is required'),
+        email: z.string().email('Invalid email format').optional(),
         password: z.string().min(6, 'Password must be at least 6 characters'),
-        role: z.enum(['ADMIN', 'PRODUCTION', 'TECHNICIAN', 'RND', 'EMPLOYEE']).optional(), // Đồng bộ với EmployeeRole
+        surname: z.string().min(1, 'Surname is required'),
+        lastname: z.string().optional(),
         phone: z.string().max(20, 'Phone must be 20 characters or less').optional(),
+        birthdate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date of birth must be in YYYY-MM-DD format').optional(),
+        gender: z.boolean().optional(),
+        status: z.number().optional(),
+        role: z.string().min(1, 'Role is required'),
     }),
 });
-
 export const paginationSchema = z.object({
     query: z.object({
         page: z.string().optional().transform((val) => (val ? parseInt(val) : 1)),
