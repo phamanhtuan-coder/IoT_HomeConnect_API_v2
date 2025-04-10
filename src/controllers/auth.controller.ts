@@ -1,4 +1,3 @@
-// src/controllers/auth.controller.ts
 import { Request, Response, NextFunction } from 'express';
 import AuthService from '../services/auth.service';
 import { LoginRequestBody, UserRegisterRequestBody, EmployeeRegisterRequestBody } from '../types/auth';
@@ -20,10 +19,14 @@ class AuthController {
     }
 
     loginUser = async (req: Request, res: Response, next: NextFunction) => {
-        const { email, password, rememberMe, deviceName, deviceId, deviceUuid, fcmToken } = req.body;
+        const { username, password, rememberMe, deviceName, deviceId, deviceUuid } = req.body; // Thay email thành username, bỏ fcmToken
         const ipAddress = req.ip;
-        const tokens = await this.authService.loginUser({ email, password, rememberMe, deviceName, deviceId,deviceUuid, fcmToken, ipAddress });
-        res.json(tokens);
+        try {
+            const tokens = await this.authService.loginUser({ username, password, rememberMe, deviceName, deviceId, deviceUuid, ipAddress });
+            res.json(tokens);
+        } catch (error) {
+            next(error);
+        }
     };
 
     // Logout single device
@@ -68,9 +71,13 @@ class AuthController {
     };
 
     loginEmployee = async (req: Request, res: Response, next: NextFunction) => {
-        const { email, password } = req.body;
-        const tokens = await this.authService.loginEmployee({ email, password });
-        res.json(tokens);
+        const { username, password } = req.body;
+        try {
+            const tokens = await this.authService.loginEmployee({ username, password });
+            res.json(tokens);
+        } catch (error) {
+            next(error);
+        }
     };
 
 
@@ -103,7 +110,19 @@ class AuthController {
         res.status(204).send();
     };
 
+    updateDeviceToken = async (req: Request, res: Response, next: NextFunction) => {
+        const { deviceToken } = req.body;
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+        if (!deviceToken) throwError(ErrorCodes.BAD_REQUEST, 'Device token is required');
 
+        try {
+            const result = await this.authService.updateDeviceToken(accountId, deviceToken);
+            res.status(result.success ? 200 : 400).json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 
 export default AuthController;
