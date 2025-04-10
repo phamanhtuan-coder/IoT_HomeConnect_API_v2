@@ -16,7 +16,7 @@ export class UserDeviceService {
         const account = await this.prisma.account.findUnique({ where: { account_id: accountId } });
         if (!account) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
 
-        const isEmployee = account.role_id === 'EMPLOYEE' || account.employee_id !== null;
+        const isEmployee = account!.employee_id !== null;
         const maxDevices = isEmployee ? 1 : 5;
 
         const deviceCount = await this.prisma.user_devices.count({
@@ -163,9 +163,11 @@ export class UserDeviceService {
         });
 
         if (devices.length === 0) throwError(ErrorCodes.NOT_FOUND, 'No valid devices found');
-        if (devices.some((device: { user_id: string; }) => device.user_id !== accountId)) {
-            throwError(ErrorCodes.FORBIDDEN, 'You can only log out from your own devices');
-        }
+
+        // if (devices.some((device: { user_id: string; }) => device.user_id !== accountId)) {
+        //     throwError(ErrorCodes.FORBIDDEN, 'You can only log out from your own devices');
+        // }
+
 
         return await Promise.all(
             devices.map(async (device: { user_device_id: any; }) => {
