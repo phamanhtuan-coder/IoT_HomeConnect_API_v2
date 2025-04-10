@@ -2,7 +2,8 @@ import { PrismaClient } from '@prisma/client';
 import * as jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcrypt';
 import { appConfig } from '../config/app';
-import { ErrorCodes, throwError } from '../utils/errors';
+import { ErrorCodes, throwError } from '../utils/errors'
+import {generateAccountId, generateCustomerId, generateEmployeeId} from '../utils/helpers'
 import type {
     EmployeeJwtPayload,
     EmployeeRegisterRequestBody,
@@ -24,16 +25,15 @@ class AuthService {
     }
 
     async loginUser({
-                        email,
+                        username,
                         password,
                         rememberMe = false,
                         deviceName,
                         deviceId,
                         deviceUuid,
-                        fcmToken,
                         ipAddress,
-                    }: LoginRequestBody & { deviceName: string; deviceId: string; deviceUuid?: string; fcmToken?: string; ipAddress?: string }): Promise<TokenResponse> {
-        const account = await this.prisma.account.findFirst({ where: { username: email } });
+                    }: LoginRequestBody & { deviceName: string; deviceId: string; deviceUuid?: string; ipAddress?: string }): Promise<TokenResponse> {
+        const account = await this.prisma.account.findFirst({ where: { username } });
         if (!account) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Account not found');
 
         if (!account!.password) {
@@ -49,13 +49,13 @@ class AuthService {
 
         const userDeviceService = new UserDeviceService();
         const syncTrackingService = new SyncTrackingService();
-        const device = await userDeviceService.upsertDevice(account!.account_id, deviceName, deviceId, deviceUuid || null, fcmToken);
+        const device = await userDeviceService.upsertDevice(account!.account_id, deviceName, deviceId, deviceUuid || null);
         if (ipAddress) {
             await syncTrackingService.recordLogin(account!.account_id, device.user_device_id, ipAddress);
         }
 
         const accessToken = jwt.sign(
-            { userId: account!.account_id, email: account!.username, role: account!.role_id || 'user' } as UserJwtPayload,
+            { userId: account!.account_id, username: account!.username, role: account!.role_id || 'user' } as UserJwtPayload,
             appConfig.jwtSecret,
             { expiresIn: '1h' }
         );
@@ -77,14 +77,14 @@ class AuthService {
         }
 
         if (device.device_uuid) {
-            response.deviceUuid = device.device_uuid; // Chỉ gán nếu device_uuid tồn tại
+            response.deviceUuid = device.device_uuid;
         }
 
         return response;
     }
 
-    async loginEmployee({ email, password }: LoginRequestBody): Promise<TokenResponse> {
-        const account = await this.prisma.account!.findFirst({ where: { username: email } });
+    async loginEmployee({ username, password }: LoginRequestBody): Promise<TokenResponse> {
+        const account = await this.prisma.account!.findFirst({ where: { username: username } });
         if (!account!) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Account not found');
 
         if (!account!.password) {
@@ -95,7 +95,7 @@ class AuthService {
         }
 
         const accessToken = jwt.sign(
-            { employeeId: account!.account_id, email: account!.username, role: account!.role_id || 'employee' } as EmployeeJwtPayload,
+            { employeeId: account!.account_id, username: account!.username, role: account!.role_id || 'employee' } as EmployeeJwtPayload,
             appConfig.jwtSecret,
             { expiresIn: '8h' }
         );
@@ -142,7 +142,7 @@ class AuthService {
         if (!account!) throwError(ErrorCodes.UNAUTHORIZED, 'Account not found');
 
         const newAccessToken = jwt.sign(
-            { employeeId: account!.account_id, email: account!.username, role: account!.role_id || 'employee' } as EmployeeJwtPayload,
+            { employeeId: account!.account_id,username: account!.username, role: account!.role_id || 'employee' } as EmployeeJwtPayload,
             appConfig.jwtSecret,
             { expiresIn: '8h' }
         );
@@ -170,38 +170,52 @@ class AuthService {
 
         const role = account!.role_id || (decoded.userId ? 'user' : 'employee');
         const payload = decoded.userId
-            ? { userId: account!.account_id, email: account!.username, role } as UserJwtPayload
-            : { employeeId: account!.account_id, email: account!.username, role } as EmployeeJwtPayload;
+            ? { userId: account!.account_id, username: account!.username, role } as UserJwtPayload
+            : { employeeId: account!.account_id, username: account!.username, role } as EmployeeJwtPayload;
 
         return jwt.sign(payload, appConfig.jwtSecret, { expiresIn: decoded.userId ? '1h' : '8h' });
     }
 
     async registerUser(data: UserRegisterRequestBody): Promise<string> {
-        const { email, password, name, phone, address, dateOfBirth } = data;
+        const { surname, lastname, image, phone, email, birthdate, gender, password, username } = data; // Thêm username
 
-        const existingAccount = await this.prisma.account!.findFirst({ where: { username: email } });
-        if (existingAccount) throwError(ErrorCodes.CONFLICT, 'Account already exists');
+        const existingAccount = await this.prisma.account.findFirst({ where: { username } }); // Kiểm tra username
+        if (existingAccount) throwError(ErrorCodes.CONFLICT, 'Username already exists');
 
-        const passwordHash = await bcrypt.hash(password, 10);
-        const account = await this.prisma.account!.create({
+        let accountId: string;
+        let attempts = 0;
+        const maxAttempts = 5;
+        do {
+            accountId = generateCustomerId(Date.now());
+            const idExists = await this.prisma.account.findUnique({ where: { account_id: accountId } });
+            if (!idExists) break;
+            attempts++;
+            if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+        } while (true);
+
+        const passwordHash = await bcrypt.hash(password, 12);
+        const account = await this.prisma.account.create({
             data: {
-                account_id: `USR${Date.now()}`, // Tạo ID đơn giản, có thể thay bằng UUID
-                username: email,
+                account_id: accountId,
+                username,
                 password: passwordHash,
                 customer: {
                     create: {
-                        id: `CUS${Date.now()}`,
-                        surname: name,
-                        phone,
-                        email,
-                        birthdate: dateOfBirth ? new Date(dateOfBirth) : undefined,
+                        id: accountId,
+                        surname,
+                        lastname: lastname || null,
+                        image: image || null,
+                        phone: phone || null,
+                        email: email || null,
+                        birthdate: birthdate ? new Date(birthdate) : null,
+                        gender: gender !== undefined ? gender : null,
                     },
                 },
             },
         });
 
         const accessToken = jwt.sign(
-            { userId: account!.account_id, email: account!.username, role: 'user' } as UserJwtPayload,
+            { userId: account.account_id, username: account.username, role: 'user' } as UserJwtPayload,
             appConfig.jwtSecret,
             { expiresIn: '1h' }
         );
@@ -209,45 +223,62 @@ class AuthService {
         return accessToken;
     }
 
-    // async registerEmployee(data: EmployeeRegisterRequestBody, adminId: string): Promise<string> {
-    //     const { name, email, password, role = 'EMPLOYEE', phone } = data;
-    //
-    //     const admin = await this.prisma.account!.findUnique({ where: { account_id: adminId } });
-    //     if (!admin) {
-    //         throwError(ErrorCodes.FORBIDDEN, 'Admin account not found');
-    //     } else if (admin.role_id !== 'ADMIN') {
-    //         throwError(ErrorCodes.FORBIDDEN, 'Only admins can create employees');
-    //     }
-    //
-    //     const existingAccount = await this.prisma.account!.findFirst({ where: { username: email } });
-    //     if (existingAccount) throwError(ErrorCodes.CONFLICT, 'Account already exists');
-    //
-    //     const passwordHash = await bcrypt.hash(password, 10);
-    //     const account = await this.prisma.account!.create({
-    //         data: {
-    //             account_id: `EMP${Date.now()}`, // Tạo ID đơn giản, có thể thay bằng UUID
-    //             username: email,
-    //             password: passwordHash,
-    //             role_id: role,
-    //             employee: {
-    //                 create: {
-    //                     id: `EMP${Date.now()}`,
-    //                     surname: name,
-    //                     phone,
-    //                     email,
-    //                 },
-    //             },
-    //         },
-    //     });
-    //
-    //     const accessToken = jwt.sign(
-    //         { employeeId: account!.account_id, email: account!.username, role } as EmployeeJwtPayload,
-    //         appConfig.jwtSecret,
-    //         { expiresIn: '1h' }
-    //     );
-    //
-    //     return accessToken;
-    // }
+    async registerEmployee(data: EmployeeRegisterRequestBody, adminId: string): Promise<string> {
+        const { surname, lastname, image, email, password, birthdate, gender, phone, status, role, username } = data; // Thêm username
+
+        const admin = await this.prisma.account.findUnique({ where: { account_id: adminId } });
+        if (!admin) throwError(ErrorCodes.FORBIDDEN, 'Admin account not found');
+        if (admin!.role_id !== 1) throwError(ErrorCodes.FORBIDDEN, 'Only admins can create employees');
+
+        const existingAccount = await this.prisma.account.findFirst({ where: { username } }); // Kiểm tra username
+        if (existingAccount) throwError(ErrorCodes.CONFLICT, 'Username already exists');
+
+        const roleRecord = await this.prisma.role.findFirst({ where: { name: role } });
+        if (!roleRecord) throwError(ErrorCodes.NOT_FOUND, `Role '${role}' not found`);
+
+        let accountId: string;
+        let attempts = 0;
+        const maxAttempts = 5;
+        do {
+            accountId = generateEmployeeId(Date.now());
+            const idExists = await this.prisma.account.findUnique({ where: { account_id: accountId } });
+            if (!idExists) break;
+            attempts++;
+            if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+        } while (true);
+
+        const passwordHash = await bcrypt.hash(password, 12);
+        const account = await this.prisma.account.create({
+            // @ts-ignore
+            data: {
+                account_id: accountId,
+                username, // Dùng username từ input
+                password: passwordHash,
+                role_id: roleRecord!.id,
+                employee: {
+                    create: {
+                        id: accountId,
+                        surname,
+                        lastname: lastname || null,
+                        image: image || null,
+                        email: email || null, // email là tùy chọn
+                        birthdate: birthdate ? new Date(birthdate) : null,
+                        gender: gender !== undefined ? gender : null,
+                        phone: phone || null,
+                        status: status !== undefined ? status : null,
+                    },
+                },
+            },
+        });
+
+        const accessToken = jwt.sign(
+            { employeeId: account.account_id, username: account.username, role } as EmployeeJwtPayload,
+            appConfig.jwtSecret,
+            { expiresIn: '1h' }
+        );
+
+        return accessToken;
+    }
 
     async logoutEmployee(employeeId: string) {
         // Redis logic - có thể comment để disable
@@ -263,6 +294,30 @@ class AuthService {
             await redisClient.del(`employee:refresh:${employeeId}`);
         }
     }
+
+    async updateDeviceToken(accountId: string, deviceToken: string): Promise<{ success: boolean; message: string }> {
+        const userDeviceService = new UserDeviceService();
+
+        const account = await this.prisma.account.findUnique({ where: { account_id: accountId } });
+        if (!account) {
+            return { success: false, message: 'Account not found' };
+        }
+
+        // Tìm thiết bị gần đây nhất của account để cập nhật token
+        const latestDevice = await userDeviceService.getUserDevices(accountId);
+        if (!latestDevice || latestDevice.length === 0) {
+            return { success: false, message: 'No active devices found for this account' };
+        }
+
+        // Cập nhật token cho thiết bị gần đây nhất
+        await this.prisma.user_devices.update({
+            where: { user_device_id: latestDevice[0].user_device_id },
+            data: { device_token: deviceToken, updated_at: new Date() },
+        });
+
+        return { success: true, message: 'Device token updated successfully' };
+    }
+
 }
 
 export default AuthService;
