@@ -69,9 +69,11 @@
                   "const response = pm.response.json();",
                   "pm.environment.set('userAccessToken', response.accessToken);",
                   "pm.environment.set('userRefreshToken', response.refreshToken || pm.environment.get('userRefreshToken'));",
+                  "pm.environment.set('deviceUuid', response.deviceUuid);",
                   "pm.test('User login successful', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
                   "  pm.expect(response.accessToken).to.exist;",
+                  "  pm.expect(response.deviceUuid).to.be.a('string');",
                   "});"
                 ],
                 "type": "text/javascript",
@@ -84,7 +86,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\\n  \"email\": \"test@example.com\",\\n  \"password\": \"password123\",\\n  \"rememberMe\": true,\\n  \"deviceName\": \"MyDevice\",\\n  \"deviceId\": \"device123\",\\n  \"deviceType\": \"mobile\",\\n  \"fcmToken\": \"optionalToken\",\\n  \"ipAddress\": \"192.168.1.1\"\\n}",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"rememberMe\": true,\n  \"deviceName\": \"MyDevice\",\n  \"deviceId\": \"device123\",\n  \"deviceUuid\": \"\" // Có thể rỗng lần đầu, hoặc điền UUID từ lần trước\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -116,17 +118,11 @@
                   "if (response.accessToken) {",
                   "    pm.environment.set('employeeAccessToken', response.accessToken);",
                   "    console.log('employeeAccessToken set to:', response.accessToken);",
-                  "    const savedToken = pm.environment.get('employeeAccessToken');",
-                  "    console.log('Verified employeeAccessToken:', savedToken);",
-                  "    if (!savedToken) {",
-                  "        console.log('WARNING: employeeAccessToken not persisting in environment');",
-                  "    }",
                   "} else {",
                   "    console.log('No accessToken found in response');",
                   "}",
                   "if (response.refreshToken) {",
                   "    pm.environment.set('employeeRefreshToken', response.refreshToken);",
-                  "    console.log('employeeRefreshToken set to:', response.refreshToken);",
                   "} else {",
                   "    console.log('No refreshToken found, keeping existing:', pm.environment.get('employeeRefreshToken'));",
                   "}",
@@ -145,7 +141,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"newadmin@example.com\",\n  \"password\": \"admin123\"\n}",
+              "raw": "{\n  \"username\": \"adminuser\",\n  \"password\": \"admin123\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -189,7 +185,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"newpassword123\",\n  \"name\": \"New User\",\n  \"phone\": \"1234567890\",\n  \"address\": \"123 User St\",\n  \"dateOfBirth\": \"1990-01-01\"\n}",
+              "raw": "{\n  \"username\": \"newuser\",\n  \"surname\": \"New\",\n  \"lastname\": \"User\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"newpassword123\",\n  \"phone\": \"1234567890\",\n  \"birthdate\": \"1990-01-01\",\n  \"gender\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -238,7 +234,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"New Admin\",\n  \"email\": \"newadmin@example.com\",\n  \"password\": \"admin123\",\n  \"role\": \"admin\",\n  \"phone\": \"0123456789\"\n}",
+              "raw": "{\n  \"username\": \"newadmin\",\n  \"surname\": \"New\",\n  \"lastname\": \"Admin\",\n  \"email\": \"newadmin@example.com\",\n  \"password\": \"admin123\",\n  \"role\": \"admin\",\n  \"phone\": \"0123456789\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -254,6 +250,55 @@
                 "auth",
                 "employee",
                 "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Device Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Device token updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.message).to.equal('Device token updated successfully');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deviceToken\": \"newFcmToken123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/update-device-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "update-device-token"
               ]
             }
           },
@@ -476,595 +521,6 @@
                 "auth",
                 "logout",
                 "all"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Users",
-      "item": [
-        {
-          "name": "Get All Users (employee only)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Get all users successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.users).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/users?page=1&limit=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "10"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get User by ID",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Get user by ID successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.UserID).to.equal(1);",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/users/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "1"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update User",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Update user successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.Name).to.equal('Updated User');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated User\",\n  \"phone\": \"1234567890\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/users/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "1"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete User",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Delete user successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(204);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/users/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "1"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Employees",
-      "item": [
-        {
-          "name": "Get All Employees",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Get all employees successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.employees).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/employees?page=1&limit=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "employees"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "10"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Filter Employees",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Filter employees successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.employees).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/employees/filter?role=admin&name=John&page=1&limit=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "employees",
-                "filter"
-              ],
-              "query": [
-                {
-                  "key": "role",
-                  "value": "admin"
-                },
-                {
-                  "key": "name",
-                  "value": "John"
-                },
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "10"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Employee by ID",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Get employee by ID successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.EmployeeID).to.equal(1);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/employees/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "employees",
-                "1"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update Employee",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Update employee successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.Name).to.equal('Updated Employee');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Employee\",\n  \"phone\": \"0987654321\",\n  \"role\": \"technician\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/employees/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "employees",
-                "1"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Employee",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Delete employee successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(204);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/employees/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "employees",
-                "1"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Employee Permissions",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Get employee permissions successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/employees/1/permissions",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "employees",
-                "1",
-                "permissions"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get All Permissions",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Get all permissions successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.permissions).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/employees/permissions?page=1&limit=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "employees",
-                "permissions"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "10"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update Employee Permission",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Update permission successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.PermissionType).to.equal('read:devices');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"permissionType\": \"read:devices\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/employees/permissions/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "employees",
-                "permissions",
-                "1"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Employee Permission",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Delete permission successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(204);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/employees/permissions/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "employees",
-                "permissions",
-                "1"
               ]
             }
           },
