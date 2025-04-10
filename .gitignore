@@ -2,3 +2,9 @@ node_modules
 # Keep environment variables out of version control
 .env
 /.key/
+/prisma/migrations/
+/prisma/migrations/20250410032010_init/migration.sql
+/prisma/migrations/20250410033305_update_id_db_type/migration.sql
+/prisma/migrations/20250410045909_update_username_pass_db_type/migration.sql
+/prisma/migrations/20250410055525_update_role_db_type/migration.sql
+/prisma/migrations/migration_lock.toml
