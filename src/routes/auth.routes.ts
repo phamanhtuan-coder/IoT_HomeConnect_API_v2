@@ -27,4 +27,5 @@ router.post('/logout', authMiddleware, authController.logoutUser); // Single dev
 router.post('/employee/logout', authMiddleware, authController.logoutEmployee);
 router.post('/logout/multiple', authMiddleware, authController.logoutMultipleDevices); // Multiple devices
 router.post('/logout/all', authMiddleware, authController.logoutAllDevices); // All devices
+router.post('/update-device-token', authMiddleware, authController.updateDeviceToken); // Update device token
 export default router;
