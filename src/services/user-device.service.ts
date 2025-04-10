@@ -1,6 +1,6 @@
 import {PrismaClient} from '@prisma/client';
 import {ErrorCodes, throwError} from '../utils/errors';
-import {v4 as uuidv4} from 'uuid';
+import {generateUserDeviceId} from '../utils/helpers'
 
 export class UserDeviceService {
     private prisma: PrismaClient;
@@ -9,14 +9,14 @@ export class UserDeviceService {
         this.prisma = new PrismaClient();
     }
 
-    async upsertDevice(accountId: string, deviceName: string , deviceId: string, deviceUuid: string | null, fcmToken?: string) {
+    async upsertDevice(accountId: string, deviceName: string, deviceId: string, deviceUuid: string | null, fcmToken?: string) {
         if (!deviceId) throwError(ErrorCodes.BAD_REQUEST, 'Device ID is required');
         if (!deviceName) throwError(ErrorCodes.BAD_REQUEST, 'Device name is required');
 
         const account = await this.prisma.account.findUnique({ where: { account_id: accountId } });
         if (!account) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
 
-        const isEmployee = account!.role_id === 'EMPLOYEE' || account!.employee_id !== null;
+        const isEmployee = account.role_id === 'EMPLOYEE' || account.employee_id !== null;
         const maxDevices = isEmployee ? 1 : 5;
 
         const deviceCount = await this.prisma.user_devices.count({
@@ -25,14 +25,23 @@ export class UserDeviceService {
 
         let deviceUuidToUse = deviceUuid;
         if (!deviceUuidToUse) {
-            // Lần đầu login hoặc web mất UUID
             const existingByDeviceId = await this.prisma.user_devices.findFirst({
                 where: { user_id: accountId, device_id: deviceId, is_deleted: false },
             });
             if (existingByDeviceId) {
-                deviceUuidToUse = existingByDeviceId.device_uuid; // Tái sử dụng UUID cũ nếu device_id khớp
+                deviceUuidToUse = existingByDeviceId.device_uuid;
             } else {
-                deviceUuidToUse = uuidv4(); // Tạo mới nếu không tìm thấy
+                let attempts = 0;
+                const maxAttempts = 5;
+                do {
+                    deviceUuidToUse = generateUserDeviceId(Date.now()); // Pass Date.now() for dynamic seed
+                    const uuidExists = await this.prisma.user_devices.findFirst({
+                        where: { device_uuid: deviceUuidToUse, is_deleted: false },
+                    });
+                    if (!uuidExists) break;
+                    attempts++;
+                    if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique device UUID');
+                } while (true);
             }
         }
 
@@ -68,6 +77,7 @@ export class UserDeviceService {
             },
         });
     }
+
     async getUserDevices(accountId: string) {
         return this.prisma.user_devices.findMany({
             where: { user_id: accountId, is_deleted: false },
@@ -153,12 +163,12 @@ export class UserDeviceService {
         });
 
         if (devices.length === 0) throwError(ErrorCodes.NOT_FOUND, 'No valid devices found');
-        if (devices.some(device => device.user_id !== accountId)) {
+        if (devices.some((device: { user_id: string; }) => device.user_id !== accountId)) {
             throwError(ErrorCodes.FORBIDDEN, 'You can only log out from your own devices');
         }
 
         return await Promise.all(
-            devices.map(async (device) => {
+            devices.map(async (device: { user_device_id: any; }) => {
                 await this.prisma.sync_tracking.create({
                     data: {
                         account_id: accountId,
@@ -186,7 +196,7 @@ export class UserDeviceService {
         if (devices.length === 0) return [];
 
         return await Promise.all(
-            devices.map(async (device) => {
+            devices.map(async (device: { user_device_id: any; }) => {
                 await this.prisma.sync_tracking.create({
                     data: {
                         account_id: accountId,
