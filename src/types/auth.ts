@@ -61,10 +61,39 @@ export type EmployeeRegisterRequestBody = {
     role: string;
 };
 
+// Group role enum
+export enum GroupRole {
+    OWNER = 'owner',
+    VICE = 'vice',
+    ADMIN = 'admin',
+    MEMBER = 'member',
+}
+
+// Group interface
+export interface Group {
+    group_id: number;
+    group_name: string;
+    created_at: Date | null;
+    updated_at: Date | null;
+    is_deleted: boolean | null;
+}
+
+// UserGroup interface
+export interface UserGroup {
+    user_group_id: number;
+    account_id: string | null;
+    group_id: number | null;
+    role: GroupRole | null;
+    joined_at: Date | null;
+    updated_at: Date | null;
+    is_deleted: boolean | null;
+}
+
 declare global {
     namespace Express {
         interface Request {
             user?: AuthJwtPayload;
+            groupRole?: GroupRole;
         }
     }
 }
