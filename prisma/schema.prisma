@@ -494,7 +494,7 @@ model hourly_values {
 model houses {
   house_id   Int       @id @default(autoincrement())
   group_id   Int?
-  name       String    @db.VarChar(100)
+  house_name       String    @db.VarChar(100)
   address    String?   @db.Text
   icon_name  String?   @db.VarChar(100)
   icon_color String?   @db.VarChar(100)
@@ -892,7 +892,7 @@ model slideshow {
 model spaces {
   space_id      Int             @id @default(autoincrement())
   house_id      Int?
-  name          String          @db.VarChar(100)
+  space_name          String          @db.VarChar(100)
   created_at    DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at    DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted    Boolean?        @default(false)

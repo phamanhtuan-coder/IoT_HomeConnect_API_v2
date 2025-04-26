@@ -89,6 +89,29 @@ export interface UserGroup {
     is_deleted: boolean | null;
 }
 
+// House interface
+export interface House {
+    house_id: number;
+    group_id: number | null;
+    house_name: string ;
+    address: string | null;
+    icon_name: string | null;
+    icon_color: string | null;
+    created_at: Date | null;
+    updated_at: Date | null;
+    is_deleted: boolean | null;
+}
+
+// Space interface
+export interface Space {
+    space_id: number;
+    house_id: number | null;
+    space_name: string;
+    created_at: Date | null;
+    updated_at: Date | null;
+    is_deleted: boolean | null;
+}
+
 declare global {
     namespace Express {
         interface Request {
