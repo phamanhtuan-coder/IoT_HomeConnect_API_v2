@@ -11,12 +11,14 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.6.0",
+    "@socket.io/redis-adapter": "^8.3.0",
     "@types/nodemailer": "6.4.14",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-handlebars": "6.0.7",
     "firebase-admin": "^13.2.0",
+    "ioredis": "^5.6.1",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "6.9.9",
     "nodemailer-express-handlebars": "^6.0.0",
@@ -26,6 +28,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/socket.io": "^3.0.2",
     "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.1",
     "@types/express-handlebars": "^6.0.2",

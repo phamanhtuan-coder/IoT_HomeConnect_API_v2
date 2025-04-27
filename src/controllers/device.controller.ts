@@ -49,8 +49,13 @@ class DeviceController {
 
         try {
             const { deviceId } = req.params;
-            const { power_status } = req.body;
-            const device = await this.deviceService.toggleDevice(parseInt(deviceId), power_status, accountId);
+            const { power_status, serial_number } = req.body; // Add serial_number
+            const device = await this.deviceService.toggleDevice(
+                parseInt(deviceId),
+                serial_number,
+                power_status,
+                accountId
+            );
             res.json(device);
         } catch (error) {
             next(error);
@@ -63,7 +68,95 @@ class DeviceController {
 
         try {
             const { deviceId } = req.params;
-            const device = await this.deviceService.updateDeviceAttributes(parseInt(deviceId), req.body, accountId);
+            const { serial_number } = req.body; // Add serial_number
+            const device = await this.deviceService.updateDeviceAttributes(
+                parseInt(deviceId),
+                serial_number,
+                req.body,
+                accountId
+            );
+            res.json(device);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getDeviceById = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { deviceId } = req.params;
+            const { serial_number } = req.body; // Add serial_number
+            const device = await this.deviceService.getDeviceById(
+                parseInt(deviceId),
+                serial_number,
+                accountId
+            );
+            res.json(device);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    unlinkDevice = async (req: Request, res: Response, next: NextFunction) => {
+        if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
+            throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can unlink devices');
+        }
+
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { deviceId } = req.params;
+            const { serial_number } = req.body; // Add serial_number
+            await this.deviceService.unlinkDevice(parseInt(deviceId), serial_number, accountId);
+            res.status(204).send();
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    updateDeviceSpace = async (req: Request, res: Response, next: NextFunction) => {
+        if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
+            throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can update device space');
+        }
+
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { deviceId } = req.params;
+            const { spaceId, serial_number } = req.body; // Add serial_number
+            const device = await this.deviceService.updateDeviceSpace(
+                parseInt(deviceId),
+                serial_number,
+                spaceId,
+                accountId
+            );
+            res.json(device);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    updateDeviceWifi = async (req: Request, res: Response, next: NextFunction) => {
+        if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
+            throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can update device WiFi');
+        }
+
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { deviceId } = req.params;
+            const { serial_number } = req.body; // Add serial_number
+            const device = await this.deviceService.updateDeviceWifi(
+                parseInt(deviceId),
+                serial_number,
+                req.body,
+                accountId
+            );
             res.json(device);
         } catch (error) {
             next(error);
@@ -112,70 +205,7 @@ class DeviceController {
         }
     };
 
-    getDeviceById = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
-        try {
-            const { deviceId } = req.params;
-            const device = await this.deviceService.getDeviceById(parseInt(deviceId), accountId);
-            res.json(device);
-        } catch (error) {
-            next(error);
-        }
-    };
-
-    unlinkDevice = async (req: Request, res: Response, next: NextFunction) => {
-        if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
-            throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can unlink devices');
-        }
-
-        const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
-
-        try {
-            const { deviceId } = req.params;
-            await this.deviceService.unlinkDevice(parseInt(deviceId), accountId);
-            res.status(204).send();
-        } catch (error) {
-            next(error);
-        }
-    };
-
-    updateDeviceSpace = async (req: Request, res: Response, next: NextFunction) => {
-        if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
-            throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can update device space');
-        }
-
-        const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
-
-        try {
-            const { deviceId } = req.params;
-            const { spaceId } = req.body;
-            const device = await this.deviceService.updateDeviceSpace(parseInt(deviceId), spaceId, accountId);
-            res.json(device);
-        } catch (error) {
-            next(error);
-        }
-    };
-
-    updateDeviceWifi = async (req: Request, res: Response, next: NextFunction) => {
-        if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
-            throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can update device WiFi');
-        }
-
-        const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
-
-        try {
-            const { deviceId } = req.params;
-            const device = await this.deviceService.updateDeviceWifi(parseInt(deviceId), req.body, accountId);
-            res.json(device);
-        } catch (error) {
-            next(error);
-        }
-    };
 }
 
 export default DeviceController;

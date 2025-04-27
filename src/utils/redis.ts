@@ -1,7 +1,8 @@
+// src/utils/redis.ts
 import { createClient } from 'redis';
 
 const redisClient = createClient({
-    url: 'redis://localhost:6379', // Adjust if using a different host/port
+    url: process.env.REDIS_URL || 'redis://localhost:6379',
 });
 
 redisClient.on('error', (err) => console.error('Redis Client Error', err));
@@ -17,6 +18,18 @@ export async function blacklistToken(token: string, expiresIn: number) {
 export async function isTokenBlacklisted(token: string): Promise<boolean> {
     const result = await redisClient.get(`blacklist:${token}`);
     return result === '1';
+}
+
+export async function setDeviceAccountMapping(deviceId: string, accountId: string, ttl: number = 3600) {
+    await redisClient.setEx(`device:${deviceId}:account`, ttl, accountId);
+}
+
+export async function getDeviceAccountMapping(deviceId: string): Promise<string | null> {
+    return await redisClient.get(`device:${deviceId}:account`);
+}
+
+export async function removeDeviceAccountMapping(deviceId: string) {
+    await redisClient.del(`device:${deviceId}:account`);
 }
 
 export default redisClient;

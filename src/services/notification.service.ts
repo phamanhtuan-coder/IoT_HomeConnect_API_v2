@@ -14,3 +14,4 @@ export class NotificationService {
         return { message: 'OTP sent', email, otp };
     }
 }
+
