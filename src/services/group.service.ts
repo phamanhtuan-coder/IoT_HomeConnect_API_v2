@@ -1,12 +1,15 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
 import { Group, UserGroup, GroupRole } from '../types/auth';
+import DeviceService from './device.service';
 
 class GroupService {
     private prisma: PrismaClient;
+    private deviceService: DeviceService;
 
     constructor() {
         this.prisma = new PrismaClient();
+        this.deviceService = new DeviceService();
     }
 
     async createGroup(group_name: string, ownerId: string): Promise<Group> {
@@ -14,7 +17,6 @@ class GroupService {
             data: { group_name },
         });
 
-        // Create user_group entry for owner
         await this.prisma.user_groups.create({
             data: {
                 account_id: ownerId,
@@ -23,12 +25,7 @@ class GroupService {
             },
         });
 
-        return {
-            ...group,
-            created_at: group.created_at || null,
-            updated_at: group.updated_at || null,
-            is_deleted: group.is_deleted || null,
-        };
+        return this.mapPrismaGroupToAuthGroup(group);
     }
 
     async getGroup(groupId: number): Promise<Group> {
@@ -37,14 +34,7 @@ class GroupService {
         });
         if (!group) throwError(ErrorCodes.NOT_FOUND, 'Group not found');
 
-        return {
-            ...group,
-            group_name: group!.group_name,
-            group_id: group!.group_id,
-            created_at: group!.created_at || null,
-            updated_at: group!.updated_at || null,
-            is_deleted: group!.is_deleted || null,
-        };
+        return this.mapPrismaGroupToAuthGroup(group);
     }
 
     async updateGroupName(groupId: number, group_name: string): Promise<Group> {
@@ -54,21 +44,40 @@ class GroupService {
         });
         if (!group) throwError(ErrorCodes.NOT_FOUND, 'Group not found');
 
-        return {
-            ...group,
-            created_at: group.created_at || null,
-            updated_at: group.updated_at || null,
-            is_deleted: group.is_deleted || null,
-        };
+        return this.mapPrismaGroupToAuthGroup(group);
     }
 
     async deleteGroup(groupId: number): Promise<void> {
+        const group = await this.prisma.groups.findUnique({
+            where: { group_id: groupId, is_deleted: false },
+        });
+        if (!group) throwError(ErrorCodes.NOT_FOUND, 'Group not found');
+
+        const viceUsers = await this.prisma.user_groups.findMany({
+            where: { group_id: groupId, role: GroupRole.VICE, is_deleted: false },
+        });
+        for (const user of viceUsers) {
+            await this.deviceService.removeViceDevicesFromGroup(groupId, user.account_id!);
+        }
+
         await this.prisma.$transaction([
-            // Hard delete user_groups
             this.prisma.user_groups.deleteMany({ where: { group_id: groupId } }),
-            // Hard delete group
+            this.prisma.houses.updateMany({ where: { group_id: groupId }, data: { is_deleted: true } }),
             this.prisma.groups.delete({ where: { group_id: groupId } }),
         ]);
+    }
+
+    async removeUserFromGroup(groupId: number, accountId: string): Promise<void> {
+        const userGroup = await this.prisma.user_groups.findFirst({
+            where: { group_id: groupId, account_id: accountId, is_deleted: false },
+        });
+        if (!userGroup) throwError(ErrorCodes.NOT_FOUND, 'User is not a member of this group');
+
+        await this.deviceService.removeViceDevicesFromGroup(groupId, accountId);
+
+        await this.prisma.user_groups.delete({
+            where: { user_group_id: userGroup!.user_group_id },
+        });
     }
 
     async addUserToGroup(groupId: number, accountId: string, role: GroupRole): Promise<UserGroup> {
@@ -85,7 +94,7 @@ class GroupService {
         const existingUserGroup = await this.prisma.user_groups.findFirst({
             where: { group_id: groupId, account_id: accountId, is_deleted: false },
         });
-        if (existingUserGroup) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to add user to group');
+        if (existingUserGroup) throwError(ErrorCodes.CONFLICT, 'User is already a member of this group');
 
         const userGroup = await this.prisma.user_groups.create({
             data: {
@@ -95,15 +104,7 @@ class GroupService {
             },
         });
 
-        return {
-            ...userGroup,
-            account_id: userGroup.account_id || null,
-            group_id: userGroup.group_id || null,
-            role: userGroup.role as GroupRole | null,
-            joined_at: userGroup.joined_at || null,
-            updated_at: userGroup.updated_at || null,
-            is_deleted: userGroup.is_deleted || null,
-        };
+        return this.mapPrismaUserGroupToAuthUserGroup(userGroup);
     }
 
     async updateUserRole(groupId: number, accountId: string, role: GroupRole): Promise<UserGroup> {
@@ -117,38 +118,38 @@ class GroupService {
             data: { role, updated_at: new Date() },
         });
 
-        return {
-            ...updatedUserGroup,
-            account_id: updatedUserGroup.account_id || null,
-            group_id: updatedUserGroup.group_id || null,
-            role: updatedUserGroup.role as GroupRole | null,
-            joined_at: updatedUserGroup.joined_at || null,
-            updated_at: updatedUserGroup.updated_at || null,
-            is_deleted: updatedUserGroup.is_deleted || null,
-        };
-    }
-
-    async removeUserFromGroup(groupId: number, accountId: string): Promise<void> {
-        const userGroup = await this.prisma.user_groups.findFirst({
-            where: { group_id: groupId, account_id: accountId, is_deleted: false },
-        });
-        if (!userGroup) throwError(ErrorCodes.NOT_FOUND, 'User is not a member of this group');
-
-        await this.prisma.user_groups.delete({
-            where: { user_group_id: userGroup!.user_group_id },
-        });
-
-        // TODO: Remove devices owned by this user from the group if they are vice
+        return this.mapPrismaUserGroupToAuthUserGroup(updatedUserGroup);
     }
 
     async getUserRole(groupId: number, accountId: string): Promise<GroupRole> {
         const userGroup = await this.prisma.user_groups.findFirst({
             where: { group_id: groupId, account_id: accountId, is_deleted: false },
         });
-        if (!userGroup || !userGroup.role) {
-            throwError(ErrorCodes.NOT_FOUND, 'User is not a member of this group');
-        }
+        if (!userGroup || !userGroup.role) throwError(ErrorCodes.NOT_FOUND, 'User is not a member of this group');
+
         return userGroup!.role as GroupRole;
+    }
+
+    private mapPrismaGroupToAuthGroup(group: any): Group {
+        return {
+            group_id: group.group_id,
+            group_name: group.group_name,
+            created_at: group.created_at ?? null,
+            updated_at: group.updated_at ?? null,
+            is_deleted: group.is_deleted ?? null,
+        };
+    }
+
+    private mapPrismaUserGroupToAuthUserGroup(userGroup: any): UserGroup {
+        return {
+            user_group_id: userGroup.user_group_id,
+            account_id: userGroup.account_id ?? null,
+            group_id: userGroup.group_id ?? null,
+            role: userGroup.role as GroupRole | null,
+            joined_at: userGroup.joined_at ?? null,
+            updated_at: userGroup.updated_at ?? null,
+            is_deleted: userGroup.is_deleted ?? null,
+        };
     }
 }
 

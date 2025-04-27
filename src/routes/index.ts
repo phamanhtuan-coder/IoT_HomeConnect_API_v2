@@ -7,16 +7,22 @@ import syncTrackingRoutes from "./sync-tracking.routes";
 import groupRoutes from "./group.routes";
 import houseRoutes from "./house.routes";
 import spaceRoutes from "./space.routes";
+import deviceRoutes from "./device.routes";
+import sharedPermissionRoutes from "./sharedPermission.routes";
+import shareRequestRoutes from "./shareRequest.routes";
 
 const router = Router();
 const notificationController = new NotificationController();
 
 router.use('/auth', authRoutes);
-router.post('/notify/otp', notificationController.sendOtp); // New test endpoint
+router.post('/notify/otp', notificationController.sendOtp);
 router.use('/user-devices', userDeviceRoutes);
 router.use('/sync-tracking', syncTrackingRoutes);
 router.use('/groups', groupRoutes);
-router.use('/houses', houseRoutes); // Add this line
-router.use('/spaces', spaceRoutes); // Add this line
+router.use('/houses', houseRoutes);
+router.use('/spaces', spaceRoutes);
+router.use('/devices', deviceRoutes);
+router.use('/permissions', sharedPermissionRoutes);
+router.use('/share-requests', shareRequestRoutes);
 
 export default router;

@@ -112,6 +112,79 @@ export interface Space {
     is_deleted: boolean | null;
 }
 
+export enum PermissionType {
+    CONTROL = 'CONTROL',
+    VIEW = 'VIEW',
+}
+
+export enum ShareRequestStatus {
+    PENDING = 'pending',
+    APPROVED = 'approved',
+    REJECTED = 'rejected',
+}
+export interface DeviceAttributes {
+    brightness?: number;
+    color?: string;
+    [key: string]: any;
+}
+
+export interface Device {
+    device_id: number;
+    serial_number: string;
+    template_id: number | null;
+    space_id: number | null;
+    account_id: string | null;
+    hub_id: string | null;
+    firmware_id: number | null;
+    name: string;
+    power_status: boolean| null;
+    attribute: Record<string, any> | null;
+    wifi_ssid: string | null;
+    wifi_password: string | null;
+    current_value: Record<string, any> | null;
+    link_status: string| null;
+    last_reset_at: Date | null;
+    lock_status: string| null;
+    locked_at: Date | null;
+    created_at: Date | null;
+    updated_at: Date | null;
+    is_deleted: boolean | null;
+}
+
+export interface DeviceTemplate {
+    template_id: number;
+    device_type_id: number | null;
+    name: string;
+    created_by: string | null;
+    created_at: Date | null;
+    updated_at: Date | null;
+    is_deleted: boolean | null;
+}
+
+export interface SharedPermission {
+    permission_id: number;
+    device_id: number | null;
+    shared_with_user_id: string | null;
+    permission_type: PermissionType;
+    created_at: Date | null;
+    updated_at: Date | null;
+    is_deleted: boolean | null;
+}
+
+export interface ShareRequest {
+    request_id: number;
+    device_serial: string | null;
+    from_user_id: string | null;
+    to_user_id: string | null;
+    permission_type: PermissionType;
+    status: ShareRequestStatus;
+    requested_at: Date | null;
+    approved_at: Date | null;
+    created_at: Date | null;
+    updated_at: Date | null;
+    is_deleted: boolean | null;
+}
+
 declare global {
     namespace Express {
         interface Request {
