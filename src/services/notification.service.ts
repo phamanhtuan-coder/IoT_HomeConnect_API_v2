@@ -8,10 +8,21 @@ export class NotificationService {
             to: email,
             subject: 'Your OTP Code',
             template: 'otp',
-            context: { otp },
+            context: { otp, currentYear: new Date().getFullYear() },
         });
         console.log('OTP email sent to', email);
         return { message: 'OTP sent', email, otp };
     }
-}
 
+    async sendEmergencyAlertEmail(email: string, message: string) {
+        await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Cảnh Báo Khẩn Cấp',
+            template: 'alert',
+            context: { message, currentYear: new Date().getFullYear() },
+        });
+        console.log('Emergency alert email sent to', email);
+        return { message: 'Emergency alert sent', email };
+    }
+}

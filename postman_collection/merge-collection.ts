@@ -17,7 +17,7 @@ interface PostmanCollection {
 
 const basePath = path.join(__dirname);
 const base: PostmanCollection = JSON.parse(fs.readFileSync(path.join(basePath, 'base.json'), 'utf8'));
-const modules = ['auth', 'sync-tracking', 'user-devices', 'notify'];
+const modules = ['auth', 'sync-tracking', 'user-devices', 'notify','device','group','house','sharedPermission','shareRequest','space'];
 
 const items: any[] = [];
 for (const module of modules) {

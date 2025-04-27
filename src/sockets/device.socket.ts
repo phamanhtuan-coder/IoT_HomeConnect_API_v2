@@ -5,9 +5,10 @@ import redisClient from '../utils/redis';
 import { DeviceSocket, ServerToClientEvents, ClientToServerEvents } from '../types/socket';
 import { ErrorCodes, throwError } from '../utils/errors';
 import admin from '../config/firebase';
-import { sendEmergencyAlertEmail } from '../services/email.service';
+import { NotificationService } from '../services/notification.service'; // Import NotificationService
 
 const prisma = new PrismaClient();
+const notificationService = new NotificationService(); // Instantiate NotificationService
 
 const ALERT_TYPES = {
     GAS_HIGH: 1, // AlertTypeID=1: Gas alert
@@ -55,7 +56,8 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
 
             // Store device-to-account mapping in Redis
             if (device!.account_id) {
-                await redisClient.set(`device:${deviceId}:account`, device!.account_id, { EX: 3600 });            }
+                await redisClient.set(`device:${deviceId}:account`, device!.account_id, { EX: 3600 });
+            }
 
             // Join device-specific room
             socket.join(`device:${deviceId}`);
@@ -76,7 +78,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
     });
 
     // Client namespace (mobile apps)
-    clientNamespace.on('connection',async (socket: DeviceSocket) => {
+    clientNamespace.on('connection', async (socket: DeviceSocket) => {
         const { deviceId, accountId } = socket.handshake.query as {
             deviceId?: string;
             accountId?: string;
@@ -271,9 +273,9 @@ async function createAlert(device: any, alertType: number, messageContent: strin
                 console.log(`FCM sent to account ${user.account_id}`);
             }
 
-            // Send email
+            // Send email using NotificationService
             if (user.customer.email) {
-                await sendEmergencyAlertEmail(user.customer.email, messageContent);
+                await notificationService.sendEmergencyAlertEmail(user.customer.email, messageContent);
             }
         }
         return alert;

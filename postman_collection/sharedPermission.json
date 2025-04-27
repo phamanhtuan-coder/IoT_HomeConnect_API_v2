@@ -1,0 +1,83 @@
+[
+  {
+    "name": "Shared Permission",
+    "item": [
+      {
+        "name": "Revoke Share Device",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Share device revoked successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(204);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/permissions/:permissionId",
+            "host": ["{{baseUrl}}"],
+            "path": ["permissions", ":permissionId"],
+            "variable": [
+              {
+                "key": "permissionId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Revoke Share by Recipient",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Share revoked by recipient successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(204);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/permissions/recipient/:permissionId",
+            "host": ["{{baseUrl}}"],
+            "path": ["permissions", "recipient", ":permissionId"],
+            "variable": [
+              {
+                "key": "permissionId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      }
+    ]
+  }
+]
