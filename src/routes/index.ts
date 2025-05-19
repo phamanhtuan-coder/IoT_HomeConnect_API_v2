@@ -11,6 +11,7 @@ import deviceRoutes from "./device.routes";
 import sharedPermissionRoutes from "./sharedPermission.routes";
 import shareRequestRoutes from "./shareRequest.routes";
 import alertTypeRoutes from "./alert-type.routes";
+import alertRoutes from "./alert.routes";
 
 
 const router = Router();
@@ -27,5 +28,6 @@ router.use('/devices', deviceRoutes);
 router.use('/permissions', sharedPermissionRoutes);
 router.use('/share-requests', shareRequestRoutes);
 router.use("/alert-types", alertTypeRoutes);
+router.use("/alerts", alertRoutes);
 
 export default router;

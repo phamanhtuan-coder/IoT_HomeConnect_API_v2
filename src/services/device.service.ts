@@ -1,10 +1,12 @@
 // src/services/device!.service.ts
-import { PrismaClient } from '@prisma/client';
-import { ErrorCodes, throwError } from '../utils/errors';
-import { Device, DeviceAttributes, GroupRole, PermissionType } from '../types/auth';
-import { Server } from 'socket.io';
+import { PrismaClient } from "@prisma/client";
+import { ErrorCodes, throwError } from "../utils/errors";
+import { Device, DeviceAttributes, GroupRole, PermissionType } from "../types/auth";
+import { Server } from "socket.io";
+import  AlertService  from "../services/alert.service"; // Import AlertService
 
 let io: Server | null = null;
+const alertService = new AlertService(); // Instantiate AlertService
 
 export function setSocketInstance(socket: Server) {
     io = socket;
@@ -29,25 +31,22 @@ class DeviceService {
     }): Promise<Device> {
         const { templateId, serial_number, spaceId, accountId, name, attribute, wifi_ssid, wifi_password } = input;
 
-        // Verify template exists
         const template = await this.prisma.device_templates.findUnique({
             where: { template_id: templateId, is_deleted: false },
         });
-        if (!template) throwError(ErrorCodes.NOT_FOUND, 'Device template not found');
+        if (!template) throwError(ErrorCodes.NOT_FOUND, "Device template not found");
 
-        // Verify space exists (if provided)
         if (spaceId) {
             const space = await this.prisma.spaces.findUnique({
                 where: { space_id: spaceId, is_deleted: false },
             });
-            if (!space) throwError(ErrorCodes.NOT_FOUND, 'Space not found');
+            if (!space) throwError(ErrorCodes.NOT_FOUND, "Space not found");
         }
 
-        // Verify serial number uniqueness
         const existingDevice = await this.prisma.devices.findUnique({
             where: { serial_number },
         });
-        if (existingDevice) throwError(ErrorCodes.CONFLICT, 'Serial number already exists');
+        if (existingDevice) throwError(ErrorCodes.CONFLICT, "Serial number already exists");
 
         const device = await this.prisma.devices.create({
             data: {
@@ -60,7 +59,7 @@ class DeviceService {
                 attribute,
                 wifi_ssid,
                 wifi_password,
-                link_status: 'linked',
+                link_status: "linked",
             },
         });
 
@@ -71,24 +70,22 @@ class DeviceService {
         const device = await this.prisma.devices.findUnique({
             where: { serial_number, is_deleted: false },
         });
-        if (!device) throwError(ErrorCodes.NOT_FOUND, 'Device not found');
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found");
 
-        // Verify space exists (if provided)
         if (spaceId) {
             const space = await this.prisma.spaces.findUnique({
                 where: { space_id: spaceId, is_deleted: false },
             });
-            if (!space) throwError(ErrorCodes.NOT_FOUND, 'Space not found');
+            if (!space) throwError(ErrorCodes.NOT_FOUND, "Space not found");
         }
 
         const updatedDevice = await this.prisma.devices.update({
             where: { serial_number },
-            data: { account_id: accountId, space_id: spaceId, name, link_status: 'linked', updated_at: new Date() },
+            data: { account_id: accountId, space_id: spaceId, name, link_status: "linked", updated_at: new Date() },
         });
 
-        // Emit device_online to clients
         if (io) {
-            io.of('/device').to(`device:${serial_number}`).emit('device_online', { deviceId: serial_number });
+            io.of("/device").to(`device:${serial_number}`).emit("device_online", { deviceId: serial_number });
         }
 
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);
@@ -98,7 +95,7 @@ class DeviceService {
         const device = await this.prisma.devices.findUnique({
             where: { device_id_serial_number: { device_id: deviceId, serial_number }, is_deleted: false },
         });
-        if (!device) throwError(ErrorCodes.NOT_FOUND, 'Device not found');
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found");
 
         await this.checkDevicePermission(deviceId, serial_number, accountId, true);
 
@@ -107,10 +104,9 @@ class DeviceService {
             data: { power_status, updated_at: new Date() },
         });
 
-        // Emit command to IoT device
         if (io) {
-            io.of('/device').to(`device:${serial_number}`).emit('command', {
-                action: 'toggle',
+            io.of("/device").to(`device:${serial_number}`).emit("command", {
+                action: "toggle",
                 powerStatus: power_status,
             });
         }
@@ -122,11 +118,11 @@ class DeviceService {
         const device = await this.prisma.devices.findUnique({
             where: { device_id_serial_number: { device_id: deviceId, serial_number }, is_deleted: false },
         });
-        if (!device) throwError(ErrorCodes.NOT_FOUND, 'Device not found');
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found");
 
         await this.checkDevicePermission(deviceId, serial_number, accountId, true);
 
-        const currentAttributes: DeviceAttributes = typeof device!.attribute === 'object' && device!.attribute !== null ? device!.attribute : {};
+        const currentAttributes: DeviceAttributes = typeof device!.attribute === "object" && device!.attribute !== null ? device!.attribute : {};
         if (input.brightness !== undefined) currentAttributes.brightness = input.brightness;
         if (input.color !== undefined) currentAttributes.color = input.color;
 
@@ -135,10 +131,9 @@ class DeviceService {
             data: { attribute: currentAttributes, updated_at: new Date() },
         });
 
-        // Emit command to IoT device
         if (io) {
-            io.of('/device').to(`device:${serial_number}`).emit('command', {
-                action: 'updateAttributes',
+            io.of("/device").to(`device:${serial_number}`).emit("command", {
+                action: "updateAttributes",
                 brightness: input.brightness,
                 color: input.color,
             });
@@ -151,7 +146,7 @@ class DeviceService {
         const device = await this.prisma.devices.findUnique({
             where: { device_id_serial_number: { device_id: deviceId, serial_number }, is_deleted: false },
         });
-        if (!device) throwError(ErrorCodes.NOT_FOUND, 'Device not found');
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found");
 
         await this.checkDevicePermission(deviceId, serial_number, accountId, true);
 
@@ -160,10 +155,9 @@ class DeviceService {
             data: { wifi_ssid: input.wifi_ssid, wifi_password: input.wifi_password, updated_at: new Date() },
         });
 
-        // Emit command to IoT device
         if (io) {
-            io.of('/device').to(`device:${serial_number}`).emit('command', {
-                action: 'updateWifi',
+            io.of("/device").to(`device:${serial_number}`).emit("command", {
+                action: "updateWifi",
                 WifiSSID: input.wifi_ssid,
                 WifiPassword: input.wifi_password,
             });
@@ -178,7 +172,7 @@ class DeviceService {
             include: { device_templates: true, spaces: { include: { houses: true } } },
         });
 
-        return devices.map(device => this.mapPrismaDeviceToAuthDevice(device));
+        return devices.map((device) => this.mapPrismaDeviceToAuthDevice(device));
     }
 
     async getDevicesByGroup(groupId: number): Promise<Device[]> {
@@ -193,7 +187,7 @@ class DeviceService {
             include: { device_templates: true, spaces: { include: { houses: true } } },
         });
 
-        return devices.map(device => this.mapPrismaDeviceToAuthDevice(device));
+        return devices.map((device) => this.mapPrismaDeviceToAuthDevice(device));
     }
 
     async getDevicesByHouse(houseId: number): Promise<Device[]> {
@@ -205,7 +199,7 @@ class DeviceService {
             include: { device_templates: true, spaces: true },
         });
 
-        return devices.map(device => this.mapPrismaDeviceToAuthDevice(device));
+        return devices.map((device) => this.mapPrismaDeviceToAuthDevice(device));
     }
 
     async getDevicesBySpace(spaceId: number): Promise<Device[]> {
@@ -214,7 +208,7 @@ class DeviceService {
             include: { device_templates: true },
         });
 
-        return devices.map(device => this.mapPrismaDeviceToAuthDevice(device));
+        return devices.map((device) => this.mapPrismaDeviceToAuthDevice(device));
     }
 
     async getDeviceById(deviceId: number, serial_number: string, accountId: string): Promise<Device> {
@@ -222,7 +216,7 @@ class DeviceService {
             where: { device_id_serial_number: { device_id: deviceId, serial_number }, is_deleted: false },
             include: { device_templates: true, spaces: true },
         });
-        if (!device) throwError(ErrorCodes.NOT_FOUND, 'Device not found');
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found");
 
         await this.checkDevicePermission(deviceId, serial_number, accountId, false);
 
@@ -233,16 +227,23 @@ class DeviceService {
         const device = await this.prisma.devices.findUnique({
             where: { device_id_serial_number: { device_id: deviceId, serial_number }, account_id: accountId, is_deleted: false },
         });
-        if (!device) throwError(ErrorCodes.NOT_FOUND, 'Device not found or access denied');
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found or access denied");
 
         await this.prisma.devices.update({
             where: { device_id_serial_number: { device_id: deviceId, serial_number } },
-            data: { account_id: null, space_id: null, link_status: 'unlinked', updated_at: new Date() },
+            data: { account_id: null, space_id: null, link_status: "unlinked", updated_at: new Date() },
         });
 
-        // Emit device_disconnect to clients
+        // Create an alert for device unlink
+        await alertService.createAlert(
+            // @ts-ignore
+             device,
+            3, // Assume alert_type_id 3 for device unlink (adjust based on your alert_types table)
+            `Device ${serial_number} has been unlinked`
+        );
+
         if (io) {
-            io.of('/device').to(`device:${serial_number}`).emit('device_disconnect', { deviceId: serial_number });
+            io.of("/device").to(`device:${serial_number}`).emit("device_disconnect", { deviceId: serial_number });
         }
     }
 
@@ -250,13 +251,13 @@ class DeviceService {
         const device = await this.prisma.devices.findUnique({
             where: { device_id_serial_number: { device_id: deviceId, serial_number }, account_id: accountId, is_deleted: false },
         });
-        if (!device) throwError(ErrorCodes.NOT_FOUND, 'Device not found or access denied');
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found or access denied");
 
         if (spaceId) {
             const space = await this.prisma.spaces.findUnique({
                 where: { space_id: spaceId, is_deleted: false },
             });
-            if (!space) throwError(ErrorCodes.NOT_FOUND, 'Space not found');
+            if (!space) throwError(ErrorCodes.NOT_FOUND, "Space not found");
         }
 
         const updatedDevice = await this.prisma.devices.update({
@@ -272,7 +273,7 @@ class DeviceService {
             where: { device_id_serial_number: { device_id: deviceId, serial_number }, is_deleted: false },
             include: { spaces: { include: { houses: true } } },
         });
-        if (!device) throwError(ErrorCodes.NOT_FOUND, 'Device not found');
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found");
 
         if (device!.account_id === accountId) return;
 
@@ -304,7 +305,7 @@ class DeviceService {
             return;
         }
 
-        throwError(ErrorCodes.FORBIDDEN, 'No permission to access this device');
+        throwError(ErrorCodes.FORBIDDEN, "No permission to access this device");
     }
 
     async removeViceDevicesFromGroup(groupId: number, accountId: string): Promise<void> {
@@ -333,13 +334,24 @@ class DeviceService {
                 ],
                 is_deleted: false,
             },
-            data: { account_id: null, space_id: null, link_status: 'unlinked', updated_at: new Date() },
+            data: { account_id: null, space_id: null, link_status: "unlinked", updated_at: new Date() },
         });
 
-        // Emit device_disconnect for each device
+        // Create alerts for each unlinked device
+        for (const device of devices) {
+            await alertService.createAlert(
+                // @ts-ignore
+                device,
+                3, // Assume alert_type_id 3 for device unlink
+                `Device ${device!.serial_number} has been unlinked from group`
+            );
+        }
+
         if (io) {
-            devices.forEach(device => {
-                io!.of('/device').to(`device:${device!.serial_number}`).emit('device_disconnect', { deviceId: device!.serial_number });
+            devices.forEach((device) => {
+                io!.of("/device")
+                    .to(`device:${device!.serial_number}`)
+                    .emit("device_disconnect", { deviceId: device!.serial_number });
             });
         }
     }

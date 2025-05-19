@@ -194,6 +194,19 @@ export interface AlertType {
     updated_at: Date | null;
 }
 
+export interface Alert {
+    alert_id: number;
+    device_serial: string | null;
+    space_id: number | null;
+    message: string | null;
+    timestamp: Date | null;
+    status: string | null;
+    alert_type_id: number;
+    created_at: Date | null;
+    updated_at: Date | null;
+    is_deleted: boolean | null;
+}
+
 declare global {
     namespace Express {
         interface Request {
