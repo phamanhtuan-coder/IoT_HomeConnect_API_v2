@@ -10,6 +10,8 @@ import spaceRoutes from "./space.routes";
 import deviceRoutes from "./device.routes";
 import sharedPermissionRoutes from "./sharedPermission.routes";
 import shareRequestRoutes from "./shareRequest.routes";
+import alertTypeRoutes from "./alert-type.routes";
+
 
 const router = Router();
 const notificationController = new NotificationController();
@@ -24,5 +26,6 @@ router.use('/spaces', spaceRoutes);
 router.use('/devices', deviceRoutes);
 router.use('/permissions', sharedPermissionRoutes);
 router.use('/share-requests', shareRequestRoutes);
+router.use("/alert-types", alertTypeRoutes);
 
 export default router;

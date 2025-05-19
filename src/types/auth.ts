@@ -185,6 +185,15 @@ export interface ShareRequest {
     is_deleted: boolean | null;
 }
 
+export interface AlertType {
+    alert_type_id: number;
+    alert_type_name: string;
+    priority: number | null;
+    is_deleted: boolean | null;
+    created_at: Date | null;
+    updated_at: Date | null;
+}
+
 declare global {
     namespace Express {
         interface Request {

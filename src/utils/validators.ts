@@ -201,6 +201,49 @@ export const approveShareRequestSchema = z.object({
     }),
 });
 
+// Thêm vào cuối file /src/utils/validators.ts
+
+export const alertTypeSchema = z.object({
+    body: z.object({
+        alert_type_name: z
+            .string()
+            .min(1, "Alert type name is required")
+            .max(500, "Alert type name must be 500 characters or less"),
+        priority: z
+            .number()
+            .int()
+            .min(1, "Priority must be at least 1")
+            .max(5, "Priority must not exceed 5")
+            .optional()
+            .default(1),
+    }),
+});
+
+export const updateAlertTypeSchema = z.object({
+    body: z.object({
+        alert_type_name: z
+            .string()
+            .min(1, "Alert type name is required")
+            .max(500, "Alert type name must be 500 characters or less")
+            .optional(),
+        priority: z
+            .number()
+            .int()
+            .min(1, "Priority must be at least 1")
+            .max(5, "Priority must not exceed 5")
+            .optional(),
+    }),
+});
+
+export const alertTypeIdSchema = z.object({
+    params: z.object({
+        alertTypeId: z
+            .string()
+            .transform((val) => parseInt(val))
+            .refine((val) => val > 0, "Alert Type ID must be a positive number"),
+    }),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>['body'];
 export type UserRegisterInput = z.infer<typeof userRegisterSchema>['body'];
 export type EmployeeRegisterInput = z.infer<typeof employeeRegisterSchema>['body'];
@@ -226,4 +269,8 @@ export type UpdateAttributesInput = z.infer<typeof updateAttributesSchema>['body
 export type UpdateWifiInput = z.infer<typeof updateWifiSchema>['body'];
 export type ShareRequestInput = z.infer<typeof shareRequestSchema>['body'];
 export type ApproveShareRequestInput = z.infer<typeof approveShareRequestSchema>['body'];
+
+export type AlertTypeInput = z.infer<typeof alertTypeSchema>["body"];
+export type UpdateAlertTypeInput = z.infer<typeof updateAlertTypeSchema>["body"];
+export type AlertTypeIdInput = z.infer<typeof alertTypeIdSchema>["params"];
 
