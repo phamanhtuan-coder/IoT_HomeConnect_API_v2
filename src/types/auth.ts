@@ -207,6 +207,16 @@ export interface Alert {
     is_deleted: boolean | null;
 }
 
+export interface TicketType {
+    ticket_type_id: number;
+    type_name: string;
+    priority: number | null;
+    is_active: boolean | null;
+    created_at: Date | null;
+    updated_at: Date | null;
+    is_deleted: boolean | null;
+}
+
 declare global {
     namespace Express {
         interface Request {

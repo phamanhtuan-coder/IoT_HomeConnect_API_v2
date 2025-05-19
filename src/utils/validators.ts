@@ -278,6 +278,59 @@ export const alertIdSchema = z.object({
     }),
 });
 
+export const ticketTypeSchema = z.object({
+    body: z.object({
+        type_name: z
+            .string()
+            .min(1, "Ticket type name is required")
+            .max(50, "Ticket type name must be 50 characters or less"),
+        priority: z
+            .number()
+            .int()
+            .min(1, "Priority must be at least 1")
+            .max(5, "Priority must not exceed 5")
+            .optional()
+            .default(1),
+        is_active: z.boolean().optional().default(true),
+    }),
+});
+
+export const updateTicketTypeSchema = z.object({
+    body: z.object({
+        type_name: z
+            .string()
+            .min(1, "Ticket type name is required")
+            .max(50, "Ticket type name must be 50 characters or less")
+            .optional(),
+        priority: z
+            .number()
+            .int()
+            .min(1, "Priority must be at least 1")
+            .max(5, "Priority must not exceed 5")
+            .optional(),
+        is_active: z.boolean().optional(),
+    }),
+});
+
+export const updateTicketTypePrioritySchema = z.object({
+    body: z.object({
+        priority: z
+            .number()
+            .int()
+            .min(1, "Priority must be at least 1")
+            .max(5, "Priority must not exceed 5"),
+    }),
+});
+
+export const ticketTypeIdSchema = z.object({
+    params: z.object({
+        ticketTypeId: z
+            .string()
+            .transform((val) => parseInt(val))
+            .refine((val) => val > 0, "Ticket Type ID must be a positive number"),
+    }),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>['body'];
 export type UserRegisterInput = z.infer<typeof userRegisterSchema>['body'];
 export type EmployeeRegisterInput = z.infer<typeof employeeRegisterSchema>['body'];
@@ -311,3 +364,10 @@ export type AlertTypeIdInput = z.infer<typeof alertTypeIdSchema>["params"];
 export type AlertInput = z.infer<typeof alertSchema>["body"];
 export type UpdateAlertInput = z.infer<typeof updateAlertSchema>["body"];
 export type AlertIdInput = z.infer<typeof alertIdSchema>["params"];
+
+export type TicketTypeInput = z.infer<typeof ticketTypeSchema>["body"];
+export type UpdateTicketTypeInput = z.infer<typeof updateTicketTypeSchema>["body"];
+export type UpdateTicketTypePriorityInput = z.infer<
+    typeof updateTicketTypePrioritySchema
+>["body"];
+export type TicketTypeIdInput = z.infer<typeof ticketTypeIdSchema>["params"];

@@ -12,6 +12,7 @@ import sharedPermissionRoutes from "./sharedPermission.routes";
 import shareRequestRoutes from "./shareRequest.routes";
 import alertTypeRoutes from "./alert-type.routes";
 import alertRoutes from "./alert.routes";
+import ticketTypeRoutes from "./ticket-type.routes";
 
 
 const router = Router();
@@ -29,5 +30,6 @@ router.use('/permissions', sharedPermissionRoutes);
 router.use('/share-requests', shareRequestRoutes);
 router.use("/alert-types", alertTypeRoutes);
 router.use("/alerts", alertRoutes);
+router.use("/api/ticket-types", ticketTypeRoutes);
 
 export default router;
