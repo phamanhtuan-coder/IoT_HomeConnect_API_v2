@@ -217,6 +217,22 @@ export interface TicketType {
     is_deleted: boolean | null;
 }
 
+export interface Ticket {
+    ticket_id: number;
+    user_id: string | null;
+    device_serial: string | null;
+    ticket_type_id: number;
+    description: string | null;
+    evidence: any | null;
+    status: string | null;
+    created_at: Date | null;
+    updated_at: Date | null;
+    assigned_to: string | null;
+    resolved_at: Date | null;
+    resolve_solution: string | null;
+    is_deleted: boolean | null;
+}
+
 declare global {
     namespace Express {
         interface Request {
