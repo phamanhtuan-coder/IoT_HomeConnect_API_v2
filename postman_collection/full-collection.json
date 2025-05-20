@@ -4968,6 +4968,481 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Hourly Value",
+      "item": [
+        {
+          "name": "Create Hourly Value",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Hourly Value created successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "  pm.expect(response.hourly_value_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"space_id\": 1,\n  \"hour_timestamp\": \"2025-05-20T10:00:00Z\",\n  \"avg_value\": {\"temperature\": 25.5, \"humidity\": 60, \"gas\": 200},\n  \"sample_count\": 360\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/hourly-values",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hourly-values"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Hourly Value",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Hourly Value updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.hourly_value_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"avg_value\": {\"temperature\": 26.0, \"humidity\": 65, \"gas\": 210},\n  \"sample_count\": 400\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/hourly-values/:hourlyValueId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hourly-values",
+                ":hourlyValueId"
+              ],
+              "variable": [
+                {
+                  "key": "hourlyValueId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Soft Delete Hourly Value",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Hourly Value soft deleted successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(204);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hourly-values/:hourlyValueId/soft",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hourly-values",
+                ":hourlyValueId",
+                "soft"
+              ],
+              "variable": [
+                {
+                  "key": "hourlyValueId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Hard Delete Hourly Value",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Hourly Value hard deleted successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(204);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hourly-values/:hourlyValueId/hard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hourly-values",
+                ":hourlyValueId",
+                "hard"
+              ],
+              "variable": [
+                {
+                  "key": "hourlyValueId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Hourly Value by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Hourly Value retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.hourly_value_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hourly-values/:hourlyValueId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hourly-values",
+                ":hourlyValueId"
+              ],
+              "variable": [
+                {
+                  "key": "hourlyValueId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Hourly Values",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Hourly Values retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hourly-values",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hourly-values"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Hourly Values by Device",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Hourly Values by Device retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hourly-values/device/:device_serial?start_time=2025-05-20T00:00:00Z&end_time=2025-05-21T00:00:00Z&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hourly-values",
+                "device",
+                ":device_serial"
+              ],
+              "query": [
+                {
+                  "key": "start_time",
+                  "value": "2025-05-20T00:00:00Z"
+                },
+                {
+                  "key": "end_time",
+                  "value": "2025-05-21T00:00:00Z"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "device_serial",
+                  "value": "ABC123"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Hourly Values by Space",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Hourly Values by Space retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hourly-values/space/:spaceId?start_time=2025-05-20T00:00:00Z&end_time=2025-05-21T00:00:00Z&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hourly-values",
+                "space",
+                ":spaceId"
+              ],
+              "query": [
+                {
+                  "key": "start_time",
+                  "value": "2025-05-20T00:00:00Z"
+                },
+                {
+                  "key": "end_time",
+                  "value": "2025-05-21T00:00:00Z"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "spaceId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Hourly Value Statistics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Hourly Value Statistics retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.stats).to.be.an('array');",
+                  "  pm.expect(response.chart).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hourly-values/statistics/:device_serial?type=daily&start_time=2025-05-20T00:00:00Z&end_time=2025-05-21T00:00:00Z",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hourly-values",
+                "statistics",
+                ":device_serial"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "daily"
+                },
+                {
+                  "key": "start_time",
+                  "value": "2025-05-20T00:00:00Z"
+                },
+                {
+                  "key": "end_time",
+                  "value": "2025-05-21T00:00:00Z"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "device_serial",
+                  "value": "ABC123"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
