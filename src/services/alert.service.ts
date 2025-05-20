@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { ErrorCodes, throwError } from "../utils/errors";
 import { AlertType, Device } from "../types/auth";
 import admin from "../config/firebase";
-import { NotificationService } from "./notification.service";
+import  NotificationService from "./notification.service";
 
 interface Alert {
     alert_id: number;

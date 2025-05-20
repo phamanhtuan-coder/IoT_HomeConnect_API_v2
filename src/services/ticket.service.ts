@@ -1,84 +1,81 @@
-import { PrismaClient } from "@prisma/client";
-import { ErrorCodes, throwError } from "../utils/errors";
-import { Ticket } from "../types/auth";
+// src/services/ticket.service.ts
+import { PrismaClient } from '@prisma/client';
+import { ErrorCodes, throwError } from '../utils/errors';
+import { Ticket, TicketType } from '../types/auth';
+import NotificationService from './notification.service';
+import { NotificationType } from '../types/notification';
 
 class TicketService {
   private prisma: PrismaClient;
+  private notificationService: NotificationService;
 
   constructor() {
     this.prisma = new PrismaClient();
+    this.notificationService = new NotificationService();
   }
 
-  async createTicket(
-    userId: string,
-    data: {
-      device_serial?: string;
-      ticket_type_id: number;
-      description?: string;
-      evidence?: any;
-    }
-  ): Promise<Ticket> {
-    // Validate ticket_type_id
-    const ticketType = await this.prisma.ticket_types.findUnique({
-      where: { ticket_type_id: data.ticket_type_id, is_deleted: false },
+  async createTicket(input: {
+    user_id: string;
+    device_serial?: string;
+    ticket_type_id: number;
+    description?: string;
+    evidence?: any;
+  }): Promise<Ticket> {
+    const { user_id, device_serial, ticket_type_id, description, evidence } = input;
+
+    const account = await this.prisma.account.findUnique({
+      where: { account_id: user_id, deleted_at: null },
     });
-    if (!ticketType) {
-      throwError(ErrorCodes.NOT_FOUND, "Ticket type not found");
+    if (!account) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
+
+    if (device_serial) {
+      const device = await this.prisma.devices.findUnique({
+        where: { serial_number: device_serial, is_deleted: false },
+      });
+      if (!device) throwError(ErrorCodes.NOT_FOUND, 'Device not found');
     }
 
-    // Validate device_serial if provided
-    if (data.device_serial) {
-      const device = await this.prisma.devices.findUnique({
-        where: { serial_number: data.device_serial, is_deleted: false },
-      });
-      if (!device) {
-        throwError(ErrorCodes.NOT_FOUND, "Device not found");
-      }
-    }
+    const ticketType = await this.prisma.ticket_types.findUnique({
+      where: { ticket_type_id, is_deleted: false },
+    });
+    if (!ticketType) throwError(ErrorCodes.NOT_FOUND, 'Ticket type not found');
 
     const ticket = await this.prisma.tickets.create({
       data: {
-        user_id: userId,
-        device_serial: data.device_serial,
-        ticket_type_id: data.ticket_type_id,
-        description: data.description,
-        evidence: data.evidence,
-        status: "pending",
+        user_id,
+        device_serial,
+        ticket_type_id,
+        description,
+        evidence,
+        status: 'pending',
+        created_at: new Date(),
+        updated_at: new Date(),
       },
+    });
+
+    await this.notificationService.createNotification({
+      account_id: user_id,
+      text: `New ticket created: ${description || 'No description provided'}`,
+      type: NotificationType.TICKET,
     });
 
     return this.mapPrismaTicketToAuthTicket(ticket);
   }
 
   async updateTicket(
-    ticketId: number,
-    data: {
-      description?: string;
-      evidence?: any;
-      status?: string;
-      assigned_to?: string;
-      resolve_solution?: string;
-    }
+      ticketId: number,
+      data: {
+        description?: string;
+        evidence?: any;
+        status?: 'pending' | 'in_progress' | 'approved' | 'rejected' | 'resolved';
+        assigned_to?: string;
+        resolve_solution?: string;
+      }
   ): Promise<Ticket> {
     const ticket = await this.prisma.tickets.findUnique({
       where: { ticket_id: ticketId, is_deleted: false },
     });
-    if (!ticket) {
-      throwError(ErrorCodes.NOT_FOUND, "Ticket not found");
-    }
-
-    // Validate assigned_to if provided
-    if (data.assigned_to) {
-      const employee = await this.prisma.account.findUnique({
-        where: { account_id: data.assigned_to },
-      });
-      if (!employee || !employee.employee_id) {
-        throwError(ErrorCodes.NOT_FOUND, "Employee not found");
-      }
-    }
-
-    // Set resolved_at if status is resolved
-    const resolved_at = data.status === "resolved" ? new Date() : undefined;
+    if (!ticket) throwError(ErrorCodes.NOT_FOUND, 'Ticket not found');
 
     const updatedTicket = await this.prisma.tickets.update({
       where: { ticket_id: ticketId },
@@ -88,10 +85,18 @@ class TicketService {
         status: data.status,
         assigned_to: data.assigned_to,
         resolve_solution: data.resolve_solution,
-        resolved_at,
         updated_at: new Date(),
+        resolved_at: data.status === 'resolved' ? new Date() : undefined,
       },
     });
+
+    if (data.status) {
+      await this.notificationService.createNotification({
+        account_id: ticket!.user_id!,
+        text: `Ticket #${ticketId} status updated to ${data.status}.`,
+        type: NotificationType.TICKET,
+      });
+    }
 
     return this.mapPrismaTicketToAuthTicket(updatedTicket);
   }
@@ -100,13 +105,17 @@ class TicketService {
     const ticket = await this.prisma.tickets.findUnique({
       where: { ticket_id: ticketId, is_deleted: false },
     });
-    if (!ticket) {
-      throwError(ErrorCodes.NOT_FOUND, "Ticket not found");
-    }
+    if (!ticket) throwError(ErrorCodes.NOT_FOUND, 'Ticket not found');
 
     await this.prisma.tickets.update({
       where: { ticket_id: ticketId },
       data: { is_deleted: true, updated_at: new Date() },
+    });
+
+    await this.notificationService.createNotification({
+      account_id: ticket!.user_id!,
+      text: `Ticket #${ticketId} has been deleted.`,
+      type: NotificationType.TICKET,
     });
   }
 
@@ -114,11 +123,18 @@ class TicketService {
     const ticket = await this.prisma.tickets.findUnique({
       where: { ticket_id: ticketId, is_deleted: false },
     });
-    if (!ticket) {
-      throwError(ErrorCodes.NOT_FOUND, "Ticket not found");
-    }
+    if (!ticket) throwError(ErrorCodes.NOT_FOUND, 'Ticket not found');
 
     return this.mapPrismaTicketToAuthTicket(ticket);
+  }
+
+  async getTicketsByUser(userId: string): Promise<Ticket[]> {
+    const tickets = await this.prisma.tickets.findMany({
+      where: { user_id: userId, is_deleted: false },
+      orderBy: { created_at: 'desc' },
+    });
+
+    return tickets.map(this.mapPrismaTicketToAuthTicket);
   }
 
   async getAllTickets(filters: {
@@ -129,31 +145,32 @@ class TicketService {
     created_at_end?: Date;
     resolved_at_start?: Date;
     resolved_at_end?: Date;
+    page?: number;
+    limit?: number;
   }): Promise<Ticket[]> {
-    const where: any = { is_deleted: false };
-
-    if (filters.user_id) where.user_id = filters.user_id;
-    if (filters.ticket_type_id) where.ticket_type_id = filters.ticket_type_id;
-    if (filters.status) where.status = filters.status;
-    if (filters.created_at_start || filters.created_at_end) {
-      where.created_at = {};
-      if (filters.created_at_start)
-        where.created_at.gte = filters.created_at_start;
-      if (filters.created_at_end) where.created_at.lte = filters.created_at_end;
-    }
-    if (filters.resolved_at_start || filters.resolved_at_end) {
-      where.resolved_at = {};
-      if (filters.resolved_at_start)
-        where.resolved_at.gte = filters.resolved_at_start;
-      if (filters.resolved_at_end)
-        where.resolved_at.lte = filters.resolved_at_end;
-    }
+    const { user_id, ticket_type_id, status, created_at_start, created_at_end, resolved_at_start, resolved_at_end, page = 1, limit = 10 } = filters;
 
     const tickets = await this.prisma.tickets.findMany({
-      where,
+      where: {
+        user_id,
+        ticket_type_id,
+        status,
+        created_at: {
+          gte: created_at_start,
+          lte: created_at_end,
+        },
+        resolved_at: {
+          gte: resolved_at_start,
+          lte: resolved_at_end,
+        },
+        is_deleted: false,
+      },
+      orderBy: { created_at: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
-    return tickets.map((ticket) => this.mapPrismaTicketToAuthTicket(ticket));
+    return tickets.map(this.mapPrismaTicketToAuthTicket);
   }
 
   private mapPrismaTicketToAuthTicket(ticket: any): Ticket {

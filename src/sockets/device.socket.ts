@@ -1,32 +1,35 @@
-// src/sockets/device.socket.ts
-import { Server, Socket, Namespace } from "socket.io";
-import { PrismaClient } from "@prisma/client";
-import redisClient from "../utils/redis";
-import { DeviceSocket, ServerToClientEvents, ClientToServerEvents } from "../types/socket";
-import { ErrorCodes, throwError } from "../utils/errors";
-import admin from "../config/firebase";
-import AlertService from "../services/alert.service";
+import { Server, Socket, Namespace } from 'socket.io';
+import { PrismaClient } from '@prisma/client';
+import redisClient from '../utils/redis';
+import { DeviceSocket, ServerToClientEvents, ClientToServerEvents } from '../types/socket';
+import { ErrorCodes, throwError } from '../utils/errors';
+import admin from '../config/firebase';
+import AlertService from '../services/alert.service';
+import NotificationService from '../services/notification.service';
+import { NotificationType } from '../types/notification';
 
 const prisma = new PrismaClient();
-const alertService = new AlertService(); // Instantiate AlertService
+const alertService = new AlertService();
+const notificationService = new NotificationService();
 
 const ALERT_TYPES = {
-    GAS_HIGH: 1, // AlertTypeID=1: Gas alert
-    TEMP_HIGH: 2, // AlertTypeID=2: Temperature alert
+    GAS_HIGH: 1,
+    TEMP_HIGH: 2,
+    DEVICE_DISCONNECT: 3,
 };
 
 const ALERT_MESSAGES = {
-    GAS_HIGH: "KHẨN CẤP! Nồng độ khí quá cao!",
-    TEMP_HIGH: "KHẨN CẤP! Nhiệt độ quá cao!",
+    GAS_HIGH: 'KHẨN CẤP! Nồng độ khí quá cao!',
+    TEMP_HIGH: 'KHẨN CẤP! Nhiệt độ quá cao!',
+    DEVICE_DISCONNECT: 'Device has been disconnected!',
 };
 
 export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClientEvents>) => {
-    const deviceNamespace = io.of("/device");
-    const clientNamespace = io.of("/client");
+    const deviceNamespace = io.of('/device');
+    const clientNamespace = io.of('/client');
 
-    // Device namespace (IoT devices)
-    deviceNamespace.on("connection", async (socket: DeviceSocket) => {
-        const { deviceId, isIoTDevice = "true" } = socket.handshake.query as {
+    deviceNamespace.on('connection', async (socket: DeviceSocket) => {
+        const { deviceId, isIoTDevice = 'true' } = socket.handshake.query as {
             deviceId?: string;
             isIoTDevice?: string;
         };
@@ -36,7 +39,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
             return;
         }
 
-        socket.data = { deviceId, isIoTDevice: isIoTDevice === "true" };
+        socket.data = { deviceId, isIoTDevice: isIoTDevice === 'true' };
 
         try {
             const device = await prisma.devices.findUnique({
@@ -44,42 +47,39 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 include: { account: true, spaces: true },
             });
             if (!device) {
-                throwError(ErrorCodes.NOT_FOUND, "Device not found");
+                throwError(ErrorCodes.NOT_FOUND, 'Device not found');
             }
 
             await prisma.devices.update({
                 where: { serial_number: deviceId },
-                data: { link_status: "linked", updated_at: new Date() },
+                data: { link_status: 'linked', updated_at: new Date() },
             });
 
             if (device!.account_id) {
-                await redisClient.set(`device:${deviceId}:account`, device!.account_id, {
-                    EX: 3600,
+                await redisClient.set(`device:${deviceId}:account`, device!.account_id, { EX: 3600 });
+                await notificationService.createNotification({
+                    account_id: device!.account_id,
+                    text: `Device ${deviceId} is now online.`,
+                    type: NotificationType.SYSTEM,
                 });
             }
 
             socket.join(`device:${deviceId}`);
 
-            clientNamespace.emit("device_connect", { deviceId });
-            clientNamespace.emit("device_online", { deviceId });
+            clientNamespace.emit('device_connect', { deviceId });
+            clientNamespace.emit('device_online', { deviceId });
 
-            socket.on("device_online", () =>
-                handleDeviceOnline(socket, clientNamespace)
-            );
-            socket.on("sensorData", (data) =>
-                handleSensorData(socket, data, clientNamespace)
-            );
-            socket.on("ping", () => {});
-            socket.on("disconnect", () =>
-                handleDeviceDisconnect(socket, clientNamespace)
-            );
+            socket.on('device_online', () => handleDeviceOnline(socket, clientNamespace));
+            socket.on('sensorData', (data) => handleSensorData(socket, data, clientNamespace));
+            socket.on('ping', () => {});
+            socket.on('disconnect', () => handleDeviceDisconnect(socket, clientNamespace));
         } catch (error) {
-            console.error("Socket error:", error);
+            console.error('Socket error:', error);
             socket.disconnect();
         }
     });
 
-    clientNamespace.on("connection", async (socket: DeviceSocket) => {
+    clientNamespace.on('connection', async (socket: DeviceSocket) => {
         const { deviceId, accountId } = socket.handshake.query as {
             deviceId?: string;
             accountId?: string;
@@ -98,7 +98,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 include: { account: true, spaces: { include: { houses: true } } },
             });
             if (!device) {
-                throwError(ErrorCodes.NOT_FOUND, "Device not found");
+                throwError(ErrorCodes.NOT_FOUND, 'Device not found');
             }
 
             const hasAccess =
@@ -119,28 +119,28 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 }));
 
             if (!hasAccess) {
-                throwError(ErrorCodes.FORBIDDEN, "No permission to access this device");
+                throwError(ErrorCodes.FORBIDDEN, 'No permission to access this device');
             }
 
             socket.join(`device:${deviceId}`);
 
-            socket.on("start_real_time_device", ({ deviceId: targetDeviceId }) => {
+            socket.on('start_real_time_device', ({ deviceId: targetDeviceId }) => {
                 if (targetDeviceId === deviceId) {
                     socket.join(`device:${deviceId}`);
                 }
             });
 
-            socket.on("stop_real_time_device", ({ deviceId: targetDeviceId }) => {
+            socket.on('stop_real_time_device', ({ deviceId: targetDeviceId }) => {
                 if (targetDeviceId === deviceId) {
                     socket.leave(`device:${deviceId}`);
                 }
             });
 
-            socket.on("disconnect", () => {
+            socket.on('disconnect', () => {
                 console.log(`Mobile client ${socket.id} disconnected`);
             });
         } catch (error) {
-            console.error("Client socket error:", error);
+            console.error('Client socket error:', error);
             socket.disconnect();
         }
     });
@@ -150,9 +150,9 @@ async function handleDeviceOnline(socket: DeviceSocket, clientNamespace: Namespa
     const { deviceId } = socket.data;
     await prisma.devices.update({
         where: { serial_number: deviceId },
-        data: { link_status: "linked", updated_at: new Date() },
+        data: { link_status: 'linked', updated_at: new Date() },
     });
-    clientNamespace.emit("device_online", { deviceId });
+    clientNamespace.emit('device_online', { deviceId });
 }
 
 async function handleSensorData(
@@ -176,6 +176,7 @@ async function handleSensorData(
 
     const device = await prisma.devices.findUnique({
         where: { serial_number: deviceId },
+        include: { account: true },
     });
     if (device) {
         await prisma.alerts.create({
@@ -183,39 +184,61 @@ async function handleSensorData(
                 device_serial: deviceId,
                 space_id: device.space_id,
                 message: JSON.stringify(data),
-                alert_type_id: data.type === "smokeSensor" ? 1 : 0,
-                status: "unread",
+                alert_type_id: data.type === 'smokeSensor' ? 1 : 0,
+                status: 'unread',
             },
         });
+
+        if (device.account_id) {
+            await notificationService.createNotification({
+                account_id: device.account_id,
+                text: `New sensor data received from device ${deviceId}: ${JSON.stringify(data)}`,
+                type: NotificationType.ALERT,
+            });
+        }
     }
 
     let alertCreated = false;
-    if (typeof data.gas === "number" && data.gas > 500) {
+    if (typeof data.gas === 'number' && data.gas > 500) {
         const message = `${ALERT_MESSAGES.GAS_HIGH} (gas = ${data.gas})`;
         if (device) {
-            // @ts-ignore
-            await alertService.createAlert(device, ALERT_TYPES.GAS_HIGH, message);
+            await alertService.createAlert(
+                // @ts-ignore
+                device, ALERT_TYPES.GAS_HIGH, message);
+            await notificationService.createNotification({
+                // @ts-ignore
+                account_id: device.account_id,
+                text: message,
+                type: NotificationType.ALERT,
+            });
             alertCreated = true;
         }
     }
-    if (typeof data.temperature === "number" && data.temperature > 40) {
+    if (typeof data.temperature === 'number' && data.temperature > 40) {
         const message = `${ALERT_MESSAGES.TEMP_HIGH} (temp = ${data.temperature}°C)`;
         if (device) {
-            // @ts-ignore
-            await alertService.createAlert(device, ALERT_TYPES.TEMP_HIGH, message);
+            await alertService.createAlert(
+                // @ts-ignore
+                device, ALERT_TYPES.TEMP_HIGH, message);
+            await notificationService.createNotification({
+                // @ts-ignore
+                account_id: device.account_id,
+                text: message,
+                type: NotificationType.ALERT,
+            });
             alertCreated = true;
         }
     }
 
     if (alertCreated) {
-        console.log(`Alert created for device ${deviceId}`);
+        console.log(`Alert and notification created for device ${deviceId}`);
     }
 
-    clientNamespace.to(`device:${deviceId}`).emit("sensorData", {
+    clientNamespace.to(`device:${deviceId}`).emit('sensorData', {
         deviceId,
         ...data,
     });
-    clientNamespace.to(`device:${deviceId}`).emit("realtime_device_value", {
+    clientNamespace.to(`device:${deviceId}`).emit('realtime_device_value', {
         serial: deviceId,
         data: { val: data },
     });
@@ -226,10 +249,26 @@ async function handleDeviceDisconnect(socket: DeviceSocket, clientNamespace: Nam
 
     await prisma.devices.update({
         where: { serial_number: deviceId },
-        data: { link_status: "unlinked", power_status: false, updated_at: new Date() },
+        data: { link_status: 'unlinked', power_status: false, updated_at: new Date() },
     });
 
-    clientNamespace.emit("device_disconnect", { deviceId });
+    const device = await prisma.devices.findUnique({
+        where: { serial_number: deviceId },
+        include: { account: true },
+    });
+
+    if (device?.account_id) {
+        await alertService.createAlert(
+            // @ts-ignore
+            device, ALERT_TYPES.DEVICE_DISCONNECT, ALERT_MESSAGES.DEVICE_DISCONNECT);
+        await notificationService.createNotification({
+            account_id: device.account_id,
+            text: `Device ${deviceId} has been disconnected.`,
+            type: NotificationType.SECURITY,
+        });
+    }
+
+    clientNamespace.emit('device_disconnect', { deviceId });
 
     await redisClient.del(`device:${deviceId}:account`);
 }

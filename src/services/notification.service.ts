@@ -1,28 +1,213 @@
-// src/services/notification.service.ts
+import { PrismaClient } from '@prisma/client';
+import { ErrorCodes, throwError } from '../utils/errors';
+import { Notification, NotificationType } from '../types/notification';
+import admin from '../config/firebase';
 import transporter from '../config/nodemailer';
+import path from 'path';
 
-export class NotificationService {
-    async sendOtpEmail(email: string, otp: string) {
+class NotificationService {
+    private prisma: PrismaClient;
+
+    constructor() {
+        this.prisma = new PrismaClient();
+    }
+
+    async createNotification(input: {
+        account_id?: string;
+        role_id?: number;
+        text: string;
+        type: NotificationType;
+        is_read?: boolean;
+    }): Promise<Notification> {
+        const { account_id, role_id, text, type, is_read = false } = input;
+
+        if (account_id) {
+            const account = await this.prisma.account.findUnique({
+                where: { account_id, deleted_at: null },
+            });
+            if (!account) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
+        }
+
+        if (role_id) {
+            const role = await this.prisma.role.findUnique({
+                where: { id: role_id },
+            });
+            if (!role) throwError(ErrorCodes.NOT_FOUND, 'Role not found');
+        }
+
+        const notification = await this.prisma.notification.create({
+            // @ts-ignore
+            data: {
+                account_id,
+                role_id,
+                text,
+                type,
+                is_read,
+                created_at: new Date(),
+                updated_at: new Date(),
+            },
+        });
+
+        // Send email if applicable
+        await this.sendNotificationEmail({ account_id, text, type });
+
+        // Send FCM notification if applicable
+        if (account_id) {
+            const account = await this.prisma.account.findUnique({
+                where: { account_id },
+                include: { customer: true },
+            });
+            if (account?.customer?.email) {
+                const fcmMessage = {
+                    token: account.customer.email, // Adjust based on actual FCM token field
+                    notification: {
+                        title: `New ${type} Notification`,
+                        body: text,
+                    },
+                    data: { type },
+                };
+                await admin.messaging().send(fcmMessage);
+            }
+        }
+
+        return this.mapPrismaNotificationToAuthNotification(notification);
+    }
+
+    async updateNotification(id: number, data: { is_read?: boolean }): Promise<Notification> {
+        const notification = await this.prisma.notification.findUnique({
+            where: { id, deleted_at: null },
+        });
+        if (!notification) throwError(ErrorCodes.NOT_FOUND, 'Notification not found');
+
+        const updatedNotification = await this.prisma.notification.update({
+            where: { id },
+            data: { is_read: data.is_read, updated_at: new Date() },
+        });
+
+        return this.mapPrismaNotificationToAuthNotification(updatedNotification);
+    }
+
+    async softDeleteNotification(id: number): Promise<void> {
+        const notification = await this.prisma.notification.findUnique({
+            where: { id, deleted_at: null },
+        });
+        if (!notification) throwError(ErrorCodes.NOT_FOUND, 'Notification not found');
+
+        await this.prisma.notification.update({
+            where: { id },
+            data: { deleted_at: new Date(), updated_at: new Date() },
+        });
+    }
+
+    async getNotificationById(id: number): Promise<Notification> {
+        const notification = await this.prisma.notification.findUnique({
+            where: { id, deleted_at: null },
+        });
+        if (!notification) throwError(ErrorCodes.NOT_FOUND, 'Notification not found');
+
+        return this.mapPrismaNotificationToAuthNotification(notification);
+    }
+
+    async getNotificationsByUser(accountId: string): Promise<Notification[]> {
+        const notifications = await this.prisma.notification.findMany({
+            where: { account_id: accountId, deleted_at: null },
+            orderBy: { created_at: 'desc' },
+        });
+
+        return notifications.map(this.mapPrismaNotificationToAuthNotification);
+    }
+
+    async getAllNotifications(filters: {
+        account_id?: string;
+        role_id?: number;
+        type?: NotificationType;
+        is_read?: boolean;
+        page?: number;
+        limit?: number;
+    }): Promise<Notification[]> {
+        const { account_id, role_id, type, is_read, page = 1, limit = 10 } = filters;
+
+        const notifications = await this.prisma.notification.findMany({
+            where: {
+                account_id,
+                role_id,
+                type,
+                is_read,
+                deleted_at: null,
+            },
+            orderBy: { created_at: 'desc' },
+            skip: (page - 1) * limit,
+            take: limit,
+        });
+
+        return notifications.map(this.mapPrismaNotificationToAuthNotification);
+    }
+
+    async sendNotificationEmail(input: { account_id?: string; text: string; type: NotificationType }) {
+        if (!input.account_id) return;
+
+        const account = await this.prisma.account.findUnique({
+            where: { account_id: input.account_id },
+            include: { customer: true },
+        });
+        if (!account?.customer?.email) return;
+
+        let template = 'notification';
+        if (input.type === NotificationType.SHARE_REQUEST) template = 'share_request';
+        if (input.type === NotificationType.TICKET) template = 'ticket';
+        if (input.type === NotificationType.SECURITY) template = 'security';
+
+        await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: account.customer.email,
+            subject: `New ${input.type} Notification`,
+            template,
+            context: {
+                text: input.text,
+                currentYear: new Date().getFullYear(),
+            },
+        });
+    }
+
+    async sendOtpEmail(email: string, otp: string): Promise<void> {
         await transporter.sendMail({
             from: process.env.EMAIL_USER,
             to: email,
             subject: 'Your OTP Code',
             template: 'otp',
-            context: { otp, currentYear: new Date().getFullYear() },
+            context: {
+                otp,
+                currentYear: new Date().getFullYear(),
+            },
         });
-        console.log('OTP email sent to', email);
-        return { message: 'OTP sent', email, otp };
     }
 
-    async sendEmergencyAlertEmail(email: string, message: string) {
+    async sendEmergencyAlertEmail(email: string, message: string): Promise<void> {
         await transporter.sendMail({
             from: process.env.EMAIL_USER,
             to: email,
-            subject: 'Cảnh Báo Khẩn Cấp',
+            subject: 'Emergency Alert',
             template: 'alert',
-            context: { message, currentYear: new Date().getFullYear() },
+            context: {
+                message,
+                currentYear: new Date().getFullYear(),
+            },
         });
-        console.log('Emergency alert email sent to', email);
-        return { message: 'Emergency alert sent', email };
+    }
+
+    private mapPrismaNotificationToAuthNotification(notification: any): Notification {
+        return {
+            id: notification.id,
+            account_id: notification.account_id,
+            role_id: notification.role_id,
+            text: notification.text,
+            type: notification.type as NotificationType,
+            is_read: notification.is_read,
+            created_at: notification.created_at,
+            updated_at: notification.updated_at,
+            deleted_at: notification.deleted_at,
+        };
     }
 }
+
+export default NotificationService;
