@@ -9,6 +9,12 @@ class TicketTypeController {
     this.ticketTypeService = new TicketTypeService();
   }
 
+  /**
+   * Tạo loại phiếu hỗ trợ mới
+   * @param req Request Express với thông tin loại phiếu trong body
+   * @param res Response Express
+   * @param next Middleware tiếp theo
+   */
   createTicketType = async (req: Request, res: Response, next: NextFunction) => {
     const employeeId = req.user?.employeeId;
     if (!employeeId) {
@@ -28,6 +34,12 @@ class TicketTypeController {
     }
   };
 
+  /**
+   * Cập nhật thông tin loại phiếu hỗ trợ
+   * @param req Request Express với ID loại phiếu trong params và thông tin cập nhật trong body
+   * @param res Response Express
+   * @param next Middleware tiếp theo
+   */
   updateTicketType = async (req: Request, res: Response, next: NextFunction) => {
     const employeeId = req.user?.employeeId;
     if (!employeeId) {
@@ -47,6 +59,12 @@ class TicketTypeController {
     }
   };
 
+  /**
+   * Cập nhật mức độ ưu tiên của loại phiếu hỗ trợ
+   * @param req Request Express với ID loại phiếu trong params và mức độ ưu tiên trong body
+   * @param res Response Express
+   * @param next Middleware tiếp theo
+   */
   updateTicketTypePriority = async (
     req: Request,
     res: Response,
@@ -70,6 +88,12 @@ class TicketTypeController {
     }
   };
 
+  /**
+   * Xóa loại phiếu hỗ trợ
+   * @param req Request Express với ID loại phiếu trong params
+   * @param res Response Express
+   * @param next Middleware tiếp theo
+   */
   deleteTicketType = async (req: Request, res: Response, next: NextFunction) => {
     const employeeId = req.user?.employeeId;
     if (!employeeId) {
@@ -85,6 +109,12 @@ class TicketTypeController {
     }
   };
 
+  /**
+   * Lấy thông tin loại phiếu hỗ trợ theo ID
+   * @param req Request Express với ID loại phiếu trong params
+   * @param res Response Express
+   * @param next Middleware tiếp theo
+   */
   getTicketTypeById = async (req: Request, res: Response, next: NextFunction) => {
     const { ticketTypeId } = req.params;
     try {
@@ -97,6 +127,12 @@ class TicketTypeController {
     }
   };
 
+  /**
+   * Lấy danh sách tất cả loại phiếu hỗ trợ
+   * @param req Request Express
+   * @param res Response Express
+   * @param next Middleware tiếp theo
+   */
   getAllTicketTypes = async (
     req: Request,
     res: Response,
@@ -112,3 +148,4 @@ class TicketTypeController {
 }
 
 export default TicketTypeController;
+

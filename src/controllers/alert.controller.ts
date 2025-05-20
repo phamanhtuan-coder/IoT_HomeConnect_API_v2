@@ -9,6 +9,12 @@ class AlertController {
         this.alertService = new AlertService();
     }
 
+    /**
+     * Tạo cảnh báo mới
+     * @param req Request Express với thông tin cảnh báo trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     createAlert = async (req: Request, res: Response, next: NextFunction) => {
         const employeeId = req.user?.employeeId;
         if (!employeeId) {
@@ -35,6 +41,12 @@ class AlertController {
         }
     };
 
+    /**
+     * Cập nhật thông tin cảnh báo
+     * @param req Request Express với ID cảnh báo trong params và nội dung cập nhật trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     updateAlert = async (req: Request, res: Response, next: NextFunction) => {
         const employeeId = req.user?.employeeId;
         if (!employeeId) {
@@ -54,6 +66,12 @@ class AlertController {
         }
     };
 
+    /**
+     * Xóa mềm cảnh báo
+     * @param req Request Express với ID cảnh báo trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     softDeleteAlert = async (req: Request, res: Response, next: NextFunction) => {
         const employeeId = req.user?.employeeId;
         if (!employeeId) {
@@ -69,6 +87,12 @@ class AlertController {
         }
     };
 
+    /**
+     * Xóa vĩnh viễn cảnh báo
+     * @param req Request Express với ID cảnh báo trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     hardDeleteAlert = async (req: Request, res: Response, next: NextFunction) => {
         const employeeId = req.user?.employeeId;
         if (!employeeId) {
@@ -84,6 +108,12 @@ class AlertController {
         }
     };
 
+    /**
+     * Lấy thông tin cảnh báo theo ID
+     * @param req Request Express với ID cảnh báo trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getAlertById = async (req: Request, res: Response, next: NextFunction) => {
         const { alertId } = req.params;
         try {
@@ -94,6 +124,12 @@ class AlertController {
         }
     };
 
+    /**
+     * Lấy danh sách tất cả cảnh báo
+     * @param req Request Express
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getAllAlerts = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const alerts = await this.alertService.getAllAlerts();
@@ -105,3 +141,4 @@ class AlertController {
 }
 
 export default AlertController;
+

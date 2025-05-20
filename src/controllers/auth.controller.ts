@@ -18,6 +18,12 @@ class AuthController {
         this.userDeviceService = new UserDeviceService();
     }
 
+    /**
+     * Đăng nhập tài khoản người dùng
+     * @param req Request Express với thông tin đăng nhập trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     loginUser = async (req: Request, res: Response, next: NextFunction) => {
         const { username, password, rememberMe, deviceName, deviceId, deviceUuid } = req.body; // Thay email thành username, bỏ fcmToken
         const ipAddress = req.ip;
@@ -29,7 +35,12 @@ class AuthController {
         }
     };
 
-    // Logout single device.ts
+    /**
+     * Đăng xuất khỏi một thiết bị
+     * @param req Request Express với ID thiết bị trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     logoutUser = async (req: Request, res: Response, next: NextFunction) => {
         const userId = req.user?.userId;
         const userDeviceId = parseInt(req.body.userDeviceId, 10);
@@ -44,7 +55,12 @@ class AuthController {
         res.status(204).send();
     };
 
-    // Logout multiple devices
+    /**
+     * Đăng xuất khỏi nhiều thiết bị
+     * @param req Request Express với danh sách ID thiết bị trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     logoutMultipleDevices = async (req: Request, res: Response, next: NextFunction) => {
         const userId = req.user?.userId;
         const { userDeviceIds } = req.body as LogoutMultipleDevicesRequest; // Type the body
@@ -59,7 +75,12 @@ class AuthController {
         res.status(204).send();
     };
 
-    // Logout all devices
+    /**
+     * Đăng xuất khỏi tất cả thiết bị
+     * @param req Request Express
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     logoutAllDevices = async (req: Request, res: Response, next: NextFunction) => {
         const userId = req.user?.userId;
         const ipAddress = req.ip;
@@ -70,6 +91,12 @@ class AuthController {
         res.status(204).send();
     };
 
+    /**
+     * Đăng nhập tài khoản nhân viên
+     * @param req Request Express với thông tin đăng nhập trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     loginEmployee = async (req: Request, res: Response, next: NextFunction) => {
         const { username, password } = req.body;
         try {
@@ -80,13 +107,24 @@ class AuthController {
         }
     };
 
-
+    /**
+     * Làm mới token truy cập cho nhân viên
+     * @param req Request Express với token làm mới trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     refreshEmployeeToken = async (req: Request, res: Response, next: NextFunction) => {
         const { refreshToken } = req.body;
         const accessToken = await this.authService.refreshEmployeeToken(refreshToken);
         res.json({ accessToken });
     };
 
+    /**
+     * Làm mới token truy cập
+     * @param req Request Express với token làm mới trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     refreshToken = async (req: Request, res: Response, next: NextFunction) => {
         const { refreshToken } = req.body as { refreshToken: string };
         if (!refreshToken) throwError(ErrorCodes.BAD_REQUEST, 'Refresh token required');
@@ -95,12 +133,24 @@ class AuthController {
         res.json({ accessToken });
     };
 
+    /**
+     * Đăng ký tài khoản người dùng mới
+     * @param req Request Express với thông tin đăng ký trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     registerUser = async (req: Request, res: Response, next: NextFunction) => {
         const data = req.body as UserRegisterRequestBody;
         const token = await this.authService.registerUser(data);
         res.status(201).json({ token });
     };
 
+    /**
+     * Đăng ký tài khoản nhân viên mới
+     * @param req Request Express với thông tin đăng ký trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     registerEmployee = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const adminId = req.user?.userId || req.user?.employeeId;
@@ -114,7 +164,12 @@ class AuthController {
         }
     };
 
-
+    /**
+     * Đăng xuất tài khoản nhân viên
+     * @param req Request Express
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     logoutEmployee = async (req: Request, res: Response, next: NextFunction) => {
         const employeeId = req.user?.employeeId;
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
@@ -123,6 +178,12 @@ class AuthController {
         res.status(204).send();
     };
 
+    /**
+     * Cập nhật token thiết bị
+     * @param req Request Express với token thiết bị trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     updateDeviceToken = async (req: Request, res: Response, next: NextFunction) => {
         const { deviceToken } = req.body;
         const accountId = req.user?.userId || req.user?.employeeId;
@@ -139,3 +200,4 @@ class AuthController {
 }
 
 export default AuthController;
+

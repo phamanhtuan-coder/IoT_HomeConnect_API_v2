@@ -10,6 +10,12 @@ class ShareRequestController {
         this.shareRequestService = new ShareRequestService();
     }
 
+    /**
+     * Khởi tạo yêu cầu chia sẻ thiết bị
+     * @param req Request Express với thông tin thiết bị và người nhận trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     initiateShareRequest = async (req: Request, res: Response, next: NextFunction) => {
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
             throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can initiate share requests');
@@ -35,6 +41,12 @@ class ShareRequestController {
         }
     };
 
+    /**
+     * Phê duyệt hoặc từ chối yêu cầu chia sẻ
+     * @param req Request Express với ID yêu cầu trong params và trạng thái chấp nhận trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     approveShareRequest = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -49,6 +61,12 @@ class ShareRequestController {
         }
     };
 
+    /**
+     * Lấy danh sách yêu cầu chia sẻ theo thiết bị
+     * @param req Request Express với ID thiết bị, số seri và ID nhóm trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getShareRequestsByDevice = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { deviceId, serial_number, groupId } = req.params;
@@ -60,6 +78,12 @@ class ShareRequestController {
         }
     };
 
+    /**
+     * Lấy danh sách quyền chia sẻ theo thiết bị
+     * @param req Request Express với ID thiết bị, số seri và ID nhóm trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getSharedPermissionsByDevice = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { deviceId, serial_number, groupId } = req.params;
@@ -71,6 +95,12 @@ class ShareRequestController {
         }
     };
 
+    /**
+     * Lấy danh sách thiết bị được chia sẻ bởi chủ sở hữu
+     * @param req Request Express
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getSharedDevicesByOwner = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -85,3 +115,4 @@ class ShareRequestController {
 }
 
 export default ShareRequestController;
+

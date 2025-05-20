@@ -10,6 +10,12 @@ class SharedPermissionController {
         this.sharedPermissionService = new SharedPermissionService();
     }
 
+    /**
+     * Thu hồi quyền chia sẻ thiết bị
+     * @param req Request Express với ID quyền trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     revokeShareDevice = async (req: Request, res: Response, next: NextFunction) => {
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
             throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can revoke sharing');
@@ -27,6 +33,12 @@ class SharedPermissionController {
         }
     };
 
+    /**
+     * Người nhận tự thu hồi quyền chia sẻ
+     * @param req Request Express với ID quyền trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     revokeShareByRecipient = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -42,3 +54,4 @@ class SharedPermissionController {
 }
 
 export default SharedPermissionController;
+

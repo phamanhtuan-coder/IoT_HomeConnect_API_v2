@@ -9,6 +9,12 @@ class HourlyValueController {
         this.hourlyValueService = new HourlyValueService();
     }
 
+    /**
+     * Tạo giá trị hàng giờ mới
+     * @param req Request Express với dữ liệu giá trị hàng giờ trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     createHourlyValue = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -21,6 +27,12 @@ class HourlyValueController {
         }
     };
 
+    /**
+     * Lấy thông tin giá trị hàng giờ theo ID
+     * @param req Request Express với ID giá trị trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getHourlyValueById = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -34,6 +46,12 @@ class HourlyValueController {
         }
     };
 
+    /**
+     * Lấy danh sách giá trị hàng giờ theo thiết bị
+     * @param req Request Express với số seri thiết bị và các tham số truy vấn trong query
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getHourlyValuesByDevice = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -53,6 +71,12 @@ class HourlyValueController {
         }
     };
 
+    /**
+     * Lấy danh sách giá trị hàng giờ theo không gian
+     * @param req Request Express với ID không gian và các tham số truy vấn trong query
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getHourlyValuesBySpace = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -72,6 +96,12 @@ class HourlyValueController {
         }
     };
 
+    /**
+     * Cập nhật thông tin giá trị hàng giờ
+     * @param req Request Express với ID giá trị trong params và dữ liệu cập nhật trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     updateHourlyValue = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -85,6 +115,12 @@ class HourlyValueController {
         }
     };
 
+    /**
+     * Xóa giá trị hàng giờ
+     * @param req Request Express với ID giá trị trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     deleteHourlyValue = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -98,6 +134,12 @@ class HourlyValueController {
         }
     };
 
+    /**
+     * Lấy thống kê giá trị theo thời gian
+     * @param req Request Express với số seri thiết bị và các tham số thống kê trong query
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getStatistics = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -150,3 +192,4 @@ class HourlyValueController {
 }
 
 export default HourlyValueController;
+

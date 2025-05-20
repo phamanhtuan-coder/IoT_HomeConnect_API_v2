@@ -10,6 +10,12 @@ class SpaceController {
         this.spaceService = new SpaceService();
     }
 
+    /**
+     * Tạo không gian mới
+     * @param req Request Express với thông tin không gian trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     createSpace = async (req: Request, res: Response, next: NextFunction) => {
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
             throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can create spaces');
@@ -23,6 +29,12 @@ class SpaceController {
         }
     };
 
+    /**
+     * Lấy danh sách không gian theo nhà
+     * @param req Request Express với ID nhà trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getSpacesByHouse = async (req: Request, res: Response, next: NextFunction) => {
         const { houseId } = req.params;
 
@@ -34,6 +46,12 @@ class SpaceController {
         }
     };
 
+    /**
+     * Lấy thông tin không gian theo ID
+     * @param req Request Express với ID không gian trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getSpaceById = async (req: Request, res: Response, next: NextFunction) => {
         const { spaceId } = req.params;
 
@@ -45,6 +63,12 @@ class SpaceController {
         }
     };
 
+    /**
+     * Cập nhật thông tin không gian
+     * @param req Request Express với ID không gian trong params và tên không gian trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     updateSpace = async (req: Request, res: Response, next: NextFunction) => {
         const { spaceId } = req.params;
         const { space_name } = req.body;
@@ -60,6 +84,12 @@ class SpaceController {
         }
     };
 
+    /**
+     * Xóa không gian
+     * @param req Request Express với ID không gian trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     deleteSpace = async (req: Request, res: Response, next: NextFunction) => {
         const { spaceId } = req.params;
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
@@ -74,6 +104,12 @@ class SpaceController {
         }
     };
 
+    /**
+     * Lấy tên không gian
+     * @param req Request Express với ID không gian trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getSpaceName = async (req: Request, res: Response, next: NextFunction) => {
         const { spaceId } = req.params;
 
@@ -87,3 +123,4 @@ class SpaceController {
 }
 
 export default SpaceController;
+

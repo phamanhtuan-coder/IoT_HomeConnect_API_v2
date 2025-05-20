@@ -10,6 +10,12 @@ class TicketController {
     this.ticketService = new TicketService();
   }
 
+  /**
+   * Tạo phiếu hỗ trợ mới
+   * @param req Request Express với thông tin phiếu hỗ trợ trong body
+   * @param res Response Express
+   * @param next Middleware tiếp theo
+   */
   createTicket = async (req: Request, res: Response, next: NextFunction) => {
     const accountId = req.user?.userId || req.user?.employeeId;
     if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -29,6 +35,12 @@ class TicketController {
     }
   };
 
+  /**
+   * Cập nhật thông tin phiếu hỗ trợ
+   * @param req Request Express với ID phiếu trong params và thông tin cập nhật trong body
+   * @param res Response Express
+   * @param next Middleware tiếp theo
+   */
   updateTicket = async (req: Request, res: Response, next: NextFunction) => {
     const accountId = req.user?.userId || req.user?.employeeId;
     if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -49,6 +61,12 @@ class TicketController {
     }
   };
 
+  /**
+   * Xóa phiếu hỗ trợ
+   * @param req Request Express với ID phiếu trong params
+   * @param res Response Express
+   * @param next Middleware tiếp theo
+   */
   deleteTicket = async (req: Request, res: Response, next: NextFunction) => {
     const employeeId = req.user?.employeeId;
     if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
@@ -62,6 +80,12 @@ class TicketController {
     }
   };
 
+  /**
+   * Lấy thông tin phiếu hỗ trợ theo ID
+   * @param req Request Express với ID phiếu trong params
+   * @param res Response Express
+   * @param next Middleware tiếp theo
+   */
   getTicketById = async (req: Request, res: Response, next: NextFunction) => {
     const accountId = req.user?.userId || req.user?.employeeId;
     if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -78,6 +102,12 @@ class TicketController {
     }
   };
 
+  /**
+   * Lấy danh sách phiếu hỗ trợ của người dùng hiện tại
+   * @param req Request Express
+   * @param res Response Express
+   * @param next Middleware tiếp theo
+   */
   getTicketsByUser = async (req: Request, res: Response, next: NextFunction) => {
     const accountId = req.user?.userId || req.user?.employeeId;
     if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -90,6 +120,12 @@ class TicketController {
     }
   };
 
+  /**
+   * Lấy tất cả phiếu hỗ trợ với các bộ lọc tùy chọn
+   * @param req Request Express với các tham số truy vấn trong query
+   * @param res Response Express
+   * @param next Middleware tiếp theo
+   */
   getAllTickets = async (req: Request, res: Response, next: NextFunction) => {
     const employeeId = req.user?.employeeId;
     if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
@@ -115,3 +151,4 @@ class TicketController {
 }
 
 export default TicketController;
+

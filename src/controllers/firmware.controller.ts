@@ -9,6 +9,12 @@ class FirmwareController {
         this.firmwareService = new FirmwareService();
     }
 
+    /**
+     * Tạo firmware mới
+     * @param req Request Express với dữ liệu firmware trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     createFirmware = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -21,6 +27,12 @@ class FirmwareController {
         }
     };
 
+    /**
+     * Cập nhật thông tin firmware
+     * @param req Request Express với ID firmware trong params và dữ liệu cập nhật trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     updateFirmware = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -34,6 +46,12 @@ class FirmwareController {
         }
     };
 
+    /**
+     * Xóa firmware
+     * @param req Request Express với ID firmware trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     deleteFirmware = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -47,6 +65,12 @@ class FirmwareController {
         }
     };
 
+    /**
+     * Lấy thông tin firmware theo ID
+     * @param req Request Express với ID firmware trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getFirmwareById = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { firmwareId } = req.params;
@@ -57,6 +81,12 @@ class FirmwareController {
         }
     };
 
+    /**
+     * L���y danh sách tất cả firmware
+     * @param req Request Express
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getFirmwares = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const firmwares = await this.firmwareService.getFirmwares();
@@ -68,3 +98,4 @@ class FirmwareController {
 }
 
 export default FirmwareController;
+

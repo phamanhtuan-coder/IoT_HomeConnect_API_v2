@@ -10,6 +10,12 @@ class DeviceController {
         this.deviceService = new DeviceService();
     }
 
+    /**
+     * Tạo thiết bị mới
+     * @param req Request Express với dữ liệu thiết bị trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     createDevice = async (req: Request, res: Response, next: NextFunction) => {
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
             throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can create devices');
@@ -26,6 +32,12 @@ class DeviceController {
         }
     };
 
+    /**
+     * Liên kết thiết bị với không gian
+     * @param req Request Express với thông tin liên kết trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     linkDevice = async (req: Request, res: Response, next: NextFunction) => {
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
             throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can link devices');
@@ -43,6 +55,12 @@ class DeviceController {
         }
     };
 
+    /**
+     * Bật/tắt thiết bị
+     * @param req Request Express với ID thiết bị trong params và trạng thái trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     toggleDevice = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -62,6 +80,12 @@ class DeviceController {
         }
     };
 
+    /**
+     * Cập nhật thuộc tính thiết bị
+     * @param req Request Express với ID thiết bị trong params và thuộc tính cập nhật trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     updateDeviceAttributes = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -81,6 +105,12 @@ class DeviceController {
         }
     };
 
+    /**
+     * Lấy thông tin thiết bị theo ID
+     * @param req Request Express với ID thiết bị trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getDeviceById = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -99,6 +129,12 @@ class DeviceController {
         }
     };
 
+    /**
+     * Hủy liên kết thiết bị
+     * @param req Request Express với ID thiết bị trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     unlinkDevice = async (req: Request, res: Response, next: NextFunction) => {
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
             throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can unlink devices');
@@ -117,6 +153,12 @@ class DeviceController {
         }
     };
 
+    /**
+     * Cập nhật không gian của thiết bị
+     * @param req Request Express với ID thiết bị trong params và ID không gian trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     updateDeviceSpace = async (req: Request, res: Response, next: NextFunction) => {
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
             throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can update device.ts space');
@@ -140,6 +182,12 @@ class DeviceController {
         }
     };
 
+    /**
+     * Cập nhật thông tin WiFi của thiết bị
+     * @param req Request Express với ID thiết bị trong params và thông tin WiFi trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     updateDeviceWifi = async (req: Request, res: Response, next: NextFunction) => {
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
             throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can update device.ts WiFi');
@@ -163,6 +211,12 @@ class DeviceController {
         }
     };
 
+    /**
+     * Lấy danh sách thiết bị theo tài khoản
+     * @param req Request Express
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getDevicesByAccount = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -175,6 +229,12 @@ class DeviceController {
         }
     };
 
+    /**
+     * Lấy danh sách thiết bị theo nhóm
+     * @param req Request Express với ID nhóm trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getDevicesByGroup = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { groupId } = req.params;
@@ -185,6 +245,12 @@ class DeviceController {
         }
     };
 
+    /**
+     * Lấy danh sách thiết bị theo nhà
+     * @param req Request Express với ID nhà trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getDevicesByHouse = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { houseId } = req.params;
@@ -195,6 +261,12 @@ class DeviceController {
         }
     };
 
+    /**
+     * Lấy danh sách thiết bị theo không gian
+     * @param req Request Express với ID không gian trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getDevicesBySpace = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { spaceId } = req.params;
@@ -209,3 +281,4 @@ class DeviceController {
 }
 
 export default DeviceController;
+

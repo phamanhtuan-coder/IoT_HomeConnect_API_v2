@@ -10,6 +10,12 @@ class GroupController {
         this.groupService = new GroupService();
     }
 
+    /**
+     * Tạo nhóm mới
+     * @param req Request Express với tên nhóm trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     createGroup = async (req: Request, res: Response, next: NextFunction) => {
         const { group_name } = req.body;
         const accountId = req.user?.userId || req.user?.employeeId;
@@ -23,6 +29,12 @@ class GroupController {
         }
     };
 
+    /**
+     * Lấy thông tin nhóm theo ID
+     * @param req Request Express với ID nhóm trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getGroup = async (req: Request, res: Response, next: NextFunction) => {
         const { groupId } = req.params;
         try {
@@ -33,6 +45,12 @@ class GroupController {
         }
     };
 
+    /**
+     * Cập nhật tên nhóm
+     * @param req Request Express với ID nhóm trong params và tên nhóm mới trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     updateGroupName = async (req: Request, res: Response, next: NextFunction) => {
         const { groupId } = req.params;
         const { group_name } = req.body;
@@ -48,6 +66,12 @@ class GroupController {
         }
     };
 
+    /**
+     * Xóa nhóm
+     * @param req Request Express với ID nhóm trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     deleteGroup = async (req: Request, res: Response, next: NextFunction) => {
         const { groupId } = req.params;
         if (!req.groupRole || req.groupRole !== GroupRole.OWNER) {
@@ -62,6 +86,12 @@ class GroupController {
         }
     };
 
+    /**
+     * Thêm người dùng vào nhóm
+     * @param req Request Express với ID nhóm, ID tài khoản và vai trò trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     addUserToGroup = async (req: Request, res: Response, next: NextFunction) => {
         const { groupId, accountId, role } = req.body;
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
@@ -76,6 +106,12 @@ class GroupController {
         }
     };
 
+    /**
+     * Cập nhật vai trò của người dùng trong nhóm
+     * @param req Request Express với ID nhóm trong params, ID tài khoản và vai trò mới trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     updateUserRole = async (req: Request, res: Response, next: NextFunction) => {
         const { groupId } = req.params;
         const { accountId, role } = req.body;
@@ -91,6 +127,12 @@ class GroupController {
         }
     };
 
+    /**
+     * Xóa người dùng khỏi nhóm
+     * @param req Request Express với ID nhóm trong params và ID tài khoản trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     removeUserFromGroup = async (req: Request, res: Response, next: NextFunction) => {
         const { groupId } = req.params;
         const { accountId } = req.body;
@@ -108,3 +150,4 @@ class GroupController {
 }
 
 export default GroupController;
+

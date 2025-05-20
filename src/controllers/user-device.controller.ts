@@ -9,6 +9,12 @@ export class UserDeviceController {
         this.userDeviceService = new UserDeviceService();
     }
 
+    /**
+     * Lấy danh sách thiết bị đăng nhập của người dùng hiện tại
+     * @param req Request Express
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getOwnDevices = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Account ID not found');
@@ -16,6 +22,12 @@ export class UserDeviceController {
         res.json(devices);
     };
 
+    /**
+     * Lấy danh sách thiết bị đăng nhập của một người dùng cụ thể
+     * @param req Request Express với ID người dùng trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getUserDevices = async (req: Request, res: Response, next: NextFunction) => {
         const requester = req.user;
         if (!requester) {
@@ -28,6 +40,12 @@ export class UserDeviceController {
         res.json(devices);
     };
 
+    /**
+     * Thu hồi quyền truy cập của một thiết bị đăng nhập
+     * @param req Request Express với ID thiết bị trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     revokeDevice = async (req: Request, res: Response, next: NextFunction) => {
         const userDeviceId = parseInt(req.params.deviceId, 10);
         const requesterId = req.user?.userId || req.user?.employeeId;
@@ -37,3 +55,4 @@ export class UserDeviceController {
         res.status(204).send();
     };
 }
+

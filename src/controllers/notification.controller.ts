@@ -11,6 +11,12 @@ class NotificationController {
         this.notificationService = new NotificationService();
     }
 
+    /**
+     * Tạo thông báo mới
+     * @param req Request Express với thông tin thông báo trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     createNotification = async (req: Request, res: Response, next: NextFunction) => {
         const employeeId = req.user?.employeeId;
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
@@ -30,6 +36,12 @@ class NotificationController {
         }
     };
 
+    /**
+     * Cập nhật thông tin thông báo
+     * @param req Request Express với ID thông báo trong params và trạng thái đọc trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     updateNotification = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -44,6 +56,12 @@ class NotificationController {
         }
     };
 
+    /**
+     * Xóa thông báo
+     * @param req Request Express với ID thông báo trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     deleteNotification = async (req: Request, res: Response, next: NextFunction) => {
         const employeeId = req.user?.employeeId;
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
@@ -57,6 +75,12 @@ class NotificationController {
         }
     };
 
+    /**
+     * Lấy thông tin thông báo theo ID
+     * @param req Request Express với ID thông báo trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getNotificationById = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -73,6 +97,12 @@ class NotificationController {
         }
     };
 
+    /**
+     * Lấy danh sách thông báo của người dùng hiện tại
+     * @param req Request Express
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getNotificationsByUser = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -85,6 +115,12 @@ class NotificationController {
         }
     };
 
+    /**
+     * Lấy tất cả thông báo với các bộ lọc tùy chọn
+     * @param req Request Express với các tham số truy vấn trong query
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getAllNotifications = async (req: Request, res: Response, next: NextFunction) => {
         const employeeId = req.user?.employeeId;
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
@@ -105,6 +141,12 @@ class NotificationController {
         }
     };
 
+    /**
+     * Tạo mã OTP
+     * @param req Request Express với địa chỉ email trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     generateOtp = async (req: Request, res: Response, next: NextFunction) => {
         const { email } = req.body;
         try {
@@ -115,6 +157,12 @@ class NotificationController {
         }
     };
 
+    /**
+     * Xác thực mã OTP
+     * @param req Request Express với địa chỉ email và mã OTP trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
         const { email, otp } = req.body;
         try {
@@ -125,6 +173,12 @@ class NotificationController {
         }
     };
 
+    /**
+     * Gửi mã OTP
+     * @param req Request Express với địa chỉ email trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     sendOtp = async (req: Request, res: Response, next: NextFunction) => {
         const { email } = req.body;
         try {
@@ -137,3 +191,4 @@ class NotificationController {
 }
 
 export default NotificationController;
+

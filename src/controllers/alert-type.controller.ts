@@ -9,6 +9,12 @@ class AlertTypeController {
         this.alertTypeService = new AlertTypeService();
     }
 
+    /**
+     * Tạo loại cảnh báo mới
+     * @param req Request Express với tên và mức độ ưu tiên của loại cảnh báo trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     createAlertType = async (req: Request, res: Response, next: NextFunction) => {
         const employeeId = req.user?.employeeId;
         if (!employeeId) {
@@ -27,6 +33,12 @@ class AlertTypeController {
         }
     };
 
+    /**
+     * Cập nhật thông tin loại cảnh báo
+     * @param req Request Express với ID loại cảnh báo trong params và thông tin cập nhật trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     updateAlertType = async (req: Request, res: Response, next: NextFunction) => {
         const employeeId = req.user?.employeeId;
         if (!employeeId) {
@@ -46,6 +58,12 @@ class AlertTypeController {
         }
     };
 
+    /**
+     * Xóa loại cảnh báo
+     * @param req Request Express với ID loại cảnh báo trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     deleteAlertType = async (req: Request, res: Response, next: NextFunction) => {
         const employeeId = req.user?.employeeId;
         if (!employeeId) {
@@ -61,6 +79,12 @@ class AlertTypeController {
         }
     };
 
+    /**
+     * Lấy thông tin loại cảnh báo theo ID
+     * @param req Request Express với ID loại cảnh báo trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getAlertTypeById = async (req: Request, res: Response, next: NextFunction) => {
         const { alertTypeId } = req.params;
         try {
@@ -73,6 +97,12 @@ class AlertTypeController {
         }
     };
 
+    /**
+     * Lấy danh sách tất cả loại cảnh báo
+     * @param req Request Express
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
     getAllAlertTypes = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const alertTypes = await this.alertTypeService.getAllAlertTypes();
@@ -84,3 +114,4 @@ class AlertTypeController {
 }
 
 export default AlertTypeController;
+
