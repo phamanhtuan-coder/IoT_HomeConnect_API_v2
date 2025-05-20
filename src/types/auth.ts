@@ -233,6 +233,40 @@ export interface Ticket {
     is_deleted: boolean | null;
 }
 
+export enum OwnershipTransferStatus {
+    PENDING = 'pending',
+    APPROVED = 'approved',
+    REJECTED = 'rejected',
+}
+
+export interface OwnershipTransferRequest {
+    request_id: number;
+    device_serial: string | null;
+    from_user_id: string | null;
+    to_user_id: string | null;
+    group_id: number | null;
+    status: OwnershipTransferStatus;
+    requested_at: Date | null;
+    approved_at: Date | null;
+    created_at: Date | null;
+    updated_at: Date | null;
+    is_deleted: boolean | null;
+}
+
+export interface OwnershipHistory {
+    history_id: number;
+    ticket_id: number;
+    device_serial: string | null;
+    from_user_id: string | null;
+    to_user_id: string | null;
+    transferred_at: Date | null;
+    legal_expired_date: Date | null;
+    is_expired: boolean | null;
+    created_at: Date | null;
+    updated_at: Date | null;
+    is_deleted: boolean | null;
+}
+
 declare global {
     namespace Express {
         interface Request {

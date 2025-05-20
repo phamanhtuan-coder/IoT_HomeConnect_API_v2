@@ -416,6 +416,34 @@ export const ticketFilterSchema = z.object({
   }),
 });
 
+export const ownershipTransferSchema = z.object({
+    body: z.object({
+        device_serial: z.string().min(1, 'Serial number is required').max(50),
+        to_user_email: z.string().email('Invalid email address'),
+    }),
+});
+
+export const approveOwnershipTransferSchema = z.object({
+    body: z.object({
+        accept: z.boolean(),
+    }),
+});
+
+export const ownershipHistoryIdSchema = z.object({
+    params: z.object({
+        historyId: z
+            .string()
+            .transform((val) => parseInt(val))
+            .refine((val) => val > 0, 'History ID must be a positive number'),
+    }),
+});
+
+export const deviceSerialSchema = z.object({
+    params: z.object({
+        device_serial: z.string().min(1, 'Serial number is required').max(50),
+    }),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>['body'];
 export type UserRegisterInput = z.infer<typeof userRegisterSchema>['body'];
 export type EmployeeRegisterInput = z.infer<typeof employeeRegisterSchema>['body'];
@@ -459,3 +487,8 @@ export type TicketInput = z.infer<typeof ticketSchema>["body"];
 export type UpdateTicketInput = z.infer<typeof updateTicketSchema>["body"];
 export type TicketIdInput = z.infer<typeof ticketIdSchema>["params"];
 export type TicketFilterInput = z.infer<typeof ticketFilterSchema>["query"];
+
+export type OwnershipTransferInput = z.infer<typeof ownershipTransferSchema>['body'];
+export type ApproveOwnershipTransferInput = z.infer<typeof approveOwnershipTransferSchema>['body'];
+export type OwnershipHistoryIdInput = z.infer<typeof ownershipHistoryIdSchema>['params'];
+export type DeviceSerialInput = z.infer<typeof deviceSerialSchema>['params'];

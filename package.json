@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^6.6.0",
+    "@prisma/client": "^6.8.2",
     "@socket.io/redis-adapter": "^8.3.0",
     "@types/nodemailer": "6.4.14",
     "bcrypt": "^5.1.1",
@@ -28,7 +28,6 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@types/socket.io": "^3.0.2",
     "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.1",
     "@types/express-handlebars": "^6.0.2",
@@ -36,11 +35,12 @@
     "@types/node": "^22.13.14",
     "@types/nodemailer-express-handlebars": "^4.0.5",
     "@types/redis": "^4.0.11",
+    "@types/socket.io": "^3.0.2",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
     "@typescript-eslint/parser": "^8.28.0",
     "eslint": "^9.23.0",
     "nodemon": "^3.1.9",
-    "prisma": "^6.6.0",
+    "prisma": "^6.8.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
   },

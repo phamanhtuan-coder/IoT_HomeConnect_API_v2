@@ -40,4 +40,21 @@ const roleMiddleware = async (
     next();
 };
 
+export const restrictToDeviceOwner = async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user?.userId || req.user?.employeeId;
+    const { device_serial } = req.body;
+
+    if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+    const device = await prisma.devices.findUnique({
+        where: { serial_number: device_serial, is_deleted: false },
+    });
+
+    if (!device || device.account_id !== userId) {
+        throwError(ErrorCodes.FORBIDDEN, 'Only the device owner can perform this action');
+    }
+
+    next();
+};
+
 export default roleMiddleware;
