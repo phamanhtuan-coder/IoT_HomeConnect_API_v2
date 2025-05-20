@@ -281,6 +281,16 @@ export interface Firmware {
     note: string | null;
 }
 
+export interface FirmwareUpdateHistory {
+    update_id: number;
+    device_serial: string | null;
+    firmware_id: number | null;
+    updated_at: Date | null;
+    status: string | null;
+    created_at: Date | null;
+    is_deleted: boolean | null;
+}
+
 declare global {
     namespace Express {
         interface Request {

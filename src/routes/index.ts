@@ -16,6 +16,7 @@ import ticketTypeRoutes from "./ticket-type.routes";
 import ticketRoutes from "./ticket.routes";
 import ownershipHistoryRoutes from "./ownershipHistory.routes";
 import firmwareRoutes from "./firmware.routes";
+import firmwareUpdateHistoryRoutes from "./firmware-update-history.routes";
 
 
 const router = Router();
@@ -37,5 +38,6 @@ router.use("/ticket-types", ticketTypeRoutes);
 router.use("/tickets", ticketRoutes)
 router.use("/ownership-history",ownershipHistoryRoutes)
 router.use("/firmware",firmwareRoutes)
+router.use('/firmware-update-history', firmwareUpdateHistoryRoutes);
 
 export default router;
