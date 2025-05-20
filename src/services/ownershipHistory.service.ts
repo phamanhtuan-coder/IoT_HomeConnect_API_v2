@@ -1,9 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { OwnershipHistory, OwnershipTransferStatus } from '../types/auth';
 import TicketTypeService from './ticket-type.service';
 import NotificationService from './notification.service';
 import { NotificationType } from '../types/notification';
+import {OwnershipHistory, OwnershipTransferStatus} from "../types/ownership-history";
 
 class OwnershipHistoryService {
     private prisma: PrismaClient;
@@ -22,13 +22,13 @@ class OwnershipHistoryService {
     }): Promise<void> {
         const { device_serial, to_user_email, from_user_id, groupId } = input;
 
-        // Validate device
+        // Validate device.ts
         const device = await this.prisma.devices.findUnique({
             where: { serial_number: device_serial, is_deleted: false },
             include: { spaces: { include: { houses: true } } },
         });
         if (!device) throwError(ErrorCodes.NOT_FOUND, 'Device not found');
-        if (device!.account_id !== from_user_id) throwError(ErrorCodes.FORBIDDEN, 'Only device owner can initiate transfer');
+        if (device!.account_id !== from_user_id) throwError(ErrorCodes.FORBIDDEN, 'Only device.ts owner can initiate transfer');
 
         // Validate group if provided
         if (groupId) {
@@ -43,7 +43,7 @@ class OwnershipHistoryService {
         const recipient = await this.prisma.account.findFirst({ where: { customer_id: customer?.id } });
         if (!recipient) throwError(ErrorCodes.NOT_FOUND, 'Recipient account not found');
 
-        // Check if device is already associated with recipient
+        // Check if device.ts is already associated with recipient
         if (device!.account_id === recipient!.account_id) {
             throwError(ErrorCodes.CONFLICT, 'Device is already owned by the recipient');
         }
@@ -66,7 +66,7 @@ class OwnershipHistoryService {
             data: {
                 user_id: from_user_id,
                 device_serial,
-                ticket_type_id: ticketType.ticket_type_id,
+                ticket_type_id: ticketType!.ticket_type_id,
                 description: `Ownership transfer request for device ${device_serial} to ${to_user_email}`,
                 status: OwnershipTransferStatus.PENDING,
                 created_at: new Date(),
@@ -99,7 +99,7 @@ class OwnershipHistoryService {
             include: { devices: true, tickets: true },
         });
         if (!ownershipHistory || !ownershipHistory!.devices || !ownershipHistory!.tickets) {
-            throwError(ErrorCodes.NOT_FOUND, 'Ownership transfer request or device not found');
+            throwError(ErrorCodes.NOT_FOUND, 'Ownership transfer request or device.ts not found');
         }
 
         // Verify approver is the recipient
@@ -162,7 +162,7 @@ class OwnershipHistoryService {
                 },
             });
 
-            // Update device ownership
+            // Update device.ts ownership
             await prisma.devices.update({
                 where: {
                     // @ts-ignore

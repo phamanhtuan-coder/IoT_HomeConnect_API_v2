@@ -1,9 +1,9 @@
 // src/services/ticket.service.ts
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { Ticket, TicketType } from '../types/auth';
 import NotificationService from './notification.service';
 import { NotificationType } from '../types/notification';
+import {Ticket} from "../types/ticket";
 
 class TicketService {
   private prisma: PrismaClient;

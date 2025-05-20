@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { Group, UserGroup, GroupRole } from '../types/auth';
 import DeviceService from './device.service';
+import {Group, GroupRole, UserGroup} from "../types/group";
 
 class GroupService {
     private prisma: PrismaClient;

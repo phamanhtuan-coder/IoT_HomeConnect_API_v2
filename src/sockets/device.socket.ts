@@ -1,4 +1,4 @@
-// src/sockets/device.socket.ts (updated handleSensorData function)
+// src/sockets/device.ts.socket.ts (updated handleSensorData function)
 
 import { Server, Socket, Namespace } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
@@ -29,7 +29,7 @@ const ALERT_MESSAGES = {
 };
 
 export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClientEvents>) => {
-    const deviceNamespace = io.of('/device');
+    const deviceNamespace = io.of('/device.ts');
     const clientNamespace = io.of('/client');
 
     deviceNamespace.on('connection', async (socket: DeviceSocket) => {
@@ -123,7 +123,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 }));
 
             if (!hasAccess) {
-                throwError(ErrorCodes.FORBIDDEN, 'No permission to access this device');
+                throwError(ErrorCodes.FORBIDDEN, 'No permission to access this device.ts');
             }
 
             socket.join(`device:${deviceId}`);
@@ -166,7 +166,7 @@ async function handleSensorData(
 ) {
     const { deviceId } = socket.data;
 
-    // Update device current_value
+    // Update device.ts current_value
     await prisma.devices.update({
         where: { serial_number: deviceId },
         data: {

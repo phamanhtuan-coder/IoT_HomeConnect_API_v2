@@ -37,6 +37,6 @@ router.delete(
   authMiddleware,
   validateMiddleware(deviceIdSchema),
   userDeviceController.revokeDevice
-); // Revoke device
+); // Revoke device.ts
 
 export default router;

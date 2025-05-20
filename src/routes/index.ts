@@ -34,7 +34,7 @@ router.use("/alert-types", alertTypeRoutes);
 router.use("/alerts", alertRoutes);
 router.use("/ticket-types", ticketTypeRoutes);
 router.use("/tickets", ticketRoutes)
-router.use("/ownership-history",ownershipHistoryRoutes)
+router.use("/ownership-history.ts",ownershipHistoryRoutes)
 router.use("/firmware",firmwareRoutes)
 router.use('/firmware-update-history', firmwareUpdateHistoryRoutes);
 

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { Firmware } from '../types/auth';
+import {Firmware} from "../types/firmware";
 
 class FirmwareService {
     private prisma: PrismaClient;

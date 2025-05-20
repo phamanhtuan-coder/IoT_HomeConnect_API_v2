@@ -40,7 +40,7 @@ export class UserDeviceService {
                     });
                     if (!uuidExists) break;
                     attempts++;
-                    if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique device UUID');
+                    if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique device.ts UUID');
                 } while (true);
             }
         }
@@ -63,7 +63,7 @@ export class UserDeviceService {
         }
 
         if (deviceCount >= maxDevices) {
-            throwError(ErrorCodes.FORBIDDEN, 'Maximum device limit reached. Please revoke an existing device.');
+            throwError(ErrorCodes.FORBIDDEN, 'Maximum device.ts limit reached. Please revoke an existing device.ts.');
         }
 
         return this.prisma.user_devices.create({
@@ -164,7 +164,7 @@ export class UserDeviceService {
 
         if (devices.length === 0) throwError(ErrorCodes.NOT_FOUND, 'No valid devices found');
 
-        // if (devices.some((device: { user_id: string; }) => device.user_id !== accountId)) {
+        // if (devices.some((device.ts: { user_id: string; }) => device.ts.user_id !== accountId)) {
         //     throwError(ErrorCodes.FORBIDDEN, 'You can only log out from your own devices');
         // }
 

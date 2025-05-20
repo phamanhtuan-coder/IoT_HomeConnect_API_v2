@@ -29,7 +29,7 @@ class AuthController {
         }
     };
 
-    // Logout single device
+    // Logout single device.ts
     logoutUser = async (req: Request, res: Response, next: NextFunction) => {
         const userId = req.user?.userId;
         const userDeviceId = parseInt(req.body.userDeviceId, 10);

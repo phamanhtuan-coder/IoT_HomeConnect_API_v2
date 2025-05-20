@@ -13,7 +13,7 @@ const { app, io } = initApp();
 // Initialize sockets
 initSocket(io);
 
-// Pass Socket.IO instance to device service
+// Pass Socket.IO instance to device.ts service
 setSocketInstance(io);
 
 app.listen(appConfig.port, () => {

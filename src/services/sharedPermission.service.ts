@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { GroupRole } from '../types/auth';
+import {GroupRole} from "../types/group";
 
 class SharedPermissionService {
     private prisma: PrismaClient;
@@ -17,7 +17,7 @@ class SharedPermissionService {
         if (!permission || !permission.devices) throwError(ErrorCodes.NOT_FOUND, 'Permission not found');
 
         if (permission!.devices!.account_id !== requesterId && requesterRole !== GroupRole.OWNER) {
-            throwError(ErrorCodes.FORBIDDEN, 'Only device owner or group owner can revoke sharing');
+            throwError(ErrorCodes.FORBIDDEN, 'Only device.ts owner or group owner can revoke sharing');
         }
 
         await this.prisma.shared_permissions.update({

@@ -42,7 +42,7 @@ export const restrictToDeviceOwner = async (req: Request, res: Response, next: N
     });
 
     if (!device || device.account_id !== userId) {
-        throwError(ErrorCodes.FORBIDDEN, 'Only the device owner can perform this action');
+        throwError(ErrorCodes.FORBIDDEN, 'Only the device.ts owner can perform this action');
     }
 
     next();

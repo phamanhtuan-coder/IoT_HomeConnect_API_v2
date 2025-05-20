@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import HouseService from '../services/house.service';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { GroupRole } from '../types/auth';
+import {GroupRole} from "../types/group";
 
 class HouseController {
     private houseService: HouseService;

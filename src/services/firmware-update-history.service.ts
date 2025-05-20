@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { FirmwareUpdateHistory } from '../types/auth';
+import {FirmwareUpdateHistory} from "../types/firmware-update-history";
 
 class FirmwareUpdateHistoryService {
     private prisma: PrismaClient;
@@ -173,7 +173,7 @@ class FirmwareUpdateHistoryService {
         });
         if (permission) return;
 
-        throwError(ErrorCodes.FORBIDDEN, 'No permission to access this device');
+        throwError(ErrorCodes.FORBIDDEN, 'No permission to access this device.ts');
     }
 
     private mapPrismaFirmwareUpdateHistoryToAuth(history: any): FirmwareUpdateHistory {

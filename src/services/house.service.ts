@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { House, Space } from '../types/auth';
+import {House} from "../types/house";
 
 class HouseService {
     private prisma: PrismaClient;

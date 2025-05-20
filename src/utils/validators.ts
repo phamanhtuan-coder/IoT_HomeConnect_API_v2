@@ -1,6 +1,7 @@
 import {z} from 'zod';
-import {GroupRole, PermissionType} from '../types/auth';
 import {NotificationType} from "../types/notification";
+import {GroupRole} from "../types/group";
+import {PermissionType} from "../types/share-request";
 
 export const loginSchema = z.object({
     body: z.object({

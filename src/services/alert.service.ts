@@ -1,21 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { ErrorCodes, throwError } from "../utils/errors";
-import { AlertType, Device } from "../types/auth";
 import admin from "../config/firebase";
 import  NotificationService from "./notification.service";
+import {Device} from "../types/device";
+import {Alert} from "../types/alert";
 
-interface Alert {
-    alert_id: number;
-    device_serial: string | null;
-    space_id: number | null;
-    message: string | null;
-    timestamp: Date | null;
-    status: string | null;
-    alert_type_id: number;
-    created_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
-}
 
 class AlertService {
     private prisma: PrismaClient;

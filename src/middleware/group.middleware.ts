@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError, AppError } from '../utils/errors';
-import { GroupRole } from '../types/auth';
+import {GroupRole} from "../types/group";
 
 const prisma = new PrismaClient();
 

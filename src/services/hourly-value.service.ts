@@ -322,7 +322,7 @@ class HourlyValueService {
         });
         if (permission) return;
 
-        throwError(ErrorCodes.FORBIDDEN, 'No permission to access this device');
+        throwError(ErrorCodes.FORBIDDEN, 'No permission to access this device.ts');
     }
 
     private mapPrismaHourlyValueToType(hourlyValue: any): HourlyValue {

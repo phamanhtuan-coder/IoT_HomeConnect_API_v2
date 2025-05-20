@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import GroupService from '../services/group.service';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { GroupRole } from '../types/auth';
+import {GroupRole} from "../types/group";
 
 class GroupController {
     private groupService: GroupService;

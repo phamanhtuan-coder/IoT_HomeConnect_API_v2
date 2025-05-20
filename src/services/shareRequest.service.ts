@@ -1,6 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { ShareRequest, PermissionType, GroupRole, ShareRequestStatus, SharedPermission } from '../types/auth';
+import {PermissionType, ShareRequest, ShareRequestStatus} from "../types/share-request";
+import {GroupRole} from "../types/group";
+import {SharedPermission} from "../types/share-permission";
 
 class ShareRequestService {
     private prisma: PrismaClient;
@@ -47,7 +49,7 @@ class ShareRequestService {
         }
 
         if (device!.account_id !== from_user_id && requesterRole !== GroupRole.OWNER) {
-            throwError(ErrorCodes.FORBIDDEN, 'Only device owner or group owner can share');
+            throwError(ErrorCodes.FORBIDDEN, 'Only device.ts owner or group owner can share');
         }
 
         const customer = await this.prisma.customer.findUnique({ where: { email: to_user_email } });
@@ -103,7 +105,7 @@ class ShareRequestService {
             where: { request_id: requestId, is_deleted: false },
             include: { devices: { include: { spaces: { include: { houses: true } } } } },
         });
-        if (!request || !request!.devices) throwError(ErrorCodes.NOT_FOUND, 'Share request or device not found');
+        if (!request || !request!.devices) throwError(ErrorCodes.NOT_FOUND, 'Share request or device.ts not found');
 
         const groupId = request!.devices!.group_id || request!.devices!.spaces?.houses?.group_id;
         if (!groupId) throwError(ErrorCodes.NOT_FOUND, 'Group not found');

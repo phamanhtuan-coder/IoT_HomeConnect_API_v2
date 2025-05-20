@@ -11,7 +11,7 @@ export const initializeSocket = (server: HttpServer): Server => {
             origin: '*', // Adjust for production
             methods: ['GET', 'POST'],
         },
-        path: '/device',
+        path: '/device.ts',
     });
 
     // Initialize Redis clients

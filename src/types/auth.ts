@@ -1,40 +1,92 @@
-import { JwtPayload } from 'jsonwebtoken';
+/**
+ * Các kiểu dữ liệu và interface liên quan đến xác thực (authentication).
+ * Được sử dụng cho việc xử lý JWT, đăng nhập, đăng ký, và mở rộng request của Express.
+ */
 
+import {JwtPayload} from 'jsonwebtoken';
+import {GroupRole} from "./group";
+
+/**
+ * Payload cho refresh token JWT.
+ * @property userId - ID người dùng (kiểu string, có thể không có).
+ * @property employeeId - ID nhân viên (kiểu string, có thể không có).
+ * @property type - Loại token, luôn là 'refresh'.
+ */
 export interface RefreshTokenPayload extends JwtPayload {
     userId?: string; // Thay number bằng string để khớp account_id
     employeeId?: string; // Thay number bằng string để khớp account_id
     type: 'refresh';
 }
 
+/**
+ * Dữ liệu body gửi lên khi đăng nhập.
+ * @property username - Tên đăng nhập.
+ * @property password - Mật khẩu.
+ * @property rememberMe - Ghi nhớ đăng nhập (tùy chọn).
+ */
 export interface LoginRequestBody {
     username: string;
     password: string;
     rememberMe?: boolean;
 }
 
+/**
+ * Dữ liệu trả về sau khi đăng nhập thành công.
+ * @property accessToken - JWT access token.
+ * @property refreshToken - JWT refresh token (tùy chọn).
+ * @property deviceUuid - UUID của thiết bị (tùy chọn).
+ */
 export interface TokenResponse {
     accessToken: string;
     refreshToken?: string;
     deviceUuid?: string; // Đổi từ 'any' thành 'string', thêm '?' vì không phải lúc nào cũng có
 }
 
+/**
+ * Payload JWT cho người dùng.
+ * @property userId - ID người dùng.
+ * @property username - Tên đăng nhập.
+ * @property role - Vai trò của người dùng.
+ */
 export interface UserJwtPayload extends JwtPayload {
     userId: string;
     username: string;
     role: string;
 }
 
+/**
+ * Payload JWT cho nhân viên.
+ * @property employeeId - ID nhân viên.
+ * @property username - Tên đăng nhập.
+ * @property role - Vai trò của nhân viên.
+ */
 export interface EmployeeJwtPayload extends JwtPayload {
     employeeId: string;
     username: string; // Thay email thành username
     role: string;
 }
+
+/**
+ * Kiểu union cho payload JWT xác thực (người dùng hoặc nhân viên).
+ */
 export type AuthJwtPayload = UserJwtPayload | EmployeeJwtPayload;
 
 // Bỏ enum EmployeeRole vì role giờ được lấy từ role_id trong bảng role
 // Nếu vẫn muốn dùng enum, cần đồng bộ với dữ liệu trong bảng role
 // export type EmployeeRole = 'ADMIN' | 'PRODUCTION' | 'TECHNICIAN' | 'RND' | 'EMPLOYEE';
 
+/**
+ * Dữ liệu body gửi lên khi đăng ký người dùng.
+ * @property username - Tên đăng nhập (bắt buộc).
+ * @property surname - Họ.
+ * @property lastname - Tên (tùy chọn).
+ * @property image - Ảnh đại diện (tùy chọn).
+ * @property phone - Số điện thoại (tùy chọn).
+ * @property email - Email.
+ * @property birthdate - Ngày sinh (tùy chọn).
+ * @property gender - Giới tính (tùy chọn, true/false).
+ * @property password - Mật khẩu.
+ */
 export type UserRegisterRequestBody = {
     username: string; // Bắt buộc
     surname: string;
@@ -47,6 +99,20 @@ export type UserRegisterRequestBody = {
     password: string;
 };
 
+/**
+ * Dữ liệu body gửi lên khi đăng ký nhân viên.
+ * @property username - Tên đăng nhập (bắt buộc).
+ * @property surname - Họ.
+ * @property lastname - Tên (tùy chọn).
+ * @property image - Ảnh đại diện (tùy chọn).
+ * @property email - Email.
+ * @property password - Mật khẩu.
+ * @property birthdate - Ngày sinh (tùy chọn).
+ * @property gender - Giới tính (tùy chọn, true/false).
+ * @property phone - Số điện thoại (tùy chọn).
+ * @property status - Trạng thái (tùy chọn).
+ * @property role - Vai trò của nhân viên.
+ */
 export type EmployeeRegisterRequestBody = {
     username: string; // Bắt buộc
     surname: string;
@@ -61,236 +127,11 @@ export type EmployeeRegisterRequestBody = {
     role: string;
 };
 
-// Group role enum
-export enum GroupRole {
-    OWNER = 'owner',
-    VICE = 'vice',
-    ADMIN = 'admin',
-    MEMBER = 'member',
-}
-
-// Group interface
-export interface Group {
-    group_id: number;
-    group_name: string;
-    created_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
-}
-
-// UserGroup interface
-export interface UserGroup {
-    user_group_id: number;
-    account_id: string | null;
-    group_id: number | null;
-    role: GroupRole | null;
-    joined_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
-}
-
-// House interface
-export interface House {
-    house_id: number;
-    group_id: number | null;
-    house_name: string ;
-    address: string | null;
-    icon_name: string | null;
-    icon_color: string | null;
-    created_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
-}
-
-// Space interface
-export interface Space {
-    space_id: number;
-    house_id: number | null;
-    space_name: string;
-    created_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
-}
-
-export enum PermissionType {
-    CONTROL = 'CONTROL',
-    VIEW = 'VIEW',
-}
-
-export enum ShareRequestStatus {
-    PENDING = 'pending',
-    APPROVED = 'approved',
-    REJECTED = 'rejected',
-}
-export interface DeviceAttributes {
-    brightness?: number;
-    color?: string;
-    [key: string]: any;
-}
-
-export interface Device {
-    device_id: number;
-    serial_number: string;
-    template_id: number | null;
-    space_id: number | null;
-    account_id: string | null;
-    hub_id: string | null;
-    firmware_id: number | null;
-    name: string;
-    power_status: boolean| null;
-    attribute: Record<string, any> | null;
-    wifi_ssid: string | null;
-    wifi_password: string | null;
-    current_value: Record<string, any> | null;
-    link_status: string| null;
-    last_reset_at: Date | null;
-    lock_status: string| null;
-    locked_at: Date | null;
-    created_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
-}
-
-export interface DeviceTemplate {
-    template_id: number;
-    device_type_id: number | null;
-    name: string;
-    created_by: string | null;
-    created_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
-}
-
-export interface SharedPermission {
-    permission_id: number;
-    device_id: number | null;
-    shared_with_user_id: string | null;
-    permission_type: PermissionType;
-    created_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
-}
-
-export interface ShareRequest {
-    request_id: number;
-    device_serial: string | null;
-    from_user_id: string | null;
-    to_user_id: string | null;
-    permission_type: PermissionType;
-    status: ShareRequestStatus;
-    requested_at: Date | null;
-    approved_at: Date | null;
-    created_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
-}
-
-export interface AlertType {
-    alert_type_id: number;
-    alert_type_name: string;
-    priority: number | null;
-    is_deleted: boolean | null;
-    created_at: Date | null;
-    updated_at: Date | null;
-}
-
-export interface Alert {
-    alert_id: number;
-    device_serial: string | null;
-    space_id: number | null;
-    message: string | null;
-    timestamp: Date | null;
-    status: string | null;
-    alert_type_id: number;
-    created_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
-}
-
-export interface TicketType {
-    ticket_type_id: number;
-    type_name: string;
-    priority: number | null;
-    is_active: boolean | null;
-    created_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
-}
-
-export interface Ticket {
-    ticket_id: number;
-    user_id: string | null;
-    device_serial: string | null;
-    ticket_type_id: number;
-    description: string | null;
-    evidence: any | null;
-    status: string | null;
-    created_at: Date | null;
-    updated_at: Date | null;
-    assigned_to: string | null;
-    resolved_at: Date | null;
-    resolve_solution: string | null;
-    is_deleted: boolean | null;
-}
-
-export enum OwnershipTransferStatus {
-    PENDING = 'pending',
-    APPROVED = 'approved',
-    REJECTED = 'rejected',
-}
-
-export interface OwnershipTransferRequest {
-    request_id: number;
-    device_serial: string | null;
-    from_user_id: string | null;
-    to_user_id: string | null;
-    group_id: number | null;
-    status: OwnershipTransferStatus;
-    requested_at: Date | null;
-    approved_at: Date | null;
-    created_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
-}
-
-export interface OwnershipHistory {
-    history_id: number;
-    ticket_id: number;
-    device_serial: string | null;
-    from_user_id: string | null;
-    to_user_id: string | null;
-    transferred_at: Date | null;
-    legal_expired_date: Date | null;
-    is_expired: boolean | null;
-    created_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
-}
-
-export interface Firmware {
-    firmware_id: number;
-    version: string;
-    file_path: string;
-    template_id: number | null;
-    is_mandatory: boolean | null;
-    created_at: Date | null;
-    tested_at: Date | null;
-    is_approved: boolean | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
-    note: string | null;
-}
-
-export interface FirmwareUpdateHistory {
-    update_id: number;
-    device_serial: string | null;
-    firmware_id: number | null;
-    updated_at: Date | null;
-    status: string | null;
-    created_at: Date | null;
-    is_deleted: boolean | null;
-}
-
+/**
+ * Mở rộng interface Request của Express để thêm thông tin xác thực.
+ * @property user - Payload JWT xác thực (người dùng hoặc nhân viên).
+ * @property groupRole - Vai trò nhóm (GroupRole).
+ */
 declare global {
     namespace Express {
         interface Request {

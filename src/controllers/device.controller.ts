@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import DeviceService from '../services/device.service';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { GroupRole } from '../types/auth';
+import {GroupRole} from "../types/group";
 
 class DeviceController {
     private deviceService: DeviceService;
@@ -119,7 +119,7 @@ class DeviceController {
 
     updateDeviceSpace = async (req: Request, res: Response, next: NextFunction) => {
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
-            throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can update device space');
+            throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can update device.ts space');
         }
 
         const accountId = req.user?.userId || req.user?.employeeId;
@@ -142,7 +142,7 @@ class DeviceController {
 
     updateDeviceWifi = async (req: Request, res: Response, next: NextFunction) => {
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
-            throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can update device WiFi');
+            throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can update device.ts WiFi');
         }
 
         const accountId = req.user?.userId || req.user?.employeeId;

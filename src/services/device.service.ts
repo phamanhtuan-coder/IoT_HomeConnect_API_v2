@@ -1,9 +1,11 @@
-// src/services/device!.service.ts
+// src/services/device.ts!.service.ts
 import { PrismaClient } from "@prisma/client";
 import { ErrorCodes, throwError } from "../utils/errors";
-import { Device, DeviceAttributes, GroupRole, PermissionType } from "../types/auth";
 import { Server } from "socket.io";
-import  AlertService  from "../services/alert.service"; // Import AlertService
+import  AlertService  from "../services/alert.service";
+import {Device, DeviceAttributes} from "../types/device";
+import {GroupRole} from "../types/group";
+import {PermissionType} from "../types/share-request"; // Import AlertService
 
 let io: Server | null = null;
 const alertService = new AlertService(); // Instantiate AlertService
@@ -85,7 +87,7 @@ class DeviceService {
         });
 
         if (io) {
-            io.of("/device").to(`device:${serial_number}`).emit("device_online", { deviceId: serial_number });
+            io.of("/device.ts").to(`device:${serial_number}`).emit("device_online", { deviceId: serial_number });
         }
 
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);
@@ -105,7 +107,7 @@ class DeviceService {
         });
 
         if (io) {
-            io.of("/device").to(`device:${serial_number}`).emit("command", {
+            io.of("/device.ts").to(`device:${serial_number}`).emit("command", {
                 action: "toggle",
                 powerStatus: power_status,
             });
@@ -132,7 +134,7 @@ class DeviceService {
         });
 
         if (io) {
-            io.of("/device").to(`device:${serial_number}`).emit("command", {
+            io.of("/device.ts").to(`device:${serial_number}`).emit("command", {
                 action: "updateAttributes",
                 brightness: input.brightness,
                 color: input.color,
@@ -156,7 +158,7 @@ class DeviceService {
         });
 
         if (io) {
-            io.of("/device").to(`device:${serial_number}`).emit("command", {
+            io.of("/device.ts").to(`device:${serial_number}`).emit("command", {
                 action: "updateWifi",
                 WifiSSID: input.wifi_ssid,
                 WifiPassword: input.wifi_password,
@@ -234,16 +236,16 @@ class DeviceService {
             data: { account_id: null, space_id: null, link_status: "unlinked", updated_at: new Date() },
         });
 
-        // Create an alert for device unlink
+        // Create an alert for device.ts unlink
         await alertService.createAlert(
             // @ts-ignore
              device,
-            3, // Assume alert_type_id 3 for device unlink (adjust based on your alert_types table)
+            3, // Assume alert_type_id 3 for device.ts unlink (adjust based on your alert_types table)
             `Device ${serial_number} has been unlinked`
         );
 
         if (io) {
-            io.of("/device").to(`device:${serial_number}`).emit("device_disconnect", { deviceId: serial_number });
+            io.of("/device.ts").to(`device:${serial_number}`).emit("device_disconnect", { deviceId: serial_number });
         }
     }
 
@@ -305,7 +307,7 @@ class DeviceService {
             return;
         }
 
-        throwError(ErrorCodes.FORBIDDEN, "No permission to access this device");
+        throwError(ErrorCodes.FORBIDDEN, "No permission to access this device.ts");
     }
 
     async removeViceDevicesFromGroup(groupId: number, accountId: string): Promise<void> {
@@ -337,19 +339,19 @@ class DeviceService {
             data: { account_id: null, space_id: null, link_status: "unlinked", updated_at: new Date() },
         });
 
-        // Create alerts for each unlinked device
+        // Create alerts for each unlinked device.ts
         for (const device of devices) {
             await alertService.createAlert(
                 // @ts-ignore
                 device,
-                3, // Assume alert_type_id 3 for device unlink
+                3, // Assume alert_type_id 3 for device.ts unlink
                 `Device ${device!.serial_number} has been unlinked from group`
             );
         }
 
         if (io) {
             devices.forEach((device) => {
-                io!.of("/device")
+                io!.of("/device.ts")
                     .to(`device:${device!.serial_number}`)
                     .emit("device_disconnect", { deviceId: device!.serial_number });
             });
