@@ -105,10 +105,30 @@ class NotificationController {
         }
     };
 
-    sendOtp = async (req: Request, res: Response, next: NextFunction) => {
+    generateOtp = async (req: Request, res: Response, next: NextFunction) => {
+        const { email } = req.body;
+        try {
+            await this.notificationService.generateAndStoreOtp(email);
+            res.json({ message: 'OTP generated and sent successfully' });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
         const { email, otp } = req.body;
         try {
-            await this.notificationService.sendOtpEmail(email, otp);
+            const isValid = await this.notificationService.verifyOtp(email, otp);
+            res.json({ message: isValid ? 'OTP verified successfully' : 'OTP verification failed' });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    sendOtp = async (req: Request, res: Response, next: NextFunction) => {
+        const { email } = req.body;
+        try {
+            await this.notificationService.generateAndStoreOtp(email);
             res.json({ message: 'OTP sent successfully' });
         } catch (error) {
             next(error);

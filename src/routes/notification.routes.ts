@@ -1,10 +1,15 @@
-// src/routes/notification.routes.ts
 import { Router, Request, Response, NextFunction } from 'express';
 import NotificationController from '../controllers/notification.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
-import { notificationSchema, updateNotificationSchema, notificationIdSchema, notificationFilterSchema } from '../utils/validators';
+import {
+    notificationSchema,
+    updateNotificationSchema,
+    notificationIdSchema,
+    notificationFilterSchema,
+    sendOtpSchema, verifyOtpSchema
+} from '../utils/validators';
 
 const router = Router();
 const notificationController = new NotificationController();
@@ -62,7 +67,20 @@ router.get(
 
 router.post(
     '/otp',
+    validateMiddleware(sendOtpSchema),
     asyncHandler(notificationController.sendOtp)
+);
+
+router.post(
+    '/otp/generate',
+    validateMiddleware(sendOtpSchema),
+    asyncHandler(notificationController.generateOtp)
+);
+
+router.post(
+    '/otp/verify',
+    validateMiddleware(verifyOtpSchema),
+    asyncHandler(notificationController.verifyOtp)
 );
 
 export default router;

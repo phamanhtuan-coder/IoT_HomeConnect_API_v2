@@ -22,7 +22,7 @@ class NotificationService {
         const { account_id, role_id, text, type, is_read = false } = input;
 
         if (account_id) {
-            const account = await this.prisma.account.findUnique({
+            const account = await this.prisma.account!.findUnique({
                 where: { account_id, deleted_at: null },
             });
             if (!account) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
@@ -53,13 +53,13 @@ class NotificationService {
 
         // Send FCM notification if applicable
         if (account_id) {
-            const account = await this.prisma.account.findUnique({
+            const account = await this.prisma.account!.findUnique({
                 where: { account_id },
                 include: { customer: true },
             });
             if (account?.customer?.email) {
                 const fcmMessage = {
-                    token: account.customer.email, // Adjust based on actual FCM token field
+                    token: account!.customer.email, // Adjust based on actual FCM token field
                     notification: {
                         title: `New ${type} Notification`,
                         body: text,
@@ -146,7 +146,7 @@ class NotificationService {
     async sendNotificationEmail(input: { account_id?: string; text: string; type: NotificationType }) {
         if (!input.account_id) return;
 
-        const account = await this.prisma.account.findUnique({
+        const account = await this.prisma.account!.findUnique({
             where: { account_id: input.account_id },
             include: { customer: true },
         });
@@ -159,7 +159,7 @@ class NotificationService {
 
         await transporter.sendMail({
             from: process.env.EMAIL_USER,
-            to: account.customer.email,
+            to: account!.customer.email,
             subject: `New ${input.type} Notification`,
             template,
             context: {
@@ -167,6 +167,61 @@ class NotificationService {
                 currentYear: new Date().getFullYear(),
             },
         });
+    }
+
+    // Add to src/services/notification.service.ts
+
+    async generateAndStoreOtp(email: string): Promise<string> {
+        const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+        const expiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+
+        const account = await this.prisma.account!.findFirst({
+            where: { customer: { email }, deleted_at: null },
+        });
+        if (!account) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
+
+        await this.prisma.account!.update({
+            where: { account_id: account!.account_id },
+            data: {
+                verification_code: otp,
+                verification_expiry: expiry,
+                updated_at: new Date(),
+            },
+        });
+
+        await this.sendOtpEmail(email, otp);
+        return otp;
+    }
+
+    async verifyOtp(email: string, otp: string): Promise<boolean> {
+        const account = await this.prisma.account!.findFirst({
+            where: { customer: { email }, deleted_at: null },
+        });
+        if (!account) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
+
+        if (!account!.verification_code || !account!.verification_expiry) {
+            throwError(ErrorCodes.BAD_REQUEST, 'No OTP found for this account');
+        }
+
+        if (account!.verification_code !== otp) {
+            throwError(ErrorCodes.BAD_REQUEST, 'Invalid OTP');
+        }
+
+        if (new Date() > account!.verification_expiry!) {
+            throwError(ErrorCodes.BAD_REQUEST, 'OTP has expired');
+        }
+
+        // Clear OTP after successful verification
+        await this.prisma.account!.update({
+            where: { account_id: account!.account_id },
+            data: {
+                verification_code: null,
+                verification_expiry: null,
+                updated_at: new Date(),
+            },
+        });
+
+        return true;
     }
 
     async sendOtpEmail(email: string, otp: string): Promise<void> {

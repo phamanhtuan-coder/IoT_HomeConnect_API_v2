@@ -554,6 +554,20 @@ export const notificationFilterSchema = z.object({
     }),
 });
 
+export const sendOtpSchema = z.object({
+    body: z.object({
+        email: z.string().email('Invalid email format'),
+    }),
+});
+
+export const verifyOtpSchema = z.object({
+    body: z.object({
+        email: z.string().email('Invalid email format'),
+        otp: z.string().length(6, 'OTP must be 6 digits').regex(/^\d{6}$/, 'OTP must contain only digits'),
+    }),
+});
+
+
 export type LoginInput = z.infer<typeof loginSchema>['body'];
 export type UserRegisterInput = z.infer<typeof userRegisterSchema>['body'];
 export type EmployeeRegisterInput = z.infer<typeof employeeRegisterSchema>['body'];
@@ -616,3 +630,4 @@ export type NotificationInput = z.infer<typeof notificationSchema>['body'];
 export type UpdateNotificationInput = z.infer<typeof updateNotificationSchema>['body'];
 export type NotificationIdInput = z.infer<typeof notificationIdSchema>['params'];
 export type NotificationFilterInput = z.infer<typeof notificationFilterSchema>['query'];
+
