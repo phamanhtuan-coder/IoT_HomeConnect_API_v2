@@ -1,3 +1,5 @@
+// src/sockets/device.socket.ts (updated handleSensorData function)
+
 import { Server, Socket, Namespace } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
 import redisClient from '../utils/redis';
@@ -7,10 +9,12 @@ import admin from '../config/firebase';
 import AlertService from '../services/alert.service';
 import NotificationService from '../services/notification.service';
 import { NotificationType } from '../types/notification';
+import HourlyValueService from '../services/hourly-value.service';
 
 const prisma = new PrismaClient();
 const alertService = new AlertService();
 const notificationService = new NotificationService();
+const hourlyValueService = new HourlyValueService();
 
 const ALERT_TYPES = {
     GAS_HIGH: 1,
@@ -162,6 +166,7 @@ async function handleSensorData(
 ) {
     const { deviceId } = socket.data;
 
+    // Update device current_value
     await prisma.devices.update({
         where: { serial_number: deviceId },
         data: {
@@ -172,6 +177,13 @@ async function handleSensorData(
             },
             updated_at: new Date(),
         },
+    });
+
+    // Process sensor data for hourly aggregation
+    await hourlyValueService.processSensorData(deviceId, {
+        gas: data.gas,
+        temperature: data.temperature,
+        humidity: data.humidity,
     });
 
     const device = await prisma.devices.findUnique({
@@ -204,7 +216,10 @@ async function handleSensorData(
         if (device) {
             await alertService.createAlert(
                 // @ts-ignore
-                device, ALERT_TYPES.GAS_HIGH, message);
+                device,
+                ALERT_TYPES.GAS_HIGH,
+                message
+            );
             await notificationService.createNotification({
                 // @ts-ignore
                 account_id: device.account_id,
@@ -219,7 +234,10 @@ async function handleSensorData(
         if (device) {
             await alertService.createAlert(
                 // @ts-ignore
-                device, ALERT_TYPES.TEMP_HIGH, message);
+                device,
+                ALERT_TYPES.TEMP_HIGH,
+                message
+            );
             await notificationService.createNotification({
                 // @ts-ignore
                 account_id: device.account_id,
@@ -260,7 +278,10 @@ async function handleDeviceDisconnect(socket: DeviceSocket, clientNamespace: Nam
     if (device?.account_id) {
         await alertService.createAlert(
             // @ts-ignore
-            device, ALERT_TYPES.DEVICE_DISCONNECT, ALERT_MESSAGES.DEVICE_DISCONNECT);
+            device,
+            ALERT_TYPES.DEVICE_DISCONNECT,
+            ALERT_MESSAGES.DEVICE_DISCONNECT
+        );
         await notificationService.createNotification({
             account_id: device.account_id,
             text: `Device ${deviceId} has been disconnected.`,

@@ -478,7 +478,7 @@ model hourly_values {
   device_serial   String?   @db.VarChar(50)
   space_id        Int?
   hour_timestamp  DateTime? @db.DateTime(0)
-  avg_value       Json?
+  avg_value       Json? // Stores { "temperature": number, "humidity": number, "gas": number, ... }
   sample_count    Int?
   created_at      DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at      DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)

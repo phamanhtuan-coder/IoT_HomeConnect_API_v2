@@ -1,9 +1,9 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import {Router, Request, Response, NextFunction} from 'express';
 import GroupController from '../controllers/group.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import groupRoleMiddleware from '../middleware/group.middleware';
-import { groupSchema, groupIdSchema, userGroupSchema, updateGroupRoleSchema } from '../utils/validators';
+import {groupSchema, groupIdSchema, userGroupSchema, updateGroupRoleSchema} from '../utils/validators';
 
 const router = Router();
 const groupController = new GroupController();
