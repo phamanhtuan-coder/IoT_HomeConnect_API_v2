@@ -1,0 +1,3234 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "contact": {},
+    "title": "HomeConnect API v2",
+    "version": "1.0.0"
+  },
+  "host": "localhost:3000",
+  "basePath": "/api",
+  "schemes": [
+    "http"
+  ],
+  "paths": {
+    "/alert-types": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Alert Type"
+        ],
+        "description": "Get All Alert Types",
+        "operationId": "getAllAlertTypes",
+        "summary": "Get All Alert Types"
+      },
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "alert_type_name": {
+                  "example": "Critical Alert",
+                  "type": "string"
+                },
+                "priority": {
+                  "example": 3,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Alert Type"
+        ],
+        "description": "Create Alert Type",
+        "operationId": "createAlertType",
+        "summary": "Create Alert Type"
+      }
+    },
+    "/alert-types/{alertTypeId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "alertTypeId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Alert Type"
+        ],
+        "description": "Delete Alert Type",
+        "operationId": "deleteAlertType",
+        "summary": "Delete Alert Type"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Alert Type"
+        ],
+        "description": "Get Alert Type by ID",
+        "operationId": "getAlertTypeById",
+        "summary": "Get Alert Type by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "alert_type_name": {
+                  "example": "Updated Alert",
+                  "type": "string"
+                },
+                "priority": {
+                  "example": 4,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Alert Type"
+        ],
+        "description": "Update Alert Type",
+        "operationId": "updateAlertType",
+        "summary": "Update Alert Type"
+      }
+    },
+    "/alerts": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Alert"
+        ],
+        "description": "Get All Alerts",
+        "operationId": "getAllAlerts",
+        "summary": "Get All Alerts"
+      },
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "alert_type_id": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "device_serial": {
+                  "example": "ABC123",
+                  "type": "string"
+                },
+                "message": {
+                  "example": "Device malfunction",
+                  "type": "string"
+                },
+                "space_id": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "status": {
+                  "example": "unread",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Alert"
+        ],
+        "description": "Create Alert",
+        "operationId": "createAlert",
+        "summary": "Create Alert"
+      }
+    },
+    "/alerts/{alertId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "alertId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Alert"
+        ],
+        "description": "Get Alert by ID",
+        "operationId": "getAlertById",
+        "summary": "Get Alert by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "message": {
+                  "example": "Updated malfunction alert",
+                  "type": "string"
+                },
+                "status": {
+                  "example": "read",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Alert"
+        ],
+        "description": "Update Alert",
+        "operationId": "updateAlert",
+        "summary": "Update Alert"
+      }
+    },
+    "/alerts/{alertId}/hard": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "alertId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Alert"
+        ],
+        "description": "Hard Delete Alert",
+        "operationId": "hardDeleteAlert",
+        "summary": "Hard Delete Alert"
+      }
+    },
+    "/alerts/{alertId}/soft": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "alertId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Alert"
+        ],
+        "description": "Soft Delete Alert",
+        "operationId": "softDeleteAlert",
+        "summary": "Soft Delete Alert"
+      }
+    },
+    "/auth/employee/login": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "password": {
+                  "example": "newpassword123",
+                  "type": "string"
+                },
+                "username": {
+                  "example": "newadmin1",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "description": "Login Employee",
+        "operationId": "loginEmployee",
+        "summary": "Login Employee"
+      }
+    },
+    "/auth/employee/logout": {
+      "post": {
+        "consumes": [
+          "text/plain"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "format": "binary",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "description": "Logout Employee (Single Device)",
+        "operationId": "logoutEmployeeSingleDevice",
+        "summary": "Logout Employee (Single Device)"
+      }
+    },
+    "/auth/employee/refresh": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "refreshToken": {
+                  "example": "",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "description": "Refresh Employee Token",
+        "operationId": "refreshEmployeeToken",
+        "summary": "Refresh Employee Token"
+      }
+    },
+    "/auth/employee/register": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "email": {
+                  "example": "newadmin1@example.com",
+                  "type": "string"
+                },
+                "lastname": {
+                  "example": "Admin",
+                  "type": "string"
+                },
+                "password": {
+                  "example": "newpassword123",
+                  "type": "string"
+                },
+                "phone": {
+                  "example": "0123456789",
+                  "type": "string"
+                },
+                "role": {
+                  "example": "admin",
+                  "type": "string"
+                },
+                "surname": {
+                  "example": "New",
+                  "type": "string"
+                },
+                "username": {
+                  "example": "newadmin1",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "description": "Register Employee",
+        "operationId": "registerEmployee",
+        "summary": "Register Employee"
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "consumes": [
+          "text/plain"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "format": "binary",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "description": "Login User",
+        "operationId": "loginUser",
+        "summary": "Login User"
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "userDeviceId": {
+                  "example": 1,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "description": "Logout User (Single Device)",
+        "operationId": "logoutUserSingleDevice",
+        "summary": "Logout User (Single Device)"
+      }
+    },
+    "/auth/logout/all": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {},
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "description": "Logout All Devices",
+        "operationId": "logoutAllDevices",
+        "summary": "Logout All Devices"
+      }
+    },
+    "/auth/logout/multiple": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "userDeviceIds": {
+                  "example": [
+                    1,
+                    2
+                  ],
+                  "items": {
+                    "example": 1,
+                    "type": "number"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "description": "Logout Multiple Devices",
+        "operationId": "logoutMultipleDevices",
+        "summary": "Logout Multiple Devices"
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "refreshToken": {
+                  "example": "",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "description": "Refresh User Token",
+        "operationId": "refreshUserToken",
+        "summary": "Refresh User Token"
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "birthdate": {
+                  "example": "1990-01-01",
+                  "type": "string"
+                },
+                "email": {
+                  "example": "newuser@example.com",
+                  "type": "string"
+                },
+                "gender": {
+                  "example": true,
+                  "type": "boolean"
+                },
+                "lastname": {
+                  "example": "User",
+                  "type": "string"
+                },
+                "password": {
+                  "example": "newpassword123",
+                  "type": "string"
+                },
+                "phone": {
+                  "example": "1234567890",
+                  "type": "string"
+                },
+                "surname": {
+                  "example": "New",
+                  "type": "string"
+                },
+                "username": {
+                  "example": "newuser",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "description": "Register User",
+        "operationId": "registerUser",
+        "summary": "Register User"
+      }
+    },
+    "/auth/update-device-token": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "deviceToken": {
+                  "example": "newFcmToken123",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "description": "Update Device Token",
+        "operationId": "updateDeviceToken",
+        "summary": "Update Device Token"
+      }
+    },
+    "/devices": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "attribute": {
+                  "properties": {
+                    "brightness": {
+                      "example": 50,
+                      "type": "number"
+                    }
+                  },
+                  "type": "object"
+                },
+                "name": {
+                  "example": "MyDevice",
+                  "type": "string"
+                },
+                "serial_number": {
+                  "example": "ABC123",
+                  "type": "string"
+                },
+                "spaceId": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "templateId": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "wifi_password": {
+                  "example": "wifi123",
+                  "type": "string"
+                },
+                "wifi_ssid": {
+                  "example": "MyWiFi",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device"
+        ],
+        "description": "Create Device",
+        "operationId": "createDevice",
+        "summary": "Create Device"
+      }
+    },
+    "/devices/account": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device"
+        ],
+        "description": "Get Devices by Account",
+        "operationId": "getDevicesByAccount",
+        "summary": "Get Devices by Account"
+      }
+    },
+    "/devices/group/{groupId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "groupId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device"
+        ],
+        "description": "Get Devices by Group",
+        "operationId": "getDevicesByGroup",
+        "summary": "Get Devices by Group"
+      }
+    },
+    "/devices/house/{houseId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "houseId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device"
+        ],
+        "description": "Get Devices by House",
+        "operationId": "getDevicesByHouse",
+        "summary": "Get Devices by House"
+      }
+    },
+    "/devices/link": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "name": {
+                  "example": "LinkedDevice",
+                  "type": "string"
+                },
+                "serial_number": {
+                  "example": "ABC123",
+                  "type": "string"
+                },
+                "spaceId": {
+                  "example": 1,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device"
+        ],
+        "description": "Link Device",
+        "operationId": "linkDevice",
+        "summary": "Link Device"
+      }
+    },
+    "/devices/space/{spaceId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "spaceId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device"
+        ],
+        "description": "Get Devices by Space",
+        "operationId": "getDevicesBySpace",
+        "summary": "Get Devices by Space"
+      }
+    },
+    "/devices/{deviceId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "deviceId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "serial_number": {
+                  "example": "ABC123",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device"
+        ],
+        "description": "Unlink Device",
+        "operationId": "unlinkDevice",
+        "summary": "Unlink Device"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device"
+        ],
+        "description": "Get Device by ID",
+        "operationId": "getDeviceById",
+        "summary": "Get Device by ID"
+      }
+    },
+    "/devices/{deviceId}/attributes": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "deviceId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "brightness": {
+                  "example": 50,
+                  "type": "number"
+                },
+                "color": {
+                  "example": "white",
+                  "type": "string"
+                },
+                "serial_number": {
+                  "example": "ABC123",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device"
+        ],
+        "description": "Update Device Attributes",
+        "operationId": "updateDeviceAttributes",
+        "summary": "Update Device Attributes"
+      }
+    },
+    "/devices/{deviceId}/space": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "deviceId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "serial_number": {
+                  "example": "ABC123",
+                  "type": "string"
+                },
+                "spaceId": {
+                  "example": 2,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device"
+        ],
+        "description": "Update Device Space",
+        "operationId": "updateDeviceSpace",
+        "summary": "Update Device Space"
+      }
+    },
+    "/devices/{deviceId}/toggle": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "deviceId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "power_status": {
+                  "example": true,
+                  "type": "boolean"
+                },
+                "serial_number": {
+                  "example": "ABC123",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device"
+        ],
+        "description": "Toggle Device",
+        "operationId": "toggleDevice",
+        "summary": "Toggle Device"
+      }
+    },
+    "/devices/{deviceId}/wifi": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "deviceId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "serial_number": {
+                  "example": "ABC123",
+                  "type": "string"
+                },
+                "wifi_password": {
+                  "example": "wifi123",
+                  "type": "string"
+                },
+                "wifi_ssid": {
+                  "example": "MyWiFi",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device"
+        ],
+        "description": "Update Device WiFi",
+        "operationId": "updateDeviceWifi",
+        "summary": "Update Device WiFi"
+      }
+    },
+    "/firmware-update-histories": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "device_serial",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Firmware Update History"
+        ],
+        "description": "Get Firmware Update Histories",
+        "operationId": "getFirmwareUpdateHistories",
+        "summary": "Get Firmware Update Histories"
+      },
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "device_serial": {
+                  "example": "ABC123",
+                  "type": "string"
+                },
+                "firmware_id": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "status": {
+                  "example": "success",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Firmware Update History"
+        ],
+        "description": "Create Firmware Update History",
+        "operationId": "createFirmwareUpdateHistory",
+        "summary": "Create Firmware Update History"
+      }
+    },
+    "/firmware-update-histories/{updateId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "updateId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Firmware Update History"
+        ],
+        "description": "Delete Firmware Update History",
+        "operationId": "deleteFirmwareUpdateHistory",
+        "summary": "Delete Firmware Update History"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Firmware Update History"
+        ],
+        "description": "Get Firmware Update History by ID",
+        "operationId": "getFirmwareUpdateHistoryById",
+        "summary": "Get Firmware Update History by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "status": {
+                  "example": "failed",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Firmware Update History"
+        ],
+        "description": "Update Firmware Update History",
+        "operationId": "updateFirmwareUpdateHistory",
+        "summary": "Update Firmware Update History"
+      }
+    },
+    "/firmwares": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Firmware"
+        ],
+        "description": "Get All Firmwares",
+        "operationId": "getAllFirmwares",
+        "summary": "Get All Firmwares"
+      },
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "file_path": {
+                  "example": "/firmware/v1.0.0.bin",
+                  "type": "string"
+                },
+                "is_mandatory": {
+                  "example": true,
+                  "type": "boolean"
+                },
+                "note": {
+                  "example": "Initial firmware release",
+                  "type": "string"
+                },
+                "template_id": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "version": {
+                  "example": "1.0.0",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Firmware"
+        ],
+        "description": "Create Firmware",
+        "operationId": "createFirmware",
+        "summary": "Create Firmware"
+      }
+    },
+    "/firmwares/{firmwareId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "firmwareId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Firmware"
+        ],
+        "description": "Delete Firmware",
+        "operationId": "deleteFirmware",
+        "summary": "Delete Firmware"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Firmware"
+        ],
+        "description": "Get Firmware by ID",
+        "operationId": "getFirmwareById",
+        "summary": "Get Firmware by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "file_path": {
+                  "example": "/firmware/v1.0.1.bin",
+                  "type": "string"
+                },
+                "is_approved": {
+                  "example": true,
+                  "type": "boolean"
+                },
+                "is_mandatory": {
+                  "example": false,
+                  "type": "boolean"
+                },
+                "note": {
+                  "example": "Updated firmware release",
+                  "type": "string"
+                },
+                "tested_at": {
+                  "example": "2025-05-20T12:00:00Z",
+                  "type": "string"
+                },
+                "version": {
+                  "example": "1.0.1",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Firmware"
+        ],
+        "description": "Update Firmware",
+        "operationId": "updateFirmware",
+        "summary": "Update Firmware"
+      }
+    },
+    "/groups": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "group_name": {
+                  "example": "MyGroup",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Group"
+        ],
+        "description": "Create Group",
+        "operationId": "createGroup",
+        "summary": "Create Group"
+      }
+    },
+    "/groups/users": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "accountId": {
+                  "example": "user123",
+                  "type": "string"
+                },
+                "groupId": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "role": {
+                  "example": "MEMBER",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Group"
+        ],
+        "description": "Add User to Group",
+        "operationId": "addUserToGroup",
+        "summary": "Add User to Group"
+      }
+    },
+    "/groups/{groupId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "groupId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Group"
+        ],
+        "description": "Delete Group",
+        "operationId": "deleteGroup",
+        "summary": "Delete Group"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Group"
+        ],
+        "description": "Get Group",
+        "operationId": "getGroup",
+        "summary": "Get Group"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "group_name": {
+                  "example": "UpdatedGroup",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Group"
+        ],
+        "description": "Update Group Name",
+        "operationId": "updateGroupName",
+        "summary": "Update Group Name"
+      }
+    },
+    "/groups/{groupId}/users": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "groupId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "accountId": {
+                  "example": "user123",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Group"
+        ],
+        "description": "Remove User from Group",
+        "operationId": "removeUserFromGroup",
+        "summary": "Remove User from Group"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "accountId": {
+                  "example": "user123",
+                  "type": "string"
+                },
+                "role": {
+                  "example": "VICE",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Group"
+        ],
+        "description": "Update User Role in Group",
+        "operationId": "updateUserRoleInGroup",
+        "summary": "Update User Role in Group"
+      }
+    },
+    "/houses": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "address": {
+                  "example": "123 Main St",
+                  "type": "string"
+                },
+                "groupId": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "house_name": {
+                  "example": "MyHouse",
+                  "type": "string"
+                },
+                "icon_color": {
+                  "example": "blue",
+                  "type": "string"
+                },
+                "icon_name": {
+                  "example": "home",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "House"
+        ],
+        "description": "Create House",
+        "operationId": "createHouse",
+        "summary": "Create House"
+      }
+    },
+    "/houses/group/{groupId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "groupId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "House"
+        ],
+        "description": "Get Houses by Group",
+        "operationId": "getHousesByGroup",
+        "summary": "Get Houses by Group"
+      }
+    },
+    "/houses/{houseId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "houseId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "House"
+        ],
+        "description": "Delete House",
+        "operationId": "deleteHouse",
+        "summary": "Delete House"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "House"
+        ],
+        "description": "Get House by ID",
+        "operationId": "getHouseById",
+        "summary": "Get House by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "address": {
+                  "example": "456 Elm St",
+                  "type": "string"
+                },
+                "groupId": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "house_name": {
+                  "example": "UpdatedHouse",
+                  "type": "string"
+                },
+                "icon_color": {
+                  "example": "green",
+                  "type": "string"
+                },
+                "icon_name": {
+                  "example": "house",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "House"
+        ],
+        "description": "Update House",
+        "operationId": "updateHouse",
+        "summary": "Update House"
+      }
+    },
+    "/notifications": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "account_id",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "is_read",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Notification"
+        ],
+        "description": "Get All Notifications",
+        "operationId": "getAllNotifications",
+        "summary": "Get All Notifications"
+      },
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "account_id": {
+                  "example": "user123",
+                  "type": "string"
+                },
+                "is_read": {
+                  "example": false,
+                  "type": "boolean"
+                },
+                "role_id": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "text": {
+                  "example": "System maintenance scheduled",
+                  "type": "string"
+                },
+                "type": {
+                  "example": "SYSTEM",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Notification"
+        ],
+        "description": "Create Notification",
+        "operationId": "createNotification",
+        "summary": "Create Notification"
+      }
+    },
+    "/notifications/otp": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "email": {
+                  "example": "user@example.com",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Notification"
+        ],
+        "description": "Send OTP",
+        "operationId": "sendOtp",
+        "summary": "Send OTP"
+      }
+    },
+    "/notifications/otp/generate": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "email": {
+                  "example": "user@example.com",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Notification"
+        ],
+        "description": "Generate OTP",
+        "operationId": "generateOtp",
+        "summary": "Generate OTP"
+      }
+    },
+    "/notifications/otp/verify": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "email": {
+                  "example": "user@example.com",
+                  "type": "string"
+                },
+                "otp": {
+                  "example": "123456",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Notification"
+        ],
+        "description": "Verify OTP",
+        "operationId": "verifyOtp",
+        "summary": "Verify OTP"
+      }
+    },
+    "/notifications/user": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Notification"
+        ],
+        "description": "Get Notifications by User",
+        "operationId": "getNotificationsByUser",
+        "summary": "Get Notifications by User"
+      }
+    },
+    "/notifications/{id}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Notification"
+        ],
+        "description": "Delete Notification",
+        "operationId": "deleteNotification",
+        "summary": "Delete Notification"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Notification"
+        ],
+        "description": "Get Notification by ID",
+        "operationId": "getNotificationById",
+        "summary": "Get Notification by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "is_read": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Notification"
+        ],
+        "description": "Update Notification",
+        "operationId": "updateNotification",
+        "summary": "Update Notification"
+      }
+    },
+    "/ownership/device/{device_serial}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "device_serial",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ownership History"
+        ],
+        "description": "Get Ownership History by Device",
+        "operationId": "getOwnershipHistoryByDevice",
+        "summary": "Get Ownership History by Device"
+      }
+    },
+    "/ownership/transfer": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "device_serial": {
+                  "example": "ABC123",
+                  "type": "string"
+                },
+                "to_user_email": {
+                  "example": "newuser@example.com",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ownership History"
+        ],
+        "description": "Initiate Ownership Transfer",
+        "operationId": "initiateOwnershipTransfer",
+        "summary": "Initiate Ownership Transfer"
+      }
+    },
+    "/ownership/transfer/{ticketId}/approve": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "ticketId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "accept": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ownership History"
+        ],
+        "description": "Approve Ownership Transfer",
+        "operationId": "approveOwnershipTransfer",
+        "summary": "Approve Ownership Transfer"
+      }
+    },
+    "/ownership/user": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ownership History"
+        ],
+        "description": "Get Ownership History by User",
+        "operationId": "getOwnershipHistoryByUser",
+        "summary": "Get Ownership History by User"
+      }
+    },
+    "/ownership/{historyId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "historyId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ownership History"
+        ],
+        "description": "Delete Ownership History",
+        "operationId": "deleteOwnershipHistory",
+        "summary": "Delete Ownership History"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ownership History"
+        ],
+        "description": "Get Ownership History by ID",
+        "operationId": "getOwnershipHistoryById",
+        "summary": "Get Ownership History by ID"
+      }
+    },
+    "/permissions/recipient/{permissionId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "permissionId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Shared Permission"
+        ],
+        "description": "Revoke Share by Recipient",
+        "operationId": "revokeShareByRecipient",
+        "summary": "Revoke Share by Recipient"
+      }
+    },
+    "/permissions/{permissionId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "permissionId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Shared Permission"
+        ],
+        "description": "Revoke Share Device",
+        "operationId": "revokeShareDevice",
+        "summary": "Revoke Share Device"
+      }
+    },
+    "/share-requests/approve/{requestId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "requestId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "accept": {
+                  "example": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Share Request"
+        ],
+        "description": "Approve Share Request",
+        "operationId": "approveShareRequest",
+        "summary": "Approve Share Request"
+      }
+    },
+    "/share-requests/device/{deviceId}/group/{groupId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "deviceId",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "in": "path",
+          "name": "groupId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "serial_number",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Share Request"
+        ],
+        "description": "Get Share Requests by Device",
+        "operationId": "getShareRequestsByDevice",
+        "summary": "Get Share Requests by Device"
+      }
+    },
+    "/share-requests/owner": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Share Request"
+        ],
+        "description": "Get Shared Devices by Owner",
+        "operationId": "getSharedDevicesByOwner",
+        "summary": "Get Shared Devices by Owner"
+      }
+    },
+    "/share-requests/permissions/device/{deviceId}/group/{groupId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "deviceId",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "in": "path",
+          "name": "groupId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "serial_number",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Share Request"
+        ],
+        "description": "Get Shared Permissions by Device",
+        "operationId": "getSharedPermissionsByDevice",
+        "summary": "Get Shared Permissions by Device"
+      }
+    },
+    "/share-requests/{groupId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "groupId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "device_serial": {
+                  "example": "ABC123",
+                  "type": "string"
+                },
+                "permission_type": {
+                  "example": "CONTROL",
+                  "type": "string"
+                },
+                "to_user_email": {
+                  "example": "user@example.com",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Share Request"
+        ],
+        "description": "Initiate Share Request",
+        "operationId": "initiateShareRequest",
+        "summary": "Initiate Share Request"
+      }
+    },
+    "/spaces": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "groupId": {
+                  "example": 2,
+                  "type": "number"
+                },
+                "houseId": {
+                  "example": 2,
+                  "type": "number"
+                },
+                "space_name": {
+                  "example": "MyRoom",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Space"
+        ],
+        "description": "Create Space",
+        "operationId": "createSpace",
+        "summary": "Create Space"
+      }
+    },
+    "/spaces/house/{houseId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "houseId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "groupId": {
+                  "example": 2,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Space"
+        ],
+        "description": "Get Spaces by House",
+        "operationId": "getSpacesByHouse",
+        "summary": "Get Spaces by House"
+      }
+    },
+    "/spaces/{spaceId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "spaceId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Space"
+        ],
+        "description": "Delete Space",
+        "operationId": "deleteSpace",
+        "summary": "Delete Space"
+      },
+      "get": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "groupId": {
+                  "example": 2,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Space"
+        ],
+        "description": "Get Space by ID",
+        "operationId": "getSpaceById",
+        "summary": "Get Space by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "space_name": {
+                  "example": "UpdatedRoom",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Space"
+        ],
+        "description": "Update Space",
+        "operationId": "updateSpace",
+        "summary": "Update Space"
+      }
+    },
+    "/spaces/{spaceId}/name": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "spaceId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Space"
+        ],
+        "description": "Get Space Name",
+        "operationId": "getSpaceName",
+        "summary": "Get Space Name"
+      }
+    },
+    "/sync-tracking/me": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync Tracking"
+        ],
+        "description": "Get Own Sync History",
+        "operationId": "getOwnSyncHistory",
+        "summary": "Get Own Sync History"
+      }
+    },
+    "/sync-tracking/{userId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "userId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync Tracking"
+        ],
+        "description": "Get User Sync History (Admin)",
+        "operationId": "getUserSyncHistoryAdmin",
+        "summary": "Get User Sync History (Admin)"
+      }
+    },
+    "/sync-tracking/{userId}/full": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "userId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Sync Tracking"
+        ],
+        "description": "Get Full User Sync History (Admin)",
+        "operationId": "getFullUserSyncHistoryAdmin",
+        "summary": "Get Full User Sync History (Admin)"
+      }
+    },
+    "/ticket-types": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ticket Type"
+        ],
+        "description": "Get All Ticket Types",
+        "operationId": "getAllTicketTypes",
+        "summary": "Get All Ticket Types"
+      },
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "is_active": {
+                  "example": true,
+                  "type": "boolean"
+                },
+                "priority": {
+                  "example": 2,
+                  "type": "number"
+                },
+                "type_name": {
+                  "example": "Hardware Issue",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ticket Type"
+        ],
+        "description": "Create Ticket Type",
+        "operationId": "createTicketType",
+        "summary": "Create Ticket Type"
+      }
+    },
+    "/ticket-types/{ticketTypeId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "ticketTypeId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ticket Type"
+        ],
+        "description": "Delete Ticket Type",
+        "operationId": "deleteTicketType",
+        "summary": "Delete Ticket Type"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ticket Type"
+        ],
+        "description": "Get Ticket Type by ID",
+        "operationId": "getTicketTypeById",
+        "summary": "Get Ticket Type by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "is_active": {
+                  "example": false,
+                  "type": "boolean"
+                },
+                "priority": {
+                  "example": 3,
+                  "type": "number"
+                },
+                "type_name": {
+                  "example": "Updated Hardware Issue",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ticket Type"
+        ],
+        "description": "Update Ticket Type",
+        "operationId": "updateTicketType",
+        "summary": "Update Ticket Type"
+      }
+    },
+    "/ticket-types/{ticketTypeId}/priority": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "ticketTypeId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "priority": {
+                  "example": 4,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ticket Type"
+        ],
+        "description": "Update Ticket Type Priority",
+        "operationId": "updateTicketTypePriority",
+        "summary": "Update Ticket Type Priority"
+      }
+    },
+    "/tickets": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "user_id",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "ticket_type_id",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "created_at_start",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "created_at_end",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ticket"
+        ],
+        "description": "Get All Tickets",
+        "operationId": "getAllTickets",
+        "summary": "Get All Tickets"
+      },
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "description": {
+                  "example": "Device not responding",
+                  "type": "string"
+                },
+                "device_serial": {
+                  "example": "ABC123",
+                  "type": "string"
+                },
+                "evidence": {
+                  "properties": {
+                    "image": {
+                      "example": "error.jpg",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "ticket_type_id": {
+                  "example": 1,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ticket"
+        ],
+        "description": "Create Ticket",
+        "operationId": "createTicket",
+        "summary": "Create Ticket"
+      }
+    },
+    "/tickets/user": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ticket"
+        ],
+        "description": "Get Tickets by User",
+        "operationId": "getTicketsByUser",
+        "summary": "Get Tickets by User"
+      }
+    },
+    "/tickets/{ticketId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "ticketId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ticket"
+        ],
+        "description": "Delete Ticket",
+        "operationId": "deleteTicket",
+        "summary": "Delete Ticket"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ticket"
+        ],
+        "description": "Get Ticket by ID",
+        "operationId": "getTicketById",
+        "summary": "Get Ticket by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "assigned_to": {
+                  "example": "employee123",
+                  "type": "string"
+                },
+                "description": {
+                  "example": "Updated issue description",
+                  "type": "string"
+                },
+                "evidence": {
+                  "properties": {
+                    "image": {
+                      "example": "updated_error.jpg",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "resolve_solution": {
+                  "example": "Restart device",
+                  "type": "string"
+                },
+                "status": {
+                  "example": "in_progress",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ticket"
+        ],
+        "description": "Update Ticket",
+        "operationId": "updateTicket",
+        "summary": "Update Ticket"
+      }
+    },
+    "/user-devices/me": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "User Devices"
+        ],
+        "description": "Get Own Devices",
+        "operationId": "getOwnDevices",
+        "summary": "Get Own Devices"
+      }
+    },
+    "/user-devices/{deviceId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "deviceId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "User Devices"
+        ],
+        "description": "Revoke Device",
+        "operationId": "revokeDevice",
+        "summary": "Revoke Device"
+      }
+    },
+    "/user-devices/{userId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "userId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "User Devices"
+        ],
+        "description": "Get User Devices (Admin)",
+        "operationId": "getUserDevicesAdmin",
+        "summary": "Get User Devices (Admin)"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Sync Tracking"
+    },
+    {
+      "name": "User Devices"
+    },
+    {
+      "name": "Notification"
+    },
+    {
+      "name": "Device"
+    },
+    {
+      "name": "Group"
+    },
+    {
+      "name": "House"
+    },
+    {
+      "name": "Space"
+    },
+    {
+      "name": "Shared Permission"
+    },
+    {
+      "name": "Share Request"
+    },
+    {
+      "name": "Alert Type"
+    },
+    {
+      "name": "Alert"
+    },
+    {
+      "name": "Firmware"
+    },
+    {
+      "name": "Firmware Update History"
+    },
+    {
+      "name": "Ownership History"
+    },
+    {
+      "name": "Ticket Type"
+    },
+    {
+      "name": "Ticket"
+    }
+  ]
+}
