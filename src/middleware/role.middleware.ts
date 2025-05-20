@@ -4,6 +4,22 @@ import { ErrorCodes, throwError } from "../utils/errors";
 
 const prisma = new PrismaClient();
 
+/**
+ * Middleware kiểm tra vai trò của nhân viên.
+ *
+ * Chỉ cho phép các tài khoản có vai trò 'ADMIN' hoặc 'TECHNICIAN' thực hiện hành động tiếp theo.
+ * Nếu không xác định được employeeId, trả về lỗi UNAUTHORIZED.
+ * Nếu không tìm thấy tài khoản, trả về lỗi NOT_FOUND.
+ * Nếu tài khoản không có vai trò, trả về lỗi FORBIDDEN.
+ * Nếu vai trò không thuộc allowedRoles, trả về lỗi FORBIDDEN.
+ *
+ * @param req - Đối tượng Request của Express, yêu cầu phải có user với employeeId.
+ * @param res - Đối tượng Response của Express.
+ * @param next - Hàm next để chuyển sang middleware tiếp theo nếu hợp lệ.
+ * @throws UNAUTHORIZED nếu không xác định được employeeId.
+ * @throws NOT_FOUND nếu không tìm thấy tài khoản.
+ * @throws FORBIDDEN nếu tài khoản không có vai trò hoặc vai trò không hợp lệ.
+ */
 const roleMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     const employeeId = req.user?.employeeId;
     if (!employeeId) {
@@ -30,7 +46,18 @@ const roleMiddleware = async (req: Request, res: Response, next: NextFunction) =
 
     next();
 };
-
+/**
+ * Middleware kiểm tra quyền sở hữu thiết bị.
+ *
+ * Chỉ cho phép người dùng là chủ sở hữu của thiết bị (dựa vào userId/employeeId và device_serial)
+ * thực hiện các hành động tiếp theo. Nếu không phải chủ sở hữu, trả về lỗi FORBIDDEN.
+ *
+ * @param req - Đối tượng Request của Express, yêu cầu phải có user và device_serial trong body.
+ * @param res - Đối tượng Response của Express.
+ * @param next - Hàm next để chuyển sang middleware tiếp theo nếu hợp lệ.
+ * @throws UNAUTHORIZED nếu không xác định được user.
+ * @throws FORBIDDEN nếu user không phải chủ sở hữu thiết bị.
+ */
 export const restrictToDeviceOwner = async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.user?.userId || req.user?.employeeId;
     const { device_serial } = req.body;
@@ -47,5 +74,4 @@ export const restrictToDeviceOwner = async (req: Request, res: Response, next: N
 
     next();
 };
-
 export default roleMiddleware;

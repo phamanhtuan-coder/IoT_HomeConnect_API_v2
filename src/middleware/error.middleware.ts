@@ -2,6 +2,19 @@ import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import { AppError, ErrorCodes } from '../utils/errors';
 import { ZodError } from 'zod';
 
+/**
+ * Middleware xử lý lỗi cho ứng dụng Express.
+ *
+ * - Ghi log lỗi với thông tin method và path.
+ * - Nếu lỗi là AppError, trả về mã lỗi và message tương ứng.
+ * - Nếu lỗi là ZodError (lỗi validate), trả về mã lỗi BAD_REQUEST và chi tiết lỗi.
+ * - Nếu là lỗi khác, trả về mã lỗi INTERNAL_SERVER_ERROR.
+ *
+ * @param err Lỗi phát sinh (Error hoặc AppError)
+ * @param req Đối tượng Request của Express
+ * @param res Đối tượng Response của Express
+ * @param next Hàm next của middleware
+ */
 const errorMiddleware: ErrorRequestHandler = (
     err: Error | AppError,
     req: Request,
