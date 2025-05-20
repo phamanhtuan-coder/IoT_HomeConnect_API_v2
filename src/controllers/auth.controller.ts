@@ -101,6 +101,19 @@ class AuthController {
         res.status(201).json({ token });
     };
 
+    registerEmployee = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const adminId = req.user?.userId || req.user?.employeeId;
+            if (!adminId) throwError(ErrorCodes.UNAUTHORIZED, 'Admin not authenticated');
+
+            const data = req.body as EmployeeRegisterRequestBody;
+            const token = await this.authService.registerEmployee(data, adminId);
+            res.status(201).json({ token });
+        } catch (error) {
+            next(error);
+        }
+    };
+
 
     logoutEmployee = async (req: Request, res: Response, next: NextFunction) => {
         const employeeId = req.user?.employeeId;

@@ -255,14 +255,15 @@ class AuthService {
 
         const passwordHash = await bcrypt.hash(password, 12);
         const account = await this.prisma.account.create({
-            // @ts-ignore
             data: {
                 account_id: accountId,
-                username, // Dùng username từ input
+                username,
                 password: passwordHash,
                 role_id: roleRecord!.id,
-                employee: {
-                    create: {
+            },
+        });
+        await this.prisma.employee.create({
+            data: {
                         id: accountId,
                         surname,
                         lastname: lastname || null,
@@ -273,8 +274,7 @@ class AuthService {
                         phone: phone || null,
                         status: status !== undefined ? status : null,
                     },
-                },
-            },
+
         });
 
         const accessToken = jwt.sign(

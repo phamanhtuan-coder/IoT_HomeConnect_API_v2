@@ -20,6 +20,7 @@ router.post(
     '/employee/register',
     authMiddleware,
     validateMiddleware(employeeRegisterSchema),
+    asyncHandler(authController.registerEmployee)
 );
 router.post('/refresh', validateMiddleware(refreshTokenSchema), asyncHandler(authController.refreshToken));
 router.post('/employee/refresh', validateMiddleware(refreshTokenSchema), asyncHandler(authController.refreshEmployeeToken));
