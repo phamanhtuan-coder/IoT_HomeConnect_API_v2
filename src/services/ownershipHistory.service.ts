@@ -2,12 +2,16 @@ import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
 import { OwnershipHistory, OwnershipTransferStatus } from '../types/auth';
 import TicketTypeService from './ticket-type.service';
+import NotificationService from './notification.service';
+import { NotificationType } from '../types/notification';
 
 class OwnershipHistoryService {
     private prisma: PrismaClient;
+    private notificationService: NotificationService;
 
     constructor() {
         this.prisma = new PrismaClient();
+        this.notificationService = new NotificationService();
     }
 
     async initiateOwnershipTransfer(input: {
@@ -81,16 +85,11 @@ class OwnershipHistoryService {
             },
         });
 
-        // Create notification for recipient
-        await this.prisma.notification.create({
-            data: {
-                id: 0,
-                account_id: recipient!.account_id,
-                text: `Ownership transfer request for device ${device!.name} from user ${from_user_id}`,
-                type: 'ownership_transfer',
-                is_read: false,
-                created_at: new Date(),
-            },
+        // Create notification for recipient using NotificationService
+        await this.notificationService.createNotification({
+            account_id: recipient!.account_id,
+            text: `Ownership transfer request for device ${device!.name || device_serial} from user ${from_user_id}`,
+            type: NotificationType.SECURITY,
         });
     }
 
@@ -131,16 +130,12 @@ class OwnershipHistoryService {
                 data: { is_deleted: true, updated_at: new Date() },
             });
 
-            // Notify initiator
-            await this.prisma.notification.create({
-                data: {
-                    id: 0,
-                    account_id: ownershipHistory!.from_user_id,
-                    text: `Ownership transfer request for device ${ownershipHistory!.device_serial} was rejected`,
-                    type: 'ownership_transfer_rejected',
-                    is_read: false,
-                    created_at: new Date(),
-                },
+            // Notify initiator using NotificationService
+            await this.notificationService.createNotification({
+                // @ts-ignore
+                account_id: ownershipHistory!.from_user_id,
+                text: `Ownership transfer request for device ${ownershipHistory!.device_serial} was rejected`,
+                type: NotificationType.SECURITY,
             });
             return;
         }
@@ -184,30 +179,21 @@ class OwnershipHistoryService {
                 where: { device_serial: ownershipHistory!.device_serial, is_deleted: false },
                 data: { is_deleted: true, updated_at: new Date() },
             });
+        });
 
-            // Notify initiator and recipient
-            await prisma.notification.createMany({
-                data: [
-                    {
-                        // Let auto-increment handle this in a proper schema
-                        account_id: ownershipHistory!.from_user_id,
-                        text: `Ownership of device ${ownershipHistory!.device_serial} successfully transferred to ${ownershipHistory!.to_user_id}`,
-                        type: 'ownership_transfer_success',
-                        is_read: false,
-                        created_at: new Date(),
-                        id: 0
-                    },
-                    {
-                        account_id: ownershipHistory!.to_user_id,
-                        text: `You are now the owner of device ${ownershipHistory!.device_serial}`,
-                        type: 'ownership_transfer_success',
-                        is_read: false,
-                        created_at: new Date(),
-                        id: 0
-                    },
-                ],
-                skipDuplicates: true,
-            });
+        // Send notifications to both users using NotificationService
+        await this.notificationService.createNotification({
+            // @ts-ignore
+            account_id: ownershipHistory!.from_user_id,
+            text: `Ownership of device ${ownershipHistory!.device_serial} successfully transferred to ${ownershipHistory!.to_user_id}`,
+            type: NotificationType.SECURITY,
+        });
+
+        await this.notificationService.createNotification({
+            // @ts-ignore
+            account_id: ownershipHistory!.to_user_id,
+            text: `You are now the owner of device ${ownershipHistory!.device_serial}`,
+            type: NotificationType.SECURITY,
         });
     }
 
@@ -266,6 +252,13 @@ class OwnershipHistoryService {
                 }
             },
             data: { is_deleted: true, updated_at: new Date() },
+        });
+
+        // Add notification for deletion
+        await this.notificationService.createNotification({
+            account_id: userId,
+            text: `Ownership history #${historyId} has been deleted.`,
+            type: NotificationType.SECURITY,
         });
     }
 
