@@ -1,18 +1,18 @@
 [
   {
-    "name": "Share Request",
+    "name": "Alert Type",
     "item": [
       {
-        "name": "Initiate Share Request",
+        "name": "Create Alert Type",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Share request initiated successfully', () => {",
+                "pm.test('Alert type created successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(201);",
-                "  pm.expect(response.message).to.equal('Share request initiated');",
+                "  pm.expect(response.alert_type_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript",
@@ -25,13 +25,13 @@
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
+              "value": "Bearer {{employeeAccessToken}}",
               "type": "text"
             }
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"to_user_email\": \"user@example.com\",\n  \"permission_type\": \"CONTROL\"\n}",
+            "raw": "{\n  \"alert_type_name\": \"Critical Alert\",\n  \"priority\": 3\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -39,30 +39,24 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/share-requests/:groupId",
+            "raw": "{{baseUrl}}/alert-types",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", ":groupId"],
-            "variable": [
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
+            "path": ["alert-types"]
           }
         },
         "response": []
       },
       {
-        "name": "Approve Share Request",
+        "name": "Update Alert Type",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Share request processed successfully', () => {",
+                "pm.test('Alert type updated successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.message).to.be.oneOf(['Share request approved', 'Share request rejected']);",
+                "  pm.expect(response.alert_type_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript",
@@ -71,17 +65,17 @@
           }
         ],
         "request": {
-          "method": "POST",
+          "method": "PUT",
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
+              "value": "Bearer {{employeeAccessToken}}",
               "type": "text"
             }
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"accept\": true\n}",
+            "raw": "{\n  \"alert_type_name\": \"Updated Alert\",\n  \"priority\": 4\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -89,12 +83,12 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/share-requests/approve/:requestId",
+            "raw": "{{baseUrl}}/alert-types/:alertTypeId",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "approve", ":requestId"],
+            "path": ["alert-types", ":alertTypeId"],
             "variable": [
               {
-                "key": "requestId",
+                "key": "alertTypeId",
                 "value": "1"
               }
             ]
@@ -103,14 +97,94 @@
         "response": []
       },
       {
-        "name": "Get Share Requests by Device",
+        "name": "Delete Alert Type",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Alert type deleted successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(204);",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/alert-types/:alertTypeId",
+            "host": ["{{baseUrl}}"],
+            "path": ["alert-types", ":alertTypeId"],
+            "variable": [
+              {
+                "key": "alertTypeId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Alert Type by ID",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Share requests retrieved successfully', () => {",
+                "pm.test('Alert type retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.alert_type_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/alert-types/:alertTypeId",
+            "host": ["{{baseUrl}}"],
+            "path": ["alert-types", ":alertTypeId"],
+            "variable": [
+              {
+                "key": "alertTypeId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get All Alert Types",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Alert types retrieved successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
                 "  pm.expect(response).to.be.an('array');",
                 "});"
@@ -125,116 +199,14 @@
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
+              "value": "Bearer {{employeeAccessToken}}",
               "type": "text"
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/share-requests/device/:deviceId/group/:groupId?serial_number=ABC123",
+            "raw": "{{baseUrl}}/alert-types",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "device", ":deviceId", "group", ":groupId"],
-            "query": [
-              {
-                "key": "serial_number",
-                "value": "ABC123"
-              }
-            ],
-            "variable": [
-              {
-                "key": "deviceId",
-                "value": "1"
-              },
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
-          }
-        },
-        "response": []
-      },
-      {
-        "name": "Get Shared Permissions by Device",
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Shared permissions retrieved successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response).to.be.an('array');",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
-            }
-          }
-        ],
-        "request": {
-          "method": "GET",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/share-requests/permissions/device/:deviceId/group/:groupId?serial_number=ABC123",
-            "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "permissions", "device", ":deviceId", "group", ":groupId"],
-            "query": [
-              {
-                "key": "serial_number",
-                "value": "ABC123"
-              }
-            ],
-            "variable": [
-              {
-                "key": "deviceId",
-                "value": "1"
-              },
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
-          }
-        },
-        "response": []
-      },
-      {
-        "name": "Get Shared Devices by Owner",
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Shared devices retrieved successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response).to.be.an('array');",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
-            }
-          }
-        ],
-        "request": {
-          "method": "GET",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/share-requests/owner",
-            "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "owner"]
+            "path": ["alert-types"]
           }
         },
         "response": []

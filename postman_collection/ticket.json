@@ -1,18 +1,18 @@
 [
   {
-    "name": "Share Request",
+    "name": "Ticket",
     "item": [
       {
-        "name": "Initiate Share Request",
+        "name": "Create Ticket",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Share request initiated successfully', () => {",
+                "pm.test('Ticket created successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(201);",
-                "  pm.expect(response.message).to.equal('Share request initiated');",
+                "  pm.expect(response.ticket_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript",
@@ -31,7 +31,7 @@
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"to_user_email\": \"user@example.com\",\n  \"permission_type\": \"CONTROL\"\n}",
+            "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"ticket_type_id\": 1,\n  \"description\": \"Device not responding\",\n  \"evidence\": {\"image\": \"error.jpg\"}\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -39,30 +39,24 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/share-requests/:groupId",
+            "raw": "{{baseUrl}}/tickets",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", ":groupId"],
-            "variable": [
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
+            "path": ["tickets"]
           }
         },
         "response": []
       },
       {
-        "name": "Approve Share Request",
+        "name": "Update Ticket",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Share request processed successfully', () => {",
+                "pm.test('Ticket updated successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.message).to.be.oneOf(['Share request approved', 'Share request rejected']);",
+                "  pm.expect(response.ticket_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript",
@@ -71,7 +65,7 @@
           }
         ],
         "request": {
-          "method": "POST",
+          "method": "PUT",
           "header": [
             {
               "key": "Authorization",
@@ -81,7 +75,7 @@
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"accept\": true\n}",
+            "raw": "{\n  \"description\": \"Updated issue description\",\n  \"evidence\": {\"image\": \"updated_error.jpg\"},\n  \"status\": \"in_progress\",\n  \"assigned_to\": \"employee123\",\n  \"resolve_solution\": \"Restart device\"\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -89,12 +83,12 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/share-requests/approve/:requestId",
+            "raw": "{{baseUrl}}/tickets/:ticketId",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "approve", ":requestId"],
+            "path": ["tickets", ":ticketId"],
             "variable": [
               {
-                "key": "requestId",
+                "key": "ticketId",
                 "value": "1"
               }
             ]
@@ -103,14 +97,94 @@
         "response": []
       },
       {
-        "name": "Get Share Requests by Device",
+        "name": "Delete Ticket",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Ticket deleted successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(204);",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/tickets/:ticketId",
+            "host": ["{{baseUrl}}"],
+            "path": ["tickets", ":ticketId"],
+            "variable": [
+              {
+                "key": "ticketId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Ticket by ID",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Share requests retrieved successfully', () => {",
+                "pm.test('Ticket retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.ticket_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/tickets/:ticketId",
+            "host": ["{{baseUrl}}"],
+            "path": ["tickets", ":ticketId"],
+            "variable": [
+              {
+                "key": "ticketId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Tickets by User",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Tickets retrieved successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
                 "  pm.expect(response).to.be.an('array');",
                 "});"
@@ -130,111 +204,74 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/share-requests/device/:deviceId/group/:groupId?serial_number=ABC123",
+            "raw": "{{baseUrl}}/tickets/user",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "device", ":deviceId", "group", ":groupId"],
+            "path": ["tickets", "user"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get All Tickets",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Tickets retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/tickets?user_id=user123&ticket_type_id=1&status=pending&created_at_start=2025-01-01T00:00:00Z&created_at_end=2025-12-31T23:59:59Z&page=1&limit=10",
+            "host": ["{{baseUrl}}"],
+            "path": ["tickets"],
             "query": [
               {
-                "key": "serial_number",
-                "value": "ABC123"
-              }
-            ],
-            "variable": [
+                "key": "user_id",
+                "value": "user123"
+              },
               {
-                "key": "deviceId",
+                "key": "ticket_type_id",
                 "value": "1"
               },
               {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
-          }
-        },
-        "response": []
-      },
-      {
-        "name": "Get Shared Permissions by Device",
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Shared permissions retrieved successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response).to.be.an('array');",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
-            }
-          }
-        ],
-        "request": {
-          "method": "GET",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/share-requests/permissions/device/:deviceId/group/:groupId?serial_number=ABC123",
-            "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "permissions", "device", ":deviceId", "group", ":groupId"],
-            "query": [
+                "key": "status",
+                "value": "pending"
+              },
               {
-                "key": "serial_number",
-                "value": "ABC123"
-              }
-            ],
-            "variable": [
+                "key": "created_at_start",
+                "value": "2025-01-01T00:00:00Z"
+              },
               {
-                "key": "deviceId",
+                "key": "created_at_end",
+                "value": "2025-12-31T23:59:59Z"
+              },
+              {
+                "key": "page",
                 "value": "1"
               },
               {
-                "key": "groupId",
-                "value": "1"
+                "key": "limit",
+                "value": "10"
               }
             ]
-          }
-        },
-        "response": []
-      },
-      {
-        "name": "Get Shared Devices by Owner",
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Shared devices retrieved successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response).to.be.an('array');",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
-            }
-          }
-        ],
-        "request": {
-          "method": "GET",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/share-requests/owner",
-            "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "owner"]
           }
         },
         "response": []

@@ -1,18 +1,18 @@
 [
   {
-    "name": "Share Request",
+    "name": "Firmware",
     "item": [
       {
-        "name": "Initiate Share Request",
+        "name": "Create Firmware",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Share request initiated successfully', () => {",
+                "pm.test('Firmware created successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(201);",
-                "  pm.expect(response.message).to.equal('Share request initiated');",
+                "  pm.expect(response.firmware_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript",
@@ -25,13 +25,13 @@
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
+              "value": "Bearer {{employeeAccessToken}}",
               "type": "text"
             }
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"to_user_email\": \"user@example.com\",\n  \"permission_type\": \"CONTROL\"\n}",
+            "raw": "{\n  \"version\": \"1.0.0\",\n  \"file_path\": \"/firmware/v1.0.0.bin\",\n  \"template_id\": 1,\n  \"is_mandatory\": true,\n  \"note\": \"Initial firmware release\"\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -39,30 +39,24 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/share-requests/:groupId",
+            "raw": "{{baseUrl}}/firmwares",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", ":groupId"],
-            "variable": [
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
+            "path": ["firmwares"]
           }
         },
         "response": []
       },
       {
-        "name": "Approve Share Request",
+        "name": "Update Firmware",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Share request processed successfully', () => {",
+                "pm.test('Firmware updated successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.message).to.be.oneOf(['Share request approved', 'Share request rejected']);",
+                "  pm.expect(response.firmware_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript",
@@ -71,17 +65,17 @@
           }
         ],
         "request": {
-          "method": "POST",
+          "method": "PUT",
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
+              "value": "Bearer {{employeeAccessToken}}",
               "type": "text"
             }
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"accept\": true\n}",
+            "raw": "{\n  \"version\": \"1.0.1\",\n  \"file_path\": \"/firmware/v1.0.1.bin\",\n  \"is_mandatory\": false,\n  \"is_approved\": true,\n  \"tested_at\": \"2025-05-20T12:00:00Z\",\n  \"note\": \"Updated firmware release\"\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -89,12 +83,12 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/share-requests/approve/:requestId",
+            "raw": "{{baseUrl}}/firmwares/:firmwareId",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "approve", ":requestId"],
+            "path": ["firmwares", ":firmwareId"],
             "variable": [
               {
-                "key": "requestId",
+                "key": "firmwareId",
                 "value": "1"
               }
             ]
@@ -103,14 +97,94 @@
         "response": []
       },
       {
-        "name": "Get Share Requests by Device",
+        "name": "Delete Firmware",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Firmware deleted successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(204);",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/firmwares/:firmwareId",
+            "host": ["{{baseUrl}}"],
+            "path": ["firmwares", ":firmwareId"],
+            "variable": [
+              {
+                "key": "firmwareId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Firmware by ID",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Share requests retrieved successfully', () => {",
+                "pm.test('Firmware retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.firmware_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/firmwares/:firmwareId",
+            "host": ["{{baseUrl}}"],
+            "path": ["firmwares", ":firmwareId"],
+            "variable": [
+              {
+                "key": "firmwareId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get All Firmwares",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Firmwares retrieved successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
                 "  pm.expect(response).to.be.an('array');",
                 "});"
@@ -125,116 +199,14 @@
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
+              "value": "Bearer {{employeeAccessToken}}",
               "type": "text"
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/share-requests/device/:deviceId/group/:groupId?serial_number=ABC123",
+            "raw": "{{baseUrl}}/firmwares",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "device", ":deviceId", "group", ":groupId"],
-            "query": [
-              {
-                "key": "serial_number",
-                "value": "ABC123"
-              }
-            ],
-            "variable": [
-              {
-                "key": "deviceId",
-                "value": "1"
-              },
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
-          }
-        },
-        "response": []
-      },
-      {
-        "name": "Get Shared Permissions by Device",
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Shared permissions retrieved successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response).to.be.an('array');",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
-            }
-          }
-        ],
-        "request": {
-          "method": "GET",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/share-requests/permissions/device/:deviceId/group/:groupId?serial_number=ABC123",
-            "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "permissions", "device", ":deviceId", "group", ":groupId"],
-            "query": [
-              {
-                "key": "serial_number",
-                "value": "ABC123"
-              }
-            ],
-            "variable": [
-              {
-                "key": "deviceId",
-                "value": "1"
-              },
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
-          }
-        },
-        "response": []
-      },
-      {
-        "name": "Get Shared Devices by Owner",
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Shared devices retrieved successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response).to.be.an('array');",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
-            }
-          }
-        ],
-        "request": {
-          "method": "GET",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/share-requests/owner",
-            "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "owner"]
+            "path": ["firmwares"]
           }
         },
         "response": []

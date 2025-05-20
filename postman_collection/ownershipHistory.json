@@ -1,18 +1,18 @@
 [
   {
-    "name": "Share Request",
+    "name": "Ownership History",
     "item": [
       {
-        "name": "Initiate Share Request",
+        "name": "Initiate Ownership Transfer",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Share request initiated successfully', () => {",
+                "pm.test('Ownership transfer initiated successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(201);",
-                "  pm.expect(response.message).to.equal('Share request initiated');",
+                "  pm.expect(response.message).to.equal('Ownership transfer request initiated');",
                 "});"
               ],
               "type": "text/javascript",
@@ -31,7 +31,7 @@
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"to_user_email\": \"user@example.com\",\n  \"permission_type\": \"CONTROL\"\n}",
+            "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"to_user_email\": \"newuser@example.com\"\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -39,30 +39,24 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/share-requests/:groupId",
+            "raw": "{{baseUrl}}/ownership/transfer",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", ":groupId"],
-            "variable": [
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
+            "path": ["ownership", "transfer"]
           }
         },
         "response": []
       },
       {
-        "name": "Approve Share Request",
+        "name": "Approve Ownership Transfer",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Share request processed successfully', () => {",
+                "pm.test('Ownership transfer processed successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.message).to.be.oneOf(['Share request approved', 'Share request rejected']);",
+                "  pm.expect(response.message).to.be.oneOf(['Ownership transfer approved', 'Ownership transfer rejected']);",
                 "});"
               ],
               "type": "text/javascript",
@@ -89,12 +83,12 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/share-requests/approve/:requestId",
+            "raw": "{{baseUrl}}/ownership/transfer/:ticketId/approve",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "approve", ":requestId"],
+            "path": ["ownership", "transfer", ":ticketId", "approve"],
             "variable": [
               {
-                "key": "requestId",
+                "key": "ticketId",
                 "value": "1"
               }
             ]
@@ -103,14 +97,55 @@
         "response": []
       },
       {
-        "name": "Get Share Requests by Device",
+        "name": "Get Ownership History by ID",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Share requests retrieved successfully', () => {",
+                "pm.test('Ownership history retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.history_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/ownership/:historyId",
+            "host": ["{{baseUrl}}"],
+            "path": ["ownership", ":historyId"],
+            "variable": [
+              {
+                "key": "historyId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Ownership History by Device",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Ownership histories retrieved successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
                 "  pm.expect(response).to.be.an('array');",
                 "});"
@@ -130,38 +165,28 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/share-requests/device/:deviceId/group/:groupId?serial_number=ABC123",
+            "raw": "{{baseUrl}}/ownership/device/:device_serial",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "device", ":deviceId", "group", ":groupId"],
-            "query": [
+            "path": ["ownership", "device", ":device_serial"],
+            "variable": [
               {
-                "key": "serial_number",
+                "key": "device_serial",
                 "value": "ABC123"
               }
-            ],
-            "variable": [
-              {
-                "key": "deviceId",
-                "value": "1"
-              },
-              {
-                "key": "groupId",
-                "value": "1"
-              }
             ]
           }
         },
         "response": []
       },
       {
-        "name": "Get Shared Permissions by Device",
+        "name": "Get Ownership History by User",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Shared permissions retrieved successfully', () => {",
+                "pm.test('Ownership histories retrieved successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
                 "  pm.expect(response).to.be.an('array');",
                 "});"
@@ -181,40 +206,24 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/share-requests/permissions/device/:deviceId/group/:groupId?serial_number=ABC123",
+            "raw": "{{baseUrl}}/ownership/user",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "permissions", "device", ":deviceId", "group", ":groupId"],
-            "query": [
-              {
-                "key": "serial_number",
-                "value": "ABC123"
-              }
-            ],
-            "variable": [
-              {
-                "key": "deviceId",
-                "value": "1"
-              },
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
+            "path": ["ownership", "user"]
           }
         },
         "response": []
       },
       {
-        "name": "Get Shared Devices by Owner",
+        "name": "Delete Ownership History",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Shared devices retrieved successfully', () => {",
+                "pm.test('Ownership history deleted successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response).to.be.an('array');",
+                "  pm.expect(response.message).to.equal('Ownership history deleted');",
                 "});"
               ],
               "type": "text/javascript",
@@ -223,7 +232,7 @@
           }
         ],
         "request": {
-          "method": "GET",
+          "method": "DELETE",
           "header": [
             {
               "key": "Authorization",
@@ -232,9 +241,15 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/share-requests/owner",
+            "raw": "{{baseUrl}}/ownership/:historyId",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "owner"]
+            "path": ["ownership", ":historyId"],
+            "variable": [
+              {
+                "key": "historyId",
+                "value": "1"
+              }
+            ]
           }
         },
         "response": []

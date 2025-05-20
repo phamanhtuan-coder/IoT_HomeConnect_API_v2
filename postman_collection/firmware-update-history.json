@@ -1,18 +1,18 @@
 [
   {
-    "name": "Share Request",
+    "name": "Firmware Update History",
     "item": [
       {
-        "name": "Initiate Share Request",
+        "name": "Create Firmware Update History",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Share request initiated successfully', () => {",
+                "pm.test('Firmware update history created successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(201);",
-                "  pm.expect(response.message).to.equal('Share request initiated');",
+                "  pm.expect(response.update_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript",
@@ -25,13 +25,13 @@
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
+              "value": "Bearer {{employeeAccessToken}}",
               "type": "text"
             }
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"to_user_email\": \"user@example.com\",\n  \"permission_type\": \"CONTROL\"\n}",
+            "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"firmware_id\": 1,\n  \"status\": \"success\"\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -39,30 +39,24 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/share-requests/:groupId",
+            "raw": "{{baseUrl}}/firmware-update-histories",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", ":groupId"],
-            "variable": [
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
+            "path": ["firmware-update-histories"]
           }
         },
         "response": []
       },
       {
-        "name": "Approve Share Request",
+        "name": "Update Firmware Update History",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Share request processed successfully', () => {",
+                "pm.test('Firmware update history updated successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.message).to.be.oneOf(['Share request approved', 'Share request rejected']);",
+                "  pm.expect(response.update_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript",
@@ -71,17 +65,17 @@
           }
         ],
         "request": {
-          "method": "POST",
+          "method": "PUT",
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
+              "value": "Bearer {{employeeAccessToken}}",
               "type": "text"
             }
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"accept\": true\n}",
+            "raw": "{\n  \"status\": \"failed\"\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -89,12 +83,12 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/share-requests/approve/:requestId",
+            "raw": "{{baseUrl}}/firmware-update-histories/:updateId",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "approve", ":requestId"],
+            "path": ["firmware-update-histories", ":updateId"],
             "variable": [
               {
-                "key": "requestId",
+                "key": "updateId",
                 "value": "1"
               }
             ]
@@ -103,14 +97,94 @@
         "response": []
       },
       {
-        "name": "Get Share Requests by Device",
+        "name": "Delete Firmware Update History",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Firmware update history deleted successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(204);",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/firmware-update-histories/:updateId",
+            "host": ["{{baseUrl}}"],
+            "path": ["firmware-update-histories", ":updateId"],
+            "variable": [
+              {
+                "key": "updateId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Firmware Update History by ID",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Share requests retrieved successfully', () => {",
+                "pm.test('Firmware update history retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.update_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/firmware-update-histories/:updateId",
+            "host": ["{{baseUrl}}"],
+            "path": ["firmware-update-histories", ":updateId"],
+            "variable": [
+              {
+                "key": "updateId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Firmware Update Histories",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Firmware update histories retrieved successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
                 "  pm.expect(response).to.be.an('array');",
                 "});"
@@ -125,116 +199,28 @@
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
+              "value": "Bearer {{employeeAccessToken}}",
               "type": "text"
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/share-requests/device/:deviceId/group/:groupId?serial_number=ABC123",
+            "raw": "{{baseUrl}}/firmware-update-histories?device_serial=ABC123&page=1&limit=10",
             "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "device", ":deviceId", "group", ":groupId"],
+            "path": ["firmware-update-histories"],
             "query": [
               {
-                "key": "serial_number",
+                "key": "device_serial",
                 "value": "ABC123"
-              }
-            ],
-            "variable": [
+              },
               {
-                "key": "deviceId",
+                "key": "page",
                 "value": "1"
               },
               {
-                "key": "groupId",
-                "value": "1"
+                "key": "limit",
+                "value": "10"
               }
             ]
-          }
-        },
-        "response": []
-      },
-      {
-        "name": "Get Shared Permissions by Device",
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Shared permissions retrieved successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response).to.be.an('array');",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
-            }
-          }
-        ],
-        "request": {
-          "method": "GET",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/share-requests/permissions/device/:deviceId/group/:groupId?serial_number=ABC123",
-            "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "permissions", "device", ":deviceId", "group", ":groupId"],
-            "query": [
-              {
-                "key": "serial_number",
-                "value": "ABC123"
-              }
-            ],
-            "variable": [
-              {
-                "key": "deviceId",
-                "value": "1"
-              },
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
-          }
-        },
-        "response": []
-      },
-      {
-        "name": "Get Shared Devices by Owner",
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Shared devices retrieved successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response).to.be.an('array');",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
-            }
-          }
-        ],
-        "request": {
-          "method": "GET",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/share-requests/owner",
-            "host": ["{{baseUrl}}"],
-            "path": ["share-requests", "owner"]
           }
         },
         "response": []
