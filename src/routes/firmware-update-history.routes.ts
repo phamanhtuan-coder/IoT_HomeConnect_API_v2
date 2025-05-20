@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import FirmwareUpdateHistoryController from '../controllers/firmware-update-history.controller';
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
@@ -22,6 +22,17 @@ const router = Router();
 const firmwareUpdateHistoryController = new FirmwareUpdateHistoryController();
 
 /**
+ * Hàm helper để xử lý bất đồng bộ và bắt lỗi cho các controller.
+ * @param fn Hàm controller bất đồng bộ
+ * @returns Middleware Express xử lý lỗi
+ */
+const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        fn(req, res, next).catch(next);
+    };
+};
+
+/**
  * Tạo mới một bản ghi lịch sử cập nhật firmware.
  * Yêu cầu: xác thực, phân quyền, kiểm tra dữ liệu đầu vào.
  */
@@ -30,7 +41,7 @@ router.post(
     authMiddleware,
     roleMiddleware,
     validateMiddleware(firmwareUpdateHistorySchema),
-    firmwareUpdateHistoryController.createFirmwareUpdateHistory
+    asyncHandler(firmwareUpdateHistoryController.createFirmwareUpdateHistory)
 );
 
 /**
@@ -42,7 +53,7 @@ router.put(
     authMiddleware,
     roleMiddleware,
     validateMiddleware(updateFirmwareUpdateHistorySchema),
-    firmwareUpdateHistoryController.updateFirmwareUpdateHistory
+    asyncHandler(firmwareUpdateHistoryController.updateFirmwareUpdateHistory)
 );
 
 /**
@@ -54,7 +65,7 @@ router.delete(
     authMiddleware,
     roleMiddleware,
     validateMiddleware(firmwareUpdateHistoryIdSchema),
-    firmwareUpdateHistoryController.deleteFirmwareUpdateHistory
+    asyncHandler(firmwareUpdateHistoryController.deleteFirmwareUpdateHistory)
 );
 
 /**
@@ -65,7 +76,7 @@ router.get(
     '/:updateId',
     authMiddleware,
     validateMiddleware(firmwareUpdateHistoryIdSchema),
-    firmwareUpdateHistoryController.getFirmwareUpdateHistoryById
+    asyncHandler(firmwareUpdateHistoryController.getFirmwareUpdateHistoryById)
 );
 
 /**
@@ -76,7 +87,7 @@ router.get(
     '/',
     authMiddleware,
     validateMiddleware(firmwareUpdateHistoryFilterSchema),
-    firmwareUpdateHistoryController.getFirmwareUpdateHistories
+    asyncHandler(firmwareUpdateHistoryController.getFirmwareUpdateHistories)
 );
 
 export default router;

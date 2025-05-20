@@ -1,42 +1,42 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { UserDeviceController } from '../controllers/user-device.controller';
 import authMiddleware from '../middleware/auth.middleware';
 import validateMiddleware from '../middleware/validate.middleware';
-import { z } from 'zod';
+import { userDeviceIdSchema, deviceIdForRevokeSchema } from '../utils/validators';
 
 const router = express.Router();
 const userDeviceController = new UserDeviceController();
 
-// Define validation schemas
-const userIdSchema = z.object({
-  params: z.object({
-    userId: z.string().min(1, 'User ID is required')
-  })
-});
-
-const deviceIdSchema = z.object({
-  params: z.object({
-    deviceId: z.string()
-      .transform((val) => parseInt(val))
-      .refine((val) => val > 0, 'Device ID must be a positive number')
-  })
-});
+/**
+ * Hàm helper để xử lý bất đồng bộ và bắt lỗi cho các controller.
+ * @param fn Hàm controller bất đồng bộ
+ * @returns Middleware Express xử lý lỗi
+ */
+const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        fn(req, res, next).catch(next);
+    };
+};
 
 // Routes
-router.get('/me', authMiddleware, userDeviceController.getOwnDevices); // User's own devices
+router.get(
+    '/me', 
+    authMiddleware, 
+    asyncHandler(userDeviceController.getOwnDevices)
+); // User's own devices
 
 router.get(
-  '/:userId',
-  authMiddleware,
-  validateMiddleware(userIdSchema),
-  userDeviceController.getUserDevices
+    '/:userId',
+    authMiddleware,
+    validateMiddleware(userDeviceIdSchema),
+    asyncHandler(userDeviceController.getUserDevices)
 ); // Admin: any user's devices
 
 router.delete(
-  '/:deviceId',
-  authMiddleware,
-  validateMiddleware(deviceIdSchema),
-  userDeviceController.revokeDevice
-); // Revoke device.ts
+    '/:deviceId',
+    authMiddleware,
+    validateMiddleware(deviceIdForRevokeSchema),
+    asyncHandler(userDeviceController.revokeDevice)
+); // Revoke device
 
 export default router;

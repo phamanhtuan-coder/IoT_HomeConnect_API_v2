@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import FirmwareController from '../controllers/firmware.controller';
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
@@ -22,6 +22,17 @@ const router = Router();
 const firmwareController = new FirmwareController();
 
 /**
+ * Hàm helper để xử lý bất đồng bộ và bắt lỗi cho các controller.
+ * @param fn Hàm controller bất đồng bộ
+ * @returns Middleware Express xử lý lỗi
+ */
+const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        fn(req, res, next).catch(next);
+    };
+};
+
+/**
  * Tạo mới firmware.
  * Yêu cầu: xác thực, phân quyền, kiểm tra dữ liệu đầu vào.
  */
@@ -30,7 +41,7 @@ router.post(
     authMiddleware,
     roleMiddleware,
     validateMiddleware(firmwareSchema),
-    firmwareController.createFirmware
+    asyncHandler(firmwareController.createFirmware)
 );
 
 /**
@@ -42,7 +53,7 @@ router.put(
     authMiddleware,
     roleMiddleware,
     validateMiddleware(updateFirmwareSchema),
-    firmwareController.updateFirmware
+    asyncHandler(firmwareController.updateFirmware)
 );
 
 /**
@@ -54,7 +65,7 @@ router.delete(
     authMiddleware,
     roleMiddleware,
     validateMiddleware(firmwareIdSchema),
-    firmwareController.deleteFirmware
+    asyncHandler(firmwareController.deleteFirmware)
 );
 
 /**
@@ -65,7 +76,7 @@ router.get(
     '/:firmwareId',
     authMiddleware,
     validateMiddleware(firmwareIdSchema),
-    firmwareController.getFirmwareById
+    asyncHandler(firmwareController.getFirmwareById)
 );
 
 /**
@@ -75,7 +86,7 @@ router.get(
 router.get(
     '/',
     authMiddleware,
-    firmwareController.getFirmwares
+    asyncHandler(firmwareController.getFirmwares)
 );
 
 export default router;

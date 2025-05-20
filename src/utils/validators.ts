@@ -609,6 +609,21 @@ export const hourlyValueFilterSchema = z.object({
     }),
 });
 
+// User-Device validation schemas
+export const userDeviceIdSchema = z.object({
+    params: z.object({
+        userId: z.string().min(1, 'User ID is required')
+    })
+});
+
+export const deviceIdForRevokeSchema = z.object({
+    params: z.object({
+        deviceId: z.string()
+            .transform((val) => parseInt(val))
+            .refine((val) => val > 0, 'Device ID must be a positive number')
+    })
+});
+
 export type LoginInput = z.infer<typeof loginSchema>['body'];
 export type UserRegisterInput = z.infer<typeof userRegisterSchema>['body'];
 export type EmployeeRegisterInput = z.infer<typeof employeeRegisterSchema>['body'];
@@ -676,3 +691,6 @@ export type HourlyValueInput = z.infer<typeof hourlyValueSchema>['body'];
 export type UpdateHourlyValueInput = z.infer<typeof updateHourlyValueSchema>['body'];
 export type HourlyValueIdInput = z.infer<typeof hourlyValueIdSchema>['params'];
 export type HourlyValueFilterInput = z.infer<typeof hourlyValueFilterSchema>['query'];
+
+export type UserDeviceIdInput = z.infer<typeof userDeviceIdSchema>['params'];
+export type DeviceIdForRevokeInput = z.infer<typeof deviceIdForRevokeSchema>['params'];

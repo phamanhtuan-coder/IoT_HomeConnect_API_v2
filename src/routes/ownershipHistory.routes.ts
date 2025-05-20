@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import OwnershipHistoryController from '../controllers/ownershipHistory.controller';
 import authMiddleware  from '../middleware/auth.middleware';
 import  validate  from '../middleware/validate.middleware';
@@ -26,6 +26,17 @@ const router = Router();
 const ownershipHistoryController = new OwnershipHistoryController();
 
 /**
+ * Hàm helper để xử lý bất đồng bộ và bắt lỗi cho các controller.
+ * @param fn Hàm controller bất đồng bộ
+ * @returns Middleware Express xử lý lỗi
+ */
+const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        fn(req, res, next).catch(next);
+    };
+};
+
+/**
  * Tạo yêu cầu chuyển nhượng quyền sở hữu thiết bị.
  * Yêu cầu xác thực, chỉ chủ sở hữu thiết bị mới được thực hiện.
  */
@@ -34,7 +45,7 @@ router.post(
     authMiddleware,
     restrictToDeviceOwner,
     validate(ownershipTransferSchema),
-    ownershipHistoryController.initiateOwnershipTransfer.bind(ownershipHistoryController)
+    asyncHandler(ownershipHistoryController.initiateOwnershipTransfer.bind(ownershipHistoryController))
 );
 
 /**
@@ -45,7 +56,7 @@ router.post(
     '/transfer/:ticketId/approve',
     authMiddleware,
     validate(approveOwnershipTransferSchema),
-    ownershipHistoryController.approveOwnershipTransfer.bind(ownershipHistoryController)
+    asyncHandler(ownershipHistoryController.approveOwnershipTransfer.bind(ownershipHistoryController))
 );
 
 /**
@@ -56,7 +67,7 @@ router.get(
     '/:historyId',
     authMiddleware,
     validate(ownershipHistoryIdSchema),
-    ownershipHistoryController.getOwnershipHistoryById.bind(ownershipHistoryController)
+    asyncHandler(ownershipHistoryController.getOwnershipHistoryById.bind(ownershipHistoryController))
 );
 
 /**
@@ -67,7 +78,7 @@ router.get(
     '/device/:device_serial',
     authMiddleware,
     validate(deviceSerialSchema),
-    ownershipHistoryController.getOwnershipHistoryByDevice.bind(ownershipHistoryController)
+    asyncHandler(ownershipHistoryController.getOwnershipHistoryByDevice.bind(ownershipHistoryController))
 );
 
 /**
@@ -77,7 +88,7 @@ router.get(
 router.get(
     '/user',
     authMiddleware,
-    ownershipHistoryController.getOwnershipHistoryByUser.bind(ownershipHistoryController)
+    asyncHandler(ownershipHistoryController.getOwnershipHistoryByUser.bind(ownershipHistoryController))
 );
 
 /**
@@ -88,7 +99,7 @@ router.delete(
     '/:historyId',
     authMiddleware,
     validate(ownershipHistoryIdSchema),
-    ownershipHistoryController.deleteOwnershipHistory.bind(ownershipHistoryController)
+    asyncHandler(ownershipHistoryController.deleteOwnershipHistory.bind(ownershipHistoryController))
 );
 
 export default router;
