@@ -1,3 +1,16 @@
+/**
+ * Định nghĩa các route cho quản lý loại vé (Ticket Type).
+ * Sử dụng các middleware xác thực, phân quyền, và kiểm tra dữ liệu đầu vào.
+ *
+ * Các endpoint:
+ * - POST   /                : Tạo loại vé mới
+ * - PUT    /:ticketTypeId   : Cập nhật thông tin loại vé
+ * - PUT    /:ticketTypeId/priority : Cập nhật độ ưu tiên của loại vé
+ * - DELETE /:ticketTypeId   : Xóa loại vé
+ * - GET    /:ticketTypeId   : Lấy thông tin loại vé theo ID
+ * - GET    /                : Lấy danh sách tất cả loại vé
+ */
+
 import { Router, Request, Response, NextFunction } from "express";
 import TicketTypeController from "../controllers/ticket-type.controller";
 import validateMiddleware from "../middleware/validate.middleware";
@@ -13,6 +26,11 @@ import {
 const router = Router();
 const ticketTypeController = new TicketTypeController();
 
+/**
+ * Hàm wrapper cho các controller bất đồng bộ, tự động bắt lỗi và chuyển cho middleware xử lý lỗi.
+ * @param fn Hàm controller bất đồng bộ
+ * @returns Middleware Express
+ */
 const asyncHandler = (
   fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
 ) => {
@@ -21,6 +39,9 @@ const asyncHandler = (
   };
 };
 
+/**
+ * Tạo loại vé mới
+ */
 router.post(
   "/",
   authMiddleware,
@@ -29,6 +50,9 @@ router.post(
   asyncHandler(ticketTypeController.createTicketType)
 );
 
+/**
+ * Cập nhật thông tin loại vé
+ */
 router.put(
   "/:ticketTypeId",
   authMiddleware,
@@ -38,6 +62,9 @@ router.put(
   asyncHandler(ticketTypeController.updateTicketType)
 );
 
+/**
+ * Cập nhật độ ưu tiên của loại vé
+ */
 router.put(
   "/:ticketTypeId/priority",
   authMiddleware,
@@ -47,6 +74,9 @@ router.put(
   asyncHandler(ticketTypeController.updateTicketTypePriority)
 );
 
+/**
+ * Xóa loại vé
+ */
 router.delete(
   "/:ticketTypeId",
   authMiddleware,
@@ -55,6 +85,9 @@ router.delete(
   asyncHandler(ticketTypeController.deleteTicketType)
 );
 
+/**
+ * Lấy thông tin loại vé theo ID
+ */
 router.get(
   "/:ticketTypeId",
   authMiddleware,
@@ -62,6 +95,9 @@ router.get(
   asyncHandler(ticketTypeController.getTicketTypeById)
 );
 
+/**
+ * Lấy danh sách tất cả loại vé
+ */
 router.get(
   "/",
   authMiddleware,
