@@ -10,7 +10,7 @@ import GroupController from '../controllers/group.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import groupRoleMiddleware from '../middleware/group.middleware';
-import {groupSchema, groupIdSchema, userGroupSchema, updateGroupRoleSchema} from '../utils/validators';
+import {groupIdSchema, groupSchema, updateGroupRoleSchema, userGroupSchema} from "../utils/schemas/group.schema";
 
 const router = Router();
 const groupController = new GroupController();

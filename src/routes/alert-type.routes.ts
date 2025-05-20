@@ -15,11 +15,8 @@ import AlertTypeController from "../controllers/alert-type.controller";
 import validateMiddleware from "../middleware/validate.middleware";
 import authMiddleware from "../middleware/auth.middleware";
 import roleMiddleware from "../middleware/role.middleware";
-import {
-    alertTypeSchema,
-    updateAlertTypeSchema,
-    alertTypeIdSchema,
-} from "../utils/validators";
+import {alertTypeIdSchema, alertTypeSchema, updateAlertTypeSchema} from "../utils/schemas/alert.schema";
+
 
 const router = Router();
 const alertTypeController = new AlertTypeController();

@@ -16,11 +16,11 @@ import HourlyValueController from '../controllers/hourly-value.controller';
 import authMiddleware from '../middleware/auth.middleware';
 import validateMiddleware from '../middleware/validate.middleware';
 import {
-    hourlyValueSchema,
+    hourlyValueFilterSchema,
     hourlyValueIdSchema,
-    updateHourlyValueSchema,
-    hourlyValueFilterSchema
-} from '../utils/validators';
+    hourlyValueSchema,
+    updateHourlyValueSchema
+} from "../utils/schemas/hourly-value.schema";
 
 const router = Router();
 const hourlyValueController = new HourlyValueController();

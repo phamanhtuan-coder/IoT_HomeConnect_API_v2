@@ -3,7 +3,7 @@ import TicketController from '../controllers/ticket.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
-import { ticketSchema, updateTicketSchema, ticketIdSchema, ticketFilterSchema } from '../utils/validators';
+import {ticketFilterSchema, ticketIdSchema, ticketSchema, updateTicketSchema} from "../utils/schemas/ticket.schema";
 
 /**
  * Router cho các route liên quan đến ticket.

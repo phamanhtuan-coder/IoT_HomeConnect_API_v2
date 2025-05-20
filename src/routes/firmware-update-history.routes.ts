@@ -3,7 +3,12 @@ import FirmwareUpdateHistoryController from '../controllers/firmware-update-hist
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
 import validateMiddleware from '../middleware/validate.middleware';
-import { firmwareUpdateHistorySchema, updateFirmwareUpdateHistorySchema, firmwareUpdateHistoryIdSchema, firmwareUpdateHistoryFilterSchema } from '../utils/validators';
+import {
+    firmwareUpdateHistoryFilterSchema,
+    firmwareUpdateHistoryIdSchema,
+    firmwareUpdateHistorySchema,
+    updateFirmwareUpdateHistorySchema
+} from "../utils/schemas/firmware.schema";
 
 /**
  * Định nghĩa các route cho lịch sử cập nhật firmware.

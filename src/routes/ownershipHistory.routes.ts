@@ -2,13 +2,13 @@ import { Router, Request, Response, NextFunction } from 'express';
 import OwnershipHistoryController from '../controllers/ownershipHistory.controller';
 import authMiddleware  from '../middleware/auth.middleware';
 import  validate  from '../middleware/validate.middleware';
+import {restrictToDeviceOwner} from "../middleware/role.middleware";
 import {
-    ownershipTransferSchema,
     approveOwnershipTransferSchema,
     ownershipHistoryIdSchema,
-    deviceSerialSchema,
-} from '../utils/validators';
-import {restrictToDeviceOwner} from "../middleware/role.middleware";
+    ownershipTransferSchema
+} from "../utils/schemas/sharing.schema";
+import {deviceSerialSchema} from "../utils/schemas/device.schema";
 
 /**
  * Định nghĩa các route cho lịch sử chuyển nhượng quyền sở hữu thiết bị.

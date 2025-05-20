@@ -16,7 +16,7 @@ import SpaceController from '../controllers/space.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import groupRoleMiddleware from '../middleware/group.middleware';
-import { spaceSchema, spaceIdSchema } from '../utils/validators';
+import {spaceIdSchema, spaceSchema} from "../utils/schemas/space.schema";
 
 const router = Router();
 const spaceController = new SpaceController();

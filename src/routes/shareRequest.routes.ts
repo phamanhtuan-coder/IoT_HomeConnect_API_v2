@@ -3,7 +3,7 @@ import ShareRequestController from '../controllers/shareRequest.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import groupRoleMiddleware from '../middleware/group.middleware';
-import { shareRequestSchema, approveShareRequestSchema } from '../utils/validators';
+import {approveShareRequestSchema, shareRequestSchema} from "../utils/schemas/sharing.schema";
 
 /**
  * Định nghĩa router cho các API liên quan đến yêu cầu chia sẻ thiết bị.

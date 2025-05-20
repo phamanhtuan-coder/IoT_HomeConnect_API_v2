@@ -3,7 +3,7 @@ import FirmwareController from '../controllers/firmware.controller';
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
 import validateMiddleware from '../middleware/validate.middleware';
-import { firmwareSchema, updateFirmwareSchema, firmwareIdSchema } from '../utils/validators';
+import {firmwareIdSchema, firmwareSchema, updateFirmwareSchema} from "../utils/schemas/firmware.schema";
 
 /**
  * Định nghĩa các route cho quản lý firmware.

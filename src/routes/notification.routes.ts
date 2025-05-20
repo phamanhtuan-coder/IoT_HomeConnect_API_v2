@@ -9,13 +9,13 @@ import NotificationController from '../controllers/notification.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
+import {sendOtpSchema, verifyOtpSchema} from "../utils/schemas/auth.schema";
 import {
-    notificationSchema,
-    updateNotificationSchema,
-    notificationIdSchema,
     notificationFilterSchema,
-    sendOtpSchema, verifyOtpSchema
-} from '../utils/validators';
+    notificationIdSchema, notificationSchema,
+    updateNotificationSchema
+} from "../utils/schemas/notification.schema";
+
 
 const router = Router();
 const notificationController = new NotificationController();

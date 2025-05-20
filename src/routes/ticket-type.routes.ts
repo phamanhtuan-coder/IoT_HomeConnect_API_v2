@@ -17,11 +17,11 @@ import validateMiddleware from "../middleware/validate.middleware";
 import authMiddleware from "../middleware/auth.middleware";
 import roleMiddleware from "../middleware/role.middleware";
 import {
-  ticketTypeSchema,
-  updateTicketTypeSchema,
-  updateTicketTypePrioritySchema,
   ticketTypeIdSchema,
-} from "../utils/validators";
+  ticketTypeSchema,
+  updateTicketTypePrioritySchema,
+  updateTicketTypeSchema
+} from "../utils/schemas/ticket.schema";
 
 const router = Router();
 const ticketTypeController = new TicketTypeController();

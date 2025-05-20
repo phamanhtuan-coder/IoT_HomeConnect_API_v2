@@ -15,7 +15,7 @@ import HouseController from '../controllers/house.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import groupRoleMiddleware from '../middleware/group.middleware';
-import { houseSchema, houseIdSchema } from '../utils/validators';
+import {houseIdSchema, houseSchema} from "../utils/schemas/house.schema";
 
 const router = Router();
 const houseController = new HouseController();

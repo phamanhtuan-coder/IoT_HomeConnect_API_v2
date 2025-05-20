@@ -1,6 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import SharedPermissionController from '../controllers/sharedPermission.controller';
-import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import groupRoleMiddleware from '../middleware/group.middleware';
 

@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import { UserDeviceController } from '../controllers/user-device.controller';
 import authMiddleware from '../middleware/auth.middleware';
 import validateMiddleware from '../middleware/validate.middleware';
-import { userDeviceIdSchema, deviceIdForRevokeSchema } from '../utils/validators';
+import {deviceIdForRevokeSchema, userDeviceIdSchema} from "../utils/schemas/device.schema";
 
 const router = express.Router();
 const userDeviceController = new UserDeviceController();

@@ -19,7 +19,13 @@ import DeviceController from '../controllers/device.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import groupRoleMiddleware from '../middleware/group.middleware';
-import { deviceSchema, deviceIdSchema, linkDeviceSchema, toggleDeviceSchema, updateAttributesSchema, updateWifiSchema } from '../utils/validators';
+import {
+    deviceIdSchema,
+    deviceSchema,
+    linkDeviceSchema,
+    toggleDeviceSchema,
+    updateAttributesSchema, updateWifiSchema
+} from "../utils/schemas/device.schema";
 
 const router = Router();
 const deviceController = new DeviceController();
