@@ -177,10 +177,17 @@ class AuthService {
     }
 
     async registerUser(data: UserRegisterRequestBody): Promise<string> {
-        const { surname, lastname, image, phone, email, birthdate, gender, password, username } = data; // Thêm username
+        const { surname, lastname, image, phone, email, birthdate, gender, password, username } = data;
 
-        const existingAccount = await this.prisma.account.findFirst({ where: { username } }); // Kiểm tra username
-        if (existingAccount) throwError(ErrorCodes.CONFLICT, 'Username already exists');
+        // Check for existing username
+        const existingUsername = await this.prisma.account.findFirst({ where: { username } });
+        if (existingUsername) throwError(ErrorCodes.CONFLICT, 'Username already exists');
+
+        // Check for existing email if provided
+        if (email) {
+            const existingEmail = await this.prisma.customer.findFirst({ where: { email } });
+            if (existingEmail) throwError(ErrorCodes.CONFLICT, 'Email already exists');
+        }
 
         let accountId: string;
         let attempts = 0;
@@ -222,7 +229,6 @@ class AuthService {
 
         return accessToken;
     }
-
     async registerEmployee(data: EmployeeRegisterRequestBody, adminId: string): Promise<string> {
         const { surname, lastname, image, email, password, birthdate, gender, phone, status, role, username } = data; // Thêm username
 
