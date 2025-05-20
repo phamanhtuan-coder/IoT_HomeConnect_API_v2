@@ -267,6 +267,20 @@ export interface OwnershipHistory {
     is_deleted: boolean | null;
 }
 
+export interface Firmware {
+    firmware_id: number;
+    version: string;
+    file_path: string;
+    template_id: number | null;
+    is_mandatory: boolean | null;
+    created_at: Date | null;
+    tested_at: Date | null;
+    is_approved: boolean | null;
+    updated_at: Date | null;
+    is_deleted: boolean | null;
+    note: string | null;
+}
+
 declare global {
     namespace Express {
         interface Request {

@@ -444,6 +444,34 @@ export const deviceSerialSchema = z.object({
     }),
 });
 
+export const firmwareSchema = z.object({
+    body: z.object({
+        version: z.string().min(1, 'Version is required').max(50, 'Version must be 50 characters or less'),
+        file_path: z.string().min(1, 'File path is required').max(255, 'File path must be 255 characters or less'),
+        template_id: z.number().positive('Template ID must be a positive number').optional(),
+        is_mandatory: z.boolean().optional().default(false),
+        note: z.string().max(5000, 'Note must be 5000 characters or less').optional(),
+    }),
+});
+
+export const updateFirmwareSchema = z.object({
+    body: z.object({
+        version: z.string().min(1, 'Version is required').max(50, 'Version must be 50 characters or less').optional(),
+        file_path: z.string().min(1, 'File path is required').max(255, 'File path must be 255 characters or less').optional(),
+        template_id: z.number().positive('Template ID must be a positive number').optional(),
+        is_mandatory: z.boolean().optional(),
+        is_approved: z.boolean().optional(),
+        tested_at: z.string().datetime().optional().transform((val) => (val ? new Date(val) : undefined)),
+        note: z.string().max(5000, 'Note must be 5000 characters or less').optional(),
+    }),
+});
+
+export const firmwareIdSchema = z.object({
+    params: z.object({
+        firmwareId: z.string().transform((val) => parseInt(val)).refine((val) => val > 0, 'Firmware ID must be a positive number'),
+    }),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>['body'];
 export type UserRegisterInput = z.infer<typeof userRegisterSchema>['body'];
 export type EmployeeRegisterInput = z.infer<typeof employeeRegisterSchema>['body'];
@@ -492,3 +520,7 @@ export type OwnershipTransferInput = z.infer<typeof ownershipTransferSchema>['bo
 export type ApproveOwnershipTransferInput = z.infer<typeof approveOwnershipTransferSchema>['body'];
 export type OwnershipHistoryIdInput = z.infer<typeof ownershipHistoryIdSchema>['params'];
 export type DeviceSerialInput = z.infer<typeof deviceSerialSchema>['params'];
+
+export type FirmwareInput = z.infer<typeof firmwareSchema>['body'];
+export type UpdateFirmwareInput = z.infer<typeof updateFirmwareSchema>['body'];
+export type FirmwareIdInput = z.infer<typeof firmwareIdSchema>['params'];

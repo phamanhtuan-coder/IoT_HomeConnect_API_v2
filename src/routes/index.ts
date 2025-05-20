@@ -15,6 +15,7 @@ import alertRoutes from "./alert.routes";
 import ticketTypeRoutes from "./ticket-type.routes";
 import ticketRoutes from "./ticket.routes";
 import ownershipHistoryRoutes from "./ownershipHistory.routes";
+import firmwareRoutes from "./firmware.routes";
 
 
 const router = Router();
@@ -35,5 +36,6 @@ router.use("/alerts", alertRoutes);
 router.use("/ticket-types", ticketTypeRoutes);
 router.use("/tickets", ticketRoutes)
 router.use("/ownership-history",ownershipHistoryRoutes)
+router.use("/firmware",firmwareRoutes)
 
 export default router;
