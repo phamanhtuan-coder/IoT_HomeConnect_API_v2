@@ -4,6 +4,21 @@
     "item": [
       {
         "name": "Get Own Sync History",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Own sync history retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
         "request": {
           "method": "GET",
           "header": [
@@ -23,6 +38,21 @@
       },
       {
         "name": "Get User Sync History (Admin)",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('User sync history retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
         "request": {
           "method": "GET",
           "header": [
@@ -33,15 +63,36 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/sync/1",
+            "raw": "{{baseUrl}}/sync/:userId",
             "host": ["{{baseUrl}}"],
-            "path": ["sync", "1"]
+            "path": ["sync", ":userId"],
+            "variable": [
+              {
+                "key": "userId",
+                "value": "1"
+              }
+            ]
           }
         },
         "response": []
       },
       {
         "name": "Get Full User Sync History (Admin)",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Full user sync history retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
         "request": {
           "method": "GET",
           "header": [
@@ -52,9 +103,15 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/sync/1/full",
+            "raw": "{{baseUrl}}/sync/:userId/full",
             "host": ["{{baseUrl}}"],
-            "path": ["sync", "1", "full"]
+            "path": ["sync", ":userId", "full"],
+            "variable": [
+              {
+                "key": "userId",
+                "value": "1"
+              }
+            ]
           }
         },
         "response": []

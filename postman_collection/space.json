@@ -12,7 +12,7 @@
                 "const response = pm.response.json();",
                 "pm.test('Space created successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(201);",
-                "  pm.expect(response.spaceId).to.exist;",
+                "  pm.expect(response.space_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript"
@@ -95,7 +95,7 @@
                 "const response = pm.response.json();",
                 "pm.test('Space retrieved successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.spaceId).to.exist;",
+                "  pm.expect(response.space_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript"
@@ -135,7 +135,7 @@
                 "const response = pm.response.json();",
                 "pm.test('Space updated successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.spaceId).to.exist;",
+                "  pm.expect(response.space_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript"
@@ -239,7 +239,7 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/spaces/:space leekId/name",
+            "raw": "{{baseUrl}}/spaces/:spaceId/name",
             "host": ["{{baseUrl}}"],
             "path": ["spaces", ":spaceId", "name"],
             "variable": [

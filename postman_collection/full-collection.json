@@ -533,6 +533,21 @@
       "item": [
         {
           "name": "Get Own Sync History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Own sync history retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -557,6 +572,21 @@
         },
         {
           "name": "Get User Sync History (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('User sync history retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -567,13 +597,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/sync/1",
+              "raw": "{{baseUrl}}/sync/:userId",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "sync",
-                "1"
+                ":userId"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "1"
+                }
               ]
             }
           },
@@ -581,6 +617,21 @@
         },
         {
           "name": "Get Full User Sync History (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Full user sync history retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -591,14 +642,20 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/sync/1/full",
+              "raw": "{{baseUrl}}/sync/:userId/full",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "sync",
-                "1",
+                ":userId",
                 "full"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "1"
+                }
               ]
             }
           },
@@ -611,6 +668,21 @@
       "item": [
         {
           "name": "Get Own Devices",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Own devices retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -635,6 +707,21 @@
         },
         {
           "name": "Get User Devices (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('User devices retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -645,13 +732,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/devices/1",
+              "raw": "{{baseUrl}}/devices/:userId",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "devices",
-                "1"
+                ":userId"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "1"
+                }
               ]
             }
           },
@@ -659,6 +752,19 @@
         },
         {
           "name": "Revoke Device",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Device revoked successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(204);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "DELETE",
             "header": [
@@ -669,13 +775,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/devices/1",
+              "raw": "{{baseUrl}}/devices/:deviceId",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "devices",
-                "1"
+                ":deviceId"
+              ],
+              "variable": [
+                {
+                  "key": "deviceId",
+                  "value": "1"
+                }
               ]
             }
           },
@@ -1729,7 +1841,7 @@
                   "const response = pm.response.json();",
                   "pm.test('Group created successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.groupId).to.exist;",
+                  "  pm.expect(response.group_id).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -1776,7 +1888,7 @@
                   "const response = pm.response.json();",
                   "pm.test('Group retrieved successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.groupId).to.exist;",
+                  "  pm.expect(response.group_id).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -1821,7 +1933,7 @@
                   "const response = pm.response.json();",
                   "pm.test('Group name updated successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.groupId).to.exist;",
+                  "  pm.expect(response.group_id).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -1918,7 +2030,7 @@
                   "const response = pm.response.json();",
                   "pm.test('User added to group successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.groupId).to.exist;",
+                  "  pm.expect(response.group_id).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -1966,7 +2078,7 @@
                   "const response = pm.response.json();",
                   "pm.test('User role updated successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.groupId).to.exist;",
+                  "  pm.expect(response.group_id).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -2079,7 +2191,7 @@
                   "const response = pm.response.json();",
                   "pm.test('House created successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.houseId).to.exist;",
+                  "  pm.expect(response.house_id).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -2172,7 +2284,7 @@
                   "const response = pm.response.json();",
                   "pm.test('House retrieved successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.houseId).to.exist;",
+                  "  pm.expect(response.house_id).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -2217,7 +2329,7 @@
                   "const response = pm.response.json();",
                   "pm.test('House updated successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.houseId).to.exist;",
+                  "  pm.expect(response.house_id).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -2319,7 +2431,7 @@
                   "const response = pm.response.json();",
                   "pm.test('Space created successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.spaceId).to.exist;",
+                  "  pm.expect(response.space_id).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -2412,7 +2524,7 @@
                   "const response = pm.response.json();",
                   "pm.test('Space retrieved successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.spaceId).to.exist;",
+                  "  pm.expect(response.space_id).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -2457,7 +2569,7 @@
                   "const response = pm.response.json();",
                   "pm.test('Space updated successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.spaceId).to.exist;",
+                  "  pm.expect(response.space_id).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -2571,7 +2683,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/spaces/:space leekId/name",
+              "raw": "{{baseUrl}}/spaces/:spaceId/name",
               "host": [
                 "{{baseUrl}}"
               ],

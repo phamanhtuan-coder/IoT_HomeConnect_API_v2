@@ -12,7 +12,7 @@
                 "const response = pm.response.json();",
                 "pm.test('Group created successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(201);",
-                "  pm.expect(response.groupId).to.exist;",
+                "  pm.expect(response.group_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript"
@@ -55,7 +55,7 @@
                 "const response = pm.response.json();",
                 "pm.test('Group retrieved successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.groupId).to.exist;",
+                "  pm.expect(response.group_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript"
@@ -95,7 +95,7 @@
                 "const response = pm.response.json();",
                 "pm.test('Group name updated successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.groupId).to.exist;",
+                "  pm.expect(response.group_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript"
@@ -182,7 +182,7 @@
                 "const response = pm.response.json();",
                 "pm.test('User added to group successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(201);",
-                "  pm.expect(response.groupId).to.exist;",
+                "  pm.expect(response.group_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript"
@@ -225,7 +225,7 @@
                 "const response = pm.response.json();",
                 "pm.test('User role updated successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.groupId).to.exist;",
+                "  pm.expect(response.group_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript"

@@ -4,6 +4,21 @@
     "item": [
       {
         "name": "Get Own Devices",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Own devices retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
         "request": {
           "method": "GET",
           "header": [
@@ -23,6 +38,21 @@
       },
       {
         "name": "Get User Devices (Admin)",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('User devices retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
         "request": {
           "method": "GET",
           "header": [
@@ -33,15 +63,34 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/devices/1",
+            "raw": "{{baseUrl}}/devices/:userId",
             "host": ["{{baseUrl}}"],
-            "path": ["devices", "1"]
+            "path": ["devices", ":userId"],
+            "variable": [
+              {
+                "key": "userId",
+                "value": "1"
+              }
+            ]
           }
         },
         "response": []
       },
       {
         "name": "Revoke Device",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Device revoked successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(204);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
         "request": {
           "method": "DELETE",
           "header": [
@@ -52,9 +101,15 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/devices/1",
+            "raw": "{{baseUrl}}/devices/:deviceId",
             "host": ["{{baseUrl}}"],
-            "path": ["devices", "1"]
+            "path": ["devices", ":deviceId"],
+            "variable": [
+              {
+                "key": "deviceId",
+                "value": "1"
+              }
+            ]
           }
         },
         "response": []

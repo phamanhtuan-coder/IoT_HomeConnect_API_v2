@@ -12,7 +12,7 @@
                 "const response = pm.response.json();",
                 "pm.test('House created successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(201);",
-                "  pm.expect(response.houseId).to.exist;",
+                "  pm.expect(response.house_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript"
@@ -95,7 +95,7 @@
                 "const response = pm.response.json();",
                 "pm.test('House retrieved successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.houseId).to.exist;",
+                "  pm.expect(response.house_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript"
@@ -135,7 +135,7 @@
                 "const response = pm.response.json();",
                 "pm.test('House updated successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.houseId).to.exist;",
+                "  pm.expect(response.house_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript"
