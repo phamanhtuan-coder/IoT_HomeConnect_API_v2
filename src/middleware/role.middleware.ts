@@ -39,13 +39,14 @@ const roleMiddleware = async (req: Request, res: Response, next: NextFunction) =
         throwError(ErrorCodes.FORBIDDEN, 'Employee role not assigned');
     }
 
-    const allowedRoles = ['ADMIN', 'TECHNICIAN'];
+    const allowedRoles = ['ADMIN', 'PRODUCTION', 'TECHNICIAN', 'RND', 'EMPLOYEE'];
     if (!allowedRoles.includes(account!.role!.name!)) {
-        throwError(ErrorCodes.FORBIDDEN, 'Only ADMIN or TECHNICIAN roles can perform this action');
+        throwError(ErrorCodes.FORBIDDEN, 'Only allowed employee roles can perform this action');
     }
 
     next();
 };
+
 /**
  * Middleware kiểm tra quyền sở hữu thiết bị.
  *
