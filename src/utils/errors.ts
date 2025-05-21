@@ -18,6 +18,8 @@ export enum ErrorCodes {
     DEVICE_ALREADY_LINKED = 'DEVICE_ALREADY_LINKED',   // 409
     INSUFFICIENT_COMPONENTS = 'INSUFFICIENT_COMPONENTS', // 400
     TICKET_NOT_RESOLVABLE = 'TICKET_NOT_RESOLVABLE',   // 400
+    TEMPLATE_COMPONENT_NOT_FOUND = 'TEMPLATE_COMPONENT_NOT_FOUND', // 404
+    TEMPLATE_COMPONENT_ALREADY_EXISTS = 'TEMPLATE_COMPONENT_ALREADY_EXISTS', // 409
 }
 
 // Interface cho AppError
@@ -74,6 +76,10 @@ export class AppError extends Error {
                 return new AppError({ status: 400, code, message: message || 'Insufficient components for production' });
             case ErrorCodes.TICKET_NOT_RESOLVABLE:
                 return new AppError({ status: 400, code, message: message || 'Ticket cannot be resolved yet' });
+            case ErrorCodes.TEMPLATE_COMPONENT_NOT_FOUND:
+                return new AppError({status: 404, code, message: message || 'Template component not found'});
+            case ErrorCodes.TEMPLATE_COMPONENT_ALREADY_EXISTS:
+                return new AppError({status: 409, code, message: message || 'Template component already exists'});
 
             default:
                 return new AppError({ status: 500, code: ErrorCodes.INTERNAL_SERVER_ERROR, message: 'Unknown error' });

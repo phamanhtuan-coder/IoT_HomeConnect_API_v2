@@ -38,6 +38,8 @@
  *     description: Quản lý thông báo
  *   - name: Component
  *     description: Quản lý các linh kiện
+ *   - name: Template Component
+ *     description: Quản lý các template cho các linh kiện lắp ráp thiết bị
  *
  * @swagger
  * components:
@@ -118,6 +120,7 @@ import notificationRoutes from "./notification.routes";
 import alertRoutes from "./alert.routes";
 import firmwareUpdateHistoryRoutes from "./firmware-update-history.routes";
 import componentRoutes from "./component.routes";
+import templateComponentRoutes from "./template-component.routes";
 
 const router = Router();
 
@@ -140,5 +143,6 @@ router.use('/ownership-history', ownershipHistoryRoutes);
 router.use('/firmware', firmwareRoutes);
 router.use('/firmware-update-history', firmwareUpdateHistoryRoutes);
 router.use('/component',componentRoutes)
+router.use('/template-components', templateComponentRoutes);
 
 export default router;
