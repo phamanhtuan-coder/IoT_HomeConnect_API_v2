@@ -22,6 +22,9 @@ export enum ErrorCodes {
     TEMPLATE_COMPONENT_ALREADY_EXISTS = 'TEMPLATE_COMPONENT_ALREADY_EXISTS', // 409
     TEMPLATE_NOT_FOUND = 'TEMPLATE_NOT_FOUND', // 404
     TEMPLATE_ALREADY_EXISTS = 'TEMPLATE_ALREADY_EXISTS', // 409
+    PRODUCTION_NOT_FOUND = 'PRODUCTION_NOT_FOUND', // 404
+    COMPONENT_NOT_FOUND = 'COMPONENT_NOT_FOUND',   // 404
+    INSUFFICIENT_QUANTITY = 'INSUFFICIENT_QUANTITY', // 400
 }
 
 // Interface cho AppError
@@ -86,6 +89,12 @@ export class AppError extends Error {
                 return new AppError({ status: 404, code, message: message || 'Device template not found' });
             case ErrorCodes.TEMPLATE_ALREADY_EXISTS:
                 return new AppError({ status: 409, code, message: message || 'Device template already exists' });
+            case ErrorCodes.PRODUCTION_NOT_FOUND:
+                return new AppError({ status: 404, code, message: message || 'Production record not found' });
+            case ErrorCodes.COMPONENT_NOT_FOUND:
+                return new AppError({ status: 404, code, message: message || 'Component not found' });
+            case ErrorCodes.INSUFFICIENT_QUANTITY:
+                return new AppError({ status: 400, code, message: message || 'Insufficient component quantity available' });
 
             default:
                 return new AppError({ status: 500, code: ErrorCodes.INTERNAL_SERVER_ERROR, message: 'Unknown error' });
