@@ -105,11 +105,11 @@ Lưu ý: Chỉ có ADMIN và TECHNICIAN mới có quyền truy cập các API y�
             description: "Quản lý không gian trong nhà"
         },
         {
-            name: "Shared Permission",
+            name: "Shared Permissions",
             description: "Quản lý quyền chia sẻ thiết bị"
         },
         {
-            name: "Share Request",
+            name: "Share Requests",
             description: "Quản lý yêu cầu chia sẻ thiết bị"
         },
         {
@@ -145,19 +145,23 @@ Lưu ý: Chỉ có ADMIN và TECHNICIAN mới có quyền truy cập các API y�
             description: "Quản lý các yêu cầu hỗ trợ "
         },
         {
+            name: "Hourly Value",
+            description: "Quản lý thống kê thông số trung bình theo từng giờ"
+        },
+        {
             name: "Component",
             description: "Quản lý các linh kiện sản xuất thiết bị"
         },
         {
-            name: "Template Component",
+            name: "Template Components",
             description: "Quản lý các Template cho các linh kiện sản xuất thiết bị"
         },
         {
-            name: "Device Template",
+            name: "Device Templates",
             description: "Quản lý các Template cho các thiết bị IoT"
         },
         {
-            name: "Production Component",
+            name: "Production Components",
             description: "Quản lý các linh kiện dùng trong sản xuất"
         },
         {

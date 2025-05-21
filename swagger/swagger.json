@@ -317,11 +317,11 @@
             "schema": {
               "properties": {
                 "password": {
-                  "example": "newpassword123",
+                  "example": "admin123",
                   "type": "string"
                 },
                 "username": {
-                  "example": "newadmin1",
+                  "example": "adminuser",
                   "type": "string"
                 }
               },
@@ -415,7 +415,7 @@
             "schema": {
               "properties": {
                 "email": {
-                  "example": "newadmin1@example.com",
+                  "example": "newadmin@example.com",
                   "type": "string"
                 },
                 "lastname": {
@@ -423,7 +423,7 @@
                   "type": "string"
                 },
                 "password": {
-                  "example": "newpassword123",
+                  "example": "admin123",
                   "type": "string"
                 },
                 "phone": {
@@ -439,7 +439,7 @@
                   "type": "string"
                 },
                 "username": {
-                  "example": "newadmin1",
+                  "example": "newadmin",
                   "type": "string"
                 }
               },
@@ -714,6 +714,328 @@
         "description": "Update Device Token",
         "operationId": "updateDeviceToken",
         "summary": "Update Device Token"
+      }
+    },
+    "/component": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Component"
+        ],
+        "description": "Get All Components",
+        "operationId": "getAllComponents",
+        "summary": "Get All Components"
+      },
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "name": {
+                  "example": "Test Component",
+                  "type": "string"
+                },
+                "quantity_in_stock": {
+                  "example": 100,
+                  "type": "number"
+                },
+                "supplier": {
+                  "example": "Supplier ABC",
+                  "type": "string"
+                },
+                "unit_cost": {
+                  "example": 10.5,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Component"
+        ],
+        "description": "Create Component",
+        "operationId": "createComponent",
+        "summary": "Create Component"
+      }
+    },
+    "/component/{componentId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "componentId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Component"
+        ],
+        "description": "Delete Component",
+        "operationId": "deleteComponent",
+        "summary": "Delete Component"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Component"
+        ],
+        "description": "Get Component by ID",
+        "operationId": "getComponentById",
+        "summary": "Get Component by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "name": {
+                  "example": "Updated Component",
+                  "type": "string"
+                },
+                "quantity_in_stock": {
+                  "example": 150,
+                  "type": "number"
+                },
+                "supplier": {
+                  "example": "New Supplier",
+                  "type": "string"
+                },
+                "unit_cost": {
+                  "example": 12.75,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Component"
+        ],
+        "description": "Update Component",
+        "operationId": "updateComponent",
+        "summary": "Update Component"
+      }
+    },
+    "/device-templates": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device Templates"
+        ],
+        "description": "Get All Device Templates",
+        "operationId": "getAllDeviceTemplates",
+        "summary": "Get All Device Templates"
+      },
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "category": {
+                  "example": "lighting",
+                  "type": "string"
+                },
+                "description": {
+                  "example": "Standard smart light template",
+                  "type": "string"
+                },
+                "name": {
+                  "example": "Smart Light v1",
+                  "type": "string"
+                },
+                "specifications": {
+                  "properties": {
+                    "connectivity": {
+                      "example": "WiFi",
+                      "type": "string"
+                    },
+                    "power": {
+                      "example": "10W",
+                      "type": "string"
+                    },
+                    "protocol": {
+                      "example": "MQTT",
+                      "type": "string"
+                    },
+                    "voltage": {
+                      "example": "220V",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "version": {
+                  "example": "1.0.0",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device Templates"
+        ],
+        "description": "Create Device Template",
+        "operationId": "createDeviceTemplate",
+        "summary": "Create Device Template"
+      }
+    },
+    "/device-templates/{templateId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "templateId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device Templates"
+        ],
+        "description": "Delete Device Template",
+        "operationId": "deleteDeviceTemplate",
+        "summary": "Delete Device Template"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device Templates"
+        ],
+        "description": "Get Device Template by ID",
+        "operationId": "getDeviceTemplateById",
+        "summary": "Get Device Template by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "category": {
+                  "example": "lighting",
+                  "type": "string"
+                },
+                "description": {
+                  "example": "Updated smart light template",
+                  "type": "string"
+                },
+                "name": {
+                  "example": "Smart Light v1.1",
+                  "type": "string"
+                },
+                "specifications": {
+                  "properties": {
+                    "connectivity": {
+                      "example": "WiFi+BLE",
+                      "type": "string"
+                    },
+                    "power": {
+                      "example": "12W",
+                      "type": "string"
+                    },
+                    "protocol": {
+                      "example": "MQTT",
+                      "type": "string"
+                    },
+                    "voltage": {
+                      "example": "220V",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "version": {
+                  "example": "1.1.0",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Device Templates"
+        ],
+        "description": "Update Device Template",
+        "operationId": "updateDeviceTemplate",
+        "summary": "Update Device Template"
       }
     },
     "/devices": {
@@ -1661,6 +1983,332 @@
         "summary": "Update User Role in Group"
       }
     },
+    "/hourly-values": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Hourly Value"
+        ],
+        "description": "Get All Hourly Values",
+        "operationId": "getAllHourlyValues",
+        "summary": "Get All Hourly Values"
+      },
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "avg_value": {
+                  "properties": {
+                    "gas": {
+                      "example": 200,
+                      "type": "number"
+                    },
+                    "humidity": {
+                      "example": 60,
+                      "type": "number"
+                    },
+                    "temperature": {
+                      "example": 25.5,
+                      "type": "number"
+                    }
+                  },
+                  "type": "object"
+                },
+                "device_serial": {
+                  "example": "ABC123",
+                  "type": "string"
+                },
+                "hour_timestamp": {
+                  "example": "2025-05-20T10:00:00Z",
+                  "type": "string"
+                },
+                "sample_count": {
+                  "example": 360,
+                  "type": "number"
+                },
+                "space_id": {
+                  "example": 1,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Hourly Value"
+        ],
+        "description": "Create Hourly Value",
+        "operationId": "createHourlyValue",
+        "summary": "Create Hourly Value"
+      }
+    },
+    "/hourly-values/device/{device_serial}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "device_serial",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start_time",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "end_time",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Hourly Value"
+        ],
+        "description": "Get Hourly Values by Device",
+        "operationId": "getHourlyValuesByDevice",
+        "summary": "Get Hourly Values by Device"
+      }
+    },
+    "/hourly-values/space/{spaceId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "spaceId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start_time",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "end_time",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Hourly Value"
+        ],
+        "description": "Get Hourly Values by Space",
+        "operationId": "getHourlyValuesBySpace",
+        "summary": "Get Hourly Values by Space"
+      }
+    },
+    "/hourly-values/statistics/{device_serial}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "device_serial",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "type",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "start_time",
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "end_time",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Hourly Value"
+        ],
+        "description": "Get Hourly Value Statistics",
+        "operationId": "getHourlyValueStatistics",
+        "summary": "Get Hourly Value Statistics"
+      }
+    },
+    "/hourly-values/{hourlyValueId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "hourlyValueId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Hourly Value"
+        ],
+        "description": "Get Hourly Value by ID",
+        "operationId": "getHourlyValueById",
+        "summary": "Get Hourly Value by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "avg_value": {
+                  "properties": {
+                    "gas": {
+                      "example": 210,
+                      "type": "number"
+                    },
+                    "humidity": {
+                      "example": 65,
+                      "type": "number"
+                    },
+                    "temperature": {
+                      "example": 26,
+                      "type": "number"
+                    }
+                  },
+                  "type": "object"
+                },
+                "sample_count": {
+                  "example": 400,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Hourly Value"
+        ],
+        "description": "Update Hourly Value",
+        "operationId": "updateHourlyValue",
+        "summary": "Update Hourly Value"
+      }
+    },
+    "/hourly-values/{hourlyValueId}/hard": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "hourlyValueId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Hourly Value"
+        ],
+        "description": "Hard Delete Hourly Value",
+        "operationId": "hardDeleteHourlyValue",
+        "summary": "Hard Delete Hourly Value"
+      }
+    },
+    "/hourly-values/{hourlyValueId}/soft": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "hourlyValueId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Hourly Value"
+        ],
+        "description": "Soft Delete Hourly Value",
+        "operationId": "softDeleteHourlyValue",
+        "summary": "Soft Delete Hourly Value"
+      }
+    },
     "/houses": {
       "post": {
         "consumes": [
@@ -2096,7 +2744,7 @@
         "summary": "Update Notification"
       }
     },
-    "/ownership/device/{device_serial}": {
+    "/ownership-history/device/{device_serial}": {
       "parameters": [
         {
           "in": "path",
@@ -2120,7 +2768,7 @@
         "summary": "Get Ownership History by Device"
       }
     },
-    "/ownership/transfer": {
+    "/ownership-history/transfer": {
       "post": {
         "consumes": [
           "application/json"
@@ -2157,7 +2805,7 @@
         "summary": "Initiate Ownership Transfer"
       }
     },
-    "/ownership/transfer/{ticketId}/approve": {
+    "/ownership-history/transfer/{ticketId}/approve": {
       "parameters": [
         {
           "in": "path",
@@ -2198,7 +2846,7 @@
         "summary": "Approve Ownership Transfer"
       }
     },
-    "/ownership/user": {
+    "/ownership-history/user": {
       "get": {
         "parameters": [],
         "responses": {
@@ -2214,7 +2862,7 @@
         "summary": "Get Ownership History by User"
       }
     },
-    "/ownership/{historyId}": {
+    "/ownership-history/{historyId}": {
       "parameters": [
         {
           "in": "path",
@@ -2252,6 +2900,46 @@
         "summary": "Get Ownership History by ID"
       }
     },
+    "/permissions": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Shared Permissions"
+        ],
+        "description": "Create Permission",
+        "operationId": "createPermission",
+        "summary": "Create Permission"
+      }
+    },
+    "/permissions/device/{deviceId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "deviceId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Shared Permissions"
+        ],
+        "description": "Get Device Permissions",
+        "operationId": "getDevicePermissions",
+        "summary": "Get Device Permissions"
+      }
+    },
     "/permissions/recipient/{permissionId}": {
       "parameters": [
         {
@@ -2269,11 +2957,35 @@
           }
         },
         "tags": [
-          "Shared Permission"
+          "Shared Permissions"
         ],
         "description": "Revoke Share by Recipient",
         "operationId": "revokeShareByRecipient",
         "summary": "Revoke Share by Recipient"
+      }
+    },
+    "/permissions/user/{userId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "userId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Shared Permissions"
+        ],
+        "description": "Get User Permissions",
+        "operationId": "getUserPermissions",
+        "summary": "Get User Permissions"
       }
     },
     "/permissions/{permissionId}": {
@@ -2293,11 +3005,506 @@
           }
         },
         "tags": [
-          "Shared Permission"
+          "Shared Permissions"
         ],
         "description": "Revoke Share Device",
         "operationId": "revokeShareDevice",
         "summary": "Revoke Share Device"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Shared Permissions"
+        ],
+        "description": "Delete Permission",
+        "operationId": "deletePermission",
+        "summary": "Delete Permission"
+      }
+    },
+    "/production-batches": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Production Batches"
+        ],
+        "description": "Get All Production Batches",
+        "operationId": "getAllProductionBatches",
+        "summary": "Get All Production Batches"
+      },
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "notes": {
+                  "example": "Regular production batch for smart lights",
+                  "type": "string"
+                },
+                "priority": {
+                  "example": "high",
+                  "type": "string"
+                },
+                "quantity": {
+                  "example": 100,
+                  "type": "number"
+                },
+                "start_date": {
+                  "example": "2025-05-21",
+                  "type": "string"
+                },
+                "target_completion_date": {
+                  "example": "2025-06-21",
+                  "type": "string"
+                },
+                "template_id": {
+                  "example": 1,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Production Batches"
+        ],
+        "description": "Create Production Batch",
+        "operationId": "createProductionBatch",
+        "summary": "Create Production Batch"
+      }
+    },
+    "/production-batches/{batchId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "batchId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Production Batches"
+        ],
+        "description": "Delete Production Batch",
+        "operationId": "deleteProductionBatch",
+        "summary": "Delete Production Batch"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Production Batches"
+        ],
+        "description": "Get Production Batch by ID",
+        "operationId": "getProductionBatchById",
+        "summary": "Get Production Batch by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "notes": {
+                  "example": "Updated: Increased quantity and priority",
+                  "type": "string"
+                },
+                "priority": {
+                  "example": "urgent",
+                  "type": "string"
+                },
+                "quantity": {
+                  "example": 120,
+                  "type": "number"
+                },
+                "target_completion_date": {
+                  "example": "2025-06-30",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Production Batches"
+        ],
+        "description": "Update Production Batch",
+        "operationId": "updateProductionBatch",
+        "summary": "Update Production Batch"
+      }
+    },
+    "/production-components": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "component_id": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "production_id": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "quantity_used": {
+                  "example": 1,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Production Components"
+        ],
+        "description": "Create Production Component",
+        "operationId": "createProductionComponent",
+        "summary": "Create Production Component"
+      }
+    },
+    "/production-components/production/{productionId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "productionId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Production Components"
+        ],
+        "description": "Get Production Components by Production ID",
+        "operationId": "getProductionComponentsByProductionId",
+        "summary": "Get Production Components by Production ID"
+      }
+    },
+    "/production-components/{productionComponentId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "productionComponentId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Production Components"
+        ],
+        "description": "Delete Production Component",
+        "operationId": "deleteProductionComponent",
+        "summary": "Delete Production Component"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Production Components"
+        ],
+        "description": "Get Production Component by ID",
+        "operationId": "getProductionComponentById",
+        "summary": "Get Production Component by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "component_id": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "production_id": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "quantity_used": {
+                  "example": 2,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Production Components"
+        ],
+        "description": "Update Production Component",
+        "operationId": "updateProductionComponent",
+        "summary": "Update Production Component"
+      }
+    },
+    "/production-tracking": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "cost": {
+                  "example": 150.5,
+                  "type": "number"
+                },
+                "device_serial": {
+                  "example": "DEV001",
+                  "type": "string"
+                },
+                "production_batch_id": {
+                  "example": "BATCH123",
+                  "type": "string"
+                },
+                "stage": {
+                  "example": "assembly",
+                  "type": "string"
+                },
+                "status": {
+                  "example": "in_progress",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Production Tracking"
+        ],
+        "description": "Create Production Tracking",
+        "operationId": "createProductionTracking",
+        "summary": "Create Production Tracking"
+      }
+    },
+    "/production-tracking/batch/{batchId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "batchId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Production Tracking"
+        ],
+        "description": "Get Production Tracking by Batch ID",
+        "operationId": "getProductionTrackingByBatchId",
+        "summary": "Get Production Tracking by Batch ID"
+      }
+    },
+    "/production-tracking/{productionId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "productionId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Production Tracking"
+        ],
+        "description": "Delete Production Tracking",
+        "operationId": "deleteProductionTracking",
+        "summary": "Delete Production Tracking"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Production Tracking"
+        ],
+        "description": "Get Production Tracking by ID",
+        "operationId": "getProductionTrackingById",
+        "summary": "Get Production Tracking by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "cost": {
+                  "example": 180.75,
+                  "type": "number"
+                },
+                "stage": {
+                  "example": "qc",
+                  "type": "string"
+                },
+                "status": {
+                  "example": "completed",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Production Tracking"
+        ],
+        "description": "Update Production Tracking",
+        "operationId": "updateProductionTracking",
+        "summary": "Update Production Tracking"
+      }
+    },
+    "/share-requests": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "device_serial": {
+                  "example": "ABC123",
+                  "type": "string"
+                },
+                "permission_type": {
+                  "example": "CONTROL",
+                  "type": "string"
+                },
+                "to_user_email": {
+                  "example": "user@example.com",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Share Requests"
+        ],
+        "description": "Create Share Request",
+        "operationId": "createShareRequest",
+        "summary": "Create Share Request"
       }
     },
     "/share-requests/approve/{requestId}": {
@@ -2334,7 +3541,7 @@
           }
         },
         "tags": [
-          "Share Request"
+          "Share Requests"
         ],
         "description": "Approve Share Request",
         "operationId": "approveShareRequest",
@@ -2370,7 +3577,7 @@
           }
         },
         "tags": [
-          "Share Request"
+          "Share Requests"
         ],
         "description": "Get Share Requests by Device",
         "operationId": "getShareRequestsByDevice",
@@ -2386,11 +3593,27 @@
           }
         },
         "tags": [
-          "Share Request"
+          "Share Requests"
         ],
         "description": "Get Shared Devices by Owner",
         "operationId": "getSharedDevicesByOwner",
         "summary": "Get Shared Devices by Owner"
+      }
+    },
+    "/share-requests/pending": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Share Requests"
+        ],
+        "description": "Get Pending Share Requests",
+        "operationId": "getPendingShareRequests",
+        "summary": "Get Pending Share Requests"
       }
     },
     "/share-requests/permissions/device/{deviceId}/group/{groupId}": {
@@ -2422,7 +3645,7 @@
           }
         },
         "tags": [
-          "Share Request"
+          "Share Requests"
         ],
         "description": "Get Shared Permissions by Device",
         "operationId": "getSharedPermissionsByDevice",
@@ -2471,11 +3694,80 @@
           }
         },
         "tags": [
-          "Share Request"
+          "Share Requests"
         ],
         "description": "Initiate Share Request",
         "operationId": "initiateShareRequest",
         "summary": "Initiate Share Request"
+      }
+    },
+    "/share-requests/{requestId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "requestId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Share Requests"
+        ],
+        "description": "Delete Share Request",
+        "operationId": "deleteShareRequest",
+        "summary": "Delete Share Request"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Share Requests"
+        ],
+        "description": "Get Share Request by ID",
+        "operationId": "getShareRequestById",
+        "summary": "Get Share Request by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "permission_type": {
+                  "example": "VIEW",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Share Requests"
+        ],
+        "description": "Update Share Request",
+        "operationId": "updateShareRequest",
+        "summary": "Update Share Request"
       }
     },
     "/spaces": {
@@ -2489,12 +3781,8 @@
             "name": "body",
             "schema": {
               "properties": {
-                "groupId": {
-                  "example": 2,
-                  "type": "number"
-                },
                 "houseId": {
-                  "example": 2,
+                  "example": 1,
                   "type": "number"
                 },
                 "space_name": {
@@ -2529,24 +3817,7 @@
         }
       ],
       "get": {
-        "consumes": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "in": "body",
-            "name": "body",
-            "schema": {
-              "properties": {
-                "groupId": {
-                  "example": 2,
-                  "type": "number"
-                }
-              },
-              "type": "object"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": ""
@@ -2584,24 +3855,7 @@
         "summary": "Delete Space"
       },
       "get": {
-        "consumes": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "in": "body",
-            "name": "body",
-            "schema": {
-              "properties": {
-                "groupId": {
-                  "example": 2,
-                  "type": "number"
-                }
-              },
-              "type": "object"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": ""
@@ -2686,7 +3940,7 @@
         "summary": "Get Own Sync History"
       }
     },
-    "/sync-tracking/{userId}": {
+    "/sync-tracking/user/{userId}": {
       "parameters": [
         {
           "in": "path",
@@ -2710,7 +3964,7 @@
         "summary": "Get User Sync History (Admin)"
       }
     },
-    "/sync-tracking/{userId}/full": {
+    "/sync-tracking/user/{userId}/full": {
       "parameters": [
         {
           "in": "path",
@@ -2732,6 +3986,138 @@
         "description": "Get Full User Sync History (Admin)",
         "operationId": "getFullUserSyncHistoryAdmin",
         "summary": "Get Full User Sync History (Admin)"
+      }
+    },
+    "/template-components": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Template Components"
+        ],
+        "description": "Get All Template Components",
+        "operationId": "getAllTemplateComponents",
+        "summary": "Get All Template Components"
+      },
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "component_id": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "quantity_required": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "template_id": {
+                  "example": 1,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Template Components"
+        ],
+        "description": "Create Template Component",
+        "operationId": "createTemplateComponent",
+        "summary": "Create Template Component"
+      }
+    },
+    "/template-components/{templateComponentId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "templateComponentId",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Template Components"
+        ],
+        "description": "Delete Template Component",
+        "operationId": "deleteTemplateComponent",
+        "summary": "Delete Template Component"
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Template Components"
+        ],
+        "description": "Get Template Component by ID",
+        "operationId": "getTemplateComponentById",
+        "summary": "Get Template Component by ID"
+      },
+      "put": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "component_id": {
+                  "example": 1,
+                  "type": "number"
+                },
+                "quantity_required": {
+                  "example": 2,
+                  "type": "number"
+                },
+                "template_id": {
+                  "example": 1,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Template Components"
+        ],
+        "description": "Update Template Component",
+        "operationId": "updateTemplateComponent",
+        "summary": "Update Template Component"
       }
     },
     "/ticket-types": {
@@ -3113,7 +4499,7 @@
         "summary": "Update Ticket"
       }
     },
-    "/user-devices/me": {
+    "/user-devices": {
       "get": {
         "parameters": [],
         "responses": {
@@ -3204,10 +4590,10 @@
       "name": "Space"
     },
     {
-      "name": "Shared Permission"
+      "name": "Shared Permissions"
     },
     {
-      "name": "Share Request"
+      "name": "Share Requests"
     },
     {
       "name": "Alert Type"
@@ -3229,6 +4615,27 @@
     },
     {
       "name": "Ticket"
+    },
+    {
+      "name": "Hourly Value"
+    },
+    {
+      "name": "Component"
+    },
+    {
+      "name": "Template Components"
+    },
+    {
+      "name": "Device Templates"
+    },
+    {
+      "name": "Production Batches"
+    },
+    {
+      "name": "Production Components"
+    },
+    {
+      "name": "Production Tracking"
     }
   ]
 }

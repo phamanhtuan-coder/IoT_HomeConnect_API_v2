@@ -1,0 +1,54 @@
+{
+  "info": {
+    "_postman_id": "2aff48d9-bf2f-46b5-b777-16d83e5b73ed",
+    "name": "IoT Backend API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "40754195",
+    "_collection_link": "https://www.postman.com/homeconnectapiws/homeconnectapi-v2/collection/swql8uh/iot-backend-api?action=share&source=collection_link&creator=40754195"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "userAccessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userRefreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employeeAccessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employeeRefreshToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
