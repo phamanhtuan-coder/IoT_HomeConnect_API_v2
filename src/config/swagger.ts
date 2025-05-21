@@ -164,6 +164,10 @@ Lưu ý: Chỉ có ADMIN và TECHNICIAN mới có quyền truy cập các API y�
             name: "Production Tracking",
             description: "Quản lý theo dõi quá trình sản xuất"
         },
+        {
+            name: "Production Batches",
+            description: "Quản lý các lô sản xuất thiết bị"
+        },
     ]
 };
 

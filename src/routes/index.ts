@@ -46,6 +46,8 @@
  *     description: Quản lý linh kiện sử dụng trong quy trình sản xuất
  *   - name: Production Tracking
  *     description: Quản lý theo dõi quá trình sản xuất
+ *   - name: Production Batches
+ *     description: Quản lý theo dõi các lô sản xuất
  *
  *
  * @swagger
@@ -131,6 +133,7 @@ import templateComponentRoutes from "./template-component.routes";
 import deviceTemplateRoutes from "./device-template.routes";
 import productionComponentsRoutes from "./production-components.routes";
 import productionTrackingRoutes from "./production-tracking.routes";
+import productionBatchesRoutes from "./production-batches.routes";
 
 const router = Router();
 
@@ -156,6 +159,7 @@ router.use('/component',componentRoutes)
 router.use('/template-components', templateComponentRoutes);
 router.use('/device-templates', deviceTemplateRoutes);
 router.use('/production-components', productionComponentsRoutes);
-router.use('/production-tracking',productionTrackingRoutes);
+router.use('/production-tracking', productionTrackingRoutes);
+router.use('/production-batches', productionBatchesRoutes);
 
 export default router;
