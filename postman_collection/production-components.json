@@ -1,0 +1,223 @@
+[
+  {
+    "name": "Production Components",
+    "item": [
+      {
+        "name": "Create Production Component",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Production component created successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(201);",
+                "  pm.expect(response.production_component_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"production_id\": 1,\n  \"component_id\": 1,\n  \"quantity_used\": 1\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/production-components",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-components"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Production Component by ID",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Production component retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.production_component_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/production-components/:productionComponentId",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-components", ":productionComponentId"],
+            "variable": [
+              {
+                "key": "productionComponentId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Production Components by Production ID",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Production components retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/production-components/production/:productionId",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-components", "production", ":productionId"],
+            "variable": [
+              {
+                "key": "productionId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Update Production Component",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Production component updated successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.production_component_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"production_id\": 1,\n  \"component_id\": 1,\n  \"quantity_used\": 2\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/production-components/:productionComponentId",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-components", ":productionComponentId"],
+            "variable": [
+              {
+                "key": "productionComponentId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Delete Production Component",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Production component deleted successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(204);",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/production-components/:productionComponentId",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-components", ":productionComponentId"],
+            "variable": [
+              {
+                "key": "productionComponentId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      }
+    ]
+  }
+]
+

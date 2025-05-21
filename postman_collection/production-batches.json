@@ -1,0 +1,217 @@
+[
+  {
+    "name": "Production Batches",
+    "item": [
+      {
+        "name": "Create Production Batch",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Production batch created successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(201);",
+                "  pm.expect(response.production_batch_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"template_id\": 1,\n  \"quantity\": 100,\n  \"start_date\": \"2025-05-21\",\n  \"target_completion_date\": \"2025-06-21\",\n  \"priority\": \"high\",\n  \"notes\": \"Regular production batch for smart lights\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/production-batches",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-batches"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Production Batch by ID",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Production batch retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.production_batch_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/production-batches/:batchId",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-batches", ":batchId"],
+            "variable": [
+              {
+                "key": "batchId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get All Production Batches",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Production batches retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/production-batches",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-batches"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Update Production Batch",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Production batch updated successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.production_batch_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"quantity\": 120,\n  \"target_completion_date\": \"2025-06-30\",\n  \"priority\": \"urgent\",\n  \"notes\": \"Updated: Increased quantity and priority\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/production-batches/:batchId",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-batches", ":batchId"],
+            "variable": [
+              {
+                "key": "batchId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Delete Production Batch",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Production batch deleted successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(204);",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/production-batches/:batchId",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-batches", ":batchId"],
+            "variable": [
+              {
+                "key": "batchId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      }
+    ]
+  }
+]
+

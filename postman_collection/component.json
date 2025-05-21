@@ -1,0 +1,217 @@
+[
+  {
+    "name": "Component",
+    "item": [
+      {
+        "name": "Create Component",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Component created successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(201);",
+                "  pm.expect(response.component_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"name\": \"Test Component\",\n  \"supplier\": \"Supplier ABC\",\n  \"quantity_in_stock\": 100,\n  \"unit_cost\": 10.50\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/component",
+            "host": ["{{baseUrl}}"],
+            "path": ["component"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Update Component",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Component updated successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.component_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"name\": \"Updated Component\",\n  \"supplier\": \"New Supplier\",\n  \"quantity_in_stock\": 150,\n  \"unit_cost\": 12.75\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/component/:componentId",
+            "host": ["{{baseUrl}}"],
+            "path": ["component", ":componentId"],
+            "variable": [
+              {
+                "key": "componentId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Delete Component",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Component deleted successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(204);",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/component/:componentId",
+            "host": ["{{baseUrl}}"],
+            "path": ["component", ":componentId"],
+            "variable": [
+              {
+                "key": "componentId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Component by ID",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Component retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.component_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/component/:componentId",
+            "host": ["{{baseUrl}}"],
+            "path": ["component", ":componentId"],
+            "variable": [
+              {
+                "key": "componentId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get All Components",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Components retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/component",
+            "host": ["{{baseUrl}}"],
+            "path": ["component"]
+          }
+        },
+        "response": []
+      }
+    ]
+  }
+]
+

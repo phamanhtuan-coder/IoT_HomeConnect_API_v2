@@ -1,0 +1,217 @@
+[
+  {
+    "name": "Device Template",
+    "item": [
+      {
+        "name": "Create Device Template",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Device template created successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(201);",
+                "  pm.expect(response.template_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"name\": \"Smart Light v1\",\n  \"description\": \"Standard smart light template\",\n  \"version\": \"1.0.0\",\n  \"category\": \"lighting\",\n  \"specifications\": {\n    \"power\": \"10W\",\n    \"voltage\": \"220V\",\n    \"connectivity\": \"WiFi\",\n    \"protocol\": \"MQTT\"\n  }\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/device-templates",
+            "host": ["{{baseUrl}}"],
+            "path": ["device-templates"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Device Template by ID",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Device template retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.template_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/device-templates/:templateId",
+            "host": ["{{baseUrl}}"],
+            "path": ["device-templates", ":templateId"],
+            "variable": [
+              {
+                "key": "templateId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get All Device Templates",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Device templates retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/device-templates",
+            "host": ["{{baseUrl}}"],
+            "path": ["device-templates"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Update Device Template",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Device template updated successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.template_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"name\": \"Smart Light v1.1\",\n  \"description\": \"Updated smart light template\",\n  \"version\": \"1.1.0\",\n  \"category\": \"lighting\",\n  \"specifications\": {\n    \"power\": \"12W\",\n    \"voltage\": \"220V\",\n    \"connectivity\": \"WiFi+BLE\",\n    \"protocol\": \"MQTT\"\n  }\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/device-templates/:templateId",
+            "host": ["{{baseUrl}}"],
+            "path": ["device-templates", ":templateId"],
+            "variable": [
+              {
+                "key": "templateId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Delete Device Template",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Device template deleted successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(204);",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/device-templates/:templateId",
+            "host": ["{{baseUrl}}"],
+            "path": ["device-templates", ":templateId"],
+            "variable": [
+              {
+                "key": "templateId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      }
+    ]
+  }
+]
+

@@ -1,0 +1,217 @@
+[
+  {
+    "name": "Template Component",
+    "item": [
+      {
+        "name": "Create Template Component",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Template component created successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(201);",
+                "  pm.expect(response.template_component_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"template_id\": 1,\n  \"component_id\": 1,\n  \"quantity_required\": 1\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/template-components",
+            "host": ["{{baseUrl}}"],
+            "path": ["template-components"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get All Template Components",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Template components retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/template-components",
+            "host": ["{{baseUrl}}"],
+            "path": ["template-components"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Template Component by ID",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Template component retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.template_component_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/template-components/:templateComponentId",
+            "host": ["{{baseUrl}}"],
+            "path": ["template-components", ":templateComponentId"],
+            "variable": [
+              {
+                "key": "templateComponentId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Update Template Component",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Template component updated successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.template_component_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"template_id\": 1,\n  \"component_id\": 1,\n  \"quantity_required\": 2\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/template-components/:templateComponentId",
+            "host": ["{{baseUrl}}"],
+            "path": ["template-components", ":templateComponentId"],
+            "variable": [
+              {
+                "key": "templateComponentId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Delete Template Component",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Template component deleted successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(204);",
+                "});"
+              ],
+              "type": "text/javascript",
+              "packages": {}
+            }
+          }
+        ],
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/template-components/:templateComponentId",
+            "host": ["{{baseUrl}}"],
+            "path": ["template-components", ":templateComponentId"],
+            "variable": [
+              {
+                "key": "templateComponentId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      }
+    ]
+  }
+]
+
