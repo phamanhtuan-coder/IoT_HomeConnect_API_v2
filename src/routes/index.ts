@@ -25,22 +25,18 @@ import deviceRoutes from "./device.routes";
 import sharedPermissionRoutes from "./sharedPermission.routes";
 import shareRequestRoutes from "./shareRequest.routes";
 import alertTypeRoutes from "./alert-type.routes";
-import alertRoutes from "./alert.routes";
+
 import ticketTypeRoutes from "./ticket-type.routes";
 import ticketRoutes from "./ticket.routes";
 import ownershipHistoryRoutes from "./ownershipHistory.routes";
 import firmwareRoutes from "./firmware.routes";
-import firmwareUpdateHistoryRoutes from "./firmware-update-history.routes";
+import * as firmwareUpdateHistory from "./firmware-update-history.routes";
 import notificationRoutes from "./notification.routes";
+import alertRoutes from "./alert.routes";
 
-/**
- * Khởi tạo router chính.
- */
 const router = Router();
 
-/**
- * Định nghĩa các route con cho từng chức năng.
- */
+// Định nghĩa các route con
 router.use('/auth', authRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/user-devices', userDeviceRoutes);
@@ -51,15 +47,12 @@ router.use('/spaces', spaceRoutes);
 router.use('/devices', deviceRoutes);
 router.use('/permissions', sharedPermissionRoutes);
 router.use('/share-requests', shareRequestRoutes);
-router.use("/alert-types", alertTypeRoutes);
-router.use("/alerts", alertRoutes);
-router.use("/ticket-types", ticketTypeRoutes);
-router.use("/tickets", ticketRoutes)
-router.use("/ownership-history.ts",ownershipHistoryRoutes)
-router.use("/firmware",firmwareRoutes)
-router.use('/firmware-update-history', firmwareUpdateHistoryRoutes);
+router.use('/alert-types', alertTypeRoutes);
+router.use('/alerts', alertRoutes);
+router.use('/ticket-types', ticketTypeRoutes);
+router.use('/tickets', ticketRoutes);
+router.use('/ownership-history', ownershipHistoryRoutes);
+router.use('/firmware', firmwareRoutes);
+router.use('/firmware-update-history', firmwareUpdateHistory.default);
 
-/**
- * Xuất router để sử dụng trong ứng dụng chính.
- */
 export default router;
