@@ -20,6 +20,8 @@ export enum ErrorCodes {
     TICKET_NOT_RESOLVABLE = 'TICKET_NOT_RESOLVABLE',   // 400
     TEMPLATE_COMPONENT_NOT_FOUND = 'TEMPLATE_COMPONENT_NOT_FOUND', // 404
     TEMPLATE_COMPONENT_ALREADY_EXISTS = 'TEMPLATE_COMPONENT_ALREADY_EXISTS', // 409
+    TEMPLATE_NOT_FOUND = 'TEMPLATE_NOT_FOUND', // 404
+    TEMPLATE_ALREADY_EXISTS = 'TEMPLATE_ALREADY_EXISTS', // 409
 }
 
 // Interface cho AppError
@@ -80,6 +82,10 @@ export class AppError extends Error {
                 return new AppError({status: 404, code, message: message || 'Template component not found'});
             case ErrorCodes.TEMPLATE_COMPONENT_ALREADY_EXISTS:
                 return new AppError({status: 409, code, message: message || 'Template component already exists'});
+            case ErrorCodes.TEMPLATE_NOT_FOUND:
+                return new AppError({ status: 404, code, message: message || 'Device template not found' });
+            case ErrorCodes.TEMPLATE_ALREADY_EXISTS:
+                return new AppError({ status: 409, code, message: message || 'Device template already exists' });
 
             default:
                 return new AppError({ status: 500, code: ErrorCodes.INTERNAL_SERVER_ERROR, message: 'Unknown error' });

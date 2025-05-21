@@ -40,6 +40,8 @@
  *     description: Quản lý các linh kiện
  *   - name: Template Component
  *     description: Quản lý các template cho các linh kiện lắp ráp thiết bị
+ *   - name: Device Template
+ *     description: Quản ly các template cho các thiết bị IoT
  *
  * @swagger
  * components:
@@ -121,6 +123,7 @@ import alertRoutes from "./alert.routes";
 import firmwareUpdateHistoryRoutes from "./firmware-update-history.routes";
 import componentRoutes from "./component.routes";
 import templateComponentRoutes from "./template-component.routes";
+import deviceTemplateRoutes from "./device-template.routes";
 
 const router = Router();
 
@@ -144,5 +147,6 @@ router.use('/firmware', firmwareRoutes);
 router.use('/firmware-update-history', firmwareUpdateHistoryRoutes);
 router.use('/component',componentRoutes)
 router.use('/template-components', templateComponentRoutes);
+router.use('/device-templates', deviceTemplateRoutes);
 
 export default router;

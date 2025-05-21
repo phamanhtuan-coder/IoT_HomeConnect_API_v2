@@ -152,6 +152,10 @@ Lưu ý: Chỉ có ADMIN và TECHNICIAN mới có quyền truy cập các API y�
             name: "Template Component",
             description: "Quản lý các Template cho các linh kiện sản xuất thiết bị"
         },
+        {
+            name: "Device Template",
+            description: "Quản lý các Template cho các thiết bị IoT"
+        },
     ]
 };
 
