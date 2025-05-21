@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "merge-postman": "ts-node postman_collection/merge-collection.ts"
+    "merge-postman": "ts-node postman_collection/merge-collection.ts",
+    "build": "npx tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node src/server.ts"
   },
   "keywords": [],
   "author": "",
