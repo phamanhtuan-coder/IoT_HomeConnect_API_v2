@@ -29,9 +29,9 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/sync/me",
+            "raw": "{{baseUrl}}/sync-tracking/me",
             "host": ["{{baseUrl}}"],
-            "path": ["sync", "me"]
+            "path": ["sync-tracking", "me"]
           }
         },
         "response": []
@@ -63,9 +63,9 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/sync/:userId",
+            "raw": "{{baseUrl}}/sync-tracking/user/:userId",
             "host": ["{{baseUrl}}"],
-            "path": ["sync", ":userId"],
+            "path": ["sync-tracking", "user", ":userId"],
             "variable": [
               {
                 "key": "userId",
@@ -103,9 +103,9 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/sync/:userId/full",
+            "raw": "{{baseUrl}}/sync-tracking/user/:userId/full",
             "host": ["{{baseUrl}}"],
-            "path": ["sync", ":userId", "full"],
+            "path": ["sync-tracking", "user", ":userId", "full"],
             "variable": [
               {
                 "key": "userId",
@@ -119,3 +119,4 @@
     ]
   }
 ]
+

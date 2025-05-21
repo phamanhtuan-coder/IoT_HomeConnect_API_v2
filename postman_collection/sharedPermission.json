@@ -1,6 +1,6 @@
 [
   {
-    "name": "Shared Permission",
+    "name": "Shared Permissions",
     "item": [
       {
         "name": "Revoke Share Device",
@@ -77,7 +77,68 @@
           }
         },
         "response": []
+      },
+      {
+        "name": "Create Permission",
+        "request": {
+          "url": {
+            "raw": "{{baseUrl}}/permissions",
+            "host": ["{{baseUrl}}"],
+            "path": ["permissions"]
+          }
+        }
+      },
+      {
+        "name": "Get Permission by ID",
+        "request": {
+          "url": {
+            "raw": "{{baseUrl}}/permissions/:permissionId",
+            "host": ["{{baseUrl}}"],
+            "path": ["permissions", ":permissionId"]
+          }
+        }
+      },
+      {
+        "name": "Update Permission",
+        "request": {
+          "url": {
+            "raw": "{{baseUrl}}/permissions/:permissionId",
+            "host": ["{{baseUrl}}"],
+            "path": ["permissions", ":permissionId"]
+          }
+        }
+      },
+      {
+        "name": "Delete Permission",
+        "request": {
+          "url": {
+            "raw": "{{baseUrl}}/permissions/:permissionId",
+            "host": ["{{baseUrl}}"],
+            "path": ["permissions", ":permissionId"]
+          }
+        }
+      },
+      {
+        "name": "Get Device Permissions",
+        "request": {
+          "url": {
+            "raw": "{{baseUrl}}/permissions/device/:deviceId",
+            "host": ["{{baseUrl}}"],
+            "path": ["permissions", "device", ":deviceId"]
+          }
+        }
+      },
+      {
+        "name": "Get User Permissions",
+        "request": {
+          "url": {
+            "raw": "{{baseUrl}}/permissions/user/:userId",
+            "host": ["{{baseUrl}}"],
+            "path": ["permissions", "user", ":userId"]
+          }
+        }
       }
     ]
   }
 ]
+

@@ -558,12 +558,12 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/sync/me",
+              "raw": "{{baseUrl}}/sync-tracking/me",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "sync",
+                "sync-tracking",
                 "me"
               ]
             }
@@ -597,12 +597,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/sync/:userId",
+              "raw": "{{baseUrl}}/sync-tracking/user/:userId",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "sync",
+                "sync-tracking",
+                "user",
                 ":userId"
               ],
               "variable": [
@@ -642,12 +643,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/sync/:userId/full",
+              "raw": "{{baseUrl}}/sync-tracking/user/:userId/full",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "sync",
+                "sync-tracking",
+                "user",
                 ":userId",
                 "full"
               ],
@@ -693,13 +695,12 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/devices/me",
+              "raw": "{{baseUrl}}/user-devices",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "devices",
-                "me"
+                "user-devices"
               ]
             }
           },
@@ -732,12 +733,12 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/devices/:userId",
+              "raw": "{{baseUrl}}/user-devices/:userId",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "devices",
+                "user-devices",
                 ":userId"
               ],
               "variable": [
@@ -775,12 +776,12 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/devices/:deviceId",
+              "raw": "{{baseUrl}}/user-devices/:deviceId",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "devices",
+                "user-devices",
                 ":deviceId"
               ],
               "variable": [
@@ -2705,7 +2706,7 @@
       ]
     },
     {
-      "name": "Shared Permission",
+      "name": "Shared Permissions",
       "item": [
         {
           "name": "Revoke Share Device",
@@ -2793,11 +2794,102 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Create Permission",
+          "request": {
+            "url": {
+              "raw": "{{baseUrl}}/permissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "permissions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Permission by ID",
+          "request": {
+            "url": {
+              "raw": "{{baseUrl}}/permissions/:permissionId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "permissions",
+                ":permissionId"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Permission",
+          "request": {
+            "url": {
+              "raw": "{{baseUrl}}/permissions/:permissionId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "permissions",
+                ":permissionId"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Permission",
+          "request": {
+            "url": {
+              "raw": "{{baseUrl}}/permissions/:permissionId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "permissions",
+                ":permissionId"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Device Permissions",
+          "request": {
+            "url": {
+              "raw": "{{baseUrl}}/permissions/device/:deviceId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "permissions",
+                "device",
+                ":deviceId"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User Permissions",
+          "request": {
+            "url": {
+              "raw": "{{baseUrl}}/permissions/user/:userId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "permissions",
+                "user",
+                ":userId"
+              ]
+            }
+          }
         }
       ]
     },
     {
-      "name": "Share Request",
+      "name": "Share Requests",
       "item": [
         {
           "name": "Initiate Share Request",
@@ -3068,6 +3160,156 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Create Share Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"to_user_email\": \"user@example.com\",\n  \"permission_type\": \"CONTROL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/share-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "share-requests"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Share Request by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/share-requests/:requestId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "share-requests",
+                ":requestId"
+              ],
+              "variable": [
+                {
+                  "key": "requestId",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Share Request",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permission_type\": \"VIEW\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/share-requests/:requestId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "share-requests",
+                ":requestId"
+              ],
+              "variable": [
+                {
+                  "key": "requestId",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Share Request",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/share-requests/:requestId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "share-requests",
+                ":requestId"
+              ],
+              "variable": [
+                {
+                  "key": "requestId",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Pending Share Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/share-requests/pending",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "share-requests",
+                "pending"
+              ]
+            }
+          }
         }
       ]
     },
@@ -4119,12 +4361,12 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/ownership/transfer",
+              "raw": "{{baseUrl}}/ownership-history/transfer",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "ownership",
+                "ownership-history",
                 "transfer"
               ]
             }
@@ -4168,12 +4410,12 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/ownership/transfer/:ticketId/approve",
+              "raw": "{{baseUrl}}/ownership-history/transfer/:ticketId/approve",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "ownership",
+                "ownership-history",
                 "transfer",
                 ":ticketId",
                 "approve"
@@ -4216,12 +4458,12 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/ownership/:historyId",
+              "raw": "{{baseUrl}}/ownership-history/:historyId",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "ownership",
+                "ownership-history",
                 ":historyId"
               ],
               "variable": [
@@ -4262,12 +4504,12 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/ownership/device/:device_serial",
+              "raw": "{{baseUrl}}/ownership-history/device/:device_serial",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "ownership",
+                "ownership-history",
                 "device",
                 ":device_serial"
               ],
@@ -4309,12 +4551,12 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/ownership/user",
+              "raw": "{{baseUrl}}/ownership-history/user",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "ownership",
+                "ownership-history",
                 "user"
               ]
             }
@@ -4349,12 +4591,12 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/ownership/:historyId",
+              "raw": "{{baseUrl}}/ownership-history/:historyId",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "ownership",
+                "ownership-history",
                 ":historyId"
               ],
               "variable": [
@@ -5436,6 +5678,1438 @@
                 {
                   "key": "device_serial",
                   "value": "ABC123"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Component",
+      "item": [
+        {
+          "name": "Create Component",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Component created successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "  pm.expect(response.component_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Component\",\n  \"supplier\": \"Supplier ABC\",\n  \"quantity_in_stock\": 100,\n  \"unit_cost\": 10.50\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/component",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "component"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Component",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Component updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.component_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Component\",\n  \"supplier\": \"New Supplier\",\n  \"quantity_in_stock\": 150,\n  \"unit_cost\": 12.75\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/component/:componentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "component",
+                ":componentId"
+              ],
+              "variable": [
+                {
+                  "key": "componentId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Component",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Component deleted successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(204);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/component/:componentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "component",
+                ":componentId"
+              ],
+              "variable": [
+                {
+                  "key": "componentId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Component by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Component retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.component_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/component/:componentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "component",
+                ":componentId"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Components",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Components retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/component",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "component"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Template Components",
+      "item": [
+        {
+          "name": "Create Template Component",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Template component created successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "  pm.expect(response.template_component_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"template_id\": 1,\n  \"component_id\": 1,\n  \"quantity_required\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/template-components",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "template-components"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Template Components",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Template components retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/template-components",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "template-components"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Template Component by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Template component retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.template_component_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/template-components/:templateComponentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "template-components",
+                ":templateComponentId"
+              ],
+              "variable": [
+                {
+                  "key": "templateComponentId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Template Component",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Template component updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.template_component_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"template_id\": 1,\n  \"component_id\": 1,\n  \"quantity_required\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/template-components/:templateComponentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "template-components",
+                ":templateComponentId"
+              ],
+              "variable": [
+                {
+                  "key": "templateComponentId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Template Component",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Template component deleted successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(204);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/template-components/:templateComponentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "template-components",
+                ":templateComponentId"
+              ],
+              "variable": [
+                {
+                  "key": "templateComponentId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Device Templates",
+      "item": [
+        {
+          "name": "Create Device Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Device template created successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "  pm.expect(response.template_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Smart Light v1\",\n  \"description\": \"Standard smart light template\",\n  \"version\": \"1.0.0\",\n  \"category\": \"lighting\",\n  \"specifications\": {\n    \"power\": \"10W\",\n    \"voltage\": \"220V\",\n    \"connectivity\": \"WiFi\",\n    \"protocol\": \"MQTT\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/device-templates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "device-templates"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Device Template by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Device template retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.template_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/device-templates/:templateId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "device-templates",
+                ":templateId"
+              ],
+              "variable": [
+                {
+                  "key": "templateId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Device Templates",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Device templates retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/device-templates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "device-templates"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Device Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Device template updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.template_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Smart Light v1.1\",\n  \"description\": \"Updated smart light template\",\n  \"version\": \"1.1.0\",\n  \"category\": \"lighting\",\n  \"specifications\": {\n    \"power\": \"12W\",\n    \"voltage\": \"220V\",\n    \"connectivity\": \"WiFi+BLE\",\n    \"protocol\": \"MQTT\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/device-templates/:templateId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "device-templates",
+                ":templateId"
+              ],
+              "variable": [
+                {
+                  "key": "templateId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Device Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Device template deleted successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(204);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/device-templates/:templateId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "device-templates",
+                ":templateId"
+              ],
+              "variable": [
+                {
+                  "key": "templateId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Production Batches",
+      "item": [
+        {
+          "name": "Create Production Batch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production batch created successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "  pm.expect(response.production_batch_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"template_id\": 1,\n  \"quantity\": 100,\n  \"start_date\": \"2025-05-21\",\n  \"target_completion_date\": \"2025-06-21\",\n  \"priority\": \"high\",\n  \"notes\": \"Regular production batch for smart lights\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/production-batches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-batches"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Production Batch by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production batch retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.production_batch_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/production-batches/:batchId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-batches",
+                ":batchId"
+              ],
+              "variable": [
+                {
+                  "key": "batchId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Production Batches",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production batches retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/production-batches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-batches"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Production Batch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production batch updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.production_batch_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 120,\n  \"target_completion_date\": \"2025-06-30\",\n  \"priority\": \"urgent\",\n  \"notes\": \"Updated: Increased quantity and priority\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/production-batches/:batchId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-batches",
+                ":batchId"
+              ],
+              "variable": [
+                {
+                  "key": "batchId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Production Batch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Production batch deleted successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(204);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/production-batches/:batchId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-batches",
+                ":batchId"
+              ],
+              "variable": [
+                {
+                  "key": "batchId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Production Components",
+      "item": [
+        {
+          "name": "Create Production Component",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production component created successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "  pm.expect(response.production_component_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"production_id\": 1,\n  \"component_id\": 1,\n  \"quantity_used\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/production-components",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-components"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Production Component by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production component retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.production_component_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/production-components/:productionComponentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-components",
+                ":productionComponentId"
+              ],
+              "variable": [
+                {
+                  "key": "productionComponentId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Production Components by Production ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production components retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/production-components/production/:productionId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-components",
+                "production",
+                ":productionId"
+              ],
+              "variable": [
+                {
+                  "key": "productionId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Production Component",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production component updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.production_component_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"production_id\": 1,\n  \"component_id\": 1,\n  \"quantity_used\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/production-components/:productionComponentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-components",
+                ":productionComponentId"
+              ],
+              "variable": [
+                {
+                  "key": "productionComponentId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Production Component",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Production component deleted successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(204);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/production-components/:productionComponentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-components",
+                ":productionComponentId"
+              ],
+              "variable": [
+                {
+                  "key": "productionComponentId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Production Tracking",
+      "item": [
+        {
+          "name": "Create Production Tracking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production tracking created successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "  pm.expect(response.production_tracking_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"production_batch_id\": \"BATCH123\",\n  \"device_serial\": \"DEV001\",\n  \"stage\": \"assembly\",\n  \"status\": \"in_progress\",\n  \"cost\": 150.50\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/production-tracking",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-tracking"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Production Tracking by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production tracking retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.production_tracking_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/production-tracking/:productionId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-tracking",
+                ":productionId"
+              ],
+              "variable": [
+                {
+                  "key": "productionId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Production Tracking by Batch ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production tracking records retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/production-tracking/batch/:batchId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-tracking",
+                "batch",
+                ":batchId"
+              ],
+              "variable": [
+                {
+                  "key": "batchId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Production Tracking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production tracking updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.production_tracking_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stage\": \"qc\",\n  \"status\": \"completed\",\n  \"cost\": 180.75\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/production-tracking/:productionId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-tracking",
+                ":productionId"
+              ],
+              "variable": [
+                {
+                  "key": "productionId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Production Tracking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Production tracking deleted successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(204);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/production-tracking/:productionId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-tracking",
+                ":productionId"
+              ],
+              "variable": [
+                {
+                  "key": "productionId",
+                  "value": "1"
                 }
               ]
             }

@@ -165,13 +165,7 @@
           "url": {
             "raw": "{{baseUrl}}/component/:componentId",
             "host": ["{{baseUrl}}"],
-            "path": ["component", ":componentId"],
-            "variable": [
-              {
-                "key": "componentId",
-                "value": "1"
-              }
-            ]
+            "path": ["component", ":componentId"]
           }
         },
         "response": []

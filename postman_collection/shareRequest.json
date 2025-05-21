@@ -1,6 +1,6 @@
 [
   {
-    "name": "Share Request",
+    "name": "Share Requests",
     "item": [
       {
         "name": "Initiate Share Request",
@@ -238,7 +238,134 @@
           }
         },
         "response": []
+      },
+      {
+        "name": "Create Share Request",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"to_user_email\": \"user@example.com\",\n  \"permission_type\": \"CONTROL\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/share-requests",
+            "host": ["{{baseUrl}}"],
+            "path": ["share-requests"]
+          }
+        }
+      },
+      {
+        "name": "Get Share Request by ID",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/share-requests/:requestId",
+            "host": ["{{baseUrl}}"],
+            "path": ["share-requests", ":requestId"],
+            "variable": [
+              {
+                "key": "requestId",
+                "value": "1"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "Update Share Request",
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"permission_type\": \"VIEW\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/share-requests/:requestId",
+            "host": ["{{baseUrl}}"],
+            "path": ["share-requests", ":requestId"],
+            "variable": [
+              {
+                "key": "requestId",
+                "value": "1"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "Delete Share Request",
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/share-requests/:requestId",
+            "host": ["{{baseUrl}}"],
+            "path": ["share-requests", ":requestId"],
+            "variable": [
+              {
+                "key": "requestId",
+                "value": "1"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "Get Pending Share Requests",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/share-requests/pending",
+            "host": ["{{baseUrl}}"],
+            "path": ["share-requests", "pending"]
+          }
+        }
       }
     ]
   }
 ]
+

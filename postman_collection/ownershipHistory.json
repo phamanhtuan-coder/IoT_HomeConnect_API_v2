@@ -39,9 +39,9 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/ownership/transfer",
+            "raw": "{{baseUrl}}/ownership-history/transfer",
             "host": ["{{baseUrl}}"],
-            "path": ["ownership", "transfer"]
+            "path": ["ownership-history", "transfer"]
           }
         },
         "response": []
@@ -83,9 +83,9 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/ownership/transfer/:ticketId/approve",
+            "raw": "{{baseUrl}}/ownership-history/transfer/:ticketId/approve",
             "host": ["{{baseUrl}}"],
-            "path": ["ownership", "transfer", ":ticketId", "approve"],
+            "path": ["ownership-history", "transfer", ":ticketId", "approve"],
             "variable": [
               {
                 "key": "ticketId",
@@ -124,9 +124,9 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/ownership/:historyId",
+            "raw": "{{baseUrl}}/ownership-history/:historyId",
             "host": ["{{baseUrl}}"],
-            "path": ["ownership", ":historyId"],
+            "path": ["ownership-history", ":historyId"],
             "variable": [
               {
                 "key": "historyId",
@@ -165,9 +165,9 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/ownership/device/:device_serial",
+            "raw": "{{baseUrl}}/ownership-history/device/:device_serial",
             "host": ["{{baseUrl}}"],
-            "path": ["ownership", "device", ":device_serial"],
+            "path": ["ownership-history", "device", ":device_serial"],
             "variable": [
               {
                 "key": "device_serial",
@@ -206,9 +206,9 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/ownership/user",
+            "raw": "{{baseUrl}}/ownership-history/user",
             "host": ["{{baseUrl}}"],
-            "path": ["ownership", "user"]
+            "path": ["ownership-history", "user"]
           }
         },
         "response": []
@@ -241,9 +241,9 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/ownership/:historyId",
+            "raw": "{{baseUrl}}/ownership-history/:historyId",
             "host": ["{{baseUrl}}"],
-            "path": ["ownership", ":historyId"],
+            "path": ["ownership-history", ":historyId"],
             "variable": [
               {
                 "key": "historyId",
@@ -257,3 +257,4 @@
     ]
   }
 ]
+

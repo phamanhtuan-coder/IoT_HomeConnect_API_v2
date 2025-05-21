@@ -29,9 +29,9 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/devices/me",
+            "raw": "{{baseUrl}}/user-devices",
             "host": ["{{baseUrl}}"],
-            "path": ["devices", "me"]
+            "path": ["user-devices"]
           }
         },
         "response": []
@@ -63,9 +63,9 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/devices/:userId",
+            "raw": "{{baseUrl}}/user-devices/:userId",
             "host": ["{{baseUrl}}"],
-            "path": ["devices", ":userId"],
+            "path": ["user-devices", ":userId"],
             "variable": [
               {
                 "key": "userId",
@@ -101,9 +101,9 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/devices/:deviceId",
+            "raw": "{{baseUrl}}/user-devices/:deviceId",
             "host": ["{{baseUrl}}"],
-            "path": ["devices", ":deviceId"],
+            "path": ["user-devices", ":deviceId"],
             "variable": [
               {
                 "key": "deviceId",
@@ -117,3 +117,4 @@
     ]
   }
 ]
+
