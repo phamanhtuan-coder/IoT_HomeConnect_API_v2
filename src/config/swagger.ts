@@ -143,6 +143,9 @@ Lưu ý: Chỉ có ADMIN và TECHNICIAN mới có quyền truy cập các API y�
         {
             name: "Ticket",
             description: "Quản lý các yêu cầu hỗ trợ "
+        }, {
+            name: "Component",
+            description: "Quản lý các linh kiện sản xuất thiết bị"
         },
     ]
 };

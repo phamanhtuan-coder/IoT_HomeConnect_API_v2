@@ -36,6 +36,8 @@
  *     description: Quản lý lịch sử cập nhật firmware
  *   - name: Notification
  *     description: Quản lý thông báo
+ *   - name: Component
+ *     description: Quản lý các linh kiện
  *
  * @swagger
  * components:
@@ -108,14 +110,14 @@ import deviceRoutes from "./device.routes";
 import sharedPermissionRoutes from "./sharedPermission.routes";
 import shareRequestRoutes from "./shareRequest.routes";
 import alertTypeRoutes from "./alert-type.routes";
-
 import ticketTypeRoutes from "./ticket-type.routes";
 import ticketRoutes from "./ticket.routes";
 import ownershipHistoryRoutes from "./ownershipHistory.routes";
 import firmwareRoutes from "./firmware.routes";
-import * as firmwareUpdateHistory from "./firmware-update-history.routes";
 import notificationRoutes from "./notification.routes";
 import alertRoutes from "./alert.routes";
+import firmwareUpdateHistoryRoutes from "./firmware-update-history.routes";
+import componentRoutes from "./component.routes";
 
 const router = Router();
 
@@ -136,6 +138,7 @@ router.use('/ticket-types', ticketTypeRoutes);
 router.use('/tickets', ticketRoutes);
 router.use('/ownership-history', ownershipHistoryRoutes);
 router.use('/firmware', firmwareRoutes);
-router.use('/firmware-update-history', firmwareUpdateHistory.default);
+router.use('/firmware-update-history', firmwareUpdateHistoryRoutes);
+router.use('/component',componentRoutes)
 
 export default router;
