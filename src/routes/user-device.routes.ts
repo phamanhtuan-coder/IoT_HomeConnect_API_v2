@@ -1,3 +1,11 @@
+/**
+ * Định nghĩa các route quản lý thiết bị của người dùng.
+ * @swagger
+ * tags:
+ *  name: User Device
+ *  description: Quản lý thiết bị của người dùng trong hệ thống
+ */
+
 import express, { Request, Response, NextFunction } from 'express';
 import { UserDeviceController } from '../controllers/user-device.controller';
 import authMiddleware from '../middleware/auth.middleware';
@@ -18,13 +26,104 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
     };
 };
 
-// Routes
+/**
+ * @swagger
+ * /api/user-devices/me:
+ *   get:
+ *     tags:
+ *       - User Device
+ *     summary: Lấy danh sách thiết bị của người dùng hiện tại
+ *     description: Lấy danh sách tất cả thiết bị thuộc về người dùng đang đăng nhập
+ *     security:
+ *       - Bearer: []
+ *     responses:
+ *       200:
+ *         description: Trả về danh sách thiết bị
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               _id:
+ *                 type: string
+ *                 description: ID của thiết bị
+ *               device_serial:
+ *                 type: string
+ *                 description: Serial của thiết bị
+ *               user_id:
+ *                 type: string
+ *                 description: ID của người dùng sở hữu
+ *               device_name:
+ *                 type: string
+ *                 description: Tên của thiết bị
+ *               created_at:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Thời điểm thiết bị được thêm
+ *               updated_at:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Thời điểm cập nhật gần nhất
+ *       401:
+ *         description: Không có quyền truy cập
+ *       500:
+ *         description: Lỗi server
+ */
 router.get(
     '/me', 
     authMiddleware, 
     asyncHandler(userDeviceController.getOwnDevices)
 ); // User's own devices
 
+/**
+ * @swagger
+ * /api/user-devices/{userId}:
+ *   get:
+ *     tags:
+ *       - User Device
+ *     summary: Lấy danh sách thiết bị của người dùng cụ thể
+ *     description: |
+ *       Quản trị viên có thể xem danh sách thiết bị của một người dùng cụ thể.
+ *       Yêu cầu quyền quản trị.
+ *     security:
+ *       - Bearer: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         type: string
+ *         description: ID của người dùng cần xem thiết bị
+ *     responses:
+ *       200:
+ *         description: Trả về danh sách thiết bị
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               _id:
+ *                 type: string
+ *               device_serial:
+ *                 type: string
+ *               user_id:
+ *                 type: string
+ *               device_name:
+ *                 type: string
+ *               created_at:
+ *                 type: string
+ *                 format: date-time
+ *               updated_at:
+ *                 type: string
+ *                 format: date-time
+ *       401:
+ *         description: Không có quyền truy cập
+ *       403:
+ *         description: Không có quyền admin
+ *       404:
+ *         description: Không tìm thấy người dùng
+ *       500:
+ *         description: Lỗi server
+ */
 router.get(
     '/:userId',
     authMiddleware,
@@ -32,6 +131,36 @@ router.get(
     asyncHandler(userDeviceController.getUserDevices)
 ); // Admin: any user's devices
 
+/**
+ * @swagger
+ * /api/user-devices/{deviceId}:
+ *   delete:
+ *     tags:
+ *       - User Device
+ *     summary: Thu hồi thiết bị
+ *     description: |
+ *       Thu hồi thiết bị khỏi người dùng.
+ *       Yêu cầu quyền quản trị hoặc là chủ sở hữu thiết bị.
+ *     security:
+ *       - Bearer: []
+ *     parameters:
+ *       - in: path
+ *         name: deviceId
+ *         required: true
+ *         type: string
+ *         description: ID của thiết bị cần thu hồi
+ *     responses:
+ *       200:
+ *         description: Thu hồi thiết bị thành công
+ *       401:
+ *         description: Không có quyền truy cập
+ *       403:
+ *         description: Không có quyền thực hiện thao tác này
+ *       404:
+ *         description: Không tìm thấy thiết bị
+ *       500:
+ *         description: Lỗi server
+ */
 router.delete(
     '/:deviceId',
     authMiddleware,

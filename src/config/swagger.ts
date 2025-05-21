@@ -123,7 +123,27 @@ Lưu ý: Chỉ có ADMIN và TECHNICIAN mới có quyền truy cập các API y�
         {
             name: "Notification",
             description: "Quản lý thông báo"
-        }
+        },
+        {
+            name: "Ownership History",
+            description: "Lịch sử quyền sở hũu thiết bị"
+        },
+        {
+            name: "Sync Tracking",
+            description: "Quản lý đồng bộ đăng nhập của người dùng"
+        },
+        {
+            name: "User Devices",
+            description: "Quản lý thiết bị đăng nhập của người dùng"
+        },
+        {
+            name: "Ticket Type",
+            description: "Quản lý các loại yêu cầu hỗ trợ"
+        },
+        {
+            name: "Ticket",
+            description: "Quản lý các yêu cầu hỗ trợ "
+        },
     ]
 };
 

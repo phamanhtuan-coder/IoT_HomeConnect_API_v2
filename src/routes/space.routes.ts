@@ -1,6 +1,9 @@
 /**
- * Định nghĩa các route cho resource Space.
- * Sử dụng các middleware xác thực, phân quyền, và validate dữ liệu.
+ * Định nghĩa các route cho quản lý không gian (Space).
+ * @swagger
+ * tags:
+ *  name: Space
+ *  description: Quản lý các không gian trong nhà
  *
  * Các endpoint:
  * - POST   /                : Tạo mới một Space
@@ -34,7 +37,50 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
 
 /**
  * Tạo mới một Space.
- * Yêu cầu: xác thực, phân quyền, validate dữ liệu đầu vào.
+ * @swagger
+ * /api/spaces:
+ *   post:
+ *     tags:
+ *       - Space
+ *     summary: Tạo không gian mới
+ *     description: |
+ *       Tạo một không gian mới trong ngôi nhà.
+ *       Yêu cầu người dùng có quyền trong nhóm chứa nhà.
+ *     security:
+ *       - UserBearer: []
+ *     consumes:
+ *       - application/json
+ *     parameters:
+ *       - in: body
+ *         name: body
+ *         description: Thông tin không gian cần tạo
+ *         schema:
+ *           type: object
+ *           required:
+ *             - space_name
+ *             - house_id
+ *           properties:
+ *             space_name:
+ *               type: string
+ *               description: Tên của không gian (tối đa 100 ký tự)
+ *               example: "Phòng khách"
+ *             house_id:
+ *               type: number
+ *               description: ID của ngôi nhà chứa không gian
+ *               example: 1
+ *     responses:
+ *       201:
+ *         description: Tạo không gian thành công
+ *       400:
+ *         description: Dữ liệu đầu vào không hợp lệ
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       403:
+ *         description: Không có quyền trong nhóm
+ *       404:
+ *         description: Không tìm thấy ngôi nhà
+ *       500:
+ *         description: Lỗi server
  */
 router.post(
     '/',
@@ -46,7 +92,52 @@ router.post(
 
 /**
  * Lấy danh sách các Space theo House.
- * Yêu cầu: xác thực, phân quyền.
+ * @swagger
+ * /api/spaces/house/{houseId}:
+ *   get:
+ *     tags:
+ *       - Space
+ *     summary: Lấy danh sách không gian theo nhà
+ *     description: |
+ *       Lấy danh sách tất cả các không gian trong một ngôi nhà.
+ *       Yêu cầu người dùng có quyền trong nhóm chứa nhà.
+ *     security:
+ *       - UserBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: houseId
+ *         required: true
+ *         type: string
+ *         description: ID của ngôi nhà cần lấy danh sách không gian
+ *     responses:
+ *       200:
+ *         description: Trả về danh sách các không gian
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: number
+ *                 description: ID của không gian
+ *               space_name:
+ *                 type: string
+ *                 description: Tên không gian
+ *               house_id:
+ *                 type: number
+ *                 description: ID của nhà chứa không gian
+ *               created_at:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Thời gian tạo
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       403:
+ *         description: Không có quyền trong nhóm
+ *       404:
+ *         description: Không tìm thấy ngôi nhà
+ *       500:
+ *         description: Lỗi server
  */
 router.get(
     '/house/:houseId',
@@ -56,8 +147,51 @@ router.get(
 );
 
 /**
- * Lấy thông tin chi tiết một Space theo ID.
- * Yêu cầu: xác thực, phân quyền, validate spaceId.
+ * Lấy thông tin chi tiết một Space.
+ * @swagger
+ * /api/spaces/{spaceId}:
+ *   get:
+ *     tags:
+ *       - Space
+ *     summary: Lấy thông tin không gian theo ID
+ *     description: |
+ *       Lấy thông tin chi tiết của một không gian.
+ *       Yêu cầu người dùng có quyền trong nhóm chứa nhà.
+ *     security:
+ *       - UserBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: spaceId
+ *         required: true
+ *         type: string
+ *         description: ID của không gian cần xem
+ *     responses:
+ *       200:
+ *         description: Trả về thông tin chi tiết của không gian
+ *         schema:
+ *           type: object
+ *           properties:
+ *             id:
+ *               type: number
+ *               description: ID của không gian
+ *             space_name:
+ *               type: string
+ *               description: Tên không gian
+ *             house_id:
+ *               type: number
+ *               description: ID của nhà chứa không gian
+ *             created_at:
+ *               type: string
+ *               format: date-time
+ *               description: Thời gian tạo
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       403:
+ *         description: Không có quyền trong nhóm
+ *       404:
+ *         description: Không tìm thấy không gian
+ *       500:
+ *         description: Lỗi server
  */
 router.get(
     '/:spaceId',
@@ -69,7 +203,48 @@ router.get(
 
 /**
  * Cập nhật thông tin một Space.
- * Yêu cầu: xác thực, phân quyền, validate dữ liệu đầu vào.
+ * @swagger
+ * /api/spaces/{spaceId}:
+ *   put:
+ *     tags:
+ *       - Space
+ *     summary: Cập nhật thông tin không gian
+ *     description: |
+ *       Cập nhật thông tin của một không gian.
+ *       Yêu cầu người dùng có quyền trong nhóm chứa nhà.
+ *     security:
+ *       - UserBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: spaceId
+ *         required: true
+ *         type: string
+ *         description: ID của không gian cần cập nhật
+ *       - in: body
+ *         name: body
+ *         description: Thông tin cập nhật cho không gian
+ *         schema:
+ *           type: object
+ *           required:
+ *             - space_name
+ *           properties:
+ *             space_name:
+ *               type: string
+ *               description: Tên mới của không gian (tối đa 100 ký tự)
+ *               example: "Phòng khách - Cập nhật"
+ *     responses:
+ *       200:
+ *         description: Cập nhật thông tin không gian thành công
+ *       400:
+ *         description: Dữ liệu đầu vào không hợp lệ
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       403:
+ *         description: Không có quyền trong nhóm
+ *       404:
+ *         description: Không tìm thấy không gian
+ *       500:
+ *         description: Lỗi server
  */
 router.put(
     '/:spaceId',
@@ -80,8 +255,35 @@ router.put(
 );
 
 /**
- * Xoá một Space theo ID.
- * Yêu cầu: xác thực, phân quyền, validate spaceId.
+ * Xoá một Space.
+ * @swagger
+ * /api/spaces/{spaceId}:
+ *   delete:
+ *     tags:
+ *       - Space
+ *     summary: Xóa không gian
+ *     description: |
+ *       Xóa một không gian và tất cả thiết bị trong không gian đó.
+ *       Yêu cầu người dùng có quyền trong nhóm chứa nhà.
+ *     security:
+ *       - UserBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: spaceId
+ *         required: true
+ *         type: string
+ *         description: ID của không gian cần xóa
+ *     responses:
+ *       200:
+ *         description: Xóa không gian thành công
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       403:
+ *         description: Không có quyền trong nhóm
+ *       404:
+ *         description: Không tìm thấy không gian
+ *       500:
+ *         description: Lỗi server
  */
 router.delete(
     '/:spaceId',
@@ -92,8 +294,41 @@ router.delete(
 );
 
 /**
- * Lấy tên của một Space theo ID.
- * Yêu cầu: xác thực, phân quyền, validate spaceId.
+ * Lấy tên của một Space.
+ * @swagger
+ * /api/spaces/{spaceId}/name:
+ *   get:
+ *     tags:
+ *       - Space
+ *     summary: Lấy tên không gian
+ *     description: |
+ *       Lấy tên của một không gian theo ID.
+ *       Yêu cầu người dùng có quyền trong nhóm chứa nhà.
+ *     security:
+ *       - UserBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: spaceId
+ *         required: true
+ *         type: string
+ *         description: ID của không gian cần lấy tên
+ *     responses:
+ *       200:
+ *         description: Trả về tên của không gian
+ *         schema:
+ *           type: object
+ *           properties:
+ *             space_name:
+ *               type: string
+ *               description: Tên của không gian
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       403:
+ *         description: Không có quyền trong nhóm
+ *       404:
+ *         description: Không tìm thấy không gian
+ *       500:
+ *         description: Lỗi server
  */
 router.get(
     '/:spaceId/name',
@@ -104,3 +339,4 @@ router.get(
 );
 
 export default router;
+

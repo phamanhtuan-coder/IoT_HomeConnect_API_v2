@@ -9,6 +9,11 @@
  * - Cập nhật HourlyValue
  * - Xoá HourlyValue
  * - Lấy thống kê HourlyValue theo thiết bị
+ *
+ * @swagger
+ * tags:
+ *  name: Hourly Values
+ *  description: Quản lý các giá trị theo giờ của thiết bị
  */
 
 import {Router, Request, Response, NextFunction} from 'express';
@@ -38,7 +43,56 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
 
 /**
  * Tạo mới một HourlyValue.
- * Yêu cầu xác thực và kiểm tra dữ liệu đầu vào.
+ * @swagger
+ * /api/hourly-values:
+ *   post:
+ *     tags:
+ *       - Hourly Values
+ *     summary: Tạo giá trị theo giờ mới
+ *     description: |
+ *       Tạo một bản ghi giá trị theo giờ mới cho thiết bị.
+ *       Yêu cầu xác thực (User hoặc Employee Token).
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     consumes:
+ *       - application/json
+ *     parameters:
+ *       - in: body
+ *         name: body
+ *         description: Thông tin giá trị theo giờ cần tạo
+ *         schema:
+ *           type: object
+ *           required:
+ *             - device_serial
+ *             - timestamp
+ *             - values
+ *           properties:
+ *             device_serial:
+ *               type: string
+ *               description: Số serial của thiết bị
+ *               example: "TEMP001"
+ *             timestamp:
+ *               type: string
+ *               format: date-time
+ *               description: Thời điểm ghi nhận giá trị
+ *               example: "2025-05-21T10:00:00Z"
+ *             values:
+ *               type: object
+ *               description: Các giá trị đo được
+ *               example: {
+ *                 "temperature": 25.5,
+ *                 "humidity": 60
+ *               }
+ *     responses:
+ *       201:
+ *         description: Tạo giá trị thành công
+ *       400:
+ *         description: Dữ liệu đầu vào không hợp lệ
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       500:
+ *         description: Lỗi server
  */
 router.post(
     '/hourly-values',
@@ -49,7 +103,49 @@ router.post(
 
 /**
  * Lấy thông tin HourlyValue theo ID.
- * Yêu cầu xác thực và kiểm tra ID.
+ * @swagger
+ * /api/hourly-values/{hourlyValueId}:
+ *   get:
+ *     tags:
+ *       - Hourly Values
+ *     summary: Lấy thông tin giá trị theo ID
+ *     description: |
+ *       Lấy thông tin chi tiết của một giá trị theo giờ.
+ *       Yêu cầu xác thực (User hoặc Employee Token).
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: hourlyValueId
+ *         required: true
+ *         type: string
+ *         description: ID của giá trị cần xem
+ *     responses:
+ *       200:
+ *         description: Trả về thông tin chi tiết của giá trị
+ *         schema:
+ *           type: object
+ *           properties:
+ *             id:
+ *               type: number
+ *               description: ID của bản ghi
+ *             device_serial:
+ *               type: string
+ *               description: Số serial của thiết bị
+ *             timestamp:
+ *               type: string
+ *               format: date-time
+ *               description: Thời điểm ghi nhận
+ *             values:
+ *               type: object
+ *               description: Các giá trị đo được
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       404:
+ *         description: Không tìm thấy giá trị với ID đã cho
+ *       500:
+ *         description: Lỗi server
  */
 router.get(
     '/hourly-values/:hourlyValueId',
@@ -60,7 +156,60 @@ router.get(
 
 /**
  * Lấy danh sách HourlyValue theo serial thiết bị.
- * Yêu cầu xác thực và kiểm tra tham số lọc.
+ * @swagger
+ * /api/hourly-values/device/{device_serial}:
+ *   get:
+ *     tags:
+ *       - Hourly Values
+ *     summary: Lấy danh sách giá trị theo thiết bị
+ *     description: |
+ *       Lấy danh sách giá trị theo giờ của một thiết bị.
+ *       Hỗ trợ lọc theo khoảng thời gian.
+ *       Yêu cầu xác thực (User hoặc Employee Token).
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: device_serial
+ *         required: true
+ *         type: string
+ *         description: Số serial c���a thiết bị
+ *       - in: query
+ *         name: from_date
+ *         type: string
+ *         format: date
+ *         description: Ngày bắt đầu (YYYY-MM-DD)
+ *       - in: query
+ *         name: to_date
+ *         type: string
+ *         format: date
+ *         description: Ngày kết thúc (YYYY-MM-DD)
+ *     responses:
+ *       200:
+ *         description: Trả về danh sách giá trị
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: number
+ *                 description: ID của bản ghi
+ *               device_serial:
+ *                 type: string
+ *                 description: Số serial của thiết bị
+ *               timestamp:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Thời điểm ghi nhận
+ *               values:
+ *                 type: object
+ *                 description: Các giá trị đo được
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       500:
+ *         description: Lỗi server
  */
 router.get(
     '/hourly-values/device/:device_serial',
@@ -104,7 +253,44 @@ router.delete(
 
 /**
  * Lấy thống kê HourlyValue theo serial thiết bị.
- * Yêu cầu xác thực.
+ * @swagger
+ * /api/hourly-values/statistics/{device_serial}:
+ *   get:
+ *     tags:
+ *       - Hourly Values
+ *     summary: Lấy thống kê giá trị theo thiết bị
+ *     description: |
+ *       Lấy thống kê các giá trị theo giờ của một thiết bị
+ *       (giá trị trung bình, cao nhất, thấp nhất).
+ *       Yêu cầu xác thực (User hoặc Employee Token).
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: device_serial
+ *         required: true
+ *         type: string
+ *         description: Số serial của thiết bị
+ *     responses:
+ *       200:
+ *         description: Trả về thống kê giá trị
+ *         schema:
+ *           type: object
+ *           properties:
+ *             avg:
+ *               type: object
+ *               description: Giá trị trung bình của các thông số
+ *             max:
+ *               type: object
+ *               description: Giá trị cao nhất của các thông số
+ *             min:
+ *               type: object
+ *               description: Giá trị thấp nhất của các thông số
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       500:
+ *         description: Lỗi server
  */
 router.get(
     '/hourly-values/statistics/:device_serial',
@@ -113,3 +299,4 @@ router.get(
 );
 
 export default router;
+

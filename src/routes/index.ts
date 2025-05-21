@@ -1,17 +1,100 @@
 /**
  * Định nghĩa các route chính cho ứng dụng.
+ * @swagger
+ * tags:
+ *   - name: Authentication
+ *     description: Quản lý xác thực người dùng (đăng nhập, đăng ký, quên mật khẩu)
+ *   - name: User Device
+ *     description: Quản lý thiết bị của người dùng
+ *   - name: Sync Tracking
+ *     description: Theo dõi đồng bộ hóa dữ liệu thiết bị
+ *   - name: Group
+ *     description: Quản lý nhóm người dùng
+ *   - name: House
+ *     description: Quản lý nhà thông minh
+ *   - name: Space
+ *     description: Quản lý không gian trong nhà
+ *   - name: Device
+ *     description: Quản lý thiết bị IoT
+ *   - name: Shared Permission
+ *     description: Quản lý quyền chia sẻ thiết bị
+ *   - name: Share Request
+ *     description: Quản lý yêu cầu chia sẻ thiết bị
+ *   - name: Alert Type
+ *     description: Quản lý các loại cảnh báo
+ *   - name: Alert
+ *     description: Quản lý cảnh báo từ thiết bị
+ *   - name: Ticket Type
+ *     description: Quản lý các loại vé hỗ trợ
+ *   - name: Ticket
+ *     description: Quản lý vé hỗ trợ kỹ thuật
+ *   - name: Ownership History
+ *     description: Quản lý lịch sử chuyển nhượng quyền sở hữu thiết bị
+ *   - name: Firmware
+ *     description: Quản lý firmware cho thiết bị
+ *   - name: Firmware Update History
+ *     description: Quản lý lịch sử cập nhật firmware
+ *   - name: Notification
+ *     description: Quản lý thông báo
  *
- * Sử dụng Express Router để gom nhóm các route con liên quan đến:
- * - Xác thực người dùng
- * - Thông báo
- * - Quản lý thiết bị người dùng
- * - Đồng bộ tracking
- * - Quản lý nhóm, nhà, không gian, thiết bị
- * - Phân quyền chia sẻ, yêu cầu chia sẻ
- * - Quản lý loại cảnh báo, cảnh báo
- * - Quản lý loại ticket, ticket
- * - Lịch sử sở hữu thiết bị
- * - Quản lý firmware và lịch sử cập nhật firmware
+ * @swagger
+ * components:
+ *   securitySchemes:
+ *     Bearer:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ *       description: JSON Web Token (JWT) được sử dụng để xác thực. Thêm 'Bearer' trước token trong header
+ *   responses:
+ *     UnauthorizedError:
+ *       description: Không có quyền truy cập hoặc token không hợp lệ
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ *                 example: Unauthorized
+ *     ForbiddenError:
+ *       description: Không có quyền thực hiện hành động này
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ *                 example: Forbidden
+ *     NotFoundError:
+ *       description: Không tìm thấy tài nguyên
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ *                 example: Resource not found
+ *     ValidationError:
+ *       description: Dữ liệu đầu vào không hợp lệ
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ *                 example: Validation failed
+ *               errors:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     field:
+ *                       type: string
+ *                     message:
+ *                       type: string
  */
 
 import { Router } from 'express';
