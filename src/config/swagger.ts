@@ -160,6 +160,10 @@ Lưu ý: Chỉ có ADMIN và TECHNICIAN mới có quyền truy cập các API y�
             name: "Production Component",
             description: "Quản lý các linh kiện dùng trong sản xuất"
         },
+        {
+            name: "Production Tracking",
+            description: "Quản lý theo dõi quá trình sản xuất"
+        },
     ]
 };
 
