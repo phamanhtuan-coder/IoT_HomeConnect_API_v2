@@ -1,3 +1,51 @@
+# Cấu trúc dự án
+### 📁 `src/`
+Thư mục gốc chứa toàn bộ mã nguồn của ứng dụng backend.
+
+#### 📁 `config/`
+Chứa các file cấu hình hệ thống như:
+- Cấu hình app khởi chạy.
+- Cấu hình dịch vụ Firebase.
+- Cấu hình gửi email qua Nodemailer.
+- Cấu hình Socket.IO.
+- Cấu hình Swagger để generate API docs.
+
+#### 📁 `controllers/`
+Chứa các controller xử lý các yêu cầu từ client, phân tích request, gọi service tương ứng và trả response.
+
+#### 📁 `middleware/`
+Chứa các middleware xử lý logic trung gian như xác thực, phân quyền, logging, validate dữ liệu,...
+
+#### 📁 `routes/`
+Định nghĩa các endpoint API và ánh xạ chúng đến các controller tương ứng.
+
+#### 📁 `services/`
+Chứa toàn bộ logic nghiệp vụ chính, giao tiếp với database, xử lý dữ liệu, gửi email, v.v.
+
+#### 📁 `sockets/`
+Xử lý các sự kiện liên quan đến WebSocket, phục vụ chức năng realtime.
+
+#### 📁 `tools/`
+Chứa các tiện ích đặc biệt phục vụ các tác vụ cụ thể như xuất dữ liệu, xử lý firmware,...
+
+#### 📁 `types/`
+Chứa các định nghĩa kiểu dữ liệu TypeScript dùng trong toàn bộ dự án (interfaces, types,...).
+
+#### 📁 `utils/`
+Chứa các tiện ích dùng chung như:
+- ✅ `schemas/`: Định nghĩa schema validate dữ liệu đầu vào.
+- ✅ `helpers.ts`: Hàm tiện ích xử lý logic nhỏ.
+- ✅ `logger.ts`: Cấu hình ghi log.
+- ✅ `redis.ts`: Kết nối và thao tác với Redis.
+- ✅ `errors.ts`: Định nghĩa và xử lý lỗi chung.
+
+#### 📄 `app.ts`
+File khởi tạo ứng dụng Express, cấu hình middleware, routes,...
+
+#### 📄 `server.ts`
+File entry point, lắng nghe và khởi động server (HTTP và/hoặc WebSocket).
+
+
 # Quy định Commit Message
 
 ## Cấu trúc cơ bản
