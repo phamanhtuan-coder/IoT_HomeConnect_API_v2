@@ -166,7 +166,7 @@ class NotificationService {
                 text: input.text,
                 currentYear: new Date().getFullYear(),
             },
-        });
+        } as any);
     }
 
     // Add to src/services/notification.service.ts
@@ -234,7 +234,7 @@ class NotificationService {
                 otp,
                 currentYear: new Date().getFullYear(),
             },
-        });
+        } as any);
     }
 
     async sendEmergencyAlertEmail(email: string, message: string): Promise<void> {
@@ -247,7 +247,7 @@ class NotificationService {
                 message,
                 currentYear: new Date().getFullYear(),
             },
-        });
+        } as any);
     }
 
     private mapPrismaNotificationToAuthNotification(notification: any): Notification {

@@ -8,6 +8,7 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - REDIS_URL=redis://redis:6379
       - DATABASE_URL=mysql://root:ckcfit@mysql:3306/homeconnectiot
       - AIVEN_URL=${AIVEN_URL}
       - APP_SECRET=${APP_SECRET}

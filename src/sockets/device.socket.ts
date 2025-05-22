@@ -60,7 +60,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
             });
 
             if (device!.account_id) {
-                await redisClient.set(`device:${deviceId}:account`, device!.account_id, { EX: 3600 });
+                await redisClient.setex(`device:${deviceId}:account`, 3600, device!.account_id);
                 await notificationService.createNotification({
                     account_id: device!.account_id,
                     text: `Device ${deviceId} is now online.`,
@@ -293,3 +293,4 @@ async function handleDeviceDisconnect(socket: DeviceSocket, clientNamespace: Nam
 
     await redisClient.del(`device:${deviceId}:account`);
 }
+

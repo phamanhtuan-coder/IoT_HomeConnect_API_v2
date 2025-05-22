@@ -115,8 +115,8 @@ class AuthService {
         if (previousRefreshToken) {
             await blacklistToken(previousRefreshToken, 8 * 60 * 60);
         }
-        await redisClient.setEx(`employee:token:${account!.account_id}`, 8 * 60 * 60, accessToken);
-        await redisClient.setEx(`employee:refresh:${account!.account_id}`, 8 * 60 * 60, refreshToken);
+        await redisClient.setex(`employee:token:${account!.account_id}`, 8 * 60 * 60, accessToken);
+        await redisClient.setex(`employee:refresh:${account!.account_id}`, 8 * 60 * 60, refreshToken);
 
         return { accessToken, refreshToken };
     }
@@ -148,7 +148,7 @@ class AuthService {
         );
 
         // Redis logic - có thể comment để disable
-        await redisClient.setEx(`employee:token:${account!.account_id}`, 8 * 60 * 60, newAccessToken);
+        await redisClient.setex(`employee:token:${account!.account_id}`, 8 * 60 * 60, newAccessToken);
         return newAccessToken;
     }
 
@@ -327,3 +327,4 @@ class AuthService {
 }
 
 export default AuthService;
+

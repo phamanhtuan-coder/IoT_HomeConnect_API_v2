@@ -1,18 +1,32 @@
 // src/utils/redis.ts
-import { createClient } from 'redis';
+import Redis from 'ioredis';
 
-const redisClient = createClient({
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
+const redisClient = new Redis({
+    host: process.env.REDIS_HOST || 'redis',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    retryStrategy(times) {
+        const delay = Math.min(times * 100, 3000);
+        return delay;
+    },
+    maxRetriesPerRequest: null, // Disable max retries per request
+    enableReadyCheck: true,
+    reconnectOnError(err) {
+        const targetError = 'READONLY';
+        if (err.message.includes(targetError)) {
+            // Only reconnect when the error contains "READONLY"
+            return true;
+        }
+        return false;
+    }
 });
 
 redisClient.on('error', (err) => console.error('Redis Client Error', err));
-
-(async () => {
-    await redisClient.connect();
-})();
+redisClient.on('connect', () => console.log('Redis Client Connected'));
+redisClient.on('ready', () => console.log('Redis Client Ready'));
+redisClient.on('reconnecting', () => console.log('Redis Client Reconnecting'));
 
 export async function blacklistToken(token: string, expiresIn: number) {
-    await redisClient.setEx(`blacklist:${token}`, expiresIn, '1');
+    await redisClient.setex(`blacklist:${token}`, expiresIn, '1');
 }
 
 export async function isTokenBlacklisted(token: string): Promise<boolean> {
@@ -21,7 +35,7 @@ export async function isTokenBlacklisted(token: string): Promise<boolean> {
 }
 
 export async function setDeviceAccountMapping(deviceId: string, accountId: string, ttl: number = 3600) {
-    await redisClient.setEx(`device:${deviceId}:account`, ttl, accountId);
+    await redisClient.setex(`device:${deviceId}:account`, ttl, accountId);
 }
 
 export async function getDeviceAccountMapping(deviceId: string): Promise<string | null> {
@@ -33,3 +47,4 @@ export async function removeDeviceAccountMapping(deviceId: string) {
 }
 
 export default redisClient;
+

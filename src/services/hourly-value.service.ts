@@ -49,7 +49,7 @@ class HourlyValueService {
         minuteData.count += 1;
 
         // Store minute data
-        await redisClient.set(minuteKey, JSON.stringify(minuteData), {EX: 3600});
+        await redisClient.set(minuteKey, JSON.stringify(minuteData), 'EX', 3600);
 
         // Check if minute is complete
         if (minuteData.count >= SAMPLES_PER_MINUTE) {
@@ -72,7 +72,7 @@ class HourlyValueService {
             hourData.count += 1;
 
             // Store hour data
-            await redisClient.set(hourKey, JSON.stringify(hourData), {EX: 86400});
+            await redisClient.set(hourKey, JSON.stringify(hourData), 'EX', 86400);
 
             // Clear minute data
             await redisClient.del(minuteKey);
@@ -341,3 +341,4 @@ class HourlyValueService {
 }
 
 export default HourlyValueService;
+
