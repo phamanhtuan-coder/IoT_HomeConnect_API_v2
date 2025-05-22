@@ -8,3 +8,5 @@ node_modules
 /prisma/migrations/20250410045909_update_username_pass_db_type/migration.sql
 /prisma/migrations/20250410055525_update_role_db_type/migration.sql
 /prisma/migrations/migration_lock.toml
+/dist/
+/node_modules/
