@@ -36,7 +36,6 @@
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.1",
-    "@types/express-handlebars": "^6.0.2",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.13.14",
     "@types/nodemailer-express-handlebars": "^4.0.5",
