@@ -12,6 +12,11 @@ export class ProductionBatchesService {
     async createProductionBatch(input: ProductionBatchCreateInput, employeeId: string): Promise<ProductionBatch> {
         try {
             const { template_id, quantity } = input;
+            const planning_temp = await this.prisma.planning.findFirst({
+                where: {
+                    is_deleted: false
+                }
+            });
 
             // Verify template exists and is not deleted
             const deviceTemplate = await this.prisma.device_templates.findFirst({
@@ -59,6 +64,11 @@ export class ProductionBatchesService {
                 data: {
                     production_batch_id: productionBatchId,
                     batch_id: sequence,
+                    planning: {
+                        connect: {
+                            planning_id: planning_temp!.planning_id
+                        }
+                    },
                     device_templates: {
                         connect: {
                             template_id: deviceTemplate.template_id
@@ -66,19 +76,13 @@ export class ProductionBatchesService {
                     },
                     quantity,
                     status: 'pending',
-                    account_production_batches_created_byToaccount: {
-                        connect: {
-                            account_id: employeeId
-                        }
-                    },
                     created_at: new Date(),
                     updated_at: new Date(),
                 },
                 include: {
                     device_templates: true,
-                    account_production_batches_created_byToaccount: true,
-                    account_production_batches_approved_byToaccount: true,
                     production_tracking: true,
+                    planning: true,
                 },
             });
 
@@ -93,13 +97,12 @@ export class ProductionBatchesService {
 
     async getProductionBatchById(batchId: number): Promise<ProductionBatch> {
         try {
-            const productionBatch = await this.prisma.production_batches.findUnique({
+            const productionBatch = await this.prisma.production_batches.findFirst({
                 where: { batch_id: batchId, is_deleted: false },
                 include: {
                     device_templates: true,
-                    account_production_batches_created_byToaccount: true,
-                    account_production_batches_approved_byToaccount: true,
                     production_tracking: true,
+                    planning: true,
                 },
             });
 
@@ -122,8 +125,6 @@ export class ProductionBatchesService {
                 where: { is_deleted: false },
                 include: {
                     device_templates: true,
-                    account_production_batches_created_byToaccount: true,
-                    account_production_batches_approved_byToaccount: true,
                     production_tracking: true,
                 },
                 orderBy: { created_at: 'desc' },
@@ -231,8 +232,16 @@ export class ProductionBatchesService {
                 };
             }
 
+            // Get planning_id and production_batch_id from the found batch
+            const planningId = productionBatch.planning_id;
+            const productionBatchId = productionBatch.production_batch_id;
+
             const updatedBatch = await this.prisma.production_batches.update({
-                where: { batch_id: batchId },
+                where: { 
+                    batch_id: batchId,
+                    planning_id: planningId,
+                    production_batch_id: productionBatchId
+                },
                 data: {
                     ...updateData,
                     updated_at: new Date(),
@@ -243,9 +252,8 @@ export class ProductionBatchesService {
                             template_components: true
                         }
                     },
-                    account_production_batches_created_byToaccount: true,
-                    account_production_batches_approved_byToaccount: true,
                     production_tracking: true,
+                    planning: true,
                 },
             });
 
@@ -260,7 +268,7 @@ export class ProductionBatchesService {
 
     async deleteProductionBatch(batchId: number): Promise<void> {
         try {
-            const productionBatch = await this.prisma.production_batches.findUnique({
+            const productionBatch = await this.prisma.production_batches.findFirst({
                 where: { batch_id: batchId, is_deleted: false },
             });
 
@@ -272,10 +280,14 @@ export class ProductionBatchesService {
                 throw throwError(ErrorCodes.BAD_REQUEST, 'Only pending or rejected batches can be deleted');
             }
 
+            // Get the planning_id from the production batch
+            const planningId = productionBatch.planning_id;
+            const productionBatchId = productionBatch.production_batch_id;
+
             // Check if there are any related production tracking records
             const hasTrackingRecords = await this.prisma.production_tracking.findFirst({
                 where: {
-                    batch_id: batchId,
+                    production_batch_id: productionBatchId,
                     is_deleted: false,
                 },
             });
@@ -285,7 +297,11 @@ export class ProductionBatchesService {
             }
 
             await this.prisma.production_batches.update({
-                where: { batch_id: batchId },
+                where: { 
+                    batch_id: batchId,
+                    planning_id: planningId,
+                    production_batch_id: productionBatchId
+                },
                 data: {
                     is_deleted: true,
                     updated_at: new Date(),
@@ -302,6 +318,7 @@ export class ProductionBatchesService {
     private mapPrismaProductionBatchToProductionBatch(pb: any): {
         batch_id: any;
         production_batch_id: any;
+        planning_id: any;
         template_id: any;
         quantity: any;
         status: any;
@@ -316,6 +333,7 @@ export class ProductionBatchesService {
         return {
             batch_id: pb.batch_id,
             production_batch_id: pb.production_batch_id,
+            planning_id: pb.planning_id,
             template_id: pb.device_templates?.template_id ?? pb.template_id,
             quantity: pb.quantity,
             status: pb.status,
