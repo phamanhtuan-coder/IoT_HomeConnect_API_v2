@@ -16,6 +16,7 @@ export enum StageSerialStage {
     FIXING = 'fixing',
     COMPLETED = 'completed',
     FAILED = 'failed',
+    CANCELLED = 'cancelled',
 }
 
 export enum RejectReason {
@@ -122,4 +123,11 @@ export interface SerialData {
 
 export interface ProductionTrackingResponse {
     [stage: string]: SerialData[];  // stage: pending, assembly, labeling, firmware_upload, qc, completed
+}
+
+export interface ProductionTrackingCancelInput {
+    production_id: number;
+    employee_id: string;
+    device_serial: string;
+    note?: string;
 }

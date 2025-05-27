@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { ProductionTracking, ProductionTrackingNextStageInput, StageSerialStage, StatusSerialStage, ProductionTrackingRejectForQCInput, ProductionTrackingResponsePhaseChangeInput, RejectReason, ProductionTrackingResponse, SerialData, StageLog } from '../types/production-tracking';
+import { ProductionTracking, ProductionTrackingNextStageInput, StageSerialStage, StatusSerialStage, ProductionTrackingRejectForQCInput, ProductionTrackingResponsePhaseChangeInput, RejectReason, ProductionTrackingResponse, SerialData, StageLog, ProductionTrackingCancelInput } from '../types/production-tracking';
 
 export class ProductionTrackingService {
     private prisma: PrismaClient;
@@ -279,6 +279,22 @@ export class ProductionTrackingService {
             };
             stageLogList.push(stageLog);
             isUpdate = true;
+        }else if (stage === StageSerialStage.CANCELLED) {
+            if (role !== 'PRODUCTION') {
+                return throwError(ErrorCodes.UNAUTHORIZED, 'Chỉ có nhân viên sản xuất mới thực hiện được yêu cầu duyệt giai đoạn này');
+            }
+
+            newStage = StageSerialStage.CANCELLED;
+            stageLog = {
+                stage: stageLogList[stageLogList.length - 1].stage,
+                status: StatusSerialStage.FAILED,
+                employee_id: input.employee_id,
+                approved_by: null,
+                started_at: new Date(),
+                note: note
+            };
+            stageLogList.push(stageLog);
+            isUpdate = true;
         }
 
         if (isUpdate) {
@@ -393,6 +409,44 @@ export class ProductionTrackingService {
         });
         
 
+    }
+
+    async ResponseCancelProductionSerial(input: ProductionTrackingCancelInput) {
+        const { production_id, employee_id, device_serial, note } = input;
+
+        const production = await this.prisma.production_tracking.findUnique({
+            where: { production_id: production_id , is_deleted: false },
+            select: {
+                state_logs: true,
+            }
+        });
+
+        if (!production) {
+            return throwError(ErrorCodes.PRODUCTION_NOT_FOUND, 'Production not found');
+        }
+
+        let stageLogList = production.state_logs as any[];
+        let stageLogLast = stageLogList[stageLogList.length - 1];
+        if (stageLogLast.status !== StatusSerialStage.PENDING_ARRIVAL
+        ) {
+            return throwError(ErrorCodes.BAD_REQUEST, 'Stage log được yêu cầu duyệt');
+        }
+
+        stageLogLast.status = StatusSerialStage.COMPLETED;
+        stageLogLast.completed_at = new Date();
+        stageLogLast.approved_by = employee_id;
+        stageLogLast.note = note;
+
+        await this.prisma.production_tracking.update({
+            where: { production_id: production_id },
+            data: { state_logs: stageLogList }
+        });
+
+        return {
+            success: true,
+            errorCode: null,
+            message: 'Hủy sản xuất sản phẩm thành công'
+        }
     }
 }
 
