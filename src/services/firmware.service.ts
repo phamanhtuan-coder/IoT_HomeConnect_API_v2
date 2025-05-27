@@ -11,12 +11,13 @@ class FirmwareService {
 
     async createFirmware(input: {
         version: string;
+        name: string;
         file_path: string;
         template_id?: number;
         is_mandatory?: boolean;
         note?: string;
     }): Promise<Firmware> {
-        const { version, file_path, template_id, is_mandatory, note } = input;
+        const { version, name, file_path, template_id, is_mandatory, note } = input;
 
         if (template_id) {
             const template = await this.prisma.device_templates.findUnique({
@@ -33,6 +34,7 @@ class FirmwareService {
         const firmware = await this.prisma.firmware!.create({
             data: {
                 version,
+                name,
                 file_path,
                 template_id: template_id || null,
                 is_mandatory: is_mandatory || false,
@@ -47,6 +49,7 @@ class FirmwareService {
 
     async updateFirmware(firmwareId: number, input: {
         version?: string;
+        name?: string;
         file_path?: string;
         template_id?: number;
         is_mandatory?: boolean;
@@ -77,6 +80,7 @@ class FirmwareService {
             where: { firmware_id: firmwareId },
             data: {
                 version: input.version || firmware!.version,
+                name: input.name || firmware!.name,
                 file_path: input.file_path || firmware!.file_path,
                 template_id: input.template_id !== undefined ? input.template_id : firmware!.template_id,
                 is_mandatory: input.is_mandatory !== undefined ? input.is_mandatory : firmware!.is_mandatory,
@@ -131,6 +135,7 @@ class FirmwareService {
         return {
             firmware_id: firmware!.firmware_id,
             version: firmware!.version,
+            name: firmware!.name ?? null,
             file_path: firmware!.file_path,
             template_id: firmware!.template_id ?? null,
             is_mandatory: firmware!.is_mandatory ?? null,

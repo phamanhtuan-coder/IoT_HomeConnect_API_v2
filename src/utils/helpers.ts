@@ -58,3 +58,11 @@ export const generateEmployeeId = (input: string | number = Date.now()) => gener
  * @returns string - User Device ID
  */
 export const generateUserDeviceId = (input: string | number = Date.now()) => generatePrefixedUUID("UDVC", input);
+
+/**
+ * Sinh Planning ID với prefix "PLAN".
+ * @param input - Giá trị đầu vào (string hoặc number), mặc định là Date.now()
+ * @returns string - Planning ID
+ */
+export const generatePlanningId = (input: string | number = Date.now()) => generatePrefixedUUID("PLAN", input);
+

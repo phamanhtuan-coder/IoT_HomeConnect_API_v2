@@ -3,6 +3,7 @@
  *
  * @property {number} batch_id - Khóa chính, index của lô sản xuất
  * @property {string} production_batch_id - Khóa chính, định danh lô sản xuất
+ * @property {string} planning_id - Khóa chính, định danh kế hoạch sản xuất
  * @property {number | null} template_id - Khóa ngoại, mẫu thiết bị sản xuất
  * @property {number} quantity - Số lượng thiết bị trong lô
  * @property {string | null} status - Trạng thái: 'pending', 'approved', 'rejected', 'in_progress', 'completed'
@@ -16,6 +17,7 @@
 export interface ProductionBatch {
     batch_id: number;
     production_batch_id: string;
+    planning_id: string;
     template_id: number | null;
     quantity: number;
     status: string | null;

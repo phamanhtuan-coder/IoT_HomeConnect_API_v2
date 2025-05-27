@@ -44,7 +44,8 @@ export class ProductionTrackingController {
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
-            const batchId = parseInt(req.params.batchId);
+            // Changed from parseInt to get the string value directly since production_batch_id is a string
+            const batchId = req.params.batchId;
             const productionTrackings = await this.productionTrackingService.getProductionTrackingByBatchId(batchId);
             res.json(productionTrackings);
         } catch (error) {

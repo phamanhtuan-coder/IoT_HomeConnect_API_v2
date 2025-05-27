@@ -21,30 +21,34 @@ const prisma = new PrismaClient();
  * @throws FORBIDDEN nếu tài khoản không có vai trò hoặc vai trò không hợp lệ.
  */
 const roleMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-    const employeeId = req.user?.employeeId;
-    if (!employeeId) {
-        throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+    try {
+        const employeeId = req.user?.employeeId;
+        if (!employeeId) {
+            return next(throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated'));
+        }
+
+        const account = await prisma.account.findUnique({
+            where: { account_id: employeeId },
+            include: { role: true },
+        });
+
+        if (!account) {
+            return next(throwError(ErrorCodes.NOT_FOUND, 'Employee account not found'));
+        }
+
+        if (!account.role_id || !account.role) {
+            return next(throwError(ErrorCodes.FORBIDDEN, 'Employee role not assigned'));
+        }
+
+        const allowedRoles = ['ADMIN', 'PRODUCTION', 'TECHNICIAN', 'RND', 'EMPLOYEE'];
+        if (!allowedRoles.includes(account.role.name!)) {
+            return next(throwError(ErrorCodes.FORBIDDEN, 'Only allowed employee roles can perform this action'));
+        }
+
+        next();
+    } catch (error) {
+        next(error);
     }
-
-    const account = await prisma.account.findUnique({
-        where: { account_id: employeeId },
-        include: { role: true },
-    });
-
-    if (!account) {
-        throwError(ErrorCodes.NOT_FOUND, 'Employee account not found');
-    }
-
-    if (!account!.role_id || !account!.role) {
-        throwError(ErrorCodes.FORBIDDEN, 'Employee role not assigned');
-    }
-
-    const allowedRoles = ['ADMIN', 'PRODUCTION', 'TECHNICIAN', 'RND', 'EMPLOYEE'];
-    if (!allowedRoles.includes(account!.role!.name!)) {
-        throwError(ErrorCodes.FORBIDDEN, 'Only allowed employee roles can perform this action');
-    }
-
-    next();
 };
 
 /**
@@ -60,19 +64,26 @@ const roleMiddleware = async (req: Request, res: Response, next: NextFunction) =
  * @throws FORBIDDEN nếu user không phải chủ sở hữu thiết bị.
  */
 export const restrictToDeviceOwner = async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.user?.userId || req.user?.employeeId;
-    const { device_serial } = req.body;
+    try {
+        const userId = req.user?.userId || req.user?.employeeId;
+        const { device_serial } = req.body;
 
-    if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+        if (!userId) {
+            return next(throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated'));
+        }
 
-    const device = await prisma.devices.findUnique({
-        where: { serial_number: device_serial, is_deleted: false },
-    });
+        const device = await prisma.devices.findUnique({
+            where: { serial_number: device_serial, is_deleted: false },
+        });
 
-    if (!device || device.account_id !== userId) {
-        throwError(ErrorCodes.FORBIDDEN, 'Only the device.ts owner can perform this action');
+        if (!device || device.account_id !== userId) {
+            return next(throwError(ErrorCodes.FORBIDDEN, 'Only the device owner can perform this action'));
+        }
+
+        next();
+    } catch (error) {
+        next(error);
     }
-
-    next();
 };
+
 export default roleMiddleware;

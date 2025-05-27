@@ -14,6 +14,7 @@
  */
 export interface Firmware {
     firmware_id: number;
+    name: string;
     version: string;
     file_path: string;
     template_id: number | null;
