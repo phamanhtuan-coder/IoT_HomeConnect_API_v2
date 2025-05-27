@@ -1,12 +1,113 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { ProductionTracking, ProductionTrackingNextStageInput, StageSerialStage, StatusSerialStage, ProductionTrackingRejectForQCInput, ProductionTrackingResponsePhaseChangeInput, RejectReason } from '../types/production-tracking';
+import { ProductionTracking, ProductionTrackingNextStageInput, StageSerialStage, StatusSerialStage, ProductionTrackingRejectForQCInput, ProductionTrackingResponsePhaseChangeInput, RejectReason, ProductionTrackingResponse, SerialData, StageLog } from '../types/production-tracking';
 
 export class ProductionTrackingService {
     private prisma: PrismaClient;
 
     constructor() {
         this.prisma = new PrismaClient();
+    }
+
+    async getProductionTrackingByStages() {
+        try {
+            // Lấy tất cả production tracking records
+            const productions = await this.prisma.production_tracking.findMany({
+                where: { 
+                    is_deleted: false 
+                },
+                select: {
+                    production_id: true,
+                    device_serial: true,
+                    stage: true,
+                    status: true,
+                    state_logs: true
+                }
+            });
+    
+            // Khởi tạo object để group theo stage
+            const result: ProductionTrackingResponse = {
+                pending: [],
+                assembly: [],
+                labeling: [],
+                firmware_upload: [],
+                qc: [],
+                completed: []
+            };
+    
+            // Map dữ liệu theo yêu cầu
+            productions.forEach(production => {
+                const serialData: SerialData = {
+                    serial: production.device_serial || '',
+                    status: production.status.toLowerCase(),
+                    stage_logs: (production.state_logs as any[]).map(log => ({
+                        stage: log.stage.toLowerCase(),
+                        status: log.status.toLowerCase(),
+                        employee_id: log.employee_id,
+                        approved_by: log.approved_by,
+                        started_at: log.started_at,
+                        completed_at: log.completed_at,
+                        note: log.note || ''
+                    }))
+                };
+    
+                // Thêm vào stage tương ứng
+                const stage = production.stage.toLowerCase();
+                if (result[stage]) {
+                    result[stage].push(serialData);
+                }
+            });
+    
+            return {
+                success: true,
+                data: result
+            };
+        } catch (error) {
+            console.error('Error getting production tracking by stages:', error);
+            return throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to get production tracking data');
+        }
+    }
+
+    async getProductionTrackingByStage(stage: string) {
+        try {
+            const productions = await this.prisma.production_tracking.findMany({
+                where: { 
+                    is_deleted: false,
+                    stage: stage.toUpperCase()
+                },
+                select: {
+                    production_id: true,
+                    device_serial: true,
+                    stage: true,
+                    status: true,
+                    state_logs: true
+                }
+            });
+    
+            const serialDataList = productions.map(production => ({
+                serial: production.device_serial,
+                status: production.status.toLowerCase(),
+                stage_logs: (production.state_logs as any[]).map(log => ({
+                    stage: log.stage.toLowerCase(),
+                    status: log.status.toLowerCase(),
+                    employee_id: log.employee_id,
+                    approved_by: log.approved_by,
+                    started_at: log.started_at,
+                    completed_at: log.completed_at,
+                    note: log.note || ''
+                }))
+            }));
+    
+            return {
+                success: true,
+                data: {
+                    [stage.toLowerCase()]: serialDataList
+                }
+            };
+        } catch (error) {
+            console.error(`Error getting production tracking for stage ${stage}:`, error);
+            return throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to get production tracking data');
+        }
     }
 
     async RequestPhaseChange(input: ProductionTrackingNextStageInput) {
