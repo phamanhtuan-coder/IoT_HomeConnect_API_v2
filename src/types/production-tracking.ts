@@ -14,33 +14,91 @@
  * @property {Date | null} updated_at - Thời gian cập nhật cuối
  * @property {boolean | null} is_deleted - Trạng thái xóa mềm
  */
-export interface ProductionTracking {
-    production_id: number;
-    batch_id: number | null;
-    device_serial: string | null;
+export interface ProductionTracking{
+    pending: ProductionTrackingDetailStage[];
+    labeling: ProductionTrackingDetailStage[];
+    assembly: ProductionTrackingDetailStage[];
+    firmware_upload: ProductionTrackingDetailStage[];
+    qc: ProductionTrackingDetailStage[];
+    completed: ProductionTrackingDetailStage[];
+}
+
+export enum StatusSerialStage {
+    PENDING = 'pending',
+    PENDING_ARRIVAL = 'pending_arrival',
+    IN_PROGRESS = 'in_progress',
+    COMPLETED = 'completed',
+    FIXING = 'fixing',
+    FAILED = 'failed'
+}
+
+export enum StageSerialStage {
+    PENDING = 'pending',
+    ASSEMBLY = 'assembly',
+    LABELLING = 'labelling',
+    FIRMWARE_UPLOAD = 'firmware_upload',
+    QC = 'qc',
+    FIXING = 'fixing',
+    COMPLETED = 'completed',
+    FAILED = 'failed',
+}
+
+export enum RejectReason {
+    BLUR_ERROR = 'blur_error',
+    PRODUCT_ERROR = 'product_error',
+    ALL_ERROR = 'all_error',
+}
+
+export interface ProductionTrackingDetailStage {
+    serial_number: string;
+    cost: number;
+    status: StatusSerialStage;
+    stage: StageSerialStage;
+    stage_logs: ProductionTrackingStageLog[];
+}
+
+
+export interface ProductionTrackingStageLog {
     stage: string;
-    status: string | null;
-    employee_id: string | null;
-    started_at: Date | null;
-    completed_at: Date | null;
-    cost: number | null;
-    created_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
+    status: string;
+    employee_id: string;
+    approved_by?: string;
+    started_at?: Date;
+    completed_at: Date;
+    note?: string; 
 }
 
 /**
  * Đầu vào để tạo/cập nhật bản ghi theo dõi sản xuất.
- * @property {number} batch_id - ID của lô sản xuất
+ * @property {number} production_id - ID của bản ghi theo dõi sản xuất
  * @property {string} device_serial - Serial number của thiết bị
  * @property {string} stage - Giai đoạn sản xuất ('assembly', 'firmware_upload', 'qc', 'packaging')
  * @property {string} status - Trạng thái ('pending', 'in_progress', 'completed', 'failed')
- * @property {number} cost - Chi phí sản xuất (tùy chọn)
  */
-export interface ProductionTrackingInput {
-    batch_id: number;
+export interface ProductionTrackingNextStageInput {
+    employee_id: string;
+    production_id: number;
     device_serial: string;
+    stage: StageSerialStage;
+    status: StatusSerialStage;
+    note?: string;
+    role: string;
+    approved_by: string;
+}
+
+export interface ProductionTrackingResponsePhaseChangeInput {
+    production_id: number;
     stage: string;
-    status?: string;
-    cost?: number;
+    status: string;
+    note?: string;
+    employee_id: string;
+    is_approved: boolean;
+}
+
+export interface ProductionTrackingRejectForQCInput {
+    production_id: number;
+    employee_id: string;
+    device_serial: string;
+    note?: string;
+    reason?: string;
 }
