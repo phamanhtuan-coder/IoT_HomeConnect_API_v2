@@ -53,7 +53,7 @@ const productionBatchesController = new ProductionBatchesController();
 router.post(
     '/',
     authMiddleware,
-    roleMiddleware,
+    // roleMiddleware,
     validateMiddleware(productionBatchCreateSchema),
     productionBatchesController.createProductionBatch
 );
@@ -88,7 +88,7 @@ router.post(
 router.get(
     '/:batchId',
     authMiddleware,
-    roleMiddleware,
+    // roleMiddleware,
     validateMiddleware(productionBatchIdSchema),
     productionBatchesController.getProductionBatchById
 );
@@ -114,7 +114,7 @@ router.get(
 router.get(
     '/',
     authMiddleware,
-    roleMiddleware,
+    // roleMiddleware,
     productionBatchesController.getAllProductionBatches
 );
 

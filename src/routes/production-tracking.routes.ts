@@ -61,7 +61,7 @@ const productionTrackingController = new ProductionTrackingController();
 router.post(
     '/',
     authMiddleware,
-    roleMiddleware,
+    // roleMiddleware,
     validateMiddleware(productionTrackingSchema),
     productionTrackingController.createProductionTracking
 );
