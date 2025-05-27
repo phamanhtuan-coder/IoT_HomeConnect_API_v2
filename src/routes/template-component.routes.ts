@@ -73,7 +73,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
 router.post(
     '/',
     authMiddleware,
-    roleMiddleware,
+    // roleMiddleware,
     validateMiddleware(templateComponentSchema),
     asyncHandler(templateComponentController.createTemplateComponent)
 );
