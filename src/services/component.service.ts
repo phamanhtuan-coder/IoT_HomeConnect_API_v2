@@ -28,10 +28,10 @@ class ComponentService {
     async createComponent(input: {
         name: string;
         supplier?: string;
-        quantity_in_stock?: number;
+        // quantity_in_stock?: number;
         unit_cost?: number;
     }): Promise<Component> {
-        const { name, supplier, quantity_in_stock, unit_cost } = input;
+        const { name, supplier, unit_cost } = input;
 
         const existingComponent = await this.prisma.components.findFirst({
             where: { name, is_deleted: false },
@@ -44,7 +44,7 @@ class ComponentService {
             data: {
                 name,
                 supplier,
-                quantity_in_stock,
+                quantity_in_stock: 0,
                 unit_cost,
             },
         });

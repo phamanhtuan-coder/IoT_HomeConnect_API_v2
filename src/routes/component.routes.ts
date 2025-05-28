@@ -114,7 +114,7 @@ router.post(
 router.get(
     '/:componentId',
     authMiddleware,
-    roleMiddleware,
+    // roleMiddleware,
     validateMiddleware(componentIdSchema),
     asyncHandler(componentController.getComponentById)
 );
@@ -142,7 +142,7 @@ router.get(
 router.get(
     '/',
     authMiddleware,
-    roleMiddleware,
+    // roleMiddleware,
     asyncHandler(componentController.getAllComponents)
 );
 
@@ -203,7 +203,7 @@ router.get(
 router.put(
     '/:componentId',
     authMiddleware,
-    roleMiddleware,
+    // roleMiddleware,
     validateMiddleware(componentIdSchema),
     validateMiddleware(updateComponentSchema),
     asyncHandler(componentController.updateComponent)
@@ -240,7 +240,7 @@ router.put(
 router.delete(
     '/:componentId',
     authMiddleware,
-    roleMiddleware,
+    // roleMiddleware,
     validateMiddleware(componentIdSchema),
     asyncHandler(componentController.deleteComponent)
 );
