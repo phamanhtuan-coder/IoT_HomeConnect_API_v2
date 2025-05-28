@@ -131,7 +131,6 @@ import firmwareUpdateHistoryRoutes from "./firmware-update-history.routes";
 import componentRoutes from "./component.routes";
 import templateComponentRoutes from "./template-component.routes";
 import deviceTemplateRoutes from "./device-template.routes";
-import productionComponentsRoutes from "./production-components.routes";
 import productionTrackingRoutes from "./production-tracking.routes";
 import productionBatchesRoutes from "./production-batches.routes";
 
@@ -158,7 +157,6 @@ router.use('/firmware-update-history', firmwareUpdateHistoryRoutes);
 router.use('/component',componentRoutes)
 router.use('/template-components', templateComponentRoutes);
 router.use('/device-templates', deviceTemplateRoutes);
-router.use('/production-components', productionComponentsRoutes);
 router.use('/production-tracking', productionTrackingRoutes);
 router.use('/production-batches', productionBatchesRoutes);
 
