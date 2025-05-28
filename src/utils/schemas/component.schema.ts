@@ -4,7 +4,6 @@ export const componentSchema = z.object({
     body: z.object({
         name: z.string().min(1, 'Component name is required').max(100),
         supplier: z.string().max(100).optional(),
-        quantity_in_stock: z.number().int().min(0, 'Quantity must be non-negative').optional(),
         unit_cost: z.number().min(0, 'Unit cost must be non-negative').optional(),
     }),
 });
@@ -21,7 +20,6 @@ export const updateComponentSchema = z.object({
     body: z.object({
         name: z.string().min(1, 'Component name is required').max(100).optional(),
         supplier: z.string().max(100).optional().nullable(),
-        quantity_in_stock: z.number().int().min(0, 'Quantity must be non-negative').optional(),
         unit_cost: z.number().min(0, 'Unit cost must be non-negative').optional(),
     }),
 });

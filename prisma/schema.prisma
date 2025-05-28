@@ -230,8 +230,8 @@ model components {
   component_id          Int                     @id @default(autoincrement())
   name                  String                  @db.VarChar(100)
   supplier              String?                 @db.VarChar(100)
-  quantity_in_stock     Int?                    @default(0)
   unit_cost             Decimal?                @db.Decimal(10, 2)
+  status                Boolean?                @default(false)
   created_at            DateTime?               @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at            DateTime?               @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted            Boolean?                @default(false)
@@ -321,7 +321,8 @@ model device_templates {
   device_type_id      Int?
   name                String                @db.VarChar(100)
   device_template_note String?              @db.VarChar(500)
-  status              Boolean?              @default(false)
+  production_cost     Float?                @default(0)
+  status              String?               @db.VarChar(20) @default("pending")
   created_by          String?               @db.VarChar(32)
   created_at          DateTime?             @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at          DateTime?             @default(dbgenerated("(now())")) @db.DateTime(0)
@@ -343,7 +344,7 @@ model devices {
   serial_number           String                    @unique(map: "serial_number") @db.VarChar(50)
   template_id             Int?
   space_id                Int?
-  account_id              String?                  @db.VarChar(32)
+  account_id              String?                   @db.VarChar(32)
   group_id                Int?
   hub_id                  String?                   @db.VarChar(50)
   firmware_id             Int?
@@ -360,6 +361,7 @@ model devices {
   created_at              DateTime?                 @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at              DateTime?                 @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted              Boolean?                  @default(false)
+  production_tracking_id  Int?                      // Add this new field for referencing production_tracking
   alerts                  alerts[]
   device_templates        device_templates?         @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_1")
   spaces                  spaces?                   @relation(fields: [space_id], references: [space_id], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_2")
@@ -368,10 +370,10 @@ model devices {
   devices                 devices?                  @relation("devicesTodevices", fields: [hub_id], references: [serial_number], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_5")
   other_devices           devices[]                 @relation("devicesTodevices")
   firmware                firmware?                 @relation(fields: [firmware_id], references: [firmware_id], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_6")
+  production_tracking     production_tracking?      @relation(fields: [production_tracking_id], references: [production_id], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_7")
   firmware_update_history firmware_update_history[]
   hourly_values           hourly_values[]
   ownership_history       ownership_history[]
-  production_tracking     production_tracking[]
   share_requests          share_requests[]
   shared_permissions      shared_permissions[]
   tickets                 tickets[]
@@ -383,8 +385,8 @@ model devices {
   @@index([hub_id], map: "hub_id")
   @@index([space_id], map: "space_id")
   @@index([template_id], map: "template_id")
+  @@index([production_tracking_id], map: "production_tracking_id")
 }
-
 model employee {
   id                               String             @id @db.VarChar(32)
   surname                          String?            @db.VarChar(500)
@@ -793,10 +795,9 @@ model production_tracking {
   updated_at            DateTime                @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted            Boolean                 @default(false)
   state_logs            Json?                   @db.Json
-  devices               devices?                @relation(fields: [device_serial], references: [serial_number], onDelete: NoAction, onUpdate: NoAction, map: "production_tracking_ibfk_2")
   production_batches    production_batches?     @relation(fields: [production_batch_id], references: [production_batch_id], onDelete: NoAction, onUpdate: NoAction, map: "production_tracking_ibfk_1")
+  devices               devices[]               // Change from relation to devices array
 
-  @@index([device_serial], map: "device_serial")
   @@index([production_batch_id], map: "production_batch_id")
 }
 
