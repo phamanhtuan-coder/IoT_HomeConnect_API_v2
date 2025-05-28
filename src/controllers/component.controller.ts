@@ -101,8 +101,8 @@ class ComponentController {
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
-            const { componentId } = req.params;
-            await this.componentService.deleteComponent(parseInt(componentId));
+            const { component_id } = req.params;
+            await this.componentService.deleteComponent(parseInt(component_id));
             res.status(204).send();
         } catch (error) {
             next(error);
