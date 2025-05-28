@@ -9,12 +9,13 @@ export class ProductionTrackingService {
         this.prisma = new PrismaClient();
     }
 
-    async getProductionTrackingByStages() {
+    async getProductionTrackingByProductionBatchId(production_batch_id: string) {
         try {
             // Lấy tất cả production tracking records
             const productions = await this.prisma.production_tracking.findMany({
                 where: { 
-                    is_deleted: false 
+                    is_deleted: false,
+                    production_batch_id: production_batch_id
                 },
                 select: {
                     production_id: true,
