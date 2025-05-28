@@ -1,3 +1,30 @@
+# Môi trường phát triển
+
+## Cài đặt
+
+1. Cài đặt các dependencies sử dụng pnpm:
+
+```bash
+pnpm install
+```
+
+## Chạy ứng dụng
+
+### Chế độ phát triển (với nodemon)
+
+```bash
+pnpm dev
+```
+
+Ứng dụng sẽ tự động khởi động lại khi có thay đổi trong mã nguồn.
+
+### Chế độ production
+
+```bash
+pnpm build
+pnpm start
+```
+
 # Cấu trúc dự án
 ### 📁 `src/`
 Thư mục gốc chứa toàn bộ mã nguồn của ứng dụng backend.
@@ -225,4 +252,3 @@ version: 1.2.3+45 # Ví dụ: phiên bản 1.2.3, build số 45
 git tag -a v1.2.3 -m "Version 1.2.3"
 git push origin v1.2.3
 ```
-
