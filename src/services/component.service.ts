@@ -28,10 +28,9 @@ class ComponentService {
     async createComponent(input: {
         name: string;
         supplier?: string;
-        quantity_in_stock?: number;
         unit_cost?: number;
     }): Promise<Component> {
-        const { name, supplier, quantity_in_stock, unit_cost } = input;
+        const { name, supplier, unit_cost } = input;
 
         const existingComponent = await this.prisma.components.findFirst({
             where: { name, is_deleted: false },
@@ -44,7 +43,6 @@ class ComponentService {
             data: {
                 name,
                 supplier,
-                quantity_in_stock,
                 unit_cost,
             },
         });
@@ -87,7 +85,6 @@ class ComponentService {
      * @param {Object} input - Dữ liệu cập nhật.
      * @param {string} [input.name] - Tên mới của thành phần (tùy chọn).
      * @param {string|null} [input.supplier] - Nhà cung cấp mới (tùy chọn).
-     * @param {number} [input.quantity_in_stock] - Số lượng tồn kho mới (tùy chọn).
      * @param {number} [input.unit_cost] - Giá mỗi đơn vị mới (tùy chọn).
      * @returns {Promise<Component>} Thành phần sau khi được cập nhật.
      * @throws {Error} Nếu không tìm thấy thành phần hoặc tên đã tồn tại.
@@ -95,7 +92,6 @@ class ComponentService {
     async updateComponent(componentId: number, input: {
         name?: string;
         supplier?: string | null;
-        quantity_in_stock?: number;
         unit_cost?: number;
     }): Promise<Component> {
         const component = await this.prisma.components.findUnique({
@@ -119,7 +115,6 @@ class ComponentService {
             data: {
                 name: input.name,
                 supplier: input.supplier,
-                quantity_in_stock: input.quantity_in_stock,
                 unit_cost: input.unit_cost,
                 updated_at: new Date(),
             },
@@ -158,7 +153,6 @@ class ComponentService {
             component_id: component.component_id,
             name: component.name,
             supplier: component.supplier,
-            quantity_in_stock: component.quantity_in_stock,
             unit_cost: component.unit_cost,
             created_at: component.created_at,
             updated_at: component.updated_at,
