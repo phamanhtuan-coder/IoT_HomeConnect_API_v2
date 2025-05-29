@@ -2,7 +2,9 @@ export enum StatusSerialStage {
     PENDING = 'pending',
     PENDING_ARRIVAL = 'pending_arrival',
     IN_PROGRESS = 'in_progress',
+    FIRMWARE_UPLOAD = 'firmware_upload',
     COMPLETED = 'completed',
+    PENDING_PACKAGING = 'pending_packaging',
     FIXING = 'fixing',
     FAILED = 'failed'
 }
@@ -10,8 +12,6 @@ export enum StatusSerialStage {
 export enum StageSerialStage {
     PENDING = 'pending',
     ASSEMBLY = 'assembly',
-    LABELLING = 'labelling',
-    FIRMWARE_UPLOAD = 'firmware_upload',
     QC = 'qc',
     FIXING = 'fixing',
     COMPLETED = 'completed',
@@ -130,4 +130,9 @@ export interface ProductionTrackingCancelInput {
     employee_id: string;
     device_serial: string;
     note?: string;
+}
+
+export interface ProductionTrackingSerialUpdateInput {
+    device_serial: string;
+    stage: string;
 }

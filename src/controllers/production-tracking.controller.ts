@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ProductionTrackingService } from '../services/production-tracking.service';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { ProductionTrackingCancelInput, ProductionTrackingNextStageInput, ProductionTrackingRejectForQCInput, ProductionTrackingResponsePhaseChangeInput } from '../types/production-tracking';
+import { ProductionTrackingCancelInput, ProductionTrackingNextStageInput, ProductionTrackingRejectForQCInput, ProductionTrackingResponsePhaseChangeInput, ProductionTrackingSerialUpdateInput } from '../types/production-tracking';
 
 export class ProductionTrackingController {
     private productionTrackingService: ProductionTrackingService;
@@ -10,42 +10,34 @@ export class ProductionTrackingController {
         this.productionTrackingService = new ProductionTrackingService();
     }
 
-    async getProductionTrackingByProductionBatchId(req: Request, res: Response, next: NextFunction) {
+    getProductionTrackingByProductionBatchId = async(req: Request, res: Response, next: NextFunction) => {
         const result = await this.productionTrackingService.getProductionTrackingByProductionBatchId(req.params.production_batch_id);
 
         res.status(200).json(result);
     }
 
-    async RequestPhaseChange(req: Request, res: Response, next: NextFunction) {
-        const result = await this.productionTrackingService.RequestPhaseChange(req.body as ProductionTrackingNextStageInput);
-
-        if (result.success) {
-            res.status(200).json(result);
-        } else {
-            if (result.errorCode === ErrorCodes.UNAUTHORIZED) {
-                res.status(403).json(result);
-            } else {
-                res.status(400).json(result);
-            }
-        }
-    }
-
-    async ResponsePhaseChange(req: Request, res: Response, next: NextFunction) {
+    ResponsePhaseChange = async(req: Request, res: Response, next: NextFunction) => {
         const result = await this.productionTrackingService.ResponsePhaseChange(req.body as ProductionTrackingResponsePhaseChangeInput);
 
         res.status(200).json(result);
     }
 
-    async RejectProductionSerial(req: Request, res: Response, next: NextFunction) {
+    RejectProductionSerial = async(req: Request, res: Response, next: NextFunction) => {
         const result = await this.productionTrackingService.RejectProductionSerial(req.body as ProductionTrackingRejectForQCInput);
 
         res.status(200).json(result);
     }
 
-    async ResponseCancelProductionSerial(req: Request, res: Response, next: NextFunction) {
+    ResponseCancelProductionSerial = async(req: Request, res: Response, next: NextFunction) => {
         const result = await this.productionTrackingService.ResponseCancelProductionSerial(req.body as ProductionTrackingCancelInput);
-        
+
         res.status(200).json(result);
     }
-}
 
+    UpdateProductionSerial = async (req: Request, res: Response, next: NextFunction) => {
+        console.log("-----------");
+        const result = await this.productionTrackingService.UpdateProductionSerial(req.body as ProductionTrackingSerialUpdateInput, req.body.employee_id);
+
+        res.status(200).json(result);
+    }   
+}
