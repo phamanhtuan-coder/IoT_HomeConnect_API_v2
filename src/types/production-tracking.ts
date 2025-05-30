@@ -6,11 +6,12 @@ export enum StatusSerialStage {
     FIRMWARE_UPLOADED = 'firmware_uploaded', // Firmwware được tải lên
     FIRMWARE_UPLOADING = 'firmware_uploading', // Firmwware đang được tải lên
     FIRMWARE_UPLOAD = 'firmware_upload', // Serial Vừa được chuyển sang giai đoạn filmware
+    FIRMWARE_FAILED = 'firmware_failed', // Tải firmware thất bại, cần sửa lại sản phẩm
     TESTING = 'testing', // Serial đang được kiểm tra
     FAILED = 'failed', // Sản phẩm không đạt yêu cầu
     FIXING_LABEL = 'fixing_label', // Nhãn đang được sửa
     FIXING_PRODUCT = 'fixing_product', // Sản phẩm đang được sửa
-    FIXING_ALL = 'fixing_all' // Tất cả đang được sửa
+    FIXING_ALL = 'fixing_all', // Tất cả đang được sửa
 }
 
 export enum StageSerialStage {

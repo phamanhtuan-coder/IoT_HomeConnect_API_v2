@@ -93,19 +93,18 @@ export class ProductionTrackingService {
                     state_logs: true
                 }
             });
-    
+
             // Khởi tạo object để group theo stage
             const result: ProductionTrackingResponse = {
                 pending: [],
                 assembly: [],
-                labeling: [],
-                firmware_upload: [],
                 qc: [],
                 completed: []
             };
     
             // Map dữ liệu theo yêu cầu
             productions.forEach(production => {
+                console.log(production);
                 const serialData: SerialData = {
                     serial: production.device_serial || '',
                     status: production.status.toLowerCase(),
@@ -232,31 +231,26 @@ export class ProductionTrackingService {
                 started_at: new Date()
             };
 
-            await tx.production_tracking.updateMany({
-                where: { production_id: { in: production_list.map(p => p.production_id) } },
-                data: {
-                    status: newStatus, 
-                    state_logs: [...production_list.map(p => p.state_logs), newStageLog]
-                }
-            });
-            
             for (const production of production_list) {
-                let stageLogList = [
-                    ...(production.state_logs as any[]),
-                    {
+                const currentLogs = production.state_logs as any[];
+                const updatedLogs = [...currentLogs, newStageLog];
+    
+                await tx.production_tracking.update({
+                    where: { production_id: production.production_id },
+                    data: {
                         stage: StageSerialStage.ASSEMBLY,
                         status: newStatus,
-                        employee_id: employeeId,
-                        started_at: new Date()
+                        state_logs: updatedLogs
                     }
-                ]
-                
+                });
+    
+                // Gửi SSE update
                 sseController.sendProductionUpdate({
                     type: 'update_status',
                     device_serial: production.device_serial || '',
                     stage: StageSerialStage.ASSEMBLY,
                     status: newStatus || '',
-                    stage_logs: stageLogList
+                    stage_logs: updatedLogs
                 });
             }
         });
@@ -357,6 +351,31 @@ export class ProductionTrackingService {
                     device_serial: device_serial,
                     stage: StageSerialStage.QC,
                     status: StatusSerialStage.FIRMWARE_UPLOADED,
+                    stage_logs: stageLogList
+                });
+            } else if (production.status === StatusSerialStage.FIRMWARE_FAILED) {
+                stageLog = {
+                    ...stageLog,
+                    approved_by: employeeId,
+                    completed_at: new Date()
+                };
+                stageLogList[stageLogList.length - 1] = stageLog;
+
+                let newLog = {
+                    stage: StageSerialStage.ASSEMBLY,
+                    status: StatusSerialStage.FIXING_PRODUCT,
+                    employee_id: employeeId,
+                    started_at: new Date()
+                };
+                stageLogList.push(newLog);
+
+                newStage = StageSerialStage.ASSEMBLY;
+                
+                sseController.sendProductionUpdate({
+                    type: 'update_stage',
+                    device_serial: device_serial,
+                    stage: StageSerialStage.ASSEMBLY,
+                    status: StatusSerialStage.FIXING_PRODUCT,
                     stage_logs: stageLogList
                 });
             } else {
