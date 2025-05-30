@@ -1,353 +1,232 @@
+// src/services/batch.service.ts
 import { PrismaClient } from '@prisma/client';
-import { ErrorCodes, throwError, AppError } from '../utils/errors';
-import { ProductionBatch, ProductionBatchCreateInput, ProductionBatchUpdateInput } from '../types/production-batches';
+import { BatchCreateInput, BatchUpdateInput, ProductionBatch } from '../types/planning';
+import { ErrorCodes, throwError } from '../utils/errors';
+import { generateBatchId } from '../utils/helpers';
+import { PlanningService } from './planning.service';
+import { calculatePlanningStatus } from '../utils/helpers';
 
-export class ProductionBatchesService {
+export class BatchService {
     private prisma: PrismaClient;
 
     constructor() {
         this.prisma = new PrismaClient();
     }
 
-    async createProductionBatch(input: ProductionBatchCreateInput, employeeId: string): Promise<ProductionBatch> {
-        try {
-            const { template_id, quantity } = input;
-            const planning_temp = await this.prisma.planning.findFirst({
-                where: {
-                    is_deleted: false
-                }
-            });
-
-            // Verify template exists and is not deleted
-            const deviceTemplate = await this.prisma.device_templates.findFirst({
-                where: {
-                    template_id,
-                    is_deleted: false
-                },
-                include: {
-                    categories: true,    // Include related category info
-                    template_components: true  // Include template components for validation
-                }
-            });
-
-            if (!deviceTemplate) {
-                throw throwError(ErrorCodes.NOT_FOUND, 'Device template not found or has been deleted');
+    async createBatch(planningId: string, data: BatchCreateInput, employeeId: string): Promise<ProductionBatch> {
+        const planning = await this.prisma.planning.findFirst({
+            where: {
+                planning_id: planningId,
+                is_deleted: false
             }
+        });
 
-            // Generate production batch ID
-            const date = new Date();
-            const batchPrefix = 'PB';
-            const yearMonth = date.getFullYear().toString().slice(-2) + (date.getMonth() + 1).toString().padStart(2, '0');
-
-            // Get current sequence for the month
-            const lastBatch = await this.prisma.production_batches.findFirst({
-                where: {
-                    production_batch_id: {
-                        startsWith: `${batchPrefix}${yearMonth}`,
-                    },
-                },
-                orderBy: {
-                    batch_id: 'desc',
-                },
-            });
-
-            let sequence = 1;
-            if (lastBatch) {
-                const lastSequence = parseInt(lastBatch.production_batch_id.slice(-4));
-                sequence = lastSequence + 1;
-            }
-
-            const productionBatchId = `${batchPrefix}${yearMonth}${sequence.toString().padStart(4, '0')}`;
-
-            // Create production batch
-            const productionBatch = await this.prisma.production_batches.create({
-                data: {
-                    production_batch_id: productionBatchId,
-                    batch_id: sequence,
-                    planning: {
-                        connect: {
-                            planning_id: planning_temp!.planning_id
-                        }
-                    },
-                    device_templates: {
-                        connect: {
-                            template_id: deviceTemplate.template_id
-                        }
-                    },
-                    quantity,
-                    status: 'pending',
-                    created_at: new Date(),
-                    updated_at: new Date(),
-                },
-                include: {
-                    device_templates: true,
-                    production_tracking: true,
-                    planning: true,
-                },
-            });
-
-            return this.mapPrismaProductionBatchToProductionBatch(productionBatch);
-        } catch (error) {
-            if (error instanceof AppError) {
-                throw error;
-            }
-            throw throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to create production batch');
+        if (!planning) {
+            throwError(ErrorCodes.NOT_FOUND, 'Planning not found');
         }
-    }
-
-    async getProductionBatchById(batchId: number): Promise<ProductionBatch> {
-        try {
-            const productionBatch = await this.prisma.production_batches.findFirst({
-                where: { batch_id: batchId, is_deleted: false },
-                include: {
-                    device_templates: true,
-                    production_tracking: true,
-                    planning: true,
-                },
-            });
-
-            if (!productionBatch) {
-                throw throwError(ErrorCodes.NOT_FOUND, 'Production batch not found');
-            }
-
-            return this.mapPrismaProductionBatchToProductionBatch(productionBatch);
-        } catch (error) {
-            if (error instanceof AppError) {
-                throw error;
-            }
-            throw throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to get production batch');
+       // không phải pending thì ko tạo được batch
+        if (planning!.status!== 'pending') {
+            throwError(ErrorCodes.BAD_REQUEST, 'Cannot create batch for non-pending planning');
         }
-    }
 
-    async getAllProductionBatches(): Promise<ProductionBatch[]> {
-        try {
-            const productionBatches = await this.prisma.production_batches.findMany({
-                where: { is_deleted: false },
-                include: {
-                    device_templates: true,
-                    production_tracking: true,
-                },
-                orderBy: { created_at: 'desc' },
-            });
-
-            return productionBatches.map(batch => this.mapPrismaProductionBatchToProductionBatch(batch));
-        } catch (error) {
-            if (error instanceof AppError) {
-                throw error;
+        // Kiểm tra template có tồn tại không
+        const template = await this.prisma.device_templates.findFirst({
+            where: {
+                template_id: data.template_id,
+                is_deleted: false
+            },
+            include: {
+                firmware: true
             }
-            throw throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to get production batches');
+        });
+
+        if (!template) {
+            throwError(ErrorCodes.NOT_FOUND, 'Device template not found');
         }
-    }
 
-    async updateProductionBatch(
-        batchId: number,
-        input: Partial<ProductionBatchUpdateInput>,
-        employeeId: string
-    ): Promise<ProductionBatch> {
-        try {
-            const productionBatch = await this.prisma.production_batches.findFirst({
-                where: {
-                    batch_id: batchId,
-                    is_deleted: false
-                },
-                include: {
-                    device_templates: true
-                }
-            });
-
-            if (!productionBatch) {
-                throw throwError(ErrorCodes.NOT_FOUND, 'Production batch not found');
+        // Nếu có firmware_id, kiểm tra firmware có tồn tại và thuộc template không
+        if (data.firmware_id) {
+            const firmwareExists = template!.firmware?.some(f => f.firmware_id === data.firmware_id);
+            if (!firmwareExists) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Firmware not found or not associated with this template');
             }
+        }
 
-            let updateData: any = { ...input };
-
-            // Handle status transitions
-            if (input.status) {
-                switch (input.status) {
-                    case 'approved':
-                        if (productionBatch.status !== 'pending') {
-                            throw throwError(ErrorCodes.BAD_REQUEST, 'Only pending batches can be approved');
+        // Tạo batch mới
+        const batch = await this.prisma.production_batches.create({
+            data: {
+                planning_id: planningId,
+                production_batch_id: generateBatchId(),
+                template_id: data.template_id,
+                quantity: data.quantity,
+                batch_note: data.batch_note,
+                status: 'pending',
+                logs: {
+                    created: {
+                        timestamp: new Date().toISOString(),
+                        employee_id: employeeId,
+                        action: 'created',
+                        details: {
+                            ...JSON.parse(JSON.stringify(data)),
+                            firmware_id: data.firmware_id
                         }
-                        updateData = {
-                            ...updateData,
-                            account_production_batches_approved_byToaccount: {
-                                connect: {
-                                    account_id: employeeId
-                                }
-                            },
-                            approved_at: new Date(),
-                        };
-                        break;
-                    case 'rejected':
-                        if (productionBatch.status !== 'pending') {
-                            throw throwError(ErrorCodes.BAD_REQUEST, 'Only pending batches can be rejected');
-                        }
-                        updateData = {
-                            ...updateData,
-                            account_production_batches_approved_byToaccount: {
-                                connect: {
-                                    account_id: employeeId
-                                }
-                            },
-                            approved_at: new Date(),
-                        };
-                        break;
-                    case 'in_progress':
-                        if (productionBatch.status !== 'approved') {
-                            throw throwError(ErrorCodes.BAD_REQUEST, 'Only approved batches can be set to in progress');
-                        }
-                        break;
-                    case 'completed':
-                        if (productionBatch.status !== 'in_progress') {
-                            throw throwError(ErrorCodes.BAD_REQUEST, 'Only in-progress batches can be completed');
-                        }
-                        break;
-                }
-            }
-
-            // Verify template if changing
-            if (input.template_id) {
-                const deviceTemplate = await this.prisma.device_templates.findFirst({
-                    where: {
-                        template_id: input.template_id,
-                        is_deleted: false
-                    },
+                    }
+                } as any
+            },
+            include: {
+                device_templates: {
                     include: {
-                        template_components: true
+                        firmware: {
+                            select: {
+                                firmware_id: true,
+                                name: true,
+                                version: true
+                            }
+                        }
                     }
-                });
-
-                if (!deviceTemplate) {
-                    throw throwError(ErrorCodes.NOT_FOUND, 'Device template not found or has been deleted');
                 }
+            }
+        });
 
-                // Add template connection to update data
-                updateData = {
-                    ...updateData,
-                    device_templates: {
-                        connect: {
-                            template_id: deviceTemplate.template_id
+        // Tạo production_tracking records cho từng sản phẩm trong lô
+        const trackingPromises = Array.from({ length: data.quantity }, async (_, index) => {
+            // Tạo từ tắt từ template name
+            const templateName = template!.name;
+            const shortName = templateName
+                .split(' ')
+                .map(word => word[0])
+                .join('')
+                .toUpperCase();
+
+            // Tạo device_serial theo format: {SHORT_NAME}{BATCH_ID}{SEQUENCE_NUMBER}
+            // Ví dụ: SL-BATCH1234-001
+            const sequenceNumber = (index + 1).toString().padStart(3, '0');
+            const deviceSerial = `${shortName}-${batch.production_batch_id}-${sequenceNumber}`;
+
+            return this.prisma.production_tracking.create({
+                data: {
+                    production_batch_id: batch.production_batch_id,
+                    device_serial: deviceSerial,
+                    stage: 'pending',
+                    status: 'pending'
+                }
+            });
+        });
+
+        // Thực hiện tạo tất cả production_tracking records
+        await Promise.all(trackingPromises);
+
+        // Lấy lại batch với thông tin mới nhất bao gồm production_tracking
+        const finalBatch = await this.prisma.production_batches.findFirst({
+            where: {
+                production_batch_id: batch.production_batch_id,
+                is_deleted: false
+            },
+            include: {
+                device_templates: {
+                    include: {
+                        firmware: {
+                            select: {
+                                firmware_id: true,
+                                name: true,
+                                version: true
+                            }
                         }
                     }
-                };
+                },
+                production_tracking: true
             }
+        });
 
-            // Get planning_id and production_batch_id from the found batch
-            const planningId = productionBatch.planning_id;
-            const productionBatchId = productionBatch.production_batch_id;
+        return finalBatch as ProductionBatch;
+    }
 
-            const updatedBatch = await this.prisma.production_batches.update({
-                where: { 
-                    batch_id: batchId,
-                    planning_id: planningId,
-                    production_batch_id: productionBatchId
-                },
-                data: {
-                    ...updateData,
-                    updated_at: new Date(),
-                },
-                include: {
-                    device_templates: {
-                        include: {
-                            template_components: true
+    async updateBatchStatus(batchId: string, data: BatchUpdateInput, employeeId: string): Promise<ProductionBatch> {
+        // 1. Tìm batch và kiểm tra
+        const batch = await this.prisma.production_batches.findFirst({
+            where: {
+                production_batch_id: batchId,
+                is_deleted: false
+            },
+            include: {
+                planning: true
+            }
+        });
+
+        if (!batch) {
+            throwError(ErrorCodes.NOT_FOUND, 'Batch not found');
+        }
+
+        // 2. Cập nhật status của batch
+        const updatedBatch = await this.prisma.production_batches.update({
+            where: { production_batch_id: batchId },
+            data: {
+                status: data.status,
+                batch_note: data.batch_note,
+                logs: {
+                    ...(batch?.logs as Record<string, any> || {}),
+                    [data.status]: {
+                        timestamp: new Date(),
+                        employee_id: employeeId,
+                        action: data.status,
+                        notes: data.batch_note
+                    }
+                }
+            }
+        });
+
+        // 3. Lấy tất cả batches của planning để tính toán status mới
+        const allBatches = await this.prisma.production_batches.findMany({
+            where: {
+                planning_id: batch!.planning_id,
+                is_deleted: false
+            }
+        });
+
+        // 4. Tính toán status mới cho planning
+        const newPlanningStatus = calculatePlanningStatus(allBatches);
+
+        // 5. Cập nhật status của planning
+        await this.prisma.planning.update({
+            where: { planning_id: batch!.planning_id },
+            data: { status: newPlanningStatus }
+        });
+
+        // 6. Lấy lại thông tin batch với thông tin mới nhất
+        const finalBatch = await this.prisma.production_batches.findFirst({
+            where: {
+                production_batch_id: batchId,
+                is_deleted: false
+            },
+            include: {
+                device_templates: true,
+                planning: true
+            }
+        });
+
+        return finalBatch as ProductionBatch;
+    }
+
+    async getBatchesByPlanningId(planningId: string): Promise<ProductionBatch[]> {
+        return this.prisma.production_batches.findMany({
+            where: {
+                planning_id: planningId,
+                is_deleted: false
+            },
+            include: {
+                device_templates: {
+                    include: {
+                        firmware: {
+                            select: {
+                                firmware_id: true,
+                                name: true,
+                                version: true
+                            }
                         }
-                    },
-                    production_tracking: true,
-                    planning: true,
-                },
-            });
-
-            return this.mapPrismaProductionBatchToProductionBatch(updatedBatch);
-        } catch (error) {
-            if (error instanceof AppError) {
-                throw error;
-            }
-            throw throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to update production batch');
-        }
-    }
-
-    async deleteProductionBatch(batchId: number): Promise<void> {
-        try {
-            const productionBatch = await this.prisma.production_batches.findFirst({
-                where: { batch_id: batchId, is_deleted: false },
-            });
-
-            if (!productionBatch) {
-                throw throwError(ErrorCodes.NOT_FOUND, 'Production batch not found');
-            }
-
-            if (productionBatch.status !== 'pending' && productionBatch.status !== 'rejected') {
-                throw throwError(ErrorCodes.BAD_REQUEST, 'Only pending or rejected batches can be deleted');
-            }
-
-            // Get the planning_id from the production batch
-            const planningId = productionBatch.planning_id;
-            const productionBatchId = productionBatch.production_batch_id;
-
-            // Check if there are any related production tracking records
-            const hasTrackingRecords = await this.prisma.production_tracking.findFirst({
-                where: {
-                    production_batch_id: productionBatchId,
-                    is_deleted: false,
-                },
-            });
-
-            if (hasTrackingRecords) {
-                throw throwError(ErrorCodes.BAD_REQUEST, 'Cannot delete batch with existing production tracking records');
-            }
-
-            await this.prisma.production_batches.update({
-                where: { 
-                    batch_id: batchId,
-                    planning_id: planningId,
-                    production_batch_id: productionBatchId
-                },
-                data: {
-                    is_deleted: true,
-                    updated_at: new Date(),
-                },
-            });
-        } catch (error) {
-            if (error instanceof AppError) {
-                throw error;
-            }
-            throw throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to delete production batch');
-        }
-    }
-
-    private mapPrismaProductionBatchToProductionBatch(pb: any): {
-        batch_id: any;
-        production_batch_id: any;
-        planning_id: any;
-        template_id: any;
-        quantity: any;
-        status: any;
-        created_by: any;
-        created_at: any;
-        approved_by: any;
-        approved_at: any;
-        updated_at: any;
-        is_deleted: any;
-        device_template: { template_id: any; name: any; components: any } | null
-    } {
-        return {
-            batch_id: pb.batch_id,
-            production_batch_id: pb.production_batch_id,
-            planning_id: pb.planning_id,
-            template_id: pb.device_templates?.template_id ?? pb.template_id,
-            quantity: pb.quantity,
-            status: pb.status,
-            created_by: pb.created_by,
-            created_at: pb.created_at,
-            approved_by: pb.approved_by,
-            approved_at: pb.approved_at,
-            updated_at: pb.updated_at,
-            is_deleted: pb.is_deleted,
-            device_template: pb.device_templates ? {
-                template_id: pb.device_templates.template_id,
-                name: pb.device_templates.name,
-                components: pb.device_templates.template_components
-            } : null
-        };
+                    }
+                }
+            },
+            orderBy: { created_at: 'asc' }
+        });
     }
 }
