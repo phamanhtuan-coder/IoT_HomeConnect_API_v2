@@ -41,8 +41,16 @@ export const initApp = (): { app: Application; io: Server; httpServer: any } => 
         allowedHeaders: '*',
     }));
 
+    app.use(cors({
+        origin: '*', // Cho phép tất cả origin (có thể giới hạn cụ thể nếu cần)
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        // allowedHeaders: ['Content-Type', 'Authorization'],
+        allowedHeaders: '*',
+    }));
+    
     // Khởi tạo routes API
     app.use('/api', routes);
+
 
     // Cấu hình Swagger sau khi đã có routes
     configureSwagger(app);

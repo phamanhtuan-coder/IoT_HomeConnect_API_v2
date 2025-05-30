@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ProductionTrackingService } from '../services/production-tracking.service';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { ProductionTrackingInput } from '../types/production-tracking';
+import { ProductionTrackingApproveInput, ProductionTrackingCancelInput, ProductionTrackingNextStageInput, ProductionTrackingRejectForQCInput, ProductionTrackingResponsePhaseChangeInput, ProductionTrackingSerialUpdateInput } from '../types/production-tracking';
 
 export class ProductionTrackingController {
     private productionTrackingService: ProductionTrackingService;
@@ -10,80 +10,33 @@ export class ProductionTrackingController {
         this.productionTrackingService = new ProductionTrackingService();
     }
 
-    createProductionTracking = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = req.user?.employeeId;
-        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+    ApproveProductionSerial = async (req: Request, res: Response, next: NextFunction) => {
+        const result = await this.productionTrackingService.ApproveProductionSerial(req.body as ProductionTrackingApproveInput, req.body.employeeId);
 
-        try {
-            const data = req.body as ProductionTrackingInput;
-            const productionTracking = await this.productionTrackingService.createProductionTracking({
-                ...data,
-                employee_id: employeeId
-            });
-            res.status(201).json(productionTracking);
-        } catch (error) {
-            next(error);
-        }
-    };
+        res.status(200).json(result);
+    }
 
-    getProductionTrackingById = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = req.user?.employeeId;
-        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+    getProductionTrackingByProductionBatchId = async(req: Request, res: Response, next: NextFunction) => {
+        const result = await this.productionTrackingService.getProductionTrackingByProductionBatchId(req.params.production_batch_id);
 
-        try {
-            const productionId = parseInt(req.params.productionId);
-            const productionTracking = await this.productionTrackingService.getProductionTrackingById(productionId);
-            res.json(productionTracking);
-        } catch (error) {
-            next(error);
-        }
-    };
+        res.status(200).json(result);
+    }
 
-    getProductionTrackingByBatchId = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = req.user?.employeeId;
-        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+    RejectProductionSerial = async(req: Request, res: Response, next: NextFunction) => {
+        const result = await this.productionTrackingService.RejectProductionSerial(req.body as ProductionTrackingRejectForQCInput, req.body.employeeId);
 
-        try {
-            // Changed from parseInt to get the string value directly since production_batch_id is a string
-            const batchId = req.params.batchId;
-            const productionTrackings = await this.productionTrackingService.getProductionTrackingByBatchId(batchId);
-            res.json(productionTrackings);
-        } catch (error) {
-            next(error);
-        }
-    };
+        res.status(200).json(result);
+    }
 
-    updateProductionTracking = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = req.user?.employeeId;
-        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+    UpdateProductionSerial = async (req: Request, res: Response, next: NextFunction) => {
+        const result = await this.productionTrackingService.UpdateProductionSerial(req.body as ProductionTrackingSerialUpdateInput, req.body.employeeId);
 
-        try {
-            const productionId = parseInt(req.params.productionId);
-            const data = req.body;
-            const productionTracking = await this.productionTrackingService.updateProductionTracking(
-                productionId,
-                {
-                    ...data,
-                    employee_id: employeeId
-                }
-            );
-            res.json(productionTracking);
-        } catch (error) {
-            next(error);
-        }
-    };
+        res.status(200).json(result);
+    }   
 
-    deleteProductionTracking = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = req.user?.employeeId;
-        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+    CancelProductionSerial = async (req: Request, res: Response, next: NextFunction) => {
+        const result = await this.productionTrackingService.CancelProductionSerial(req.body as ProductionTrackingCancelInput, req.body.employeeId);
 
-        try {
-            const productionId = parseInt(req.params.productionId);
-            await this.productionTrackingService.deleteProductionTracking(productionId);
-            res.status(204).send();
-        } catch (error) {
-            next(error);
-        }
-    };
+        res.status(200).json(result);
+    }
 }
-
