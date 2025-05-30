@@ -21,33 +21,32 @@ router.get(
     productionTrackingController.getProductionTrackingByProductionBatchId
 );
 
+router.post(
+    '/approve-production-serial',
+    // authMiddleware,
+    // roleMiddleware,
+    productionTrackingController.ApproveProductionSerial
+);
 
 router.patch(
     '/update-serial',
-    authMiddleware,
+    // authMiddleware,
     // roleMiddleware,
     productionTrackingController.UpdateProductionSerial
 );
 
 router.patch(
-    '/response-phase-change',
-    authMiddleware,
-    // roleMiddleware,
-    productionTrackingController.ResponsePhaseChange
-);
-
-router.patch(
-    '/reject-production-serial',
-    authMiddleware,
+    '/reject-qc',
+    // authMiddleware,
     // roleMiddleware,
     productionTrackingController.RejectProductionSerial
 );
 
-router.delete(
+router.patch(
     '/cancel-production-serial',
-    authMiddleware,
+    // authMiddleware,
     // roleMiddleware,
-    productionTrackingController.ResponseCancelProductionSerial
+    productionTrackingController.CancelProductionSerial
 );
 
 

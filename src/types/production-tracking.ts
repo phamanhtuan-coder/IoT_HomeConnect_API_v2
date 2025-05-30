@@ -1,17 +1,22 @@
 export enum StatusSerialStage {
     PENDING = 'pending',
-    PENDING_ARRIVAL = 'pending_arrival',
     IN_PROGRESS = 'in_progress',
-    FIRMWARE_UPLOAD = 'firmware_upload',
     COMPLETED = 'completed',
     PENDING_PACKAGING = 'pending_packaging',
-    FIXING = 'fixing',
-    FAILED = 'failed'
+    FIRMWARE_UPLOADED = 'firmware_uploaded', // Firmwware được tải lên
+    FIRMWARE_UPLOADING = 'firmware_uploading', // Firmwware đang được tải lên
+    FIRMWARE_UPLOAD = 'firmware_upload', // Serial Vừa được chuyển sang giai đoạn filmware
+    TESTING = 'testing', // Serial đang được kiểm tra
+    FAILED = 'failed', // Sản phẩm không đạt yêu cầu
+    FIXING_LABEL = 'fixing_label', // Nhãn đang được sửa
+    FIXING_PRODUCT = 'fixing_product', // Sản phẩm đang được sửa
+    FIXING_ALL = 'fixing_all' // Tất cả đang được sửa
 }
 
 export enum StageSerialStage {
     PENDING = 'pending',
     ASSEMBLY = 'assembly',
+    FIRMWARE_UPLOAD = 'firmware_upload',
     QC = 'qc',
     FIXING = 'fixing',
     COMPLETED = 'completed',
@@ -66,7 +71,7 @@ export interface ProductionTrackingStageLog {
     employee_id: string;
     approved_by?: string;
     started_at?: Date;
-    completed_at: Date;
+    completed_at?: Date;
     note?: string; 
 }
 
@@ -98,9 +103,7 @@ export interface ProductionTrackingResponsePhaseChangeInput {
 }
 
 export interface ProductionTrackingRejectForQCInput {
-    production_id: number;
-    employee_id: string;
-    device_serial: string;
+    device_serials: string[];
     note?: string;
     reason?: string;
 }
@@ -126,13 +129,15 @@ export interface ProductionTrackingResponse {
 }
 
 export interface ProductionTrackingCancelInput {
-    production_id: number;
-    employee_id: string;
-    device_serial: string;
+    device_serials: string[];
     note?: string;
 }
 
 export interface ProductionTrackingSerialUpdateInput {
     device_serial: string;
     stage: string;
+}
+
+export interface ProductionTrackingApproveInput {
+    device_serials: string[];
 }
