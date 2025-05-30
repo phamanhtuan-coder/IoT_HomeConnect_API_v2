@@ -22,4 +22,5 @@ export interface DeviceTemplate {
     production_cost: number | null;
     device_template_note: string | null;
     components: [] | null;
+    firmware: [] | null;
 }

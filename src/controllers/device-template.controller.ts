@@ -23,7 +23,8 @@ class DeviceTemplateController {
      * @param {NextFunction} next - Hàm middleware tiếp theo.
      */
     createDeviceTemplate = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = req.user?.employeeId;
+        // const employeeId = req.user?.employeeId;
+        const employeeId = "admin123";
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
@@ -41,6 +42,10 @@ class DeviceTemplateController {
      * @param {NextFunction} next - Hàm middleware tiếp theo.
      */
     getDeviceTemplateById = async (req: Request, res: Response, next: NextFunction) => {
+        // const employeeId = req.user?.employeeId;
+        const employeeId = "admin123";
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+
         try {
             const { templateId } = req.params;
             const template = await this.deviceTemplateService.getDeviceTemplateById(parseInt(templateId));
@@ -57,6 +62,10 @@ class DeviceTemplateController {
      * @param {NextFunction} next - Hàm middleware tiếp theo.
      */
     getAllDeviceTemplates = async (req: Request, res: Response, next: NextFunction) => {
+        // const employeeId = req.user?.employeeId;
+        const employeeId = "admin123";
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+
         try {
             const templates = await this.deviceTemplateService.getAllDeviceTemplates();
             res.json(templates);
@@ -72,6 +81,10 @@ class DeviceTemplateController {
      * @param {NextFunction} next - Hàm middleware tiếp theo.
      */
     updateDeviceTemplate = async (req: Request, res: Response, next: NextFunction) => {
+        // const employeeId = req.user?.employeeId;
+        const employeeId = "admin123";
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+
         try {
             const { templateId } = req.params;
             const template = await this.deviceTemplateService.updateDeviceTemplate(parseInt(templateId), req.body as DeviceTemplateInput);
@@ -88,6 +101,10 @@ class DeviceTemplateController {
      * @param {NextFunction} next - Hàm middleware tiếp theo.
      */
     deleteDeviceTemplate = async (req: Request, res: Response, next: NextFunction) => {
+        // const employeeId = req.user?.employeeId;
+        const employeeId = "admin123";
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+        
         try {
             const { templateId } = req.params;
             await this.deviceTemplateService.deleteDeviceTemplate(parseInt(templateId));

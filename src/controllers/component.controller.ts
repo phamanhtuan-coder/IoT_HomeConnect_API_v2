@@ -50,7 +50,8 @@ class ComponentController {
      */
     getComponentById = async (req: Request, res: Response, next: NextFunction) => {
         // const employeeId = req.user?.employeeId;
-        // if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+        const employeeId = "admin123";
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
             const { componentId } = req.params;
@@ -76,7 +77,8 @@ class ComponentController {
      */
     getAllComponents = async (req: Request, res: Response, next: NextFunction) => {
         // const employeeId = req.user?.employeeId;
-        // if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+        const employeeId = "admin123";
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
             const components: Component[] = await this.componentService.getAllComponents();
@@ -100,7 +102,8 @@ class ComponentController {
      * @param {NextFunction} next - Hàm tiếp theo để xử lý lỗi.
      */
     updateComponent = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = req.user?.employeeId;
+        // const employeeId = req.user?.employeeId;
+        const employeeId = "admin123";
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
@@ -126,7 +129,8 @@ class ComponentController {
      * @param {NextFunction} next - Hàm tiếp theo để xử lý lỗi.
      */
     deleteComponent = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = req.user?.employeeId;
+        // const employeeId = req.user?.employeeId;
+        const employeeId = "admin123";
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {

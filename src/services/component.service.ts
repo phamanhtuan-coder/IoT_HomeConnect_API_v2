@@ -31,7 +31,7 @@ class ComponentService {
         unit_cost?: number;
         status?: boolean;
     }): Promise<Component> {
-        const { name, supplier, unit_cost } = input;
+        const { name, supplier, unit_cost, status } = input;
 
         const existingComponent = await this.prisma.components.findFirst({
             where: { name, is_deleted: false },
@@ -45,7 +45,7 @@ class ComponentService {
                 name,
                 supplier,
                 unit_cost,
-                status: true,
+                status,
             },
         });
 
@@ -95,6 +95,7 @@ class ComponentService {
         name?: string;
         supplier?: string | null;
         unit_cost?: number;
+        status?: boolean | null;
     }): Promise<Component> {
         const component = await this.prisma.components.findUnique({
             where: { component_id: componentId, is_deleted: false },
@@ -118,6 +119,7 @@ class ComponentService {
                 name: input.name,
                 supplier: input.supplier,
                 unit_cost: input.unit_cost,
+                status: input.status,
                 updated_at: new Date(),
             },
         });

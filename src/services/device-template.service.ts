@@ -83,11 +83,15 @@ class DeviceTemplateService {
                             },
                         }
                     }
-                }
+                },
+                firmware: {
+                    where: {
+                        is_deleted: false
+                    },
+                },
             },
         });
         
-        console.log(templates)
         return templates.map((template: any) => this.mapPrismaDeviceTemplateToDeviceTemplate(template));
     }
     
@@ -159,9 +163,10 @@ class DeviceTemplateService {
                 name: tc.components.name,
                 supplier: tc.components.supplier ?? null,
                 unit_cost: tc.components.unit_cost ?? null,
-                quantity_required: tc.quantity_required ?? 1, // Lấy từ template_components
+                quantity_required: tc.quantity_required ?? 1,
                 status: tc.components.status,
             })) ?? [],
+            firmware: template.firmware ?? [],
         };
     }
 }
