@@ -20,7 +20,7 @@ class FirmwareController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const firmware = await this.firmwareService.createFirmware(req.body);
+            const firmware = await this.firmwareService.createFirmware(req.body, accountId);
             res.status(201).json(firmware);
         } catch (error) {
             next(error);
@@ -39,7 +39,7 @@ class FirmwareController {
 
         try {
             const { firmwareId } = req.params;
-            const firmware = await this.firmwareService.updateFirmware(parseInt(firmwareId), req.body);
+            const firmware = await this.firmwareService.updateFirmware(parseInt(firmwareId), req.body, accountId);
             res.json(firmware);
         } catch (error) {
             next(error);
@@ -58,7 +58,7 @@ class FirmwareController {
 
         try {
             const { firmwareId } = req.params;
-            await this.firmwareService.deleteFirmware(parseInt(firmwareId));
+            await this.firmwareService.deleteFirmware(parseInt(firmwareId), accountId);
             res.status(204).send();
         } catch (error) {
             next(error);
@@ -91,6 +91,44 @@ class FirmwareController {
         try {
             const firmwares = await this.firmwareService.getFirmwares();
             res.json(firmwares);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Xác nhận firmware bởi tester
+     * @param req Request Express với ID firmware trong params và kết quả kiểm tra trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    confirmFirmwareByTester = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { firmwareId } = req.params;
+            await this.firmwareService.confirmFirmwareByTester(parseInt(firmwareId), accountId, req.body.testResult);
+            res.status(204).send();
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Xác nhận firmware bởi RD
+     * @param req Request Express với ID firmware trong params và kết quả kiểm tra trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    confirmFirmwareByRD = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { firmwareId } = req.params;
+            await this.firmwareService.confirmFirmwareByRD(parseInt(firmwareId), accountId, req.body.testResult);
+            res.status(204).send();
         } catch (error) {
             next(error);
         }
