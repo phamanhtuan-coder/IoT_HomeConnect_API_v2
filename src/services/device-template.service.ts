@@ -52,10 +52,45 @@ class DeviceTemplateService {
     async getAllDeviceTemplates(): Promise<DeviceTemplate[]> {
         const templates = await this.prisma.device_templates.findMany({
             where: { is_deleted: false },
+            include: {
+                categories: {
+                    select: {
+                        name: true,
+                    },
+                },
+                account: {
+                    include: {
+                        employee: {
+                            select: {
+                                surname: true,
+                                lastname: true,
+                            }
+                        }
+                    }
+                },
+                template_components: {
+                    where: {
+                        is_deleted: false
+                    },
+                    include: {
+                        components: {
+                            select: {
+                                component_id: true,
+                                name: true,
+                                supplier: true,
+                                unit_cost: true,
+                                status: true,
+                            },
+                        }
+                    }
+                }
+            },
         });
-
-        return templates.map((template) => this.mapPrismaDeviceTemplateToDeviceTemplate(template));
+        
+        console.log(templates)
+        return templates.map((template: any) => this.mapPrismaDeviceTemplateToDeviceTemplate(template));
     }
+    
 
     async updateDeviceTemplate(templateId: number, input: DeviceTemplateInput): Promise<DeviceTemplate> {
         const template = await this.prisma.device_templates.findUnique({
@@ -107,11 +142,26 @@ class DeviceTemplateService {
         return {
             template_id: template.template_id,
             device_type_id: template.device_type_id ?? null,
+            category_name: template.categories.name,
             name: template.name,
             created_by: template.created_by ?? null,
+            created_name: template.account?.employee
+                ? `${template.account.employee.surname} ${template.account.employee.lastname}`
+                : null,
             created_at: template.created_at ?? null,
             updated_at: template.updated_at ?? null,
             is_deleted: template.is_deleted ?? null,
+            status: template.status ?? null,
+            production_cost: template.production_cost ?? null,
+            device_template_note: template.device_template_note ?? null,
+            components: template.template_components?.map((tc: any) => ({
+                component_id: tc.components.component_id,
+                name: tc.components.name,
+                supplier: tc.components.supplier ?? null,
+                unit_cost: tc.components.unit_cost ?? null,
+                quantity_required: tc.quantity_required ?? 1, // Lấy từ template_components
+                status: tc.components.status,
+            })) ?? [],
         };
     }
 }

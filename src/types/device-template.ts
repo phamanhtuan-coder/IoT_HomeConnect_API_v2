@@ -11,9 +11,15 @@
 export interface DeviceTemplate {
     template_id: number;
     device_type_id: number | null;
+    category_name: string | null;
     name: string;
     created_by: string | null;
+    created_name: string | null;
     created_at: Date | null;
     updated_at: Date | null;
     is_deleted: boolean | null;
+    status: string | null
+    production_cost: number | null;
+    device_template_note: string | null;
+    components: [] | null;
 }

@@ -9,6 +9,7 @@ import loggerMiddleware from './middleware/logger.middleware';
 import routes from './routes';
 import {appConfig} from './config/app';
 import {configureSwagger} from "./config/swagger";
+import cors from 'cors'
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -33,6 +34,13 @@ export const initApp = (): { app: Application; io: Server; httpServer: any } => 
         path: '/socket.io',
         adapter: createAdapter(pubClient, subClient),
     });
+
+    app.use(cors({
+        origin: '*', // Cho phép tất cả origin (có thể giới hạn cụ thể nếu cần)
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        // allowedHeaders: ['Content-Type', 'Authorization'],
+        allowedHeaders: '*',
+    }))
 
     // Khởi tạo routes API
     app.use('/api', routes);

@@ -29,6 +29,7 @@ class ComponentService {
         name: string;
         supplier?: string;
         unit_cost?: number;
+        status?: boolean;
     }): Promise<Component> {
         const { name, supplier, unit_cost } = input;
 
@@ -44,6 +45,7 @@ class ComponentService {
                 name,
                 supplier,
                 unit_cost,
+                status: true,
             },
         });
 
@@ -157,6 +159,7 @@ class ComponentService {
             created_at: component.created_at,
             updated_at: component.updated_at,
             is_deleted: component.is_deleted,
+            status: component.status,
         };
     }
 }
