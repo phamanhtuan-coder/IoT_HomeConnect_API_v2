@@ -109,3 +109,29 @@ export const calculatePlanningStatus = (batches: any[]): string => {
     return slowestBatch.status;
 };
 
+export function validateVersion(version: string): { success: boolean; error?: string | null, normalizedVersion?: string } {
+    // Kiểm tra format version (chỉ cho phép x.y.z)
+    const versionParts = version.split('.');
+    
+    // Kiểm tra độ dài phải đúng 3 phần
+    if (versionParts.length !== 3) {
+        return { 
+            success: false, 
+            error: 'Version phải có định dạng x.y.z (ví dụ: 5.1.2)' 
+        };
+    }
+
+    // Kiểm tra mỗi phần phải là số và không có số 0 ở đầu
+    for (const part of versionParts) {
+        if (!/^[1-9]\d*$/.test(part)) {
+            return { 
+                success: false,
+                error: 'Mỗi phần của version phải là số nguyên dương và không bắt đầu bằng số 0' 
+            };
+        }
+    }
+
+    const normalizedVersion = versionParts.map(part => part.padStart(3, '0')).join('.');
+
+    return { success: true, error: null, normalizedVersion };
+}

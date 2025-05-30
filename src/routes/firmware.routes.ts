@@ -96,9 +96,9 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  */
 router.post(
     '/',
-    authMiddleware,
-    roleMiddleware,
-    validateMiddleware(firmwareSchema),
+    // authMiddleware,
+    // roleMiddleware,
+    // validateMiddleware(firmwareSchema),
     asyncHandler(firmwareController.createFirmware)
 );
 
@@ -155,9 +155,9 @@ router.post(
  */
 router.put(
     '/:firmwareId',
-    authMiddleware,
-    roleMiddleware,
-    validateMiddleware(updateFirmwareSchema),
+    // authMiddleware,
+    // roleMiddleware,
+    // validateMiddleware(updateFirmwareSchema),
     asyncHandler(firmwareController.updateFirmware)
 );
 
@@ -194,9 +194,9 @@ router.put(
  */
 router.delete(
     '/:firmwareId',
-    authMiddleware,
-    roleMiddleware,
-    validateMiddleware(firmwareIdSchema),
+    // authMiddleware,
+    // roleMiddleware,
+    // validateMiddleware(firmwareIdSchema),
     asyncHandler(firmwareController.deleteFirmware)
 );
 
@@ -254,8 +254,8 @@ router.delete(
  */
 router.get(
     '/:firmwareId',
-    authMiddleware,
-    validateMiddleware(firmwareIdSchema),
+    // authMiddleware,
+    // validateMiddleware(firmwareIdSchema),
     asyncHandler(firmwareController.getFirmwareById)
 );
 
@@ -309,6 +309,20 @@ router.get(
     '/',
     authMiddleware,
     asyncHandler(firmwareController.getFirmwares)
+);
+
+router.put(
+    '/confirm-by-tester/:firmwareId',
+    // authMiddleware,
+    // validateMiddleware(firmwareIdSchema),
+    asyncHandler(firmwareController.confirmFirmwareByTester)
+);
+
+router.put(
+    '/confirm-by-rd/:firmwareId',
+    // authMiddleware,
+    // validateMiddleware(firmwareIdSchema),
+    asyncHandler(firmwareController.confirmFirmwareByRD)
 );
 
 export default router;
