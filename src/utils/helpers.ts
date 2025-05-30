@@ -64,5 +64,48 @@ export const generateUserDeviceId = (input: string | number = Date.now()) => gen
  * @param input - Giá trị đầu vào (string hoặc number), mặc định là Date.now()
  * @returns string - Planning ID
  */
-export const generatePlanningId = (input: string | number = Date.now()) => generatePrefixedUUID("PLAN", input);
+
+export const generatePlanningId = (): string => {
+    return `PLAN-${uuidV4().slice(0, 8).toUpperCase()}`;
+};
+
+export const generateBatchId = (): string => {
+    return `BATCH-${uuidV4().slice(0, 8).toUpperCase()}`;
+};
+
+export const calculatePlanningStatus = (batches: any[]): string => {
+    if (!batches || batches.length === 0) return "pending";
+
+    const activeBatches = batches.filter(batch => 
+        batch.status !== "rejected" && batch.status !== "cancelled"
+    );
+
+    if (activeBatches.length === 0) {
+        return "rejected";
+    }
+
+    const hasFixBatches = activeBatches.some(batch => 
+        batch.status === "relabeling" || batch.status === "fixproduction"
+    );
+
+    if (hasFixBatches) {
+        return "fix";
+    }
+
+    const statusPriority = {
+        pending: 1,
+        in_progress: 2,
+        pendingimport: 3,
+        completed: 4,
+        expired: 0,
+        cancelled: 0,
+    };
+    const slowestBatch = activeBatches.reduce((slowest, current) => {
+        const currentPriority = statusPriority[current.status as keyof typeof statusPriority] || 0;
+        const slowestPriority = statusPriority[slowest.status as keyof typeof statusPriority] || 0;
+        return currentPriority < slowestPriority ? current : slowest;
+    });
+
+    return slowestBatch.status;
+};
 
