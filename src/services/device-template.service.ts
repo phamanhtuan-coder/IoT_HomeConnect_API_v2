@@ -11,7 +11,7 @@ class DeviceTemplateService {
     }
 
     async createDeviceTemplate(input: DeviceTemplateInput, createdBy: string): Promise<DeviceTemplate> {
-        const { device_type_id, name } = input;
+        const { device_type_id, name, components } = input;
 
         // Validate device_type_id if provided
         if (device_type_id) {
@@ -27,6 +27,27 @@ class DeviceTemplateService {
         });
         if (existingTemplate) throwError(ErrorCodes.TEMPLATE_ALREADY_EXISTS, 'Template name already exists');
 
+        if (components.length > 0) {
+            // Tạo danh sách component_id cần kiểm tra
+            const componentIds = components.map(component => component.component_id);
+    
+            // Truy vấn bảng components để kiểm tra xem tất cả component_id có tồn tại không
+            const existingComponents = await this.prisma.components.findMany({
+                where: {
+                    component_id: { in: componentIds },
+                },
+                select: { component_id: true },
+            });
+    
+            // Kiểm tra xem số lượng component tìm thấy có khớp với số lượng component_id không
+            const foundComponentIds = existingComponents.map(comp => comp.component_id);
+            const missingComponents = componentIds.filter(id => !foundComponentIds.includes(id));
+    
+            if (missingComponents.length > 0) {
+                throwError(ErrorCodes.NOT_FOUND, `Components with IDs ${missingComponents.join(', ')} not found`);
+            }
+        }
+
         const template = await this.prisma.device_templates.create({
             data: {
                 device_type_id,
@@ -34,15 +55,97 @@ class DeviceTemplateService {
                 created_by: createdBy,
                 created_at: new Date(),
                 updated_at: new Date(),
+                is_deleted: false,
             },
         });
 
-        return this.mapPrismaDeviceTemplateToDeviceTemplate(template);
+        // Add components to template_components
+        if (components.length > 0) {
+            const templateComponentData = components.map(component => ({
+                template_id: template.template_id,
+                component_id: component.component_id,
+                quantity_required: component.quantity_required || 1,
+                created_at: new Date(),
+                updated_at: new Date(),
+                is_deleted: false,
+            }));
+
+            await this.prisma.template_components.createMany({
+                data: templateComponentData,
+            });
+        }
+
+        const completeTemplate = await this.prisma.device_templates.findUnique({
+            where: { template_id: template.template_id },
+            include: {
+                categories: { select: { name: true } },
+                account: {
+                    include: {
+                        employee: { select: { surname: true, lastname: true } },
+                    },
+                },
+                template_components: {
+                    where: { is_deleted: false },
+                    include: {
+                        components: {
+                            select: {
+                                component_id: true,
+                                name: true,
+                                supplier: true,
+                                unit_cost: true,
+                                status: true,
+                            },
+                        },
+                    },
+                },
+                firmware: { where: { is_deleted: false } },
+            },
+        });
+
+        return this.mapPrismaDeviceTemplateToDeviceTemplate(completeTemplate);
     }
 
     async getDeviceTemplateById(templateId: number): Promise<DeviceTemplate> {
         const template = await this.prisma.device_templates.findUnique({
             where: { template_id: templateId, is_deleted: false },
+            include: {
+                categories: {
+                    select: {
+                        name: true,
+                    },
+                },
+                account: {
+                    include: {
+                        employee: {
+                            select: {
+                                surname: true,
+                                lastname: true,
+                            }
+                        }
+                    }
+                },
+                template_components: {
+                    where: {
+                        is_deleted: false
+                    },
+                    include: {
+                        components: {
+                            select: {
+                                component_id: true,
+                                name: true,
+                                supplier: true,
+                                unit_cost: true,
+                                status: true,
+                            },
+                        }
+                    }
+                },
+                firmware: {
+                    where: {
+                        is_deleted: false
+                    },
+                },
+            },
         });
         if (!template) throwError(ErrorCodes.TEMPLATE_NOT_FOUND, 'Device template not found');
 
@@ -91,10 +194,10 @@ class DeviceTemplateService {
                 },
             },
         });
+        console.log(templates)
         
         return templates.map((template: any) => this.mapPrismaDeviceTemplateToDeviceTemplate(template));
     }
-    
 
     async updateDeviceTemplate(templateId: number, input: DeviceTemplateInput): Promise<DeviceTemplate> {
         const template = await this.prisma.device_templates.findUnique({
@@ -159,8 +262,8 @@ class DeviceTemplateService {
             production_cost: template.production_cost ?? null,
             device_template_note: template.device_template_note ?? null,
             components: template.template_components?.map((tc: any) => ({
-                component_id: tc.components.component_id,
-                name: tc.components.name,
+                component_id: tc.components.component_id ?? null,
+                name: tc.components.name ?? null,
                 supplier: tc.components.supplier ?? null,
                 unit_cost: tc.components.unit_cost ?? null,
                 quantity_required: tc.quantity_required ?? 1,

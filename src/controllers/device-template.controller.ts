@@ -31,6 +31,7 @@ class DeviceTemplateController {
             const template = await this.deviceTemplateService.createDeviceTemplate(req.body as DeviceTemplateInput, employeeId);
             res.status(201).json(template);
         } catch (error) {
+            console.log("error", error)
             next(error);
         }
     };
@@ -65,7 +66,6 @@ class DeviceTemplateController {
         // const employeeId = req.user?.employeeId;
         const employeeId = "admin123";
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
-
         try {
             const templates = await this.deviceTemplateService.getAllDeviceTemplates();
             res.json(templates);
@@ -104,7 +104,7 @@ class DeviceTemplateController {
         // const employeeId = req.user?.employeeId;
         const employeeId = "admin123";
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
-        
+
         try {
             const { templateId } = req.params;
             await this.deviceTemplateService.deleteDeviceTemplate(parseInt(templateId));
