@@ -1,68 +1,50 @@
+// src/utils/schemas/planning.schema.ts
 import { z } from 'zod';
 
-// Schema cho việc tạo mới planning
 export const planningCreateSchema = z.object({
     body: z.object({
-        name: z.string({
-            required_error: 'Name is required',
-            invalid_type_error: 'Name must be a string',
-        }).min(1, 'Name cannot be empty'),
-        description: z.string().optional(),
-        start_date: z.string()
-            .transform((val) => new Date(val))
-            .optional(),
-        end_date: z.string()
-            .transform((val) => new Date(val))
-            .optional(),
-    }).refine((data) => {
-        if (data.start_date && data.end_date) {
-            return data.start_date <= data.end_date;
-        }
-        return true;
-    }, {
-        message: "End date must be after start date",
-    }),
+    planning_note: z.string({
+        invalid_type_error: 'Planning note must be a string'
+    }).optional(),
+    batch_count: z.coerce.number({
+        required_error: 'Batch count is required',
+        invalid_type_error: 'Batch count must be a number'
+    }).min(1, 'Batch count must be at least 1').max(20, 'Batch count cannot exceed 20')
+}),
 });
 
-// Schema cho việc cập nhật planning
-export const planningUpdateSchema = z.object({
-    params: z.object({
-        planningId: z.string({
-            required_error: 'Planning ID is required',
-            invalid_type_error: 'Planning ID must be a string',
-        }),
-    }),
+export const planningApprovalSchema = z.object({
     body: z.object({
-        name: z.string().min(1, 'Name cannot be empty').optional(),
-        description: z.string().optional(),
-        status: z.enum(['pending', 'in_progress', 'completed']).optional(),
-        start_date: z.string()
-            .transform((val) => new Date(val))
-            .optional(),
-        end_date: z.string()
-            .transform((val) => new Date(val))
-            .optional(),
-    }).refine((data) => {
-        if (data.start_date && data.end_date) {
-            return data.start_date <= data.end_date;
-        }
-        return true;
-    }, {
-        message: "End date must be after start date",
+    status: z.enum(['approved', 'rejected']),
+    notes: z.string().min(1, 'Notes are required').max(500, 'Notes cannot exceed 500 characters')
     }),
 });
 
-// Schema cho việc lấy planning theo ID
 export const planningIdSchema = z.object({
     params: z.object({
-        planningId: z.string({
-            required_error: 'Planning ID is required',
-            invalid_type_error: 'Planning ID must be a string',
-        }),
+        planningId: z.string().min(1)
     }),
 });
 
-// Types từ schema
-export type PlanningCreateInput = z.infer<typeof planningCreateSchema>['body'];
-export type PlanningUpdateInput = z.infer<typeof planningUpdateSchema>['body'];
-export type PlanningIdParam = z.infer<typeof planningIdSchema>['params'];
+export const batchCreateSchema = z.object({
+    body: z.object({
+    template_id: z.coerce.number(),
+    quantity: z.coerce.number().min(1),
+    batch_note: z.string().optional()
+    }),
+});
+
+export const batchUpdateSchema = z.object({
+    body: z.object({
+    status: z.enum([
+        'pending',
+        'pendingimport',
+        'in_progress',
+        'completed',
+        'relabeling',
+        'fixproduction',
+        'rejected',    
+    ]),
+    batch_note: z.string().optional()
+    }),
+});

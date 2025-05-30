@@ -132,7 +132,9 @@ import componentRoutes from "./component.routes";
 import templateComponentRoutes from "./template-component.routes";
 import deviceTemplateRoutes from "./device-template.routes";
 import productionTrackingRoutes from "./production-tracking.routes";
-import productionBatchesRoutes from "./production-batches.routes";
+// import productionBatchesRoutes from "./production-batches.routes";
+import planningRoutes from "./planning.routes";
+
 
 const router = Router();
 
@@ -158,6 +160,6 @@ router.use('/component',componentRoutes)
 router.use('/template-components', templateComponentRoutes);
 router.use('/device-templates', deviceTemplateRoutes);
 router.use('/production-tracking', productionTrackingRoutes);
-router.use('/production-batches', productionBatchesRoutes);
-
+// router.use('/production-batches', productionBatchesRoutes);
+router.use('/planning', planningRoutes);
 export default router;

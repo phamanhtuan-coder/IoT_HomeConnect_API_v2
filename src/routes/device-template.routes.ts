@@ -49,8 +49,8 @@ router.post(
  */
 router.get(
     '/',
-    authMiddleware,
-    roleMiddleware,
+    // authMiddleware,
+    // roleMiddleware,
     asyncHandler(deviceTemplateController.getAllDeviceTemplates)
 );
 
