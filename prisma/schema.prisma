@@ -444,6 +444,7 @@ model firmware {
   firmware_update_history firmware_update_history[]
 
   @@index([template_id], map: "template_id")
+  production_batches production_batches[] @relation(map: "production_batches_ibfk_3")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -767,6 +768,7 @@ model production_batches {
   planning_id                                     String               @db.VarChar(32)
   production_batch_id                             String               @db.VarChar(255) @unique
   template_id                                     Int?
+  firmware_id                                     Int?
   quantity                                        Int                  @db.Int
   status                                          String               @default("pending") @db.VarChar(20)
   created_at                                      DateTime             @default(dbgenerated("(now())")) @db.DateTime(0)
@@ -776,13 +778,14 @@ model production_batches {
   logs                                            Json?                @db.Json
   device_templates                                device_templates?    @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "production_batches_ibfk_1")
   planning                                        planning             @relation(fields: [planning_id], references: [planning_id], onDelete: NoAction, onUpdate: NoAction, map: "production_batches_ibfk_2")
+  firmware                                        firmware?            @relation(fields: [firmware_id], references: [firmware_id], onDelete: NoAction, onUpdate: NoAction, map: "production_batches_ibfk_3")
   production_tracking                             production_tracking[]
 
   @@id([batch_id, planning_id, production_batch_id])
   @@index([template_id], map: "template_id")
   @@index([planning_id], map:"planning_id")
+  @@index([firmware_id], map: "firmware_id")
 }
-
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model production_tracking {
@@ -843,7 +846,7 @@ model share_requests {
   requested_at                                 DateTime?           @default(dbgenerated("(now())")) @db.DateTime(0)
   approved_at                                  DateTime?           @db.DateTime(0)
   created_at                                   DateTime?           @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at                                   DateTime?           @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at                                   DateTime?           @db.DateTime(0)
   is_deleted                                   Boolean?            @default(false)
   devices                                      devices?            @relation(fields: [device_serial], references: [serial_number], onDelete: NoAction, onUpdate: NoAction, map: "share_requests_ibfk_1")
   account_share_requests_from_user_idToaccount account?            @relation("share_requests_from_user_idToaccount", fields: [from_user_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "share_requests_ibfk_2")
@@ -887,7 +890,7 @@ model spaces {
   house_id      Int?
   space_name          String          @db.VarChar(100)
   created_at    DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at    DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at    DateTime?       @db.DateTime(0)
   is_deleted    Boolean?        @default(false)
   alerts        alerts[]
   devices       devices[]
@@ -907,7 +910,7 @@ model sync_tracking {
   sync_type      String?       @db.VarChar(20)
   sync_status    String?       @db.VarChar(20)
   created_at     DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at     DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at     DateTime?     @db.DateTime(0)
   is_deleted     Boolean?      @default(false)
   account        account?      @relation(fields: [account_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "sync_tracking_ibfk_1")
   user_devices   user_devices? @relation(fields: [user_device_id], references: [user_device_id], onDelete: NoAction, onUpdate: NoAction, map: "sync_tracking_ibfk_2")
@@ -954,7 +957,7 @@ model tickets {
   evidence                          Json?               @db.Json
   status                            String?             @default("pending") @db.VarChar(20)
   created_at                        DateTime?           @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at                        DateTime?           @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at                        DateTime?           @db.DateTime(0)
   assigned_to                       String?             @db.VarChar(32)
   resolved_at                       DateTime?           @db.DateTime(0)
   resolve_solution                  String?             @db.Text
