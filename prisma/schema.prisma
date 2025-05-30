@@ -30,8 +30,6 @@ model account {
   customer                                                  customer?            @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_ibfk_3")
   device_templates                                          device_templates[]
   devices                                                   devices[]
-  firmware_test_by                                          firmware[]           @relation("firmware_test_byToaccount")
-  firmware_approved_by                                      firmware[]           @relation("firmware_approved_byToaccount")
   notification                                              notification[]
   ownership_history_ownership_history_from_user_idToaccount ownership_history[]  @relation("ownership_history_from_user_idToaccount")
   ownership_history_ownership_history_to_user_idToaccount   ownership_history[]  @relation("ownership_history_to_user_idToaccount")
@@ -431,29 +429,24 @@ model export_warehouse {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model firmware {
   firmware_id             Int                       @id @default(autoincrement())
+  name                    String                    @db.VarChar(500)
   version                 String                    @db.VarChar(50)
   file_path               String                    @db.VarChar(255)
   template_id             Int?
   is_mandatory            Boolean?                  @default(false)
   created_at              DateTime?                 @default(dbgenerated("(now())")) @db.DateTime(0)
+  tested_at               DateTime?                 @db.DateTime(0)
+  is_approved             Boolean?                  @default(false)
   updated_at              DateTime?                 @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted              Boolean?                  @default(false)
-  note                    Json?
-  name                    String                    @db.VarChar(500)
-  approved_at             DateTime?                 @db.DateTime(0)
-  approved_by             String?                   @db.VarChar(32)
-  test_at                 DateTime?                 @db.DateTime(0)
-  test_by                 String?                   @db.VarChar(32)
+  note                    String?                   @db.Text
+  logs                    Json?                     @db.Json
   devices                 devices[]
   device_templates        device_templates?         @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "firmware_ibfk_1")
-  test_account            account?                  @relation("firmware_test_byToaccount", fields: [test_by], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "firmware_ibfk_2")
-  approve_account         account?                  @relation("firmware_approved_byToaccount", fields: [approved_by], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "firmware_ibfk_3")
   firmware_update_history firmware_update_history[]
-  production_batches      production_batches[]
 
   @@index([template_id], map: "template_id")
-  @@index([test_by], map: "test_by")
-  @@index([approved_by], map: "approved_by")
+  production_batches production_batches[] @relation(map: "production_batches_ibfk_3")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
