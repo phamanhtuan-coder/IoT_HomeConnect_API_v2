@@ -135,6 +135,7 @@ import productionTrackingRoutes from "./production-tracking.routes";
 import productionBatchesRoutes from "./production-batches.routes";
 import sseRoutes from './sse.routes';
 
+
 const router = Router();
 
 // Định nghĩa các route con
@@ -159,7 +160,9 @@ router.use('/component',componentRoutes)
 router.use('/template-components', templateComponentRoutes);
 router.use('/device-templates', deviceTemplateRoutes);
 router.use('/production-tracking', productionTrackingRoutes);
+
 router.use('/production-batches', productionBatchesRoutes);
 router.use('/sse', sseRoutes);
 
 export default router;
+

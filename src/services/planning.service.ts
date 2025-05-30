@@ -1,7 +1,8 @@
+// src/services/planning.service.ts
 import { PrismaClient } from '@prisma/client';
-import { ErrorCodes, throwError, AppError } from '../utils/errors';
-import { Planning, PlanningCreateInput, PlanningUpdateInput } from '../types/planning';
-import { generatePlanningId } from '../utils/helpers';
+import { PlanningCreateInput, PlanningApprovalInput, Planning, PlanningStatus, BatchCreateInput } from '../types/planning';
+import { ErrorCodes, throwError } from '../utils/errors';
+import { generatePlanningId, calculatePlanningStatus, generateBatchId } from '../utils/helpers';
 
 export class PlanningService {
     private prisma: PrismaClient;
@@ -10,177 +11,344 @@ export class PlanningService {
         this.prisma = new PrismaClient();
     }
 
-    async createPlanning(input: PlanningCreateInput, employeeId: string): Promise<Planning> {
+    async createPlanning(data: PlanningCreateInput, employeeId: string): Promise<any> {
+        if (data.batch_count < 1 || data.batch_count > 20) {
+            throwError(ErrorCodes.BAD_REQUEST, 'Batch count must be between 1 and 20');
+        }
+
         try {
             const planning = await this.prisma.planning.create({
                 data: {
                     planning_id: generatePlanningId(),
-                    ...input,
-                    status: 'pending',
+                    planning_note: data.planning_note,
                     created_by: employeeId,
-                    created_at: new Date(),
-                    updated_at: new Date(),
-                },
-                include: {
-                    account: true,
-                    production_batches: true,
-                },
+                    status: 'pending',
+                    logs: {
+                        created: {
+                            timestamp: new Date().toISOString(),
+                            employee_id: employeeId,
+                            action: 'created',
+                            details: JSON.parse(JSON.stringify(data))
+                        }
+                    } as any
+                }
             });
 
-            return this.mapPrismaPlanningToPlanning(planning);
+            console.log('planning:', planning)
+            return planning;
+
         } catch (error) {
-            if (error instanceof AppError) {
-                throw error;
-            }
-            throw throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to create planning');
+            console.log(error)
+            throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to create planning');
         }
     }
 
     async getPlanningById(planningId: string): Promise<Planning> {
-        try {
-            const planning = await this.prisma.planning.findFirst({
-                where: { planning_id: planningId, is_deleted: false },
-                include: {
-                    account: true,
-                    production_batches: true,
-                },
-            });
+        const planning = await this.prisma.planning.findFirst({
+            where: {
+                planning_id: planningId,
+                is_deleted: false
+            },
+            include: {
+                production_batches: {
+                    where: { is_deleted: false },
+                    include: {
+                        device_templates: {
+                            include: {
+                                firmware: {
+                                    select: {
+                                        firmware_id: true,
+                                        name: true,
+                                        version: true
 
-            if (!planning) {
-                throw throwError(ErrorCodes.NOT_FOUND, 'Planning not found');
+                                    }
+                                }
+                            }
+                            
+                        },
+                        production_tracking: true
+                    }
+                }
             }
+        });
 
-            return this.mapPrismaPlanningToPlanning(planning);
-        } catch (error) {
-            if (error instanceof AppError) {
-                throw error;
-            }
-            throw throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to get planning');
+        if (!planning) {
+            throwError(ErrorCodes.NOT_FOUND, 'Planning not found');
         }
+
+        return planning as Planning;
     }
 
     async getAllPlannings(): Promise<Planning[]> {
-        try {
-            const plannings = await this.prisma.planning.findMany({
-                where: { is_deleted: false },
-                include: {
-                    account: true,
-                    production_batches: true,
-                },
-                orderBy: { created_at: 'desc' },
-            });
+        const plannings = await this.prisma.planning.findMany({
+            where: {
+                is_deleted: false,
 
-            return plannings.map(planning => this.mapPrismaPlanningToPlanning(planning));
-        } catch (error) {
-            if (error instanceof AppError) {
-                throw error;
-            }
-            throw throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to get plannings');
-        }
+            },
+            include: {
+                production_batches: {
+                    where: { is_deleted: false },
+                    include: {
+                        device_templates: {
+                            include: {
+                                firmware: {
+                                    select: {
+                                        firmware_id: true,
+                                        name: true,
+                                        version: true
+
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: { created_at: 'desc' }
+        });
+        return plannings;
     }
 
-    async updatePlanning(planningId: string, input: PlanningUpdateInput): Promise<Planning> {
-        try {
-            const planning = await this.prisma.planning.findFirst({
+    async approvePlanning(planningId: string, data: PlanningApprovalInput, employeeId: string): Promise<Planning> {
+        const planning = await this.prisma.planning.findFirst({
+            where: {
+                planning_id: planningId,
+                is_deleted: false
+            },
+            include: {
+                production_batches: {
+                    where: { is_deleted: false }
+                }
+            }
+        });
+
+        if (!planning) {
+            throwError(ErrorCodes.NOT_FOUND, 'Planning not found');
+        }
+
+        if (planning!.status !== 'pending') {
+            throwError(ErrorCodes.BAD_REQUEST, 'Planning is not in pending status');
+        }
+
+        const updatedPlanning = await this.prisma.planning.update({
+            where: { planning_id: planningId },
+            data: {
+                status: data.status === 'approved' ? 'in_progress' : 'rejected',
+                logs: {
+                    ...(planning?.logs as Record<string, any> || {}),
+                    [data.status]: {
+                        timestamp: new Date(),
+                        employee_id: employeeId,
+                        action: data.status,
+                        notes: data.notes
+                    }
+                }
+            }
+        });
+
+        if (data.status === 'approved') {
+            await this.prisma.production_batches.updateMany({
                 where: {
                     planning_id: planningId,
                     is_deleted: false
-                }
-            });
-
-            if (!planning) {
-                throw throwError(ErrorCodes.NOT_FOUND, 'Planning not found');
-            }
-
-            // Validate status transitions
-            if (input.status) {
-                switch (input.status) {
-                    case 'in_progress':
-                        if (planning.status !== 'pending') {
-                            throw throwError(ErrorCodes.BAD_REQUEST, 'Only pending plannings can be set to in progress');
-                        }
-                        break;
-                    case 'completed':
-                        if (planning.status !== 'in_progress') {
-                            throw throwError(ErrorCodes.BAD_REQUEST, 'Only in-progress plannings can be completed');
-                        }
-                        break;
-                }
-            }
-
-            const updatedPlanning = await this.prisma.planning.update({
-                where: { planning_id: planningId },
+                },
                 data: {
-                    ...input,
-                    updated_at: new Date(),
-                },
-                include: {
-                    account: true,
-                    production_batches: true,
-                },
-            });
-
-            return this.mapPrismaPlanningToPlanning(updatedPlanning);
-        } catch (error) {
-            if (error instanceof AppError) {
-                throw error;
-            }
-            throw throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to update planning');
-        }
-    }
-
-    async deletePlanning(planningId: string): Promise<void> {
-        try {
-            const planning = await this.prisma.planning.findFirst({
-                where: { planning_id: planningId, is_deleted: false },
-                include: {
-                    production_batches: {
-                        where: {
-                            is_deleted: false
+                    status: 'in_progress',
+                    logs: {
+                        approved: {
+                            timestamp: new Date(),
+                            employee_id: employeeId,
+                            action: 'approved',
+                            notes: data.notes
                         }
                     }
                 }
             });
-
-            if (!planning) {
-                throw throwError(ErrorCodes.NOT_FOUND, 'Planning not found');
-            }
-
-            if (planning.production_batches.length > 0) {
-                throw throwError(ErrorCodes.BAD_REQUEST, 'Cannot delete planning with active production batches');
-            }
-
-            if (planning.status !== 'pending') {
-                throw throwError(ErrorCodes.BAD_REQUEST, 'Only pending plannings can be deleted');
-            }
-
-            await this.prisma.planning.update({
-                where: { planning_id: planningId },
-                data: {
-                    is_deleted: true,
-                    updated_at: new Date(),
-                },
-            });
-        } catch (error) {
-            if (error instanceof AppError) {
-                throw error;
-            }
-            throw throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to delete planning');
         }
+
+        if (data.status === 'rejected') {
+            await this.prisma.production_batches.updateMany({
+                where: {
+                    planning_id: planningId,
+                    is_deleted: false
+                },
+                data: {
+                    status: 'rejected',
+                    logs: {
+                        rejected: {
+                            timestamp: new Date(),
+                            employee_id: employeeId,
+                            action: 'rejected',
+                            notes: data.notes
+                        }
+                    }
+                }
+            });
+        }
+
+        const finalPlanning = await this.prisma.planning.findFirst({
+            where: {
+                planning_id: planningId,
+                is_deleted: false
+            },
+            include: {
+                production_batches: {
+                    where: { is_deleted: false },
+                    include: {
+                        device_templates: true
+                    }
+                }
+            }
+        });
+
+        return finalPlanning as Planning;
     }
 
-    private mapPrismaPlanningToPlanning(p: any): Planning {
-        return {
-            planning_id: p.planning_id,
-            name: p.name,
-            description: p.description,
-            status: p.status,
-            start_date: p.start_date,
-            end_date: p.end_date,
-            created_by: p.created_by,
-            created_at: p.created_at,
-            updated_at: p.updated_at,
-            is_deleted: p.is_deleted,
-        };
+    async updatePlanningStatus(planningId: string): Promise<Planning> {
+        const planning = await this.prisma.planning.findFirst({
+            where: {
+                planning_id: planningId,
+                is_deleted: false
+            },
+            include: {
+                production_batches: {
+                    where: { is_deleted: false }
+                }
+            }
+        });
+
+        if (!planning) {
+            throwError(ErrorCodes.NOT_FOUND, 'Planning not found');
+        }
+
+        const newStatus = calculatePlanningStatus(planning!.production_batches);
+
+        return this.prisma.planning.update({
+            where: { planning_id: planningId },
+            data: { status: newStatus as PlanningStatus }
+        });
     }
+
+    // src/services/planning.service.ts
+async createPlanningWithBatches(planningData: PlanningCreateInput, batches: BatchCreateInput[], employeeId: string): Promise<any> {
+    return this.prisma.$transaction(async (prisma) => {
+        // Tạo planning
+        const planning = await prisma.planning.create({
+            data: {
+                planning_id: generatePlanningId(),
+                planning_note: planningData.planning_note,
+                created_by: employeeId,
+                status: 'pending',
+                logs: {
+                    created: {
+                        timestamp: new Date().toISOString(),
+                        employee_id: employeeId,
+                        action: 'created',
+                        details: JSON.parse(JSON.stringify(planningData))
+                    }
+                } as any
+            }
+        });
+
+        // Tạo các batch
+        for (const batchData of batches) {
+            // Kiểm tra template
+            const template = await prisma.device_templates.findFirst({
+                where: {
+                    template_id: batchData.template_id,
+                    is_deleted: false
+                },
+                include: {
+                    firmware: true
+                }
+            });
+
+            if (!template) {
+                throwError(ErrorCodes.NOT_FOUND, 'Device template not found');
+            }
+
+            // Kiểm tra firmware
+            if (batchData.firmware_id) {
+                const firmwareExists = template!.firmware?.some(f => f.firmware_id === batchData.firmware_id);
+                if (!firmwareExists) {
+                    throwError(ErrorCodes.BAD_REQUEST, 'Firmware not found or not associated with this template');
+                }
+            }
+
+            // Tạo batch
+            const batch = await prisma.production_batches.create({
+                data: {
+                    planning_id: planning.planning_id,
+                    production_batch_id: generateBatchId(),
+                    template_id: batchData.template_id,
+                    quantity: batchData.quantity,
+                    batch_note: batchData.batch_note,
+                    status: 'pending',
+                    logs: {
+                        created: {
+                            timestamp: new Date().toISOString(),
+                            employee_id: employeeId,
+                            action: 'created',
+                            details: {
+                                ...JSON.parse(JSON.stringify(batchData)),
+                                firmware_id: batchData.firmware_id
+                            }
+                        }
+                    } as any
+                }
+            });
+
+            // Tạo production_tracking records
+            const trackingPromises = Array.from({ length: batchData.quantity }, async (_, index) => {
+                const templateName = template!.name;
+                const shortName = templateName
+                    .split(' ')
+                    .map(word => word[0])
+                    .join('')
+                    .toUpperCase();
+                const sequenceNumber = (index + 1).toString().padStart(3, '0');
+                const deviceSerial = `${shortName}-${batch.production_batch_id}-${sequenceNumber}`;
+
+                return prisma.production_tracking.create({
+                    data: {
+                        production_batch_id: batch.production_batch_id,
+                        device_serial: deviceSerial,
+                        stage: 'pending',
+                        status: 'pending'
+                    }
+                });
+            });
+
+            await Promise.all(trackingPromises);
+        }
+
+        // Lấy lại planning với tất cả thông tin
+        return prisma.planning.findFirst({
+            where: {
+                planning_id: planning.planning_id,
+                is_deleted: false
+            },
+            include: {
+                production_batches: {
+                    where: { is_deleted: false },
+                    include: {
+                        device_templates: {
+                            include: {
+                                firmware: {
+                                    select: {
+                                        firmware_id: true,
+                                        name: true,
+                                        version: true
+                                    }
+                                }
+                            }
+                        },
+                        production_tracking: true
+                    }
+                }
+            }
+        });
+    });
+}
+
 }

@@ -1,3 +1,4 @@
+// src/routes/planning.routes.ts
 import { Router } from 'express';
 import { PlanningController } from '../controllers/planning.controller';
 import authMiddleware from '../middleware/auth.middleware';
@@ -5,214 +6,81 @@ import roleMiddleware from '../middleware/role.middleware';
 import validateMiddleware from '../middleware/validate.middleware';
 import {
     planningCreateSchema,
-    planningUpdateSchema,
-    planningIdSchema
+    planningApprovalSchema,
+    planningIdSchema,
+    batchCreateSchema,
+    batchUpdateSchema
 } from '../utils/schemas/planning.schema';
 
 const router = Router();
 const planningController = new PlanningController();
 
-/**
- * @swagger
- * /planning:
- *   post:
- *     tags:
- *       - Planning
- *     summary: Create a new planning
- *     description: Creates a new production planning with specified details
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *             properties:
- *               name:
- *                 type: string
- *                 description: Name of the planning
- *               description:
- *                 type: string
- *                 description: Description of the planning
- *               start_date:
- *                 type: string
- *                 format: date
- *                 description: Start date of the planning
- *               end_date:
- *                 type: string
- *                 format: date
- *                 description: End date of the planning
- *     responses:
- *       201:
- *         description: Planning created successfully
- *       400:
- *         description: Invalid input data
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Server error
- */
+//tạo kế hoạch --
 router.post(
     '/',
-    authMiddleware,
-    roleMiddleware,
+    // authMiddleware,
+    // roleMiddleware,
     validateMiddleware(planningCreateSchema),
-    planningController.createPlanning
+    planningController.createPlanningApi
 );
 
-/**
- * @swagger
- * /planning/{planningId}:
- *   get:
- *     tags:
- *       - Planning
- *     summary: Get a planning by ID
- *     description: Retrieves detailed information about a specific planning
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: planningId
- *         required: true
- *         schema:
- *           type: string
- *         description: ID of the planning
- *     responses:
- *       200:
- *         description: Planning retrieved successfully
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Planning not found
- *       500:
- *         description: Server error
- */
+//lấy kế hoạch theo id --
 router.get(
     '/:planningId',
-    authMiddleware,
+    // authMiddleware,
     validateMiddleware(planningIdSchema),
-    planningController.getPlanningById
+    planningController.getPlanningByIdApi
 );
 
-/**
- * @swagger
- * /planning:
- *   get:
- *     tags:
- *       - Planning
- *     summary: Get all plannings
- *     description: Retrieves a list of all production plannings
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of plannings retrieved successfully
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Server error
- */
+//lấy tất cả kế hoạch  --
 router.get(
     '/',
-    authMiddleware,
-    planningController.getAllPlannings
+    // authMiddleware,
+    planningController.getAllPlanningsApi
 );
 
-/**
- * @swagger
- * /planning/{planningId}:
- *   put:
- *     tags:
- *       - Planning
- *     summary: Update a planning
- *     description: Updates an existing planning's details
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: planningId
- *         required: true
- *         schema:
- *           type: string
- *         description: ID of the planning
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               description:
- *                 type: string
- *               status:
- *                 type: string
- *                 enum: ['pending', 'in_progress', 'completed']
- *               start_date:
- *                 type: string
- *                 format: date
- *               end_date:
- *                 type: string
- *                 format: date
- *     responses:
- *       200:
- *         description: Planning updated successfully
- *       400:
- *         description: Invalid input data or status transition
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Planning not found
- *       500:
- *         description: Server error
- */
-router.put(
-    '/:planningId',
-    authMiddleware,
-    roleMiddleware,
-    validateMiddleware(planningUpdateSchema),
-    planningController.updatePlanning
+//phê duyệt kế hoạch-- thieu cap nhat is_deleted
+router.post(
+    '/:planningId/approve',
+    // authMiddleware,
+    // roleMiddleware,
+    validateMiddleware(planningApprovalSchema),
+    planningController.approvePlanningApi
 );
 
-/**
- * @swagger
- * /planning/{planningId}:
- *   delete:
- *     tags:
- *       - Planning
- *     summary: Delete a planning
- *     description: Soft deletes a planning (only allowed for pending plannings)
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: planningId
- *         required: true
- *         schema:
- *           type: string
- *         description: ID of the planning
- *     responses:
- *       204:
- *         description: Planning deleted successfully
- *       400:
- *         description: Planning cannot be deleted in current status
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Planning not found
- *       500:
- *         description: Server error
- */
-router.delete(
-    '/:planningId',
-    authMiddleware,
-    roleMiddleware,
+//tạo lô sản xuất --
+router.post(
+    '/:planningId/batches',
+    // authMiddleware,
+    // roleMiddleware,
+    validateMiddleware(batchCreateSchema),
+    planningController.createBatchApi
+);
+
+//lấy lô sản xuất theo id kế hoạch --
+router.get(
+    '/:planningId/batches',
+    // authMiddleware,
     validateMiddleware(planningIdSchema),
-    planningController.deletePlanning
+    planningController.getBatchesByPlanningIdApi
+);
+
+//cập nhật trạng thái lô sản xuất --
+router.put(
+    '/batches/:batchId/status',
+    // authMiddleware,
+    // roleMiddleware,
+    validateMiddleware(batchUpdateSchema),
+    planningController.updateBatchStatusApi
+);
+
+// src/routes/planning.routes.ts
+router.post(
+    '/with-batches',
+    // authMiddleware,
+    // roleMiddleware,
+    // validateMiddleware(planningWithBatchesSchema),
+    planningController.createPlanningWithBatchesApi
 );
 
 export default router;

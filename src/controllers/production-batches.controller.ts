@@ -1,77 +1,77 @@
-import { Request, Response, NextFunction } from 'express';
-import { ProductionBatchesService } from '../services/production-batches.service';
-import { ErrorCodes, throwError } from '../utils/errors';
-import { ProductionBatchCreateInput, ProductionBatchUpdateInput } from '../types/production-batches';
+// import { Request, Response, NextFunction } from 'express';
+// import { ProductionBatchesService } from '../services/production-batches.service';
+// import { ErrorCodes, throwError } from '../utils/errors';
+// import { ProductionBatchCreateInput, ProductionBatchUpdateInput } from '../types/production-batches';
 
-export class ProductionBatchesController {
-    private productionBatchesService: ProductionBatchesService;
+// export class ProductionBatchesController {
+//     private productionBatchesService: ProductionBatchesService;
 
-    constructor() {
-        this.productionBatchesService = new ProductionBatchesService();
-    }
+//     constructor() {
+//         this.productionBatchesService = new ProductionBatchesService();
+//     }
 
-    createProductionBatch = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = req.user?.employeeId;
-        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+//     createProductionBatch = async (req: Request, res: Response, next: NextFunction) => {
+//         const employeeId = req.user?.employeeId;
+//         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
-        try {
-            const data = req.body as ProductionBatchCreateInput;
-            const productionBatch = await this.productionBatchesService.createProductionBatch(data, employeeId);
-            res.status(201).json(productionBatch);
-        } catch (error) {
-            next(error);
-        }
-    };
+//         try {
+//             const data = req.body as ProductionBatchCreateInput;
+//             const productionBatch = await this.productionBatchesService.createProductionBatch(data, employeeId);
+//             res.status(201).json(productionBatch);
+//         } catch (error) {
+//             next(error);
+//         }
+//     };
 
-    getProductionBatchById = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = req.user?.employeeId;
-        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+//     getProductionBatchById = async (req: Request, res: Response, next: NextFunction) => {
+//         const employeeId = req.user?.employeeId;
+//         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
-        try {
-            const batchId = parseInt(req.params.batchId);
-            const productionBatch = await this.productionBatchesService.getProductionBatchById(batchId);
-            res.json(productionBatch);
-        } catch (error) {
-            next(error);
-        }
-    };
+//         try {
+//             const batchId = parseInt(req.params.batchId);
+//             const productionBatch = await this.productionBatchesService.getProductionBatchById(batchId);
+//             res.json(productionBatch);
+//         } catch (error) {
+//             next(error);
+//         }
+//     };
 
-    getAllProductionBatches = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = req.user?.employeeId;
-        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+//     getAllProductionBatches = async (req: Request, res: Response, next: NextFunction) => {
+//         const employeeId = req.user?.employeeId;
+//         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
-        try {
-            const productionBatches = await this.productionBatchesService.getAllProductionBatches();
-            res.json(productionBatches);
-        } catch (error) {
-            next(error);
-        }
-    };
+//         try {
+//             const productionBatches = await this.productionBatchesService.getAllProductionBatches();
+//             res.json(productionBatches);
+//         } catch (error) {
+//             next(error);
+//         }
+//     };
 
-    updateProductionBatch = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = req.user?.employeeId;
-        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+//     updateProductionBatch = async (req: Request, res: Response, next: NextFunction) => {
+//         const employeeId = req.user?.employeeId;
+//         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
-        try {
-            const batchId = parseInt(req.params.batchId);
-            const data = req.body as ProductionBatchUpdateInput;
-            const productionBatch = await this.productionBatchesService.updateProductionBatch(batchId, data, employeeId);
-            res.json(productionBatch);
-        } catch (error) {
-            next(error);
-        }
-    };
+//         try {
+//             const batchId = parseInt(req.params.batchId);
+//             const data = req.body as ProductionBatchUpdateInput;
+//             const productionBatch = await this.productionBatchesService.updateProductionBatch(batchId, data, employeeId);
+//             res.json(productionBatch);
+//         } catch (error) {
+//             next(error);
+//         }
+//     };
 
-    deleteProductionBatch = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = req.user?.employeeId;
-        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+//     deleteProductionBatch = async (req: Request, res: Response, next: NextFunction) => {
+//         const employeeId = req.user?.employeeId;
+//         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
-        try {
-            const batchId = parseInt(req.params.batchId);
-            await this.productionBatchesService.deleteProductionBatch(batchId);
-            res.status(204).send();
-        } catch (error) {
-            next(error);
-        }
-    };
-}
+//         try {
+//             const batchId = parseInt(req.params.batchId);
+//             await this.productionBatchesService.deleteProductionBatch(batchId);
+//             res.status(204).send();
+//         } catch (error) {
+//             next(error);
+//         }
+//     };
+// }

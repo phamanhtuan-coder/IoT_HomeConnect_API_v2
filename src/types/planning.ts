@@ -1,58 +1,49 @@
-/**
- * Interface `Planning` đại diện cho một kế hoạch sản xuất.
- *
- * @property {string} planning_id - Khóa chính, định danh kế hoạch sản xuất
- * @property {string} name - Tên kế hoạch
- * @property {string | null} description - Mô tả kế hoạch
- * @property {string | null} status - Trạng thái: 'pending', 'in_progress', 'completed'
- * @property {Date | null} start_date - Ngày bắt đầu
- * @property {Date | null} end_date - Ngày kết thúc
- * @property {string | null} created_by - Khóa ngoại, nhân viên tạo kế hoạch
- * @property {Date | null} created_at - Thời gian tạo
- * @property {Date | null} updated_at - Thời gian cập nhật cuối
- * @property {boolean | null} is_deleted - Trạng thái xóa mềm
- */
-export interface Planning {
-    planning_id: string;
-    name: string;
-    description: string | null;
-    status: string | null;
-    start_date: Date | null;
-    end_date: Date | null;
-    created_by: string | null;
-    created_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
+// src/types/planning.ts
+import { planning, production_batches } from '@prisma/client';
+
+export type PlanningStatus = 'pending' | 'pendingimport' | 'rejected' | 'in_progress' | 'completed' | 'fix';
+export type BatchStatus = 'pending' | 'pendingimport' | 'in_progress' | 'completed' | 'relabeling' | 'fixproduction' | 'rejected' | 'cancelled' | 'expired';
+
+export interface Planning extends planning {
+    production_batches?: ProductionBatch[];
 }
 
-/**
- * Interface đầu vào để tạo kế hoạch sản xuất mới.
- *
- * @property {string} name - Tên kế hoạch
- * @property {string} description - Mô tả kế hoạch (tùy chọn)
- * @property {Date} start_date - Ngày bắt đầu (tùy chọn)
- * @property {Date} end_date - Ngày kết thúc (tùy chọn)
- */
+export interface ProductionBatch extends production_batches {
+    device_templates?: any; // Replace with proper type from prisma
+}
+
 export interface PlanningCreateInput {
-    name: string;
-    description?: string;
-    start_date?: Date;
-    end_date?: Date;
+    planning_note?: string;
+    batch_count: number;
 }
 
-/**
- * Interface đầu vào để cập nhật kế hoạch sản xuất.
- *
- * @property {string} name - Tên kế hoạch (tùy chọn)
- * @property {string} description - Mô tả kế hoạch (tùy chọn)
- * @property {string} status - Trạng thái mới (tùy chọn)
- * @property {Date} start_date - Ngày bắt đầu (tùy chọn)
- * @property {Date} end_date - Ngày kết thúc (tùy chọn)
- */
-export interface PlanningUpdateInput {
-    name?: string;
-    description?: string;
-    status?: string;
-    start_date?: Date;
-    end_date?: Date;
+export interface BatchCreateInput {
+    template_id: number;
+    quantity: number;
+    batch_note?: string;
+    firmware_id?: number;
+}
+
+export interface PlanningApprovalInput {
+    status: 'approved' | 'rejected';
+    notes: string;
+}
+
+export interface BatchUpdateInput {
+    status: BatchStatus;
+    batch_note?: string;
+}
+
+export interface PlanningResponse {
+    success: boolean;
+    data?: Planning | Planning[];
+    message?: string;
+    error?: string;
+}
+
+export interface BatchResponse {
+    success: boolean;
+    data?: ProductionBatch | ProductionBatch[];
+    message?: string;
+    error?: string;
 }
