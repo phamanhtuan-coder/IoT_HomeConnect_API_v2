@@ -64,7 +64,7 @@ export class PlanningService {
                                     }
                                 }
                             }
-                            
+
                         },
                         production_tracking: true
                     }
@@ -230,125 +230,123 @@ export class PlanningService {
     }
 
     // src/services/planning.service.ts
-async createPlanningWithBatches(planningData: PlanningCreateInput, batches: BatchCreateInput[], employeeId: string): Promise<any> {
-    return this.prisma.$transaction(async (prisma) => {
-        // Tạo planning
-        const planning = await prisma.planning.create({
-            data: {
-                planning_id: generatePlanningId(),
-                planning_note: planningData.planning_note,
-                created_by: employeeId,
-                status: 'pending',
-                logs: {
-                    created: {
-                        timestamp: new Date().toISOString(),
-                        employee_id: employeeId,
-                        action: 'created',
-                        details: JSON.parse(JSON.stringify(planningData))
-                    }
-                } as any
-            }
-        });
-
-        // Tạo các batch
-        for (const batchData of batches) {
-            // Kiểm tra template
-            const template = await prisma.device_templates.findFirst({
-                where: {
-                    template_id: batchData.template_id,
-                    is_deleted: false
-                },
-                include: {
-                    firmware: true
-                }
-            });
-
-            if (!template) {
-                throwError(ErrorCodes.NOT_FOUND, 'Device template not found');
-            }
-
-            // Kiểm tra firmware
-            if (batchData.firmware_id) {
-                const firmwareExists = template!.firmware?.some(f => f.firmware_id === batchData.firmware_id);
-                if (!firmwareExists) {
-                    throwError(ErrorCodes.BAD_REQUEST, 'Firmware not found or not associated with this template');
-                }
-            }
-
-            // Tạo batch
-            const batch = await prisma.production_batches.create({
+    async createPlanningWithBatches(planningData: PlanningCreateInput, batches: BatchCreateInput[], employeeId: string): Promise<any> {
+        return this.prisma.$transaction(async (prisma) => {
+            // Tạo planning
+            const planning = await prisma.planning.create({
                 data: {
-                    planning_id: planning.planning_id,
-                    production_batch_id: generateBatchId(),
-                    template_id: batchData.template_id,
-                    quantity: batchData.quantity,
-                    batch_note: batchData.batch_note,
+                    planning_id: generatePlanningId(),
+                    planning_note: planningData.planning_note,
+                    created_by: employeeId,
                     status: 'pending',
                     logs: {
                         created: {
                             timestamp: new Date().toISOString(),
                             employee_id: employeeId,
                             action: 'created',
-                            details: {
-                                ...JSON.parse(JSON.stringify(batchData)),
-                                firmware_id: batchData.firmware_id
-                            }
+                            details: JSON.parse(JSON.stringify(planningData))
                         }
                     } as any
                 }
             });
 
-            // Tạo production_tracking records
-            const trackingPromises = Array.from({ length: batchData.quantity }, async (_, index) => {
-                const templateName = template!.name;
-                const shortName = templateName
-                    .split(' ')
-                    .map(word => word[0])
-                    .join('')
-                    .toUpperCase();
-                const sequenceNumber = (index + 1).toString().padStart(3, '0');
-                const deviceSerial = `${shortName}-${batch.production_batch_id}-${sequenceNumber}`;
-
-                return prisma.production_tracking.create({
-                    data: {
-                        production_batch_id: batch.production_batch_id,
-                        device_serial: deviceSerial,
-                        stage: 'pending',
-                        status: 'pending'
+            // Tạo các batch
+            for (const batchData of batches) {
+                // Kiểm tra template
+                const template = await prisma.device_templates.findFirst({
+                    where: {
+                        template_id: batchData.template_id,
+                        is_deleted: false
+                    },
+                    include: {
+                        firmware: true
                     }
                 });
-            });
 
-            await Promise.all(trackingPromises);
-        }
+                if (!template) {
+                    throwError(ErrorCodes.NOT_FOUND, 'Device template not found');
+                }
 
-        // Lấy lại planning với tất cả thông tin
-        return prisma.planning.findFirst({
-            where: {
-                planning_id: planning.planning_id,
-                is_deleted: false
-            },
-            include: {
-                production_batches: {
-                    where: { is_deleted: false },
-                    include: {
-                        device_templates: {
-                            include: {
-                                firmware: {
-                                    select: {
-                                        firmware_id: true,
-                                        name: true,
-                                        version: true
-                                    }
+                const firmwareBelongsToTemplate = template?.firmware.some(f => f.firmware_id === batchData.firmware_id);
+                if (!firmwareBelongsToTemplate) {
+                    throwError(ErrorCodes.BAD_REQUEST, 'Firmware not associated with this template');
+                }
+
+                // Tạo batch
+                const batch = await prisma.production_batches.create({
+                    data: {
+                        planning_id: planning.planning_id,
+                        production_batch_id: generateBatchId(),
+                        template_id: batchData.template_id,
+                        firmware_id: batchData.firmware_id,
+                        quantity: batchData.quantity,
+                        batch_note: batchData.batch_note,
+                        status: 'pending',
+                        logs: {
+                            created: {
+                                timestamp: new Date().toISOString(),
+                                employee_id: employeeId,
+                                action: 'created',
+                                details: {
+                                    ...JSON.parse(JSON.stringify(batchData)),
+                                    firmware_id: batchData.firmware_id
                                 }
                             }
-                        },
-                        production_tracking: true
+                        } as any
+                    }
+                });
+
+                // Tạo production_tracking records
+                const trackingPromises = Array.from({ length: batchData.quantity }, async (_, index) => {
+                    const templateName = template!.name;
+                    const shortName = templateName
+                        .split(' ')
+                        .map(word => word[0])
+                        .join('')
+                        .toUpperCase();
+                    const sequenceNumber = (index + 1).toString().padStart(3, '0');
+                    const deviceSerial = `${shortName}-${batch.production_batch_id}-${sequenceNumber}`;
+
+                    return prisma.production_tracking.create({
+                        data: {
+                            production_batch_id: batch.production_batch_id,
+                            device_serial: deviceSerial,
+                            stage: 'pending',
+                            status: 'pending'
+                        }
+                    });
+                });
+
+                await Promise.all(trackingPromises);
+            }
+
+            // Lấy lại planning với tất cả thông tin
+            return prisma.planning.findFirst({
+                where: {
+                    planning_id: planning.planning_id,
+                    is_deleted: false
+                },
+                include: {
+                    production_batches: {
+                        where: { is_deleted: false },
+                        include: {
+                            device_templates: {
+                                include: {
+                                    firmware: {
+                                        select: {
+                                            firmware_id: true,
+                                            name: true,
+                                            version: true
+                                        }
+                                    }
+                                }
+                            },
+                            production_tracking: true
+                        }
                     }
                 }
-            }
+            });
         });
-    });
-}
+    }
 
 }

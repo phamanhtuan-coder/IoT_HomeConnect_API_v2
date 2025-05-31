@@ -132,6 +132,7 @@ import componentRoutes from "./component.routes";
 import templateComponentRoutes from "./template-component.routes";
 import deviceTemplateRoutes from "./device-template.routes";
 import productionTrackingRoutes from "./production-tracking.routes";
+import planningRoutes from "./planning.routes";
 // import productionBatchesRoutes from "./production-batches.routes";
 import sseRoutes from './sse.routes';
 
@@ -160,7 +161,7 @@ router.use('/component',componentRoutes)
 router.use('/template-components', templateComponentRoutes);
 router.use('/device-templates', deviceTemplateRoutes);
 router.use('/production-tracking', productionTrackingRoutes);
-
+router.use('/planning', planningRoutes);
 // router.use('/production-batches', productionBatchesRoutes);
 router.use('/sse', sseRoutes);
 

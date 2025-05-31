@@ -92,6 +92,7 @@ class FirmwareService {
                     is_mandatory: false,
                     updated_at: new Date(),
                     logs: [...(fw.logs as any), logForDemotedFirmware]
+
                 },
             });
         }
@@ -151,7 +152,7 @@ class FirmwareService {
                 template_id: template_id,
                 is_mandatory: is_mandatory,
                 note: note || null,
-                logs: [newLog]
+                // logs: [newLog]
             },
         });
 
@@ -204,7 +205,7 @@ class FirmwareService {
         const productionBatches = await this.prisma.production_batches.findFirst({
             where: {
                 template_id: input.template_id, is_deleted: false,
-                firmware_id: firmwareId
+                // firmware_id: firmwareId
             },
         });
 
@@ -272,6 +273,7 @@ class FirmwareService {
             employee: employee?.surname + ' ' + employee?.lastname,
             created_at: new Date(),
         };
+
 
         await this.prisma.$transaction(async (tx) => {
             await tx.firmware!.update({

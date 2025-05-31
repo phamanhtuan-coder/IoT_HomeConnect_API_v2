@@ -9,7 +9,7 @@
  * @property {Date | null} [updated_at] - Ngày cập nhật cuối (có thể không có).
  * @property {boolean | null} [is_deleted] - Đánh dấu đã xóa (có thể không có).
  */
-export interface Component {
+interface Component {
     component_id: number;
     name: string;
     supplier?: string | null;
@@ -17,4 +17,13 @@ export interface Component {
     created_at?: Date | null;
     updated_at?: Date | null;
     is_deleted?: boolean | null;
+    status?: number | null;
 }
+
+interface ComponentResponse {
+    success: number;
+    data: Component[] | Component | null;
+    message: string;
+}
+
+export {Component, ComponentResponse }
