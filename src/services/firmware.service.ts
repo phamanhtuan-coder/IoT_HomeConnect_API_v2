@@ -91,7 +91,7 @@ class FirmwareService {
                 data: {
                     is_mandatory: false,
                     updated_at: new Date(),
-                    logs: [...fw.logs, logForDemotedFirmware]
+                    // logs: [...fw.logs, logForDemotedFirmware]
                 },
             });
         }
@@ -150,7 +150,7 @@ class FirmwareService {
                 template_id: template_id,
                 is_mandatory: is_mandatory,
                 note: note || null,
-                logs: [newLog]
+                // logs: [newLog]
             },
         });
 
@@ -199,7 +199,7 @@ class FirmwareService {
         const productionBatches = await this.prisma.production_batches.findFirst({
             where: {
                 template_id: input.template_id, is_deleted: false,
-                firmware_id: firmwareId
+                // firmware_id: firmwareId
             },
         });
         if (productionBatches) throwError(ErrorCodes.NOT_FOUND, 'Device template not found');
@@ -243,7 +243,7 @@ class FirmwareService {
         if (devices.length > 0) throwError(ErrorCodes.CONFLICT, 'Không thể xoá firmware đang được sử dụng bởi các thiết bị');
 
         const productionBatches = await this.prisma.production_batches.findMany({
-            where: { firmware_id: firmwareId, is_deleted: false },
+            // where: { firmware_id: firmwareId, is_deleted: false },
         });
         if (productionBatches.length > 0) throwError(ErrorCodes.CONFLICT, 'Không thể xoá firmware đang được sử dụng bởi các lô sản phẩm');
 
@@ -264,7 +264,7 @@ class FirmwareService {
             where: { firmware_id: firmwareId },
             data: {
                 is_deleted: true, updated_at: new Date(),
-                logs: [...(firmware?.logs || []), newLog]
+                // logs: [...(firmware?.logs || []), newLog]
             },
         });
     }
@@ -315,7 +315,7 @@ class FirmwareService {
             where: { firmware_id: firmwareId },
             data: {
                 tested_at: testResult ? new Date() : null,
-                logs: [...(firmware?.logs || []), newLog],
+                // logs: [...(firmware?.logs || []), newLog],
                 },
         });
     }
@@ -348,7 +348,7 @@ class FirmwareService {
             data: {
                 tested_at: testResult ? new Date() : null,
                 is_approved: testResult ? true : false,
-                logs: [...(firmware?.logs || []), newLog],
+                // logs: [...(firmware?.logs || []), newLog],
                 },
         });
     }
@@ -367,7 +367,7 @@ class FirmwareService {
             updated_at: firmware!.updated_at ?? null,
             is_deleted: firmware!.is_deleted ?? null,
             note: firmware!.note ?? null,
-            logs: firmware!.logs ?? [],
+            // logs: firmware!.logs ?? [],
         };
     }
 }
