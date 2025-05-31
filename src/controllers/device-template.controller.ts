@@ -31,7 +31,6 @@ class DeviceTemplateController {
             const template = await this.deviceTemplateService.createDeviceTemplate(req.body as DeviceTemplateInput, employeeId);
             res.status(201).json(template);
         } catch (error) {
-            console.log("error", error)
             next(error);
         }
     };
