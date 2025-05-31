@@ -9,43 +9,43 @@ datasource db {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model account {
-  account_id                                                 String                @id @db.VarChar(32)
-  customer_id                                                String?               @db.VarChar(32)
-  employee_id                                                String?               @db.VarChar(32)
-  role_id                                                    Int?
-  username                                                   String                @db.VarChar(255)
-  password                                                   String?               @db.VarChar(255)
-  verification_code                                          String?               @db.VarChar(6)
-  verification_expiry                                        DateTime?             @db.DateTime(0)
-  report                                                     Int?                  @db.TinyInt
-  is_new                                                     Boolean?
-  status                                                     Int?                  @db.TinyInt
-  created_at                                      DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at                                               DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  deleted_at                                                 DateTime?             @db.DateTime(0)
-  is_locked                                                  Boolean?              @default(false)
-  locked_at                                                  DateTime?             @db.DateTime(0)
-  role                                                       role?                 @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_ibfk_1")
-  employee                                                   employee?             @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_ibfk_2")
-  customer                                                   customer?             @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_ibfk_3")
-  device_templates                                           device_templates[]
-  devices                                                    devices[]
-  notification                                               notification[]
-  ownership_history_ownership_history_from_user_idToaccount  ownership_history[]   @relation("ownership_history_from_user_idToaccount")
-  ownership_history_ownership_history_to_user_idToaccount    ownership_history[]   @relation("ownership_history_to_user_idToaccount")
-  share_requests_share_requests_from_user_idToaccount        share_requests[]      @relation("share_requests_from_user_idToaccount")
-  share_requests_share_requests_to_user_idToaccount          share_requests[]      @relation("share_requests_to_user_idToaccount")
-  shared_permissions                                         shared_permissions[]
-  sync_tracking                                              sync_tracking[]
-  tickets_tickets_user_idToaccount                           tickets[]             @relation("tickets_user_idToaccount")
-  tickets_tickets_assigned_toToaccount                       tickets[]             @relation("tickets_assigned_toToaccount")
-  user_devices                                               user_devices[]
-  user_groups                                                user_groups[]
+  account_id                                                String               @id @db.VarChar(32)
+  customer_id                                               String?              @db.VarChar(32)
+  employee_id                                               String?              @db.VarChar(32)
+  role_id                                                   Int?
+  username                                                  String               @db.VarChar(255)
+  password                                                  String?              @db.VarChar(255)
+  verification_code                                         String?              @db.VarChar(6)
+  verification_expiry                                       DateTime?            @db.DateTime(0)
+  report                                                    Int?                 @db.TinyInt
+  is_new                                                    Boolean?
+  status                                                    Int?                 @db.TinyInt
+  created_at                                                DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at                                                DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  deleted_at                                                DateTime?            @db.DateTime(0)
+  is_locked                                                 Boolean?             @default(false)
+  locked_at                                                 DateTime?            @db.DateTime(0)
+  role                                                      role?                @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_ibfk_1")
+  employee                                                  employee?            @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_ibfk_2")
+  customer                                                  customer?            @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_ibfk_3")
+  device_templates                                          device_templates[]
+  devices                                                   devices[]
+  notification                                              notification[]
+  ownership_history_ownership_history_from_user_idToaccount ownership_history[]  @relation("ownership_history_from_user_idToaccount")
+  ownership_history_ownership_history_to_user_idToaccount   ownership_history[]  @relation("ownership_history_to_user_idToaccount")
+  planning                                                  planning[]           @relation("account_planning_created_byToaccount")
+  share_requests_share_requests_from_user_idToaccount       share_requests[]     @relation("share_requests_from_user_idToaccount")
+  share_requests_share_requests_to_user_idToaccount         share_requests[]     @relation("share_requests_to_user_idToaccount")
+  shared_permissions                                        shared_permissions[]
+  sync_tracking                                             sync_tracking[]
+  tickets_tickets_user_idToaccount                          tickets[]            @relation("tickets_user_idToaccount")
+  tickets_tickets_assigned_toToaccount                      tickets[]            @relation("tickets_assigned_toToaccount")
+  user_devices                                              user_devices[]
+  user_groups                                               user_groups[]
 
   @@index([customer_id], map: "customer_id")
   @@index([employee_id], map: "employee_id")
   @@index([role_id], map: "role_id")
-  planning planning[] @relation("account_planning_created_byToaccount")
 }
 
 model address_book {
@@ -57,8 +57,8 @@ model address_book {
   street      String?   @db.VarChar(500)
   detail      String?   @db.VarChar(500)
   is_default  Boolean?
-  created_at    DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at    DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at  DateTime? @db.DateTime(0)
   customer    customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "address_book_ibfk_1")
 
@@ -104,8 +104,8 @@ model attribute {
   required           Boolean?
   group_attribute_id Int?
   is_hide            Boolean?
-  created_at          DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at           DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at         DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at         DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at         DateTime?            @db.DateTime(0)
   attribute_group    attribute_group?     @relation(fields: [group_attribute_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "attribute_ibfk_1")
   attribute_category attribute_category[]
@@ -118,8 +118,8 @@ model attribute_category {
   id           Int         @id
   attribute_id Int?
   category_id  Int?
-  created_at     DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at    DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at   DateTime?   @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at   DateTime?   @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at   DateTime?   @db.DateTime(0)
   categories   categories? @relation(fields: [category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction, map: "attribute_category_ibfk_1")
   attribute    attribute?  @relation(fields: [attribute_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "attribute_category_ibfk_2")
@@ -131,8 +131,8 @@ model attribute_category {
 model attribute_group {
   id         Int         @id
   name       String?     @db.VarChar(500)
-  created_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at DateTime?   @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at DateTime?   @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at DateTime?   @db.DateTime(0)
   attribute  attribute[]
 }
@@ -142,8 +142,8 @@ model attribute_product {
   attribute_id Int?
   is_hide      Boolean?
   value        String?    @db.VarChar(500)
-  created_at    DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at     DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at   DateTime?  @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at   DateTime?  @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at   DateTime?  @db.DateTime(0)
   product      product    @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "attribute_product_ibfk_1")
   attribute    attribute? @relation(fields: [attribute_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "attribute_product_ibfk_2")
@@ -157,8 +157,8 @@ model batch_product_detail {
   exp_batch_id  String?        @db.VarChar(50)
   imp_batch_id  String         @db.VarChar(50)
   seral_number  String?        @db.VarChar(20)
-  created_at    DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at      DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at    DateTime?      @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at    DateTime?      @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at    DateTime?      @db.DateTime(0)
   detail_import detail_import  @relation(fields: [imp_batch_id], references: [batch_code], onDelete: NoAction, onUpdate: NoAction, map: "batch_product_detail_ibfk_1")
   detail_export detail_export? @relation(fields: [exp_batch_id], references: [batch_code], onDelete: NoAction, onUpdate: NoAction, map: "batch_product_detail_ibfk_2")
@@ -178,8 +178,8 @@ model blog {
   image          String?     @db.MediumText
   score          Int?
   is_hide        Boolean?
-  created_at      DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at     DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at     DateTime?   @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at     DateTime?   @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at     DateTime?   @db.DateTime(0)
   categories     categories? @relation(fields: [category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction, map: "blog_ibfk_1")
   product        product?    @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "blog_ibfk_2")
@@ -190,11 +190,11 @@ model blog {
 
 model cart {
   id          Int       @id
-  customer_id String   @db.VarChar(32)
+  customer_id String    @db.VarChar(32)
   product_id  Int?
   quantity    Int?
-  created_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at  DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at  DateTime? @db.DateTime(0)
   customer    customer  @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "cart_ibfk_1")
   product     product?  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "cart_ibfk_2")
@@ -227,15 +227,15 @@ model categories {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model components {
-  component_id          Int                     @id @default(autoincrement())
-  name                  String                  @db.VarChar(100)
-  supplier              String?                 @db.VarChar(100)
-  unit_cost             Decimal?                @db.Decimal(10, 2)
-  status                Boolean?                @default(false)
-  created_at            DateTime?               @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at            DateTime?               @default(dbgenerated("(now())")) @db.DateTime(0)
-  is_deleted            Boolean?                @default(false)
-  template_components   template_components[]
+  component_id        Int                   @id @default(autoincrement())
+  name                String                @db.VarChar(100)
+  supplier            String?               @db.VarChar(100)
+  unit_cost           Decimal?              @db.Decimal(10, 2)
+  created_at          DateTime?             @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at          DateTime?             @default(dbgenerated("(now())")) @db.DateTime(0)
+  is_deleted          Boolean?              @default(false)
+  status              Boolean?              @default(false)
+  template_components template_components[]
 }
 
 model contact {
@@ -244,8 +244,8 @@ model contact {
   title      String?   @db.VarChar(500)
   content    String?   @db.Text
   email      String?   @db.VarChar(100)
-  created_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at DateTime? @db.DateTime(0)
 }
 
@@ -260,8 +260,8 @@ model customer {
   email_verified Boolean?         @default(false)
   birthdate      DateTime?        @db.Date
   gender         Boolean?
-  created_at       DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at      DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at     DateTime?        @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at     DateTime?        @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at     DateTime?        @db.DateTime(0)
   account        account[]
   address_book   address_book[]
@@ -280,8 +280,8 @@ model detail_export {
   product_id           Int
   quantity             Int?
   note                 String?                @db.VarChar(500)
-  created_at          DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at           DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at           DateTime?              @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at           DateTime?              @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at           DateTime?              @db.DateTime(0)
   batch_product_detail batch_product_detail[]
   export_warehouse     export_warehouse       @relation(fields: [export_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "detail_export_ibfk_1")
@@ -304,8 +304,8 @@ model detail_import {
   amount               Int?
   is_gift              Boolean?
   note                 String?                @db.VarChar(500)
-  created_at            DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at            DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at           DateTime?              @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at           DateTime?              @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at           DateTime?              @db.DateTime(0)
   batch_product_detail batch_product_detail[]
   import_warehouse     import_warehouse       @relation(fields: [import_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "detail_import_ibfk_1")
@@ -317,22 +317,22 @@ model detail_import {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model device_templates {
-  template_id         Int                   @id @default(autoincrement())
-  device_type_id      Int?
-  name                String                @db.VarChar(100)
-  device_template_note String?              @db.VarChar(500)
-  production_cost     Float?                @default(0)
-  status              String?               @db.VarChar(20) @default("pending")
-  created_by          String?               @db.VarChar(32)
-  created_at          DateTime?             @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at          DateTime?             @default(dbgenerated("(now())")) @db.DateTime(0)
-  is_deleted          Boolean?              @default(false)
-  categories          categories?           @relation(fields: [device_type_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction, map: "device_templates_ibfk_1")
-  account             account?              @relation(fields: [created_by], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "device_templates_ibfk_2")
-  devices             devices[]
-  firmware            firmware[]
-  production_batches  production_batches[]
-  template_components template_components[]
+  template_id          Int                   @id @default(autoincrement())
+  device_type_id       Int?
+  name                 String                @db.VarChar(100)
+  created_by           String?               @db.VarChar(32)
+  created_at           DateTime?             @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at           DateTime?             @default(dbgenerated("(now())")) @db.DateTime(0)
+  is_deleted           Boolean?              @default(false)
+  device_template_note String?               @db.VarChar(500)
+  status               String?               @default("pending") @db.VarChar(20)
+  production_cost      Float?                @default(0)
+  categories           categories?           @relation(fields: [device_type_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction, map: "device_templates_ibfk_1")
+  account              account?              @relation(fields: [created_by], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "device_templates_ibfk_2")
+  devices              devices[]
+  firmware             firmware[]
+  production_batches   production_batches[]
+  template_components  template_components[]
 
   @@index([created_by], map: "created_by")
   @@index([device_type_id], map: "device_type_id")
@@ -361,7 +361,7 @@ model devices {
   created_at              DateTime?                 @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at              DateTime?                 @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted              Boolean?                  @default(false)
-  production_tracking_id  Int?                      // Add this new field for referencing production_tracking
+  production_tracking_id  Int?
   alerts                  alerts[]
   device_templates        device_templates?         @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_1")
   spaces                  spaces?                   @relation(fields: [space_id], references: [space_id], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_2")
@@ -387,6 +387,7 @@ model devices {
   @@index([template_id], map: "template_id")
   @@index([production_tracking_id], map: "production_tracking_id")
 }
+
 model employee {
   id                               String             @id @db.VarChar(32)
   surname                          String?            @db.VarChar(500)
@@ -397,8 +398,8 @@ model employee {
   gender                           Boolean?
   phone                            String?            @db.VarChar(32)
   status                           Int?               @db.TinyInt
-  created_at                       DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at                        DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at                       DateTime?          @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at                       DateTime?          @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at                       DateTime?          @db.DateTime(0)
   account                          account[]
   export_warehouse                 export_warehouse[]
@@ -416,8 +417,8 @@ model export_warehouse {
   file_authenticate String?         @db.MediumText
   total_profit      Float?
   note              String?         @db.VarChar(500)
-  created_at         DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at         DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at        DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at        DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at        DateTime?       @db.DateTime(0)
   detail_export     detail_export[]
   employee          employee?       @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "export_warehouse_ibfk_1")
@@ -439,6 +440,7 @@ model firmware {
   updated_at              DateTime?                 @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted              Boolean?                  @default(false)
   note                    String?                   @db.Text
+  logs                    Json?                     @db.Json
   devices                 devices[]
   device_templates        device_templates?         @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "firmware_ibfk_1")
   firmware_update_history firmware_update_history[]
@@ -466,10 +468,10 @@ model firmware_update_history {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model groups {
   group_id    Int           @id @default(autoincrement())
-  group_name  String        @db.VarChar(255)
   created_at  DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at  DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted  Boolean?      @default(false)
+  group_name  String        @db.VarChar(255)
   devices     devices[]
   houses      houses[]
   user_groups user_groups[]
@@ -481,7 +483,7 @@ model hourly_values {
   device_serial   String?   @db.VarChar(50)
   space_id        Int?
   hour_timestamp  DateTime? @db.DateTime(0)
-  avg_value       Json? // Stores { "temperature": number, "humidity": number, "gas": number, ... }
+  avg_value       Json?
   sample_count    Int?
   created_at      DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at      DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
@@ -497,13 +499,13 @@ model hourly_values {
 model houses {
   house_id   Int       @id @default(autoincrement())
   group_id   Int?
-  house_name       String    @db.VarChar(100)
   address    String?   @db.Text
   icon_name  String?   @db.VarChar(100)
   icon_color String?   @db.VarChar(100)
   created_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted Boolean?  @default(false)
+  house_name String    @db.VarChar(100)
   groups     groups?   @relation(fields: [group_id], references: [group_id], onDelete: NoAction, onUpdate: NoAction, map: "houses_ibfk_1")
   spaces     spaces[]
 
@@ -514,8 +516,8 @@ model image_product {
   id         Int       @id
   product_id Int?
   image      String?   @db.MediumText
-  created_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at DateTime? @db.DateTime(0)
   product    product?  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "image_product_ibfk_1")
 
@@ -534,8 +536,8 @@ model import_warehouse {
   prepaid           Float?
   remaining         Float?
   note              String?         @db.VarChar(500)
-  created_at         DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at        DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at        DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at        DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at        DateTime?       @db.DateTime(0)
   detail_import     detail_import[]
   employee          employee?       @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "import_warehouse_ibfk_1")
@@ -550,17 +552,17 @@ model info_website {
   KEY_NAME   String?   @db.VarChar(500)
   VALUE      String?   @db.VarChar(500)
   ID_PAGE    Int?      @db.TinyInt
-  created_at  DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at DateTime? @db.DateTime(0)
 }
 
 model liked {
   id          Int       @id
-  customer_id String   @db.VarChar(32)
+  customer_id String    @db.VarChar(32)
   product_id  Int?
-  created_at    DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at    DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at  DateTime? @db.DateTime(0)
   customer    customer  @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "liked_ibfk_1")
   product     product?  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "liked_ibfk_2")
@@ -577,8 +579,8 @@ model notification {
   text       String?   @db.VarChar(255)
   type       String?   @db.VarChar(200)
   is_read    Boolean?
-  created_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at DateTime? @db.DateTime(0)
   account    account?  @relation(fields: [account_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "notification_ibfk_1")
   role       role?     @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "notification_ibfk_2")
@@ -591,9 +593,9 @@ model order {
   id                                  Int             @id
   order_number                        Int?
   order_id                            String?         @db.VarChar(12)
-  customer_id                         String?        @db.VarChar(32)
-  saler_id                            String?        @db.VarChar(32)
-  shipper_id                          String?        @db.VarChar(32)
+  customer_id                         String?         @db.VarChar(32)
+  saler_id                            String?         @db.VarChar(32)
+  shipper_id                          String?         @db.VarChar(32)
   export_date                         DateTime?       @db.Date
   total_import_money                  Float?
   total_money                         Float?
@@ -610,8 +612,8 @@ model order {
   name_recipient                      String?         @db.VarChar(150)
   note                                String?         @db.VarChar(500)
   platform_order                      String?         @db.VarChar(50)
-  created_at                           DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at                            DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at                          DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at                          DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at                          DateTime?       @db.DateTime(0)
   detail_export                       detail_export[]
   customer                            customer?       @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_1")
@@ -638,8 +640,8 @@ model order_detail {
   delivery_date  DateTime? @db.DateTime(0)
   receiving_date DateTime? @db.DateTime(0)
   is_gift        Boolean?
-  created_at       DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at       DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at     DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at     DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at     DateTime? @db.DateTime(0)
   product        product?  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_detail_ibfk_1")
   order          order?    @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_detail_ibfk_2")
@@ -650,21 +652,21 @@ model order_detail {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model ownership_history {
-  history_id                                      Int            @default(autoincrement())
+  history_id                                      Int       @default(autoincrement())
+  device_serial                                   String?   @db.VarChar(50)
+  from_user_id                                    String?   @db.VarChar(32)
+  to_user_id                                      String?   @db.VarChar(32)
+  transferred_at                                  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  legal_expired_date                              DateTime? @db.DateTime(0)
+  is_expired                                      Boolean?  @default(false)
+  created_at                                      DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at                                      DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  is_deleted                                      Boolean?  @default(false)
   ticket_id                                       Int
-  device_serial                                   String?        @db.VarChar(50)
-  from_user_id                                    String?        @db.VarChar(32)
-  to_user_id                                      String?        @db.VarChar(32)
-  transferred_at                                  DateTime?      @default(dbgenerated("(now())")) @db.DateTime(0)
-  legal_expired_date                              DateTime?      @db.DateTime(0)
-  is_expired                                      Boolean?       @default(false)
-  created_at                                      DateTime?      @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at                                      DateTime?      @default(dbgenerated("(now())")) @db.DateTime(0)
-  is_deleted                                      Boolean?       @default(false)
-  tickets                                         tickets        @relation(fields: [ticket_id], references: [ticket_id], onDelete: NoAction, onUpdate: NoAction, map: "ownership_history_ibfk_1")
-  devices                                         devices?       @relation(fields: [device_serial], references: [serial_number], onDelete: NoAction, onUpdate: NoAction, map: "ownership_history_ibfk_2")
-  account_ownership_history_from_user_idToaccount account?       @relation("ownership_history_from_user_idToaccount", fields: [from_user_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "ownership_history_ibfk_3")
-  account_ownership_history_to_user_idToaccount   account?       @relation("ownership_history_to_user_idToaccount", fields: [to_user_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "ownership_history_ibfk_4")
+  tickets                                         tickets   @relation(fields: [ticket_id], references: [ticket_id], onDelete: NoAction, onUpdate: NoAction, map: "ownership_history_ibfk_1")
+  devices                                         devices?  @relation(fields: [device_serial], references: [serial_number], onDelete: NoAction, onUpdate: NoAction, map: "ownership_history_ibfk_2")
+  account_ownership_history_from_user_idToaccount account?  @relation("ownership_history_from_user_idToaccount", fields: [from_user_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "ownership_history_ibfk_3")
+  account_ownership_history_to_user_idToaccount   account?  @relation("ownership_history_to_user_idToaccount", fields: [to_user_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "ownership_history_ibfk_4")
 
   @@id([history_id, ticket_id])
   @@index([ticket_id], map: "ticket_id")
@@ -680,8 +682,8 @@ model payment_info {
   bank           String?   @db.VarChar(50)
   name_account   String?   @db.VarChar(150)
   is_default     Boolean?
-  created_at       DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at      DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at     DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at     DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at     DateTime? @db.DateTime(0)
   customer       customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "payment_info_ibfk_1")
 
@@ -691,8 +693,8 @@ model payment_info {
 model permission {
   id              Int               @id
   name            String?           @db.VarChar(500)
-  created_at        DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at        DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at      DateTime?         @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at      DateTime?         @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at      DateTime?         @db.DateTime(0)
   permission_role permission_role[]
 }
@@ -701,8 +703,8 @@ model permission_role {
   id            Int        @id
   role_id       Int
   permission_id Int
-  created_at      DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at      DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at    DateTime?  @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at    DateTime?  @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at    DateTime?  @db.DateTime(0)
   permission    permission @relation(fields: [permission_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "permission_role_ibfk_1")
   role          role       @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "permission_role_ibfk_2")
@@ -725,8 +727,8 @@ model product {
   views               Int?
   is_hide             Boolean?
   status              Int?                  @db.TinyInt
-  created_at           DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at           DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at          DateTime?             @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at          DateTime?             @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at          DateTime?             @db.DateTime(0)
   attribute_product   attribute_product?
   blog                blog[]
@@ -748,58 +750,58 @@ model product {
 }
 
 model planning {
-  planning_id                                     String               @id @db.VarChar(32)
-  status                                          String               @default("pending") @db.VarChar(20)
-  logs                                            Json?                @db.Json
-  created_by                                      String               @db.VarChar(32)
-  created_at                                      DateTime             @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at                                      DateTime             @default(dbgenerated("(now())")) @db.DateTime(0)
-  is_deleted                                      Boolean              @default(false)
-  planning_note                                   String?              @db.VarChar(500)
-  account                                         account              @relation("account_planning_created_byToaccount", fields: [created_by], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "planning_ibfk_2")
-  production_batches                              production_batches[]
+  planning_id        String               @id @db.VarChar(32)
+  status             String               @default("pending") @db.VarChar(20)
+  logs               Json?
+  created_by         String               @db.VarChar(32)
+  created_at         DateTime             @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at         DateTime             @default(dbgenerated("(now())")) @db.DateTime(0)
+  is_deleted         Boolean              @default(false)
+  planning_note      String?              @db.VarChar(500)
+  account            account              @relation("account_planning_created_byToaccount", fields: [created_by], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "planning_ibfk_2")
+  production_batches production_batches[]
 
   @@index([created_by], map: "created_by")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model production_batches {
-  batch_id                                        Int                  @default(autoincrement())
-  planning_id                                     String               @db.VarChar(32)
-  production_batch_id                             String               @db.VarChar(255) @unique
-  template_id                                     Int?
-  firmware_id                                     Int?
-  quantity                                        Int                  @db.Int
-  status                                          String               @default("pending") @db.VarChar(20)
-  created_at                                      DateTime             @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at                                      DateTime             @default(dbgenerated("(now())")) @db.DateTime(0)
-  is_deleted                                      Boolean              @default(false)
-  batch_note                                      String?              @db.VarChar(500)
-  logs                                            Json?                @db.Json
-  device_templates                                device_templates?    @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "production_batches_ibfk_1")
-  planning                                        planning             @relation(fields: [planning_id], references: [planning_id], onDelete: NoAction, onUpdate: NoAction, map: "production_batches_ibfk_2")
-  firmware                                        firmware?            @relation(fields: [firmware_id], references: [firmware_id], onDelete: NoAction, onUpdate: NoAction, map: "production_batches_ibfk_3")
-  production_tracking                             production_tracking[]
+  batch_id            Int                   @default(autoincrement())
+  production_batch_id String                @unique @db.VarChar(255)
+  template_id         Int?
+  quantity            Int
+  status              String                @default("pending") @db.VarChar(20)
+  created_at          DateTime              @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at          DateTime              @default(dbgenerated("(now())")) @db.DateTime(0)
+  is_deleted          Boolean               @default(false)
+  batch_note          String?               @db.VarChar(500)
+  logs                Json?
+  planning_id         String                @db.VarChar(32)
+  firmware_id         Int?
+  device_templates    device_templates?     @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "production_batches_ibfk_1")
+  planning            planning              @relation(fields: [planning_id], references: [planning_id], onDelete: NoAction, onUpdate: NoAction, map: "production_batches_ibfk_2")
+  firmware            firmware?             @relation(fields: [firmware_id], references: [firmware_id], onDelete: NoAction, onUpdate: NoAction, map: "production_batches_ibfk_3")
+  production_tracking production_tracking[]
 
   @@id([batch_id, planning_id, production_batch_id])
   @@index([template_id], map: "template_id")
-  @@index([planning_id], map:"planning_id")
+  @@index([planning_id], map: "planning_id")
   @@index([firmware_id], map: "firmware_id")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model production_tracking {
-  production_id         Int                     @id @default(autoincrement())
-  production_batch_id   String                  @db.VarChar(255)
-  device_serial         String?                 @db.VarChar(50)
-  stage                 String                  @db.VarChar(50)
-  status                String                  @default("pending") @db.VarChar(20)
-  created_at            DateTime                @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at            DateTime                @default(dbgenerated("(now())")) @db.DateTime(0)
-  is_deleted            Boolean                 @default(false)
-  state_logs            Json?                   @db.Json
-  production_batches    production_batches?     @relation(fields: [production_batch_id], references: [production_batch_id], onDelete: NoAction, onUpdate: NoAction, map: "production_tracking_ibfk_1")
-  devices               devices[]               // Change from relation to devices array
+  production_id       Int                @id @default(autoincrement())
+  device_serial       String?            @db.VarChar(50)
+  stage               String             @db.VarChar(50)
+  status              String             @default("pending") @db.VarChar(20)
+  created_at          DateTime           @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at          DateTime           @default(dbgenerated("(now())")) @db.DateTime(0)
+  is_deleted          Boolean            @default(false)
+  production_batch_id String             @db.VarChar(255)
+  state_logs          Json?
+  devices             devices[]
+  production_batches  production_batches @relation(fields: [production_batch_id], references: [production_batch_id], onDelete: NoAction, onUpdate: NoAction, map: "production_tracking_ibfk_1")
 
   @@index([production_batch_id], map: "production_batch_id")
 }
@@ -814,8 +816,8 @@ model review_product {
   rating      Int?      @db.TinyInt
   response    String?   @db.VarChar(500)
   note        String?   @db.VarChar(500)
-  created_at    DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at  DateTime? @db.DateTime(0)
   customer    customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_product_ibfk_1")
   product     product?  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_product_ibfk_2")
@@ -825,10 +827,10 @@ model review_product {
 }
 
 model role {
-  id              Int             @id @default(autoincrement())
+  id              Int               @id @default(autoincrement())
   name            String?           @db.VarChar(500)
-  created_at        DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at       DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at      DateTime?         @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at      DateTime?         @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at      DateTime?         @db.DateTime(0)
   account         account[]
   notification    notification[]
@@ -837,20 +839,20 @@ model role {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model share_requests {
-  request_id                                   Int                 @id @default(autoincrement())
-  device_serial                                String?             @db.VarChar(50)
-  from_user_id                                 String?             @db.VarChar(32)
-  to_user_id                                   String?             @db.VarChar(32)
-  permission_type                              String?             @default("readonly") @db.VarChar(20)
-  status                                       String?             @default("pending") @db.VarChar(20)
-  requested_at                                 DateTime?           @default(dbgenerated("(now())")) @db.DateTime(0)
-  approved_at                                  DateTime?           @db.DateTime(0)
-  created_at                                   DateTime?           @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at                                   DateTime?           @db.DateTime(0)
-  is_deleted                                   Boolean?            @default(false)
-  devices                                      devices?            @relation(fields: [device_serial], references: [serial_number], onDelete: NoAction, onUpdate: NoAction, map: "share_requests_ibfk_1")
-  account_share_requests_from_user_idToaccount account?            @relation("share_requests_from_user_idToaccount", fields: [from_user_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "share_requests_ibfk_2")
-  account_share_requests_to_user_idToaccount   account?            @relation("share_requests_to_user_idToaccount", fields: [to_user_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "share_requests_ibfk_3")
+  request_id                                   Int       @id @default(autoincrement())
+  device_serial                                String?   @db.VarChar(50)
+  from_user_id                                 String?   @db.VarChar(32)
+  to_user_id                                   String?   @db.VarChar(32)
+  permission_type                              String?   @default("readonly") @db.VarChar(20)
+  status                                       String?   @default("pending") @db.VarChar(20)
+  requested_at                                 DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  approved_at                                  DateTime? @db.DateTime(0)
+  created_at                                   DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at                                   DateTime? @db.DateTime(0)
+  is_deleted                                   Boolean?  @default(false)
+  devices                                      devices?  @relation(fields: [device_serial], references: [serial_number], onDelete: NoAction, onUpdate: NoAction, map: "share_requests_ibfk_1")
+  account_share_requests_from_user_idToaccount account?  @relation("share_requests_from_user_idToaccount", fields: [from_user_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "share_requests_ibfk_2")
+  account_share_requests_to_user_idToaccount   account?  @relation("share_requests_to_user_idToaccount", fields: [to_user_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "share_requests_ibfk_3")
 
   @@index([device_serial], map: "device_serial")
   @@index([from_user_id], map: "from_user_id")
@@ -879,8 +881,8 @@ model slideshow {
   link        String?   @db.VarChar(500)
   image       String?   @db.MediumText
   status      Int?      @db.TinyInt
-  created_at    DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at  DateTime? @db.DateTime(0)
 }
 
@@ -888,10 +890,10 @@ model slideshow {
 model spaces {
   space_id      Int             @id @default(autoincrement())
   house_id      Int?
-  space_name          String          @db.VarChar(100)
   created_at    DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at    DateTime?       @db.DateTime(0)
   is_deleted    Boolean?        @default(false)
+  space_name    String          @db.VarChar(100)
   alerts        alerts[]
   devices       devices[]
   hourly_values hourly_values[]
@@ -949,35 +951,36 @@ model ticket_types {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model tickets {
-  ticket_id                         Int                 @id @default(autoincrement())
-  user_id                           String?             @db.VarChar(32)
-  device_serial                     String?             @db.VarChar(50)
-  ticket_type_id                    Int
-  description                       String?             @db.Text
-  evidence                          Json?               @db.Json
-  status                            String?             @default("pending") @db.VarChar(20)
-  created_at                        DateTime?           @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at                        DateTime?           @db.DateTime(0)
-  assigned_to                       String?             @db.VarChar(32)
-  resolved_at                       DateTime?           @db.DateTime(0)
-  resolve_solution                  String?             @db.Text
-  is_deleted                        Boolean?            @default(false)
-  account_tickets_user_idToaccount  account?            @relation("tickets_user_idToaccount", fields: [user_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "tickets_ibfk_1")
-  devices                           devices?            @relation(fields: [device_serial], references: [serial_number], onDelete: NoAction, onUpdate: NoAction, map: "tickets_ibfk_2")
-  ticket_types                      ticket_types        @relation(fields: [ticket_type_id], references: [ticket_type_id], onDelete: NoAction, onUpdate: NoAction, map: "tickets_ibfk_3")
-  account_tickets_assigned_toToaccount account?         @relation("tickets_assigned_toToaccount", fields: [assigned_to], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "tickets_ibfk_4")
-  ownership_history                 ownership_history[] // Added relation
+  ticket_id                            Int                 @id @default(autoincrement())
+  user_id                              String?             @db.VarChar(32)
+  device_serial                        String?             @db.VarChar(50)
+  ticket_type_id                       Int
+  description                          String?             @db.Text
+  evidence                             Json?
+  status                               String?             @default("pending") @db.VarChar(20)
+  created_at                           DateTime?           @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at                           DateTime?           @db.DateTime(0)
+  assigned_to                          String?             @db.VarChar(32)
+  resolved_at                          DateTime?           @db.DateTime(0)
+  resolve_solution                     String?             @db.Text
+  is_deleted                           Boolean?            @default(false)
+  ownership_history                    ownership_history[]
+  account_tickets_user_idToaccount     account?            @relation("tickets_user_idToaccount", fields: [user_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "tickets_ibfk_1")
+  devices                              devices?            @relation(fields: [device_serial], references: [serial_number], onDelete: NoAction, onUpdate: NoAction, map: "tickets_ibfk_2")
+  ticket_types                         ticket_types        @relation(fields: [ticket_type_id], references: [ticket_type_id], onDelete: NoAction, onUpdate: NoAction, map: "tickets_ibfk_3")
+  account_tickets_assigned_toToaccount account?            @relation("tickets_assigned_toToaccount", fields: [assigned_to], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "tickets_ibfk_4")
 
   @@index([user_id], map: "user_id")
   @@index([device_serial], map: "device_serial")
   @@index([ticket_type_id], map: "ticket_type_id")
   @@index([assigned_to], map: "assigned_to")
 }
+
 model unit {
   id         String    @id @db.VarChar(5)
   name       String?   @db.VarChar(50)
-  created_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at DateTime? @db.DateTime(0)
   product    product[]
 }
@@ -1020,8 +1023,8 @@ model warehouse {
   id               Int                @id
   name             String?            @db.VarChar(500)
   address          String?            @db.VarChar(500)
-  created_at         DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at         DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at       DateTime?          @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at       DateTime?          @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at       DateTime?          @db.DateTime(0)
   import_warehouse import_warehouse[]
 }
@@ -1031,8 +1034,8 @@ model warehouse_inventory {
   product_id Int?
   batch_code String?   @db.VarChar(50)
   stock      Int?
-  created_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at DateTime? @db.DateTime(0)
   product    product?  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "warehouse_inventory_ibfk_1")
 
@@ -1043,8 +1046,8 @@ model warrenty_time {
   id         Int       @id
   name       String?   @db.VarChar(150)
   time       Int?
-  created_at  DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at   DateTime?            @default(dbgenerated("(now())")) @db.DateTime(0)
+  created_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at DateTime? @db.DateTime(0)
   product    product[]
 }
