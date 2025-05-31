@@ -40,6 +40,124 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
     };
 };
 
+
+/**
+ * Lấy thông tin firmware theo ID.
+ * @swagger
+ * /api/firmware/{firmwareId}:
+ *   get:
+ *     tags:
+ *       - Firmware
+ *     summary: Lấy thông tin firmware theo ID
+ *     description: |
+ *       Lấy thông tin chi tiết của một phiên bản firmware theo ID.
+ *       Yêu cầu xác thực (User hoặc Employee).
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: firmwareId
+ *         required: true
+ *         type: string
+ *         description: ID của firmware cần xem
+ *     responses:
+ *       200:
+ *         description: Trả về thông tin chi tiết của firmware
+ *         schema:
+ *           type: object
+ *           properties:
+ *             id:
+ *               type: number
+ *               description: ID của firmware
+ *             version:
+ *               type: string
+ *               description: Số phiên bản firmware
+ *             device_type:
+ *               type: string
+ *               description: Loại thiết bị áp dụng
+ *             file_url:
+ *               type: string
+ *               description: URL tải file firmware
+ *             description:
+ *               type: string
+ *               description: Mô tả về phiên bản firmware
+ *             created_at:
+ *               type: string
+ *               format: date-time
+ *               description: Thời gian tạo firmware
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       404:
+ *         description: Không tìm thấy firmware với ID đã cho
+ *       500:
+ *         description: Lỗi server
+ */
+router.get(
+    '/detail/:firmwareId',
+    // authMiddleware,
+    // validateMiddleware(firmwareIdSchema),
+    asyncHandler(firmwareController.getFirmwareById)
+);
+
+/**
+ * Lấy danh sách tất cả firmware.
+ * @swagger
+ * /api/firmware:
+ *   get:
+ *     tags:
+ *       - Firmware
+ *     summary: Lấy danh sách tất cả firmware
+ *     description: |
+ *       Lấy danh sách tất cả các phiên bản firmware trong hệ thống.
+ *       Yêu cầu xác thực (User hoặc Employee).
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     responses:
+ *       200:
+ *         description: Trả về danh sách tất cả firmware
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: number
+ *                 description: ID của firmware
+ *               version:
+ *                 type: string
+ *                 description: Số phiên bản firmware
+ *               device_type:
+ *                 type: string
+ *                 description: Loại thiết bị áp dụng
+ *               file_url:
+ *                 type: string
+ *                 description: URL tải file firmware
+ *               description:
+ *                 type: string
+ *                 description: Mô tả về phiên bản firmware
+ *               created_at:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Thời gian tạo firmware
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       500:
+ *         description: Lỗi server
+ */
+router.get(
+    '/',
+    // authMiddleware,
+    asyncHandler(firmwareController.getFirmwares)
+);
+
+router.get(
+    '/latest-version-by-template',
+    // authMiddleware,
+    asyncHandler(firmwareController.getLatestVersionFirmwaresByTemplate)
+);
+
 /**
  * Tạo mới firmware.
  * @swagger
@@ -154,11 +272,25 @@ router.post(
  *         description: Lỗi server
  */
 router.put(
-    '/:firmwareId',
+    '/edit/:firmwareId',
     // authMiddleware,
     // roleMiddleware,
     // validateMiddleware(updateFirmwareSchema),
     asyncHandler(firmwareController.updateFirmware)
+);
+
+router.patch(
+    '/confirm-by-tester',
+    // authMiddleware,
+    // validateMiddleware(firmwareIdSchema),
+    asyncHandler(firmwareController.confirmFirmwareByTester)
+);
+
+router.patch(
+    '/confirm-by-rd',
+    // authMiddleware,
+    // validateMiddleware(firmwareIdSchema),
+    asyncHandler(firmwareController.confirmFirmwareByRD)
 );
 
 /**
@@ -198,131 +330,6 @@ router.delete(
     // roleMiddleware,
     // validateMiddleware(firmwareIdSchema),
     asyncHandler(firmwareController.deleteFirmware)
-);
-
-/**
- * Lấy thông tin firmware theo ID.
- * @swagger
- * /api/firmware/{firmwareId}:
- *   get:
- *     tags:
- *       - Firmware
- *     summary: Lấy thông tin firmware theo ID
- *     description: |
- *       Lấy thông tin chi tiết của một phiên bản firmware theo ID.
- *       Yêu cầu xác thực (User hoặc Employee).
- *     security:
- *       - UserBearer: []
- *       - EmployeeBearer: []
- *     parameters:
- *       - in: path
- *         name: firmwareId
- *         required: true
- *         type: string
- *         description: ID của firmware cần xem
- *     responses:
- *       200:
- *         description: Trả về thông tin chi tiết của firmware
- *         schema:
- *           type: object
- *           properties:
- *             id:
- *               type: number
- *               description: ID của firmware
- *             version:
- *               type: string
- *               description: Số phiên bản firmware
- *             device_type:
- *               type: string
- *               description: Loại thiết bị áp dụng
- *             file_url:
- *               type: string
- *               description: URL tải file firmware
- *             description:
- *               type: string
- *               description: Mô tả về phiên bản firmware
- *             created_at:
- *               type: string
- *               format: date-time
- *               description: Thời gian tạo firmware
- *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
- *       404:
- *         description: Không tìm thấy firmware với ID đã cho
- *       500:
- *         description: Lỗi server
- */
-router.get(
-    '/:firmwareId',
-    // authMiddleware,
-    // validateMiddleware(firmwareIdSchema),
-    asyncHandler(firmwareController.getFirmwareById)
-);
-
-/**
- * Lấy danh sách tất cả firmware.
- * @swagger
- * /api/firmware:
- *   get:
- *     tags:
- *       - Firmware
- *     summary: Lấy danh sách tất cả firmware
- *     description: |
- *       Lấy danh sách tất cả các phiên bản firmware trong hệ thống.
- *       Yêu cầu xác thực (User hoặc Employee).
- *     security:
- *       - UserBearer: []
- *       - EmployeeBearer: []
- *     responses:
- *       200:
- *         description: Trả về danh sách tất cả firmware
- *         schema:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               id:
- *                 type: number
- *                 description: ID của firmware
- *               version:
- *                 type: string
- *                 description: Số phiên bản firmware
- *               device_type:
- *                 type: string
- *                 description: Loại thiết bị áp dụng
- *               file_url:
- *                 type: string
- *                 description: URL tải file firmware
- *               description:
- *                 type: string
- *                 description: Mô tả về phiên bản firmware
- *               created_at:
- *                 type: string
- *                 format: date-time
- *                 description: Thời gian tạo firmware
- *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
- *       500:
- *         description: Lỗi server
- */
-router.get(
-    '/',
-    authMiddleware,
-    asyncHandler(firmwareController.getFirmwares)
-);
-
-router.put(
-    '/confirm-by-tester/:firmwareId',
-    // authMiddleware,
-    // validateMiddleware(firmwareIdSchema),
-    asyncHandler(firmwareController.confirmFirmwareByTester)
-);
-
-router.put(
-    '/confirm-by-rd/:firmwareId',
-    // authMiddleware,
-    // validateMiddleware(firmwareIdSchema),
-    asyncHandler(firmwareController.confirmFirmwareByRD)
 );
 
 export default router;

@@ -120,10 +120,10 @@ export function validateVersion(version: string): { success: boolean; error?: st
             error: 'Version phải có định dạng x.y.z (ví dụ: 5.1.2)' 
         };
     }
-
+    
     // Kiểm tra mỗi phần phải là số và không có số 0 ở đầu
     for (const part of versionParts) {
-        if (!/^[1-9]\d*$/.test(part)) {
+        if (!/^(0|[1-9]\d*)$/.test(part)){
             return { 
                 success: false,
                 error: 'Mỗi phần của version phải là số nguyên dương và không bắt đầu bằng số 0' 

@@ -1,13 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { ProductionTracking, ProductionTrackingNextStageInput, StageSerialStage, StatusSerialStage, ProductionTrackingRejectForQCInput, ProductionTrackingResponsePhaseChangeInput, RejectReason, ProductionTrackingResponse, SerialData, StageLog, ProductionTrackingCancelInput, ProductionTrackingSerialUpdateInput, ProductionTrackingApproveInput } from '../types/production-tracking';
+import { ProductionTracking, ProductionTrackingNextStageInput, StageSerialStage, StatusSerialStage, ProductionTrackingRejectForQCInput, ProductionTrackingResponsePhaseChangeInput, RejectReason, ProductionTrackingResponse, SerialData, StageLog, ProductionTrackingCancelInput, ProductionTrackingSerialUpdateInput, ProductionTrackingApproveInput, ProductionTrackingApproveTestedInput } from '../types/production-tracking';
 import sseController from '../controllers/sse.controller';
 
 function errorResponse(errorCode: ErrorCodes, message: string, data: any[] = []) {
     return {
         success: false,
         errorCode: errorCode,
-        message: message
+        message: message,
     }
 }
 
@@ -263,7 +263,7 @@ export class ProductionTrackingService {
     }
 
     async UpdateProductionSerial(input: ProductionTrackingSerialUpdateInput, employeeId: string) {
-        const { device_serial, stage } = input;
+        const { device_serial, stage, status } = input;
 
         const production = await this.prisma.production_tracking.findFirst({
             where: { device_serial: device_serial, is_deleted: false },
@@ -273,6 +273,9 @@ export class ProductionTrackingService {
             return errorResponse(ErrorCodes.PRODUCTION_NOT_FOUND, 'Production not found');
         }
 
+
+        console.log(production.stage, stage);
+        console.log(production.status !== status);
         if (production.stage !== stage) {
             return errorResponse(ErrorCodes.BAD_REQUEST, 'Stage is not the same');
         }
@@ -281,7 +284,7 @@ export class ProductionTrackingService {
         let stageLog = stageLogList[stageLogList.length - 1];
         let newStage = stage;
         if (stage === StageSerialStage.ASSEMBLY) {
-            if (production.status === StatusSerialStage.IN_PROGRESS) {
+            if (status === StatusSerialStage.IN_PROGRESS) {
                 stageLog = {
                     ...stageLog,
                     approved_by: employeeId,
@@ -305,7 +308,7 @@ export class ProductionTrackingService {
                     status: StatusSerialStage.FIRMWARE_UPLOAD,
                     stage_logs: stageLogList
                 });
-            } else if (production.status === StatusSerialStage.FIRMWARE_UPLOAD) {
+            } else if (status === StatusSerialStage.FIRMWARE_UPLOAD) {
                 stageLog = {
                     ...stageLog,
                     approved_by: employeeId,
@@ -328,7 +331,7 @@ export class ProductionTrackingService {
                     status: StatusSerialStage.FIRMWARE_UPLOADING,
                     stage_logs: stageLogList
                 });
-            } else if (production.status === StatusSerialStage.FIRMWARE_UPLOADING) {
+            } else if (status === StatusSerialStage.FIRMWARE_UPLOADING) {
                 stageLog = {
                     ...stageLog,
                     approved_by: employeeId,
@@ -353,7 +356,7 @@ export class ProductionTrackingService {
                     status: StatusSerialStage.FIRMWARE_UPLOADED,
                     stage_logs: stageLogList
                 });
-            } else if (production.status === StatusSerialStage.FIRMWARE_FAILED) {
+            } else if (status === StatusSerialStage.FIRMWARE_FAILED) {
                 stageLog = {
                     ...stageLog,
                     approved_by: employeeId,
@@ -379,12 +382,11 @@ export class ProductionTrackingService {
                     stage_logs: stageLogList
                 });
             } else {
-                return errorResponse(ErrorCodes.BAD_REQUEST, 'Stage log không trong giai đoạn được yêu cầu duyệt');
+                return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái được gửi không tồn tại trong giai đoạn sản xuất!!');
             }
         }
-
         else if (stage === StageSerialStage.QC) {
-            if (production.status === StatusSerialStage.FIRMWARE_UPLOADED) {
+            if (status === StatusSerialStage.FIRMWARE_UPLOADED) {
                 stageLog = {
                     ...stageLog,
                     approved_by: employeeId,
@@ -409,7 +411,7 @@ export class ProductionTrackingService {
                     stage_logs: stageLogList
                 });
             }
-            else if (production.status === StatusSerialStage.TESTING) {
+            else if (status === StatusSerialStage.TESTING) {
                 // Hoàn thành stage QC
                 stageLog = {
                     ...stageLog,
@@ -436,11 +438,12 @@ export class ProductionTrackingService {
                     status: StatusSerialStage.PENDING_PACKAGING,
                     stage_logs: stageLogList
                 });
+            } else {
+                return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái được gửi không tồn tại trong giai đoạn kiểm thử!!');
             }
         }
-
         else if (stage === StageSerialStage.COMPLETED) {
-            if (production.status === StatusSerialStage.PENDING_PACKAGING) {
+            if (status === StatusSerialStage.PENDING_PACKAGING) {
                 stageLog = {
                     ...stageLog,
                     approved_by: employeeId,
@@ -463,6 +466,8 @@ export class ProductionTrackingService {
                     status: StatusSerialStage.PENDING_PACKAGING,
                     stage_logs: stageLogList
                 });
+            } else {
+                return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái được gửi không tồn tại trong giai đoạn hoàn tất và xuất kho!!');
             }
         } else {
             return errorResponse(ErrorCodes.BAD_REQUEST, 'Giai đoạn được gửi không tồn tại!!');
@@ -550,6 +555,88 @@ export class ProductionTrackingService {
             success: true,
             errorCode: null,
             message: 'Huỷ sản phẩm thành công'
+        }
+    } 
+
+    async ApproveTestedSerial(input: ProductionTrackingApproveTestedInput, employeeId: string) {
+        const { device_serials, note } = input;
+
+        const production_list = await this.prisma.production_tracking.findMany({
+            where: { is_deleted: false, device_serial: { in: device_serials }, stage: StageSerialStage.QC, status: StatusSerialStage.TESTING },
+            select: {
+                production_id: true,
+                device_serial: true,
+                stage: true,
+                status: true,
+                state_logs: true
+            }
+        });
+
+        if (device_serials.length !== production_list.length) {
+            return errorResponse(ErrorCodes.PRODUCTION_NOT_FOUND, 'Production not found');
+        }
+        
+        let error_list = [];
+        await this.prisma.$transaction(async (tx) => {
+            for (const production of production_list) {
+                if (production.status !== StatusSerialStage.TESTING) {
+                    error_list.push({
+                        device_serial: production.device_serial,
+                        error: 'Mã này không trong giai đoạn được yêu cầu duyệt'
+                    });
+                }
+            }
+
+            if (error_list.length > 0) {
+                return errorResponse(ErrorCodes.BAD_REQUEST, 'Có sản phẩm không thể duyệt vì nằm ngoài giai đoạn', error_list);
+            }
+
+            await tx.production_tracking.updateMany({
+                where: { production_id: { in: production_list.map(p => p.production_id) } },
+                data: { status: StatusSerialStage.PENDING_PACKAGING, stage: StageSerialStage.COMPLETED }
+            });
+
+            for (const production of production_list) {
+                let currentLogs = production.state_logs as any[];
+                let lastLog = currentLogs[currentLogs.length - 1];
+
+                lastLog.approved_by = employeeId;
+                lastLog.completed_at = new Date();
+
+                currentLogs[currentLogs.length - 1] = lastLog;
+
+                let stageLog = [
+                    {
+                        stage: StageSerialStage.QC,
+                        status: StatusSerialStage.COMPLETED,
+                        completed_at: new Date(),
+                        employee_id: employeeId,
+                        note: note
+                    },
+                    {
+                        stage: StageSerialStage.COMPLETED,
+                        status: StatusSerialStage.PENDING_PACKAGING,
+                        employee_id: employeeId,
+                        started_at: new Date()
+                    }
+                ]
+
+                currentLogs.push(...stageLog);
+
+                sseController.sendProductionUpdate({
+                    type: 'update_status',
+                    device_serial: production.device_serial || '',
+                    stage: StageSerialStage.QC,
+                    status: StatusSerialStage.PENDING_PACKAGING,
+                    stage_logs: currentLogs
+                });
+            }
+        });
+
+        return {
+            success: true,
+            errorCode: null,
+            message: 'Duyệt sản phẩm thành công'
         }
     }
 }

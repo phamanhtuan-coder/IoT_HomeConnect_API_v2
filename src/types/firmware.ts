@@ -25,4 +25,5 @@ export interface Firmware {
     updated_at: Date | null;
     is_deleted: boolean | null;
     note: string | null;
+    logs: any[];
 }

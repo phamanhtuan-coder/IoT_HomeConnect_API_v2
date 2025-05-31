@@ -49,5 +49,11 @@ router.patch(
     productionTrackingController.CancelProductionSerial
 );
 
+router.patch(
+    '/approve-tested-serial',
+    // authMiddleware,
+    // roleMiddleware,
+    productionTrackingController.ApproveTestedSerial
+);
 
 export default router;

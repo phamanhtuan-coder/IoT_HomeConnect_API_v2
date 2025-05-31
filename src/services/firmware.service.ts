@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
-import {Firmware} from "../types/firmware";
+import { Firmware } from "../types/firmware";
 import { validateVersion } from '../utils/helpers';
 
 enum LogType {
@@ -21,21 +21,21 @@ class FirmwareService {
     }
 
     private async validateUniqueName(name: string, template_id: number, firmware_id?: number): Promise<{ success: boolean; error?: string }> {
-        let whereCondition= {
+        let whereCondition = {
             name: name,
             template_id: template_id,
             is_deleted: false,
             firmware_id: firmware_id ? { not: firmware_id } : undefined
         }
-        
+
         const existingFirmware = await this.prisma.firmware.findFirst({
             where: whereCondition
         });
 
         if (existingFirmware) {
-            return { 
-                success: false, 
-                error: `Tên firmware "${name}" đã tồn tại trong template này` 
+            return {
+                success: false,
+                error: `Tên firmware "${name}" đã tồn tại trong template này`
             };
         }
 
@@ -45,24 +45,24 @@ class FirmwareService {
     private async validateVersionIsLatest(normalizedVersion: string, template_id: number): Promise<{ success: boolean; error?: string }> {
         // Tìm firmware mới nhất của template
         const latestFirmware = await this.prisma.firmware.findFirst({
-            where: { 
+            where: {
                 template_id: template_id,
-                is_deleted: false 
+                is_deleted: false
             },
             orderBy: { version: 'desc' }
         });
-    
+
         if (!latestFirmware) {
             return { success: true };
         }
-    
+
         if (normalizedVersion > latestFirmware.version) {
             return { success: true };
         }
-    
-        return { 
-            success: false, 
-            error: `Version ${normalizedVersion} đã tồn tại hoặc không lớn hơn version hiện tại (${latestFirmware.version})` 
+
+        return {
+            success: false,
+            error: `Version ${normalizedVersion} đã tồn tại hoặc không lớn hơn version hiện tại (${latestFirmware.version})`
         };
     }
 
@@ -91,7 +91,7 @@ class FirmwareService {
                 data: {
                     is_mandatory: false,
                     updated_at: new Date(),
-                    logs: [...fw.logs, logForDemotedFirmware]
+                    logs: [...(fw.logs as any), logForDemotedFirmware]
                 },
             });
         }
@@ -104,7 +104,8 @@ class FirmwareService {
         template_id: number;
         is_mandatory?: boolean;
         note?: string;
-    }, employeeId: string): Promise<Firmware> {
+    }, employeeId: string): Promise<any> {
+        console.log("Test")
         const { version, name, file_path, template_id, is_mandatory, note } = input;
 
         const employee = await this.prisma.employee.findUnique({
@@ -112,12 +113,12 @@ class FirmwareService {
         });
         if (!employee) throwError(ErrorCodes.NOT_FOUND, 'Nhân viên không tồn tại');
 
-        const template = await this.prisma.device_templates.findUnique({
+        const template = await this.prisma.device_templates.findFirst({
             where: { template_id: template_id, is_deleted: false },
         });
 
         if (!template) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy sản phẩm');
-        
+
         // Kiểm tra định dạng version và chuẩn hoá lại version
         const normalizedVersion = validateVersion(version);
         if (!normalizedVersion.success) {
@@ -158,32 +159,36 @@ class FirmwareService {
             await this.updateFirmwares(template_id, firmware.firmware_id, employee);
         }
 
-        return this.mapPrismaFirmwareToAuthFirmware(firmware);
+        return {
+            success: true,
+            data: firmware
+        };
     }
 
     async updateFirmware(firmwareId: number, input: {
         version: string;
         name: string;
-        file_path: string;
+        // file_path: string;
         template_id: number;
         is_mandatory: boolean;
         note?: string;
-    }, employeeId: string): Promise<Firmware> {
-        const firmware = await this.prisma.firmware!.findUnique({
+    }, employeeId: string): Promise<any> {
+        const firmware = await this.prisma.firmware!.findFirst({
             where: { firmware_id: firmwareId, is_deleted: false },
         });
         if (!firmware) throwError(ErrorCodes.NOT_FOUND, 'Firmware not found');
 
-        const employee = await this.prisma.employee.findUnique({
+        const employee = await this.prisma.employee.findFirst({
             where: { id: employeeId, deleted_at: null },
         });
         if (!employee) throwError(ErrorCodes.NOT_FOUND, 'Nhân viên không tồn tại');
 
-        const template = await this.prisma.device_templates.findUnique({
+        const template = await this.prisma.device_templates.findFirst({
             where: { template_id: input.template_id, is_deleted: false },
         });
-        if (!template) throwError(ErrorCodes.NOT_FOUND, 'Device template not found');
         
+        if (!template) throwError(ErrorCodes.NOT_FOUND, 'Device template not found');
+
         // Kiểm tra và chuẩn hoá version
         const normalizedVersion = validateVersion(input.version);
         if (!normalizedVersion.success) {
@@ -202,7 +207,8 @@ class FirmwareService {
                 firmware_id: firmwareId
             },
         });
-        if (productionBatches) throwError(ErrorCodes.NOT_FOUND, 'Device template not found');
+
+        if (productionBatches) throwError(ErrorCodes.NOT_FOUND, 'Có lô hàng đang sử dụng firmware này, không thể cập nhật');
 
         // Kiểm tra tên firmware
         const nameValidation = await this.validateUniqueName(input.name, input.template_id, firmwareId);
@@ -213,13 +219,15 @@ class FirmwareService {
         const updatedFirmware = await this.prisma.firmware.update({
             where: { firmware_id: firmwareId },
             data: {
-                version: input.version,
+                version: normalizedVersion.normalizedVersion!,
                 name: input.name || firmware!.name,
-                file_path: input.file_path || firmware!.file_path,
+                // file_path: input.file_path || firmware!.file_path,
                 template_id: input.template_id !== undefined ? input.template_id : firmware!.template_id,
-                is_mandatory: input.is_mandatory !== undefined ? input.is_mandatory : firmware!.is_mandatory,
+                is_mandatory: Boolean(input.is_mandatory),
                 note: input.note !== undefined ? input.note : firmware!.note,
                 updated_at: new Date(),
+                tested_at: null,
+                is_approved: null,
             },
         });
 
@@ -227,14 +235,19 @@ class FirmwareService {
             await this.updateFirmwares(input.template_id, firmwareId, employee);
         }
 
-        return this.mapPrismaFirmwareToAuthFirmware(updatedFirmware);
+            return {
+                success: true,
+                data: updatedFirmware
+            };
     }
 
-    async deleteFirmware(firmwareId: number, employeeId: string): Promise<void> {
-        const firmware = await this.prisma.firmware!.findUnique({
+    async deleteFirmware(firmwareId: number, employeeId: string): Promise<any> {
+        const firmware = await this.prisma.firmware!.findFirst({
             where: { firmware_id: firmwareId, is_deleted: false },
         });
         if (!firmware) throwError(ErrorCodes.NOT_FOUND, 'Firmware not found');
+
+        if (firmware?.is_mandatory) throwError(ErrorCodes.CONFLICT, 'Không thể xoá firmware bắt buộc');
 
         // Check if firmware is in use by devices
         const devices = await this.prisma.devices.findMany({
@@ -242,12 +255,12 @@ class FirmwareService {
         });
         if (devices.length > 0) throwError(ErrorCodes.CONFLICT, 'Không thể xoá firmware đang được sử dụng bởi các thiết bị');
 
-        const productionBatches = await this.prisma.production_batches.findMany({
-            where: { firmware_id: firmwareId, is_deleted: false },
+        const productionBatches = await this.prisma.production_batches.findFirst({
+            where: { firmware_id: firmwareId, is_deleted: false, status: 'completed' },
         });
-        if (productionBatches.length > 0) throwError(ErrorCodes.CONFLICT, 'Không thể xoá firmware đang được sử dụng bởi các lô sản phẩm');
+        if (productionBatches) throwError(ErrorCodes.CONFLICT, 'Không thể xoá firmware đang được sử dụng bởi các lô sản phẩm');
 
-        const employee = await this.prisma.employee.findUnique({
+        const employee = await this.prisma.employee.findFirst({
             where: { id: employeeId, deleted_at: null },
         });
         if (!employee) throwError(ErrorCodes.NOT_FOUND, 'Nhân viên không tồn tại');
@@ -260,35 +273,107 @@ class FirmwareService {
             created_at: new Date(),
         };
 
-        await this.prisma.firmware!.update({
-            where: { firmware_id: firmwareId },
-            data: {
-                is_deleted: true, updated_at: new Date(),
-                logs: [...(firmware?.logs || []), newLog]
-            },
-        });
-    }
-
-    async getFirmwareById(firmwareId: number): Promise<Firmware> {
-        const firmware = await this.prisma.firmware!.findUnique({
-            where: { firmware_id: firmwareId, is_deleted: false },
-            include: { device_templates: true },
-        });
-        if (!firmware) throwError(ErrorCodes.NOT_FOUND, 'Firmware not found');
-
-        return this.mapPrismaFirmwareToAuthFirmware(firmware);
-    }
-
-    async getFirmwares(): Promise<Firmware[]> {
-        const firmwares = await this.prisma.firmware!.findMany({
-            where: { is_deleted: false },
-            include: { device_templates: true },
+        await this.prisma.$transaction(async (tx) => {
+            await tx.firmware!.update({
+                where: { firmware_id: firmwareId },
+                data: {
+                    is_deleted: true, updated_at: new Date(),
+                    logs: [...(firmware?.logs as any), newLog]
+                },
+            });
         });
 
-        return firmwares.map((firmware) => this.mapPrismaFirmwareToAuthFirmware(firmware));
+        return {
+            success: true,
+            message: 'Firmware đã được xoá thành công'
+        }
     }
 
-    async confirmFirmwareByTester(firmwareId: number, employeeId: string, testResult: boolean): Promise<void> {
+    async getFirmwareById(firmwareId: number): Promise<any> {
+        const firmwares = await this.prisma.$queryRaw<any[]>`
+            SELECT 
+                f.firmware_id, f.version, f.name, f.file_path, f.template_id, f.is_mandatory,
+                f.created_at, f.updated_at, f.is_deleted, f.tested_at, f.is_approved, f.note, f.logs,
+                CONCAT(
+                    CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(f.version, '.', 1), '.', -1) + 0 AS CHAR), '.',
+                    CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(f.version, '.', 2), '.', -1) + 0 AS CHAR), '.',
+                    CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(f.version, '.', 3), '.', -1) + 0 AS CHAR)
+                ) AS version, 
+                dt.template_id, dt.name AS template_name, dt.is_deleted AS template_is_deleted
+            FROM firmware f
+            JOIN device_templates dt ON f.template_id = dt.template_id
+            WHERE f.is_deleted = false AND f.firmware_id = ${firmwareId}
+        `;
+
+        return {
+            success: true,
+            data: firmwares[0]
+        }
+    }
+
+    async getLatestVersionFirmwaresByTemplate(): Promise<any> {
+        const template = await this.prisma.$queryRaw<any[]>`
+            SELECT 
+                dt.template_id AS id,
+                dt.name AS template_name,
+                CONCAT(
+                    CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(fw.lastest_version, '.', 1), '.', -1) + 0 AS CHAR), '.',
+                    CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(fw.lastest_version, '.', 2), '.', -1) + 0 AS CHAR), '.',
+                    CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(fw.lastest_version, '.', 3), '.', -1) + 0 AS CHAR)
+                ) AS lastest_version,
+                pb.total_devices
+            FROM device_templates dt
+            LEFT JOIN (
+                SELECT 
+                    template_id, 
+                    MAX(version) AS lastest_version
+                FROM firmware
+                WHERE is_deleted = FALSE
+                GROUP BY template_id
+            ) fw ON dt.template_id = fw.template_id
+            LEFT JOIN ( 
+                SELECT 
+                    template_id,
+                    SUM(quantity) AS total_devices
+                FROM production_batches
+                WHERE is_deleted = FALSE
+                GROUP BY template_id
+            ) pb ON pb.template_id = dt.template_id
+        `;
+
+        return {
+            success: true,
+            data: template
+        }
+    }
+
+    async getFirmwares(): Promise<any> {
+        const firmwares = await this.prisma.$queryRaw<any[]>`
+            SELECT 
+                f.firmware_id, f.version, f.name, f.file_path, f.template_id, f.is_mandatory,
+                f.created_at, f.updated_at, f.is_deleted, f.tested_at, f.is_approved, f.note, f.logs,
+                CONCAT(
+                    CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(f.version, '.', 1), '.', -1) + 0 AS CHAR), '.',
+                    CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(f.version, '.', 2), '.', -1) + 0 AS CHAR), '.',
+                    CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(f.version, '.', 3), '.', -1) + 0 AS CHAR)
+                ) AS version, 
+                dt.template_id, dt.name AS template_name, dt.is_deleted AS template_is_deleted
+            FROM firmware f
+            JOIN device_templates dt ON f.template_id = dt.template_id
+            WHERE f.is_deleted = false
+        `;
+
+        return {
+            success: true,
+            data: firmwares
+        }
+    }
+
+    async confirmFirmwareByTester(firmwareId: number, employeeId: string, testResult: boolean): Promise<any> {
+        console.log("Test")
+        console.log(firmwareId)
+        console.log(employeeId)
+        console.log(testResult)
         const employee = await this.prisma.employee.findUnique({
             where: { id: employeeId, deleted_at: null },
         });
@@ -298,10 +383,10 @@ class FirmwareService {
             where: { firmware_id: firmwareId, is_deleted: false },
         });
         if (!firmware) throwError(ErrorCodes.NOT_FOUND, 'Firmware not found');
-        
-        if(firmware?.tested_at) throwError(ErrorCodes.CONFLICT, 'Firmware đã được kiểm tra');
 
-        if(firmware?.is_approved) throwError(ErrorCodes.CONFLICT, 'Firmware đã phê duyệt');
+        if (firmware?.tested_at) throwError(ErrorCodes.CONFLICT, 'Firmware đã được kiểm thử mã nguồn');
+
+        if (firmware?.is_approved) throwError(ErrorCodes.CONFLICT, 'Firmware đã phê duyệt bởi R&D');
 
         const newLog = {
             log_type: testResult ? LogType.TESTER_CONFIRM : LogType.TEST_FAILED,
@@ -315,12 +400,17 @@ class FirmwareService {
             where: { firmware_id: firmwareId },
             data: {
                 tested_at: testResult ? new Date() : null,
-                logs: [...(firmware?.logs || []), newLog],
-                },
+                logs: [...(firmware?.logs as any), newLog],
+            },
         });
+
+        return {
+            success: true,
+            message: 'Firmware đã được xác nhận bởi tester'
+        }
     }
 
-    async confirmFirmwareByRD(firmwareId: number, employeeId: string, testResult: boolean): Promise<void> {
+    async confirmFirmwareByRD(firmwareId: number, employeeId: string, testResult: boolean): Promise<any> {
         const employee = await this.prisma.employee.findUnique({
             where: { id: employeeId, deleted_at: null },
         });
@@ -330,10 +420,10 @@ class FirmwareService {
             where: { firmware_id: firmwareId, is_deleted: false },
         });
         if (!firmware) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy firmware');
-        
-        if(!firmware?.tested_at) throwError(ErrorCodes.CONFLICT, 'Firmware chưa được kiểm tra');
 
-        if(firmware?.is_approved) throwError(ErrorCodes.CONFLICT, 'Firmware đã phê duyệt');
+        if (!firmware?.tested_at) throwError(ErrorCodes.CONFLICT, 'Firmware chưa được kiểm tra');
+
+        if (firmware?.is_approved) throwError(ErrorCodes.CONFLICT, 'Firmware đã phê duyệt');
 
         const newLog = {
             log_type: testResult ? LogType.RD_CONFIRM : LogType.RD_FAILED,
@@ -348,27 +438,14 @@ class FirmwareService {
             data: {
                 tested_at: testResult ? new Date() : null,
                 is_approved: testResult ? true : false,
-                logs: [...(firmware?.logs || []), newLog],
-                },
+                logs: [...(firmware?.logs as any), newLog],
+            },
         });
-    }
 
-    private mapPrismaFirmwareToAuthFirmware(firmware: any): Firmware {
         return {
-            firmware_id: firmware!.firmware_id,
-            version: firmware!.version,
-            name: firmware!.name ?? null,
-            file_path: firmware!.file_path,
-            template_id: firmware!.template_id ?? null,
-            is_mandatory: firmware!.is_mandatory ?? null,
-            created_at: firmware!.created_at ?? null,
-            tested_at: firmware!.tested_at ?? null,
-            is_approved: firmware!.is_approved ?? null,
-            updated_at: firmware!.updated_at ?? null,
-            is_deleted: firmware!.is_deleted ?? null,
-            note: firmware!.note ?? null,
-            logs: firmware!.logs ?? [],
-        };
+            success: true,
+            message: 'Firmware đã được xác nhận bởi RD'
+        }
     }
 }
 
