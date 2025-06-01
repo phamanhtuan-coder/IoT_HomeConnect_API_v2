@@ -16,11 +16,9 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     createFirmware = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
-
+        const employeeId = 'admin123';
         try {
-            const firmware = await this.firmwareService.createFirmware(req.body, accountId);
+            const firmware = await this.firmwareService.createFirmware(req.body, employeeId);
             res.status(201).json(firmware);
         } catch (error) {
             next(error);
@@ -34,12 +32,11 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     updateFirmware = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+        const employeeId = 'admin123';
 
         try {
             const { firmwareId } = req.params;
-            const firmware = await this.firmwareService.updateFirmware(parseInt(firmwareId), req.body, accountId);
+            const firmware = await this.firmwareService.updateFirmware(parseInt(firmwareId), req.body, employeeId);
             res.json(firmware);
         } catch (error) {
             next(error);
@@ -53,13 +50,14 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     deleteFirmware = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+        const employeeId = 'admin123';
 
         try {
             const { firmwareId } = req.params;
-            await this.firmwareService.deleteFirmware(parseInt(firmwareId), accountId);
-            res.status(204).send();
+            const response = await this.firmwareService.deleteFirmware(parseInt(firmwareId), employeeId);
+            
+            console.log('response', response)
+            res.status(204).json(response);
         } catch (error) {
             next(error);
         }
@@ -103,13 +101,11 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     confirmFirmwareByTester = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
-
+        const employeeId = 'admin123';
         try {
-            const { firmwareId } = req.params;
-            await this.firmwareService.confirmFirmwareByTester(parseInt(firmwareId), accountId, req.body.testResult);
-            res.status(204).send();
+            const response = await this.firmwareService.confirmFirmwareByTester(req.body.firmwareId, employeeId, req.body.testResult);
+            
+            res.status(200).json(response);
         } catch (error) {
             next(error);
         }
@@ -122,13 +118,20 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     confirmFirmwareByRD = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
-
+        const employeeId = 'admin123';
         try {
-            const { firmwareId } = req.params;
-            await this.firmwareService.confirmFirmwareByRD(parseInt(firmwareId), accountId, req.body.testResult);
-            res.status(204).send();
+            const response = await this.firmwareService.confirmFirmwareByRD(req.body.firmwareId, employeeId, req.body.testResult);
+            
+            res.status(200).json(response);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getLatestVersionFirmwaresByTemplate = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const latestVersionFirmwares = await this.firmwareService.getLatestVersionFirmwaresByTemplate();
+            res.json(latestVersionFirmwares);
         } catch (error) {
             next(error);
         }

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const firmwareSchema = z.object({
     body: z.object({
+        name:z.string(),
         version: z.string().min(1, 'Version is required').max(50, 'Version must be 50 characters or less'),
         file_path: z.string().min(1, 'File path is required').max(255, 'File path must be 255 characters or less'),
         template_id: z.number().positive('Template ID must be a positive number').optional(),

@@ -137,8 +137,14 @@ export interface ProductionTrackingCancelInput {
 export interface ProductionTrackingSerialUpdateInput {
     device_serial: string;
     stage: string;
+    status: string;
 }
 
 export interface ProductionTrackingApproveInput {
     device_serials: string[];
+}
+
+export interface ProductionTrackingApproveTestedInput {
+    device_serials: string[];
+    note?: string;
 }

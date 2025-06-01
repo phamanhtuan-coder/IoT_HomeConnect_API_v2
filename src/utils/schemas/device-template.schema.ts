@@ -1,9 +1,17 @@
 import { z } from 'zod';
 
+// Định nghĩa schema cho từng component trong mảng
+const componentSchema = z.object({
+    component_id: z.number().positive('Component ID must be a positive number'),
+    quantity_required: z.number().positive('Quantity required must be a positive number').optional().default(1), // Mặc định là 1 nếu không được cung cấp
+});
+
 export const deviceTemplateSchema = z.object({
     body: z.object({
         device_type_id: z.number().positive('Device type ID must be a positive number').optional(),
         name: z.string().min(1, 'Template name is required').max(100, 'Template name must be 100 characters or less'),
+        production_cost: z.number().optional(),
+        components: z.array(componentSchema).optional().default([]), // Sửa từ "component" thành "components" để rõ ràng hơn
     }),
 });
 

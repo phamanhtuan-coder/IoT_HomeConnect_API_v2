@@ -35,7 +35,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  */
 router.post(
     '/',
-    authMiddleware,
+    // authMiddleware,
     // roleMiddleware,
     validateMiddleware(deviceTemplateSchema),
     asyncHandler(deviceTemplateController.createDeviceTemplate)
@@ -63,8 +63,8 @@ router.get(
  */
 router.get(
     '/:templateId',
-    authMiddleware,
-    roleMiddleware,
+    // authMiddleware,
+    // roleMiddleware,
     validateMiddleware(deviceTemplateIdSchema),
     asyncHandler(deviceTemplateController.getDeviceTemplateById)
 );
@@ -79,8 +79,8 @@ router.get(
  */
 router.put(
     '/:templateId',
-    authMiddleware,
-    roleMiddleware,
+    // authMiddleware,
+    // roleMiddleware,
     validateMiddleware(deviceTemplateSchema),
     asyncHandler(deviceTemplateController.updateDeviceTemplate)
 );
@@ -94,8 +94,8 @@ router.put(
  */
 router.delete(
     '/:templateId',
-    authMiddleware,
-    roleMiddleware,
+    // authMiddleware,
+    // roleMiddleware,
     validateMiddleware(deviceTemplateIdSchema),
     asyncHandler(deviceTemplateController.deleteDeviceTemplate)
 );

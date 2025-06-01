@@ -77,7 +77,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  */
 router.post(
     '/',
-    authMiddleware,
+    // authMiddleware,
     // roleMiddleware,
     validateMiddleware(componentSchema),
     asyncHandler(componentController.createComponent)
@@ -113,8 +113,8 @@ router.post(
  */
 router.get(
     '/:componentId',
-    authMiddleware,
-    roleMiddleware,
+    // authMiddleware,
+    // roleMiddleware,
     validateMiddleware(componentIdSchema),
     asyncHandler(componentController.getComponentById)
 );
@@ -141,8 +141,8 @@ router.get(
  */
 router.get(
     '/',
-    authMiddleware,
-    roleMiddleware,
+    // authMiddleware,
+    // roleMiddleware,
     asyncHandler(componentController.getAllComponents)
 );
 
@@ -202,8 +202,8 @@ router.get(
  */
 router.put(
     '/:componentId',
-    authMiddleware,
-    roleMiddleware,
+    // authMiddleware,
+    // roleMiddleware,
     validateMiddleware(componentIdSchema),
     validateMiddleware(updateComponentSchema),
     asyncHandler(componentController.updateComponent)
@@ -239,8 +239,8 @@ router.put(
  */
 router.delete(
     '/:componentId',
-    authMiddleware,
-    roleMiddleware,
+    // authMiddleware,
+    // roleMiddleware,
     validateMiddleware(componentIdSchema),
     asyncHandler(componentController.deleteComponent)
 );
