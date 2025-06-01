@@ -206,7 +206,7 @@ class DeviceTemplateService {
         });
         if (!template) throwError(ErrorCodes.TEMPLATE_NOT_FOUND, 'Device template not found');
     
-        const { device_type_id, name, production_cost, components = [] } = input;
+        const { device_type_id, name, production_cost, status,  components = [] } = input;
     
         // Validate device_type_id if provided
         if (device_type_id) {
@@ -264,6 +264,7 @@ class DeviceTemplateService {
                 name: name ?? template!.name,
                 production_cost: production_cost ?? template!.production_cost,
                 updated_at: new Date(),
+                status: status ?? template!.status,
             },
         });
     

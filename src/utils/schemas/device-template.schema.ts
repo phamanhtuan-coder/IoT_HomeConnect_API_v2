@@ -11,6 +11,7 @@ export const deviceTemplateSchema = z.object({
         device_type_id: z.number().positive('Device type ID must be a positive number').optional(),
         name: z.string().min(1, 'Template name is required').max(100, 'Template name must be 100 characters or less'),
         production_cost: z.number().optional(),
+        status: z.string().optional(),
         components: z.array(componentSchema).optional().default([]), // Sửa từ "component" thành "components" để rõ ràng hơn
     }),
 });
