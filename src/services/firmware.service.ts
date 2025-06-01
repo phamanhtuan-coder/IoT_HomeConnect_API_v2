@@ -91,7 +91,7 @@ class FirmwareService {
                 data: {
                     is_mandatory: false,
                     updated_at: new Date(),
-                    logs: [...fw.logs, logForDemotedFirmware]
+                    logs: [...(fw.logs as any), logForDemotedFirmware]
                 },
             });
         }
@@ -277,7 +277,7 @@ class FirmwareService {
             where: { firmware_id: firmwareId },
             data: {
                 is_deleted: true, updated_at: new Date(),
-                logs: [...(firmware?.logs || []), newLog]
+                logs: [...(firmware?.logs as any), newLog]
             },
         });
     }
@@ -393,7 +393,7 @@ class FirmwareService {
             where: { firmware_id: firmwareId },
             data: {
                 tested_at: testResult ? new Date() : null,
-                logs: [...(firmware?.logs || []), newLog],
+                logs: [...(firmware?.logs as any), newLog],
                 },
         });
 
@@ -431,7 +431,7 @@ class FirmwareService {
             data: {
                 tested_at: testResult ? new Date() : null,
                 is_approved: testResult ? true : false,
-                logs: [...(firmware?.logs || []), newLog],
+                logs: [...(firmware?.logs as any), newLog],
                 },
         });
 

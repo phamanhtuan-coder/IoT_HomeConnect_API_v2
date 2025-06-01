@@ -229,4 +229,21 @@ export class BatchService {
             orderBy: { created_at: 'asc' }
         });
     }
+
+    async getListBatch(): Promise<any> {
+        const listBatch = await this.prisma.production_batches.findMany({
+            where: {
+                is_deleted: false
+            },
+            select: {
+                production_batch_id: true,
+                quantity: true,
+            }
+        });
+
+        return {
+            success: true,
+            data: listBatch
+        }
+    }
 }
