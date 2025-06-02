@@ -104,6 +104,8 @@ export const getSerialFirmwareSchema = z.object({
     )
 });
 
+
+
 // Export các type từ schema
 export type ApproveProductionInput = z.infer<typeof approveProductionSchema>['body'];
 export type RejectProductionInput = z.infer<typeof rejectProductionSchema>['body'];
