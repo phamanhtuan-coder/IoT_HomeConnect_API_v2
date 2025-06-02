@@ -211,7 +211,7 @@ export class BatchService {
         return this.prisma.production_batches.findMany({
             where: {
                 planning_id: planningId,
-                is_deleted: false
+                // is_deleted: false
             },
             include: {
                 device_templates: {
