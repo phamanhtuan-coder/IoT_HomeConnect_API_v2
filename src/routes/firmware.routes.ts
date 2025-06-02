@@ -11,7 +11,7 @@ import FirmwareController from '../controllers/firmware.controller';
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
 import validateMiddleware from '../middleware/validate.middleware';
-import {firmwareIdSchema, firmwareSchema, updateFirmwareSchema} from "../utils/schemas/firmware.schema";
+import { firmwareIdSchema, firmwareSchema, updateFirmwareSchema} from "../utils/schemas/firmware.schema";
 
 /**
  * Định nghĩa các route cho quản lý firmware.
@@ -96,7 +96,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
 router.get(
     '/detail/:firmwareId',
     // authMiddleware,
-    // validateMiddleware(firmwareIdSchema),
+    validateMiddleware(firmwareIdSchema),
     asyncHandler(firmwareController.getFirmwareById)
 );
 
@@ -216,7 +216,7 @@ router.post(
     '/',
     // authMiddleware,
     // roleMiddleware,
-    // validateMiddleware(firmwareSchema),
+    validateMiddleware(firmwareSchema),
     asyncHandler(firmwareController.createFirmware)
 );
 
@@ -275,7 +275,7 @@ router.put(
     '/edit/:firmwareId',
     // authMiddleware,
     // roleMiddleware,
-    // validateMiddleware(updateFirmwareSchema),
+    validateMiddleware(updateFirmwareSchema),
     asyncHandler(firmwareController.updateFirmware)
 );
 
@@ -283,6 +283,7 @@ router.patch(
     '/confirm-by-tester',
     // authMiddleware,
     // validateMiddleware(firmwareIdSchema),
+    validateMiddleware(firmwareIdSchema),
     asyncHandler(firmwareController.confirmFirmwareByTester)
 );
 
@@ -290,6 +291,7 @@ router.patch(
     '/confirm-by-rd',
     // authMiddleware,
     // validateMiddleware(firmwareIdSchema),
+    validateMiddleware(firmwareIdSchema),
     asyncHandler(firmwareController.confirmFirmwareByRD)
 );
 
@@ -329,6 +331,7 @@ router.delete(
     // authMiddleware,
     // roleMiddleware,
     // validateMiddleware(firmwareIdSchema),
+    validateMiddleware(firmwareIdSchema),
     asyncHandler(firmwareController.deleteFirmware)
 );
 

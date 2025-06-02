@@ -680,7 +680,7 @@ export class ProductionTrackingService {
                     `;
             } else if (type === 'tracking' && batch_id) {
                     query = Prisma.sql`
-                    SELECT need_firmware.device_serial, pb.production_batch_id
+                    SELECT need_firmware.device_serial, pb.production_batch_id, pt.status
                     FROM production_batches pb
                         LEFT JOIN production_tracking pt ON pt.production_batch_id = pb.production_batch_id
                         LEFT JOIN serial_need_install_firmware need_firmware ON need_firmware.production_batch_id = pb.production_batch_id
