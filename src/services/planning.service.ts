@@ -332,7 +332,9 @@ export class PlanningService {
                             production_batch_id: batch.production_batch_id,
                             device_serial: deviceSerial,
                             stage: 'pending',
-                            status: 'pending'
+                            status: 'pending',
+                            state_logs:[]
+                            
                         }
                     });
                 });
