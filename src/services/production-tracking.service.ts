@@ -669,8 +669,7 @@ export class ProductionTrackingService {
                 `;
             } else if (type === 'batch' && planning_id) {
                 query = Prisma.sql`
-                        
-                        SELECT pb.production_batch_id, planning.planning_id, pb.template_id
+                        SELECT pb.production_batch_id, planning.planning_id, pb.template_id,pb.firmware_id
                         FROM planning
                             LEFT JOIN production_batches pb ON pb.planning_id = planning.planning_id
                             LEFT JOIN production_tracking pt ON pt.production_batch_id = pb.production_batch_id
@@ -680,7 +679,7 @@ export class ProductionTrackingService {
                     `;
             } else if (type === 'tracking' && batch_id) {
                     query = Prisma.sql`
-                    SELECT need_firmware.device_serial, pb.production_batch_id
+                    SELECT need_firmware.device_serial, pb.production_batch_id,need_firmware.status
                     FROM production_batches pb
                         LEFT JOIN production_tracking pt ON pt.production_batch_id = pb.production_batch_id
                         LEFT JOIN serial_need_install_firmware need_firmware ON need_firmware.production_batch_id = pb.production_batch_id
@@ -693,10 +692,19 @@ export class ProductionTrackingService {
 
             let querySerialNeedInstallFirmware = Prisma.sql`
             WITH serial_need_install_firmware AS (
-                SELECT production_batch_id, device_serial
+                SELECT production_batch_id, device_serial,status
                 FROM production_tracking
-                WHERE stage = 'assembly' AND STATUS = 'firmware_upload'
+                WHERE
+                    (   stage = 'assembly'
+                        AND status IN ('in_progress','firmware_upload', 'firmware_uploading', 'firmware_failed')
+                    )
+                   OR 
+                    (
+                        stage = 'qc'
+                        AND status = 'firmware_uploaded'
+                    )
                     AND is_deleted = false
+
             )`;
 
             const finalQuery = Prisma.sql`
