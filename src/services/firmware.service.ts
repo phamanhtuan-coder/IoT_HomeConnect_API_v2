@@ -92,7 +92,6 @@ class FirmwareService {
                     is_mandatory: false,
                     updated_at: new Date(),
                     logs: [...(fw.logs as any), logForDemotedFirmware]
-
                 },
             });
         }
@@ -274,21 +273,13 @@ class FirmwareService {
             created_at: new Date(),
         };
 
-
-        await this.prisma.$transaction(async (tx) => {
-            await tx.firmware!.update({
-                where: { firmware_id: firmwareId },
-                data: {
-                    is_deleted: true, updated_at: new Date(),
-                    logs: [...(firmware?.logs as any), newLog]
-                },
-            });
+        await this.prisma.firmware!.update({
+            where: { firmware_id: firmwareId },
+            data: {
+                is_deleted: true, updated_at: new Date(),
+                logs: [...(firmware?.logs as any), newLog]
+            },
         });
-
-        return {
-            success: true,
-            message: 'Firmware đã được xoá thành công'
-        }
     }
 
     async getFirmwareById(firmwareId: number): Promise<any> {
@@ -403,7 +394,7 @@ class FirmwareService {
             data: {
                 tested_at: testResult ? new Date() : null,
                 logs: [...(firmware?.logs as any), newLog],
-            },
+                },
         });
 
         return {
@@ -441,7 +432,7 @@ class FirmwareService {
                 tested_at: testResult ? new Date() : null,
                 is_approved: testResult ? true : false,
                 logs: [...(firmware?.logs as any), newLog],
-            },
+                },
         });
 
         return {

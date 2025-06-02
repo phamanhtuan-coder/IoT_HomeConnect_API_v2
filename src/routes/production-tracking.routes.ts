@@ -56,4 +56,11 @@ router.patch(
     productionTrackingController.ApproveTestedSerial
 );
 
+router.get(
+    '/info-need-upload-firmware/:type/:planning_id/:batch_id',
+    // authMiddleware,
+    // roleMiddleware,
+    productionTrackingController.getSerialWithNeedFirmwareInProgress
+);
+
 export default router;
