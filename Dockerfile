@@ -29,11 +29,14 @@ WORKDIR /app
 # Copy compiled files & package.json
 COPY --from=builder /app/dist ./dist/
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/prisma ./prisma/
+# Nếu dùng Prisma
+COPY --from=builder /app/prisma ./prisma
+RUN npx prisma generate
 # 👈 Cần thiết nếu Prisma cần schema
 
-# Install only production dependencies
-RUN npm install --omit=dev
+# Install Python and other dependencies needed for bcrypt
+RUN apt-get update && apt-get install -y python3 make g++ && \
+    npm install --omit=dev
 
 # Required environment variables for Railway deployment:
 # - DATABASE_URL: Connection string for MySQL database
