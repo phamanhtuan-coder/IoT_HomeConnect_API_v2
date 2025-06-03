@@ -1,38 +1,24 @@
-FROM node:18-alpine3.17
-
-# Accept DNS server as build argument
-ARG DOCKER_DNS=8.8.8.8
+# Stage 1: Build
+FROM node:18 AS builder
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apk add --no-cache \
-    build-base \
-    python3
+COPY package*.json ./
+RUN npm install
 
-# Copy package files
-COPY package*.json pnpm-lock.yaml ./
-
-# Install pnpm
-RUN npm install -g pnpm
-
-# Install nodemon globally
-RUN npm install -g nodemon
-
-# Install dependencies with --ignore-scripts to bypass the problematic install script
-RUN pnpm install --ignore-scripts
-
-# Reinstall bcrypt specifically to ensure it's properly built for this environment
-RUN npm rebuild bcrypt --build-from-source
-
-# Copy source files
 COPY . .
+RUN npm run build
 
-# Generate Prisma client
-RUN npx prisma generate
+# Stage 2: Run
+FROM node:18-slim
 
-# Expose both development (7777) and production (8443) ports
-EXPOSE 7777 8443
+WORKDIR /app
 
-# Use dev script instead of build
-CMD ["pnpm", "run", "dev"]
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+
+RUN npm install --omit=dev
+
+ENV NODE_ENV=production
+EXPOSE 7777
+CMD ["node", "dist/server.js"]
