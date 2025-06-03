@@ -11,7 +11,7 @@ RUN npm install -g pnpm && pnpm install
 # Copy toàn bộ source code
 COPY . .
 
-# 👉 Chạy Prisma generate
+# 👉 Generate Prisma Client phù hợp với debian-openssl-3.0.x
 RUN npx prisma generate
 
 # 👉 (Tuỳ chọn) đẩy schema nếu không dùng migration
