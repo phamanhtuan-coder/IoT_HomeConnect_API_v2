@@ -32,15 +32,6 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma/
 # 👈 Cần thiết nếu Prisma cần schema
 
-# Copy .env file if it exists (for local development)
-# Railway will provide environment variables through its platform
-# Note: .env file is mounted in docker-compose.yml if needed
-# 👈 Cần thiết nếu bạn dùng env để kết nối DB
-COPY --from=builder /app/templates ./templates/
-# 👈 Cần thiết cho email templates
-COPY --from=builder /app/.key ./.key
-# 👈 Cần thiết cho Firebase authentication
-
 # Install only production dependencies
 RUN npm install --omit=dev
 
