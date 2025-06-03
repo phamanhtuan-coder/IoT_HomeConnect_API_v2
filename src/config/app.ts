@@ -1,5 +1,5 @@
 export const appConfig = {
-    port: process.env.NODE_ENV === 'production' ? 8443 : 7777,
+    port: process.env.PORT || (process.env.NODE_ENV === 'production' ? 8443 : 7777),
     corsOrigins: process.env.CORS_ORIGINS
         ? process.env.CORS_ORIGINS.split(',')
         : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:7777', 'http://localhost:8443', 'http://localhost:8888'],
@@ -9,5 +9,3 @@ export const appConfig = {
 };
 
 export type AppConfig = typeof appConfig;
-
-

@@ -27,16 +27,32 @@ FROM node:18-slim
 WORKDIR /app
 
 # Copy compiled files & package.json
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/dist ./dist/
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma ./prisma/
 # 👈 Cần thiết nếu Prisma cần schema
-COPY --from=builder /app/.env ./
+
+# Copy .env file if it exists (for local development)
+# Railway will provide environment variables through its platform
+# Note: .env file is mounted in docker-compose.yml if needed
 # 👈 Cần thiết nếu bạn dùng env để kết nối DB
+COPY --from=builder /app/templates ./templates/
+# 👈 Cần thiết cho email templates
+COPY --from=builder /app/.key ./.key
+# 👈 Cần thiết cho Firebase authentication
 
 # Install only production dependencies
 RUN npm install --omit=dev
 
+# Required environment variables for Railway deployment:
+# - DATABASE_URL: Connection string for MySQL database
+# - REDIS_URL or REDIS_HOST + REDIS_PORT: Connection details for Redis
+# - JWT_SECRET: Secret for JWT token generation
+# - APP_SECRET: Application secret
+# - EMAIL_USER and EMAIL_PASS: For email functionality
+# - PORT: Automatically provided by Railway
+
 ENV NODE_ENV=production
-EXPOSE 7777
+# Use PORT environment variable from Railway or default to 8443
+EXPOSE ${PORT:-8443}
 CMD ["node", "dist/server.js"]
