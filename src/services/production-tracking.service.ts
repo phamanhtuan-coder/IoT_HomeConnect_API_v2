@@ -199,8 +199,7 @@ export class ProductionTrackingService {
             return errorResponse(ErrorCodes.PRODUCTION_NOT_FOUND, 'Production not found');
         }
 
-        let error_list = [];
-
+let error_list: { device_serial: string | null; error: string }[] = [];
         await this.prisma.$transaction(async (tx: any) => {
             for (const production of production_list) {
                 if (production.stage !== StageSerialStage.QC) {
@@ -523,8 +522,8 @@ export class ProductionTrackingService {
         if (device_serials.length !== production_list.length) {
             return errorResponse(ErrorCodes.PRODUCTION_NOT_FOUND, 'Production not found');
         }
-        
-        let error_list = [];
+
+        let error_list: { device_serial: string | null; error: string }[] = [];
         await this.prisma.$transaction(async (tx) => {
             for (const production of production_list) {
                 if (production.status !== StatusSerialStage.PENDING) {
@@ -589,8 +588,8 @@ export class ProductionTrackingService {
         if (device_serials.length !== production_list.length) {
             return errorResponse(ErrorCodes.PRODUCTION_NOT_FOUND, 'Production not found');
         }
-        
-        let error_list = [];
+
+        let error_list: { device_serial: string | null; error: string }[] = [];
         await this.prisma.$transaction(async (tx) => {
             for (const production of production_list) {
                 if (production.status !== StatusSerialStage.TESTING) {
