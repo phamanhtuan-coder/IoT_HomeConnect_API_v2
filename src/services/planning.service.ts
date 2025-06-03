@@ -47,11 +47,11 @@ export class PlanningService {
         const planning = await this.prisma.planning.findFirst({
             where: {
                 planning_id: planningId,
-                is_deleted: false
+                // is_deleted: false
             },
             include: {
                 production_batches: {
-                    where: { is_deleted: false },
+                    where: {},
                     include: {
                         device_templates: {
                             include: {
@@ -82,12 +82,12 @@ export class PlanningService {
     async getAllPlannings(): Promise<Planning[]> {
         const plannings = await this.prisma.planning.findMany({
             where: {
-                is_deleted: false,
+                // is_deleted: false,
 
             },
             include: {
                 production_batches: {
-                    where: { is_deleted: false },
+                    where: {},
                     include: {
                         device_templates: {
                             include: {
@@ -167,33 +167,53 @@ export class PlanningService {
         }
 
         if (data.status === 'rejected') {
-            await this.prisma.production_batches.updateMany({
-                where: {
-                    planning_id: planningId,
-                    is_deleted: false
-                },
-                data: {
-                    status: 'rejected',
-                    logs: {
-                        rejected: {
-                            timestamp: new Date(),
-                            employee_id: employeeId,
-                            action: 'rejected',
-                            notes: data.notes
+            // Cập nhật cả planning và production_batches
+            await this.prisma.$transaction([
+                this.prisma.planning.update({
+                    where: { planning_id: planningId },
+                    data: {
+                        status: 'rejected',
+                        is_deleted: true,  // Thêm is_deleted = true cho planning
+                        logs: {
+                            ...(planning?.logs as Record<string, any> || {}),
+                            rejected: {
+                                timestamp: new Date(),
+                                employee_id: employeeId,
+                                action: 'rejected',
+                                notes: data.notes
+                            }
                         }
                     }
-                }
-            });
+                }),
+                this.prisma.production_batches.updateMany({
+                    where: {
+                        planning_id: planningId,
+                        is_deleted: false
+                    },
+                    data: {
+                        status: 'rejected',
+                        is_deleted: true,
+                        logs: {
+                            rejected: {
+                                timestamp: new Date(),
+                                employee_id: employeeId,
+                                action: 'rejected',
+                                notes: data.notes
+                            }
+                        }
+                    }
+                })
+            ]);
         }
 
         const finalPlanning = await this.prisma.planning.findFirst({
             where: {
                 planning_id: planningId,
-                is_deleted: false
+                // is_deleted: false
             },
             include: {
                 production_batches: {
-                    where: { is_deleted: false },
+                    where: {},
                     include: {
                         device_templates: true
                     }
@@ -312,7 +332,9 @@ export class PlanningService {
                             production_batch_id: batch.production_batch_id,
                             device_serial: deviceSerial,
                             stage: 'pending',
-                            status: 'pending'
+                            status: 'pending',
+                            state_logs:[]
+                            
                         }
                     });
                 });
