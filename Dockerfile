@@ -1,12 +1,14 @@
-FROM node:20-slim
+FROM node:18-alpine3.17
+
+# Accept DNS server as build argument
+ARG DOCKER_DNS=8.8.8.8
 
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    python3 && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+    build-base \
+    python3
 
 # Copy package files
 COPY package*.json pnpm-lock.yaml ./
@@ -29,8 +31,8 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
-EXPOSE 3000
+# Expose both development (7777) and production (8443) ports
+EXPOSE 7777 8443
 
 # Use dev script instead of build
 CMD ["pnpm", "run", "dev"]
-
