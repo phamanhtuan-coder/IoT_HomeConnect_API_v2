@@ -4,10 +4,12 @@ FROM node:18 AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+COPY pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install
 
 COPY . .
-RUN npm run build
+RUN pnpm run build
+
 
 # Stage 2: Run
 FROM node:18-slim
