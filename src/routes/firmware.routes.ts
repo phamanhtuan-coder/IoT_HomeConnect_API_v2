@@ -158,6 +158,12 @@ router.get(
     asyncHandler(firmwareController.getLatestVersionFirmwaresByTemplate)
 );
 
+router.get(
+    '/by-template/:templateId',
+    // authMiddleware,
+    asyncHandler(firmwareController.getFirmwaresByTemplateId)
+);
+
 /**
  * Tạo mới firmware.
  * @swagger

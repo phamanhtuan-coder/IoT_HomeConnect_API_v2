@@ -362,6 +362,29 @@ class FirmwareService {
         }
     }
 
+    async getFirmwaresByTemplateId(templateId: number): Promise<any> {
+        const firmwares = await this.prisma.$queryRaw`
+            SELECT 
+                f.firmware_id, f.version, f.name, f.file_path, f.template_id, f.is_mandatory,
+                f.created_at, f.updated_at, f.is_deleted, f.tested_at, f.is_approved, f.note, f.logs,
+                CONCAT(
+                    CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(f.version, '.', 1), '.', -1) + 0 AS CHAR), '.',
+                    CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(f.version, '.', 2), '.', -1) + 0 AS CHAR), '.',
+                    CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(f.version, '.', 3), '.', -1) + 0 AS CHAR)
+                ) AS version, 
+                dt.template_id, dt.name AS template_name, dt.is_deleted AS template_is_deleted
+            FROM firmware f
+            JOIN device_templates dt ON f.template_id = dt.template_id
+            WHERE f.is_deleted = false AND f.template_id = ${templateId}
+            ORDER BY f.version DESC
+        `;
+
+        return {
+            success: true,
+            data: firmwares
+        };
+    }
+
     async confirmFirmwareByTester(firmwareId: number, employeeId: string, testResult: boolean): Promise<any> {
         console.log("Test")
         console.log(firmwareId)
@@ -443,3 +466,4 @@ class FirmwareService {
 }
 
 export default FirmwareService;
+
