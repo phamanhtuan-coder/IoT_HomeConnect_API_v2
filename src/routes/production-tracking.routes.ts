@@ -25,7 +25,7 @@ router.post(
     '/approve-production-serial',
     // authMiddleware,
     // roleMiddleware,
-    validateMiddleware(approveProductionSchema),
+    // validateMiddleware(approveProductionSchema),
     productionTrackingController.ApproveProductionSerial
 );
 
@@ -33,7 +33,7 @@ router.patch(
     '/update-serial',
     // authMiddleware,
     // roleMiddleware,
-    validateMiddleware(updateProductionSchema),
+    // validateMiddleware(updateProductionSchema),
     productionTrackingController.UpdateProductionSerial
 );
 
@@ -41,7 +41,7 @@ router.patch(
     '/reject-qc',
     // authMiddleware,
     // roleMiddleware,
-    validateMiddleware(rejectProductionSchema),
+    // validateMiddleware(rejectProductionSchema),
     productionTrackingController.RejectProductionSerial
 );
 
@@ -49,7 +49,7 @@ router.patch(
     '/cancel-production-serial',
     // authMiddleware,
     // roleMiddleware,
-    validateMiddleware(cancelProductionSchema),
+    // validateMiddleware(cancelProductionSchema),
     productionTrackingController.CancelProductionSerial
 );
 
@@ -57,7 +57,7 @@ router.patch(
     '/approve-tested-serial',
     // authMiddleware,
     // roleMiddleware,
-    validateMiddleware(approveTestedSchema),
+    // validateMiddleware(approveTestedSchema),
     productionTrackingController.ApproveTestedSerial
 );
 
@@ -65,7 +65,7 @@ router.get(
     '/info-need-upload-firmware/:type/:planning_id/:batch_id',
     // authMiddleware,
     // roleMiddleware,
-    validateMiddleware(getSerialFirmwareSchema),
+    // validateMiddleware(getSerialFirmwareSchema),
     productionTrackingController.getSerialWithNeedFirmwareInProgress
 );
 
