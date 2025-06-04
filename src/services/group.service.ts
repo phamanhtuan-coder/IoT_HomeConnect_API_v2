@@ -130,6 +130,24 @@ class GroupService {
         return userGroup!.role as GroupRole;
     }
 
+    async getGroupsByUsername(username: string): Promise<Group[]> {
+        const userGroups = await this.prisma.user_groups.findMany({
+            where: {
+                account: {
+                    username: username,
+                },
+                is_deleted: false
+            },
+            include: {
+                groups: true
+            }
+        });
+
+        if (!userGroups.length) return [];
+
+        return userGroups.map(ug => this.mapPrismaGroupToAuthGroup(ug.groups!));
+    }
+
     private mapPrismaGroupToAuthGroup(group: any): Group {
         return {
             group_id: group.group_id,
@@ -154,3 +172,4 @@ class GroupService {
 }
 
 export default GroupService;
+

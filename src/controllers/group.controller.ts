@@ -147,6 +147,29 @@ class GroupController {
             next(error);
         }
     };
+
+    /**
+     * Lấy danh sách nhóm của người dùng hiện tại
+     * @param req Request Express với username từ JWT token
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    getGroupsByUsername = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const username = req.user?.username;
+            if (!username) {
+                throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+            }
+
+            const groups = await this.groupService.getGroupsByUsername(username!);
+            res.json({
+                success: true,
+                data: groups
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 
 export default GroupController;

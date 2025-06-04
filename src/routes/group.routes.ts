@@ -403,5 +403,52 @@ router.delete(
     asyncHandler(groupController.removeUserFromGroup)
 );
 
+/**
+ * Lấy danh sách nhóm của người dùng hiện tại.
+ * @swagger
+ * /api/groups/my-groups:
+ *   get:
+ *     tags:
+ *       - Group
+ *     summary: Lấy danh sách nhóm của người dùng
+ *     description: |
+ *       Lấy danh sách tất cả các nhóm mà người dùng hiện tại là thành viên.
+ *       Username được lấy từ JWT token.
+ *     security:
+ *       - UserBearer: []
+ *     responses:
+ *       200:
+ *         description: Trả về danh sách các nhóm
+ *         schema:
+ *           type: object
+ *           properties:
+ *             success:
+ *               type: boolean
+ *             data:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   group_id:
+ *                     type: number
+ *                   group_name:
+ *                     type: string
+ *                   created_at:
+ *                     type: string
+ *                     format: date-time
+ *                   updated_at:
+ *                     type: string
+ *                     format: date-time
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       500:
+ *         description: Lỗi server
+ */
+router.get(
+    '/my-groups',
+    authMiddleware,
+    asyncHandler(groupController.getGroupsByUsername)
+);
+
 export default router;
 
