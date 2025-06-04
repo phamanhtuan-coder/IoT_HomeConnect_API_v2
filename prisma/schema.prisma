@@ -914,7 +914,7 @@ model sync_tracking {
   sync_type      String?       @db.VarChar(20)
   sync_status    String?       @db.VarChar(20)
   created_at     DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at     DateTime?     @db.DateTime(0)
+  updated_at     DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted     Boolean?      @default(false)
   account        account?      @relation(fields: [account_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "sync_tracking_ibfk_1")
   user_devices   user_devices? @relation(fields: [user_device_id], references: [user_device_id], onDelete: NoAction, onUpdate: NoAction, map: "sync_tracking_ibfk_2")
