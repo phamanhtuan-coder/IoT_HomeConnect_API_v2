@@ -130,12 +130,23 @@ class GroupService {
         return userGroup!.role as GroupRole;
     }
 
-    async getGroupsByUsername(username: string): Promise<Group[]> {
+    async getGroupsByUsername(username: string, userId: string): Promise<Group[]> {
+        // Verify that the username belongs to the provided userId
+        const account = await this.prisma.account.findFirst({
+            where: {
+                username: username,
+                account_id: userId,
+                deleted_at: null
+            }
+        });
+
+        if (!account) {
+            throwError(ErrorCodes.UNAUTHORIZED, 'Invalid user credentials');
+        }
+
         const userGroups = await this.prisma.user_groups.findMany({
             where: {
-                account: {
-                    username: username,
-                },
+                account_id: userId,
                 is_deleted: false
             },
             include: {
@@ -145,7 +156,9 @@ class GroupService {
 
         if (!userGroups.length) return [];
 
-        return userGroups.map(ug => this.mapPrismaGroupToAuthGroup(ug.groups!));
+        return userGroups
+            .filter(ug => ug.groups && !ug.groups.is_deleted)
+            .map(ug => this.mapPrismaGroupToAuthGroup(ug.groups!));
     }
 
     private mapPrismaGroupToAuthGroup(group: any): Group {
