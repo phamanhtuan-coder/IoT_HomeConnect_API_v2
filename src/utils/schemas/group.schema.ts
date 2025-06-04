@@ -38,6 +38,12 @@ export const updateGroupRoleSchema = z.object({
     }),
 });
 
+export const myGroupsSchema = z.object({
+    query: z.object({}).optional(),
+    params: z.object({}),
+    body: z.object({}).optional()
+});
+
 export type GroupInput = z.infer<typeof groupSchema>['body'];
 export type GroupIdInput = z.infer<typeof groupIdSchema>['params'];
 export type UserGroupInput = z.infer<typeof userGroupSchema>['body'];
