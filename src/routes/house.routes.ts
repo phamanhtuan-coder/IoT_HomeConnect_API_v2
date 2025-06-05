@@ -194,11 +194,9 @@ router.put(
 router.get(
     '/:houseId',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(houseIdSchema),
     asyncHandler(houseController.getHouseById)
 );
-
 
 /**
  * Xoá house theo houseId.
@@ -291,7 +289,6 @@ router.delete(
 router.get(
     '/group/:groupId',
     authMiddleware,
-    groupRoleMiddleware,
     asyncHandler(houseController.getHousesByGroup)
 );
 

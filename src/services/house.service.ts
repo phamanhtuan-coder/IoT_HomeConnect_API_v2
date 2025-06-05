@@ -33,8 +33,9 @@ class HouseService {
             data: { house_id: house.house_id, space_name: 'Phòng Mặc Định' },
         });
 
+        // Return only the fields defined in the House interface
         return {
-            ...house,
+            house_id: house.house_id,
             group_id: house.group_id || null,
             house_name: house.house_name,
             address: house.address || null,
