@@ -134,6 +134,7 @@ export class PlanningService {
             where: { planning_id: planningId },
             data: {
                 status: data.status === 'approved' ? 'in_progress' : 'rejected',
+                updated_at: new Date(),
                 logs: {
                     ...(planning?.logs as Record<string, any> || {}),
                     [data.status]: {
@@ -154,6 +155,7 @@ export class PlanningService {
                 },
                 data: {
                     status: 'in_progress',
+                    updated_at: new Date(),
                     logs: {
                         approved: {
                             timestamp: new Date(),
@@ -174,6 +176,7 @@ export class PlanningService {
                     data: {
                         status: 'rejected',
                         is_deleted: true,  // Thêm is_deleted = true cho planning
+                        updated_at: new Date(),
                         logs: {
                             ...(planning?.logs as Record<string, any> || {}),
                             rejected: {
@@ -193,6 +196,7 @@ export class PlanningService {
                     data: {
                         status: 'rejected',
                         is_deleted: true,
+                        updated_at: new Date(),
                         logs: {
                             rejected: {
                                 timestamp: new Date(),
