@@ -163,6 +163,7 @@ export class BatchService {
             data: {
                 status: data.status,
                 batch_note: data.batch_note,
+                updated_at: new Date(),
                 logs: {
                     ...(batch?.logs as Record<string, any> || {}),
                     [data.status]: {
@@ -189,7 +190,7 @@ export class BatchService {
         // 5. Cập nhật status của planning
         await this.prisma.planning.update({
             where: { planning_id: batch!.planning_id },
-            data: { status: newPlanningStatus }
+            data: { status: newPlanningStatus, updated_at: new Date() }
         });
 
         // 6. Lấy lại thông tin batch với thông tin mới nhất
