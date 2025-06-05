@@ -89,60 +89,59 @@ router.post(
     asyncHandler(houseController.createHouse)
 );
 
+
+
 /**
- * Lấy danh sách house theo groupId.
+ * Cập nhật thông tin house theo houseId.
  * @swagger
- * /api/houses/group/{groupId}:
- *   get:
+ * /api/houses/{houseId}:
+ *   put:
  *     tags:
  *       - House
- *     summary: Lấy danh sách nhà theo nhóm
+ *     summary: Cập nhật thông tin nhà
  *     description: |
- *       Lấy danh sách tất cả các ngôi nhà trong một nhóm.
- *       Yêu cầu người dùng có quyền trong nhóm.
+ *       Cập nhật thông tin của một ngôi nhà.
+ *       Yêu cầu người dùng có quyền trong nhóm chứa nhà.
  *     security:
  *       - UserBearer: []
  *     parameters:
  *       - in: path
- *         name: groupId
+ *         name: houseId
  *         required: true
  *         type: string
- *         description: ID của nhóm cần lấy danh sách nhà
+ *         description: ID của ngôi nhà cần cập nhật
+ *       - in: body
+ *         name: body
+ *         description: Thông tin cập nhật cho ngôi nhà
+ *         schema:
+ *           type: object
+ *           required:
+ *             - house_name
+ *           properties:
+ *             house_name:
+ *               type: string
+ *               description: Tên mới của ngôi nhà (tối đa 100 ký tự)
+ *               example: "Nhà ở Hà Nội - Cập nhật"
  *     responses:
  *       200:
- *         description: Trả về danh sách các ngôi nhà
- *         schema:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               id:
- *                 type: number
- *                 description: ID của ngôi nhà
- *               house_name:
- *                 type: string
- *                 description: Tên ngôi nhà
- *               group_id:
- *                 type: number
- *                 description: ID của nhóm chứa nhà
- *               created_at:
- *                 type: string
- *                 format: date-time
- *                 description: Thời gian tạo
+ *         description: Cập nhật thông tin nhà thành công
+ *       400:
+ *         description: Dữ liệu đầu vào không hợp lệ
  *       401:
  *         description: Token không hợp lệ hoặc đã hết hạn
  *       403:
  *         description: Không có quyền trong nhóm
  *       404:
- *         description: Không tìm thấy nhóm
+ *         description: Không tìm thấy ngôi nhà
  *       500:
  *         description: Lỗi server
  */
-router.get(
-    '/group/:groupId',
+router.put(
+    '/:houseId',
     authMiddleware,
     groupRoleMiddleware,
-    asyncHandler(houseController.getHousesByGroup)
+    validateMiddleware(houseSchema),
+    asyncHandler(houseController.updateHouse)
 );
 
 /**
@@ -200,58 +199,6 @@ router.get(
     asyncHandler(houseController.getHouseById)
 );
 
-/**
- * Cập nhật thông tin house theo houseId.
- * @swagger
- * /api/houses/{houseId}:
- *   put:
- *     tags:
- *       - House
- *     summary: Cập nhật thông tin nhà
- *     description: |
- *       Cập nhật thông tin của một ngôi nhà.
- *       Yêu cầu người dùng có quyền trong nhóm chứa nhà.
- *     security:
- *       - UserBearer: []
- *     parameters:
- *       - in: path
- *         name: houseId
- *         required: true
- *         type: string
- *         description: ID của ngôi nhà cần cập nhật
- *       - in: body
- *         name: body
- *         description: Thông tin cập nhật cho ngôi nhà
- *         schema:
- *           type: object
- *           required:
- *             - house_name
- *           properties:
- *             house_name:
- *               type: string
- *               description: Tên mới của ngôi nhà (tối đa 100 ký tự)
- *               example: "Nhà ở Hà Nội - Cập nhật"
- *     responses:
- *       200:
- *         description: Cập nhật thông tin nhà thành công
- *       400:
- *         description: Dữ liệu đầu vào không hợp lệ
- *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
- *       403:
- *         description: Không có quyền trong nhóm
- *       404:
- *         description: Không tìm thấy ngôi nhà
- *       500:
- *         description: Lỗi server
- */
-router.put(
-    '/:houseId',
-    authMiddleware,
-    groupRoleMiddleware,
-    validateMiddleware(houseSchema),
-    asyncHandler(houseController.updateHouse)
-);
 
 /**
  * Xoá house theo houseId.
@@ -291,6 +238,63 @@ router.delete(
     validateMiddleware(houseIdSchema),
     asyncHandler(houseController.deleteHouse)
 );
+
+/**
+ * Lấy danh sách house theo groupId.
+ * @swagger
+ * /api/houses/group/{groupId}:
+ *   get:
+ *     tags:
+ *       - House
+ *     summary: Lấy danh sách nhà theo nhóm
+ *     description: |
+ *       Lấy danh sách tất cả các ngôi nhà trong một nhóm.
+ *       Yêu cầu người dùng có quyền trong nhóm.
+ *     security:
+ *       - UserBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: groupId
+ *         required: true
+ *         type: string
+ *         description: ID của nhóm cần lấy danh sách nhà
+ *     responses:
+ *       200:
+ *         description: Trả về danh sách các ngôi nhà
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: number
+ *                 description: ID của ngôi nhà
+ *               house_name:
+ *                 type: string
+ *                 description: Tên ngôi nhà
+ *               group_id:
+ *                 type: number
+ *                 description: ID của nhóm chứa nhà
+ *               created_at:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Thời gian tạo
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       403:
+ *         description: Không có quyền trong nhóm
+ *       404:
+ *         description: Không tìm thấy nhóm
+ *       500:
+ *         description: Lỗi server
+ */
+router.get(
+    '/group/:groupId',
+    authMiddleware,
+    groupRoleMiddleware,
+    asyncHandler(houseController.getHousesByGroup)
+);
+
 
 export default router;
 
