@@ -147,6 +147,31 @@ class GroupController {
             next(error);
         }
     };
+
+    /**
+     * Lấy danh sách nhóm của người dùng hiện tại
+     */
+    getGroupsByUsername = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const username = req.user?.username;
+            if (!username) {
+                throwError(ErrorCodes.UNAUTHORIZED, 'Unauthorized access');
+            }
+
+            const userId = req.user?.userId;
+            if (!userId) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Valid user ID is required');
+            }
+
+            const groups = await this.groupService.getGroupsByUsername(username!, userId);
+            res.json({
+                success: true,
+                data: groups
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 
 export default GroupController;

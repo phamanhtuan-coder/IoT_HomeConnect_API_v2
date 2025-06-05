@@ -1,3 +1,4 @@
+
 /**
  * Định nghĩa các route quản lý thiết bị của người dùng.
  * @swagger

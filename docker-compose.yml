@@ -23,10 +23,6 @@ services:
     depends_on:
       - mysql
       - redis
-    volumes:
-      - ./src:/app/src
-      - ./templates:/app/templates
-      - ./.key:/app/.key
     restart: unless-stopped
 
   mysql:

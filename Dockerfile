@@ -11,7 +11,7 @@ RUN npm install -g pnpm && pnpm install
 # Copy toàn bộ source code
 COPY . .
 
-# 👉 Chạy Prisma generate
+# 👉 Generate Prisma Client phù hợp với debian-openssl-3.0.x
 RUN npx prisma generate
 
 # 👉 (Tuỳ chọn) đẩy schema nếu không dùng migration
@@ -29,11 +29,18 @@ WORKDIR /app
 # Copy compiled files & package.json
 COPY --from=builder /app/dist ./dist/
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/prisma ./prisma/
+# Nếu dùng Prisma
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/swagger ./swagger
+# Copy email templates
+COPY --from=builder /app/dist/templates ./dist/templates
+
+RUN npx prisma generate
 # 👈 Cần thiết nếu Prisma cần schema
 
-# Install only production dependencies
-RUN npm install --omit=dev
+# Install Python and other dependencies needed for bcrypt
+RUN apt-get update && apt-get install -y python3 make g++ && \
+    npm install --omit=dev
 
 # Required environment variables for Railway deployment:
 # - DATABASE_URL: Connection string for MySQL database
