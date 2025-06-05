@@ -3,6 +3,50 @@
     "name": "Group",
     "item": [
       {
+        "name": "Get My Groups",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('My groups retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.data).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/groups/my-groups?page=1&limit=10",
+            "host": ["{{baseUrl}}"],
+            "path": ["groups", "my-groups"],
+            "query": [
+              {
+                "key": "page",
+                "value": "1"
+              },
+              {
+                "key": "limit",
+                "value": "10"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
         "name": "Create Group",
         "event": [
           {
@@ -30,7 +74,7 @@
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"group_name\": \"MyGroup\"\n}",
+            "raw": "{\n  \"group_name\": \"MyGroup\",\n  \"icon_name\": \"home\",\n  \"icon_color\": \"#FF5733\",\n  \"group_description\": \"My test group\"\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -86,14 +130,14 @@
         "response": []
       },
       {
-        "name": "Update Group Name",
+        "name": "Update Group",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Group name updated successfully', () => {",
+                "pm.test('Group updated successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
                 "  pm.expect(response.group_id).to.exist;",
                 "});"
@@ -113,7 +157,7 @@
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"group_name\": \"UpdatedGroup\"\n}",
+            "raw": "{\n  \"group_name\": \"UpdatedGroup\",\n  \"icon_name\": \"building\",\n  \"icon_color\": \"#3366FF\",\n  \"group_description\": \"Updated group description\"\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -208,9 +252,9 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/groups/users",
+            "raw": "{{baseUrl}}/groups/members",
             "host": ["{{baseUrl}}"],
-            "path": ["groups", "users"]
+            "path": ["groups", "members"]
           }
         },
         "response": []
@@ -251,9 +295,49 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/groups/:groupId/users",
+            "raw": "{{baseUrl}}/groups/:groupId/members/role",
             "host": ["{{baseUrl}}"],
-            "path": ["groups", ":groupId", "users"],
+            "path": ["groups", ":groupId", "members", "role"],
+            "variable": [
+              {
+                "key": "groupId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Users in Group",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Group members retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.data).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/groups/:groupId/members",
+            "host": ["{{baseUrl}}"],
+            "path": ["groups", ":groupId", "members"],
             "variable": [
               {
                 "key": "groupId",
@@ -298,9 +382,9 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/groups/:groupId/users",
+            "raw": "{{baseUrl}}/groups/:groupId/members",
             "host": ["{{baseUrl}}"],
-            "path": ["groups", ":groupId", "users"],
+            "path": ["groups", ":groupId", "members"],
             "variable": [
               {
                 "key": "groupId",
