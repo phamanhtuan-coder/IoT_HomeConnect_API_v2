@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
-import {DeviceTemplateInput} from "../utils/schemas/device-template.schema";
+import {DeviceTemplateCreateInput, DeviceTemplateUpdateInput} from "../utils/schemas/device-template.schema";
 import {DeviceTemplate} from "../types/device-template";
 
 class DeviceTemplateService {
@@ -10,7 +10,7 @@ class DeviceTemplateService {
         this.prisma = new PrismaClient();
     }
 
-    async createDeviceTemplate(input: DeviceTemplateInput, createdBy: string): Promise<DeviceTemplate> {
+    async createDeviceTemplate(input: DeviceTemplateCreateInput, createdBy: string): Promise<DeviceTemplate> {
         const { device_type_id, name, production_cost, components } = input;
 
         // Validate device_type_id if provided
@@ -200,7 +200,7 @@ class DeviceTemplateService {
         return templates.map((template: any) => this.mapPrismaDeviceTemplateToDeviceTemplate(template));
     }
 
-    async updateDeviceTemplate(templateId: number, input: DeviceTemplateInput): Promise<DeviceTemplate> {
+    async updateDeviceTemplate(templateId: number, input: DeviceTemplateUpdateInput): Promise<DeviceTemplate> {
         const template = await this.prisma.device_templates.findUnique({
             where: { template_id: templateId, is_deleted: false },
         });

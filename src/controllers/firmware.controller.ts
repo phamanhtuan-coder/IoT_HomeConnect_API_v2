@@ -57,7 +57,7 @@ class FirmwareController {
             const response = await this.firmwareService.deleteFirmware(parseInt(firmwareId), employeeId);
             
             console.log('response', response)
-            res.status(204).json(response);
+            res.status(200).json(response);
         } catch (error) {
             next(error);
         }
@@ -107,6 +107,7 @@ class FirmwareController {
             
             res.status(200).json(response);
         } catch (error) {
+            console.log(error)
             next(error);
         }
     };
