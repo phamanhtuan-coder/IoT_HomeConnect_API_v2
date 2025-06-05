@@ -11,6 +11,9 @@ export const paginationSchema = z.object({
 export const groupSchema = z.object({
     body: z.object({
         group_name: z.string().min(1, 'Group name is required').max(255, 'Group name must be 255 characters or less'),
+        icon_name: z.string().max(100, 'Icon name must be 100 characters or less').nullable().optional(),
+        icon_color: z.string().max(100, 'Icon color must be 100 characters or less').nullable().optional(),
+        group_description: z.string().nullable().optional(),
     }),
 });
 

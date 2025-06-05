@@ -11,16 +11,22 @@ import GroupController from '../controllers/group.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import groupRoleMiddleware from '../middleware/group.middleware';
-import {groupIdSchema, groupSchema, updateGroupRoleSchema, userGroupSchema, myGroupsSchema} from "../utils/schemas/group.schema";
+import {
+    groupIdSchema,
+    groupSchema,
+    userGroupSchema,
+    paginationSchema,
+    updateGroupRoleSchema,
+    myGroupsSchema
+} from "../utils/schemas/group.schema";
 
 const router = Router();
 const groupController = new GroupController();
 
 /**
- * Hàm helper để xử lý các route bất đồng bộ, tự động bắt lỗi và chuyển cho middleware xử lý lỗi.
- *
+ * Hàm helper để xử lý các controller bất đồng bộ và bắt lỗi.
  * @param fn Hàm controller bất đồng bộ
- * @returns Middleware Express
+ * @returns Middleware Express xử lý lỗi bất đồng bộ
  */
 const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => {
     return (req: Request, res: Response, next: NextFunction) => {
@@ -33,46 +39,26 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  * @swagger
  * /api/groups/my-groups:
  *   get:
- *     tags:
- *       - Group
+ *     tags: [Group]
  *     summary: Lấy danh sách nhóm của người dùng
- *     description: |
- *       Lấy danh sách tất cả các nhóm mà người dùng hiện tại là thành viên.
- *       Username được lấy từ JWT token.
  *     security:
  *       - UserBearer: []
- *     responses:
- *       200:
- *         description: Trả về danh sách các nhóm
+ *     parameters:
+ *       - in: query
+ *         name: page
  *         schema:
- *           type: object
- *           properties:
- *             success:
- *               type: boolean
- *             data:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   group_id:
- *                     type: number
- *                   group_name:
- *                     type: string
- *                   created_at:
- *                     type: string
- *                     format: date-time
- *                   updated_at:
- *                     type: string
- *                     format: date-time
- *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
- *       500:
- *         description: Lỗi server
+ *           type: integer
+ *         description: Số trang
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Số lượng kết quả trên mỗi trang
  */
 router.get(
     '/my-groups',
     authMiddleware,
-    validateMiddleware(myGroupsSchema),
+    validateMiddleware(paginationSchema),
     asyncHandler(groupController.getGroupsByUsername)
 );
 
@@ -81,38 +67,10 @@ router.get(
  * @swagger
  * /api/groups:
  *   post:
- *     tags:
- *       - Group
+ *     tags: [Group]
  *     summary: Tạo nhóm mới
- *     description: |
- *       Tạo một nhóm mới trong hệ thống.
- *       Người tạo sẽ tự động trở thành admin của nhóm.
  *     security:
  *       - UserBearer: []
- *     consumes:
- *       - application/json
- *     parameters:
- *       - in: body
- *         name: body
- *         description: Thông tin nhóm cần tạo
- *         schema:
- *           type: object
- *           required:
- *             - group_name
- *           properties:
- *             group_name:
- *               type: string
- *               description: Tên của nhóm (1-100 ký tự)
- *               example: "Nhà của tôi"
- *     responses:
- *       201:
- *         description: Tạo nhóm thành công
- *       400:
- *         description: Dữ liệu đầu vào không hợp lệ
- *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
- *       500:
- *         description: Lỗi server
  */
 router.post(
     '/',
@@ -126,115 +84,36 @@ router.post(
  * @swagger
  * /api/groups/{groupId}:
  *   get:
- *     tags:
- *       - Group
+ *     tags: [Group]
  *     summary: Lấy thông tin nhóm theo ID
- *     description: |
- *       Lấy thông tin chi tiết của một nhóm, bao gồm danh sách thành viên.
- *       Yêu cầu người dùng phải là thành viên của nhóm.
  *     security:
  *       - UserBearer: []
- *     parameters:
- *       - in: path
- *         name: groupId
- *         required: true
- *         type: string
- *         description: ID của nhóm cần xem
- *     responses:
- *       200:
- *         description: Trả về thông tin chi tiết của nhóm
- *         schema:
- *           type: object
- *           properties:
- *             id:
- *               type: number
- *               description: ID của nhóm
- *             group_name:
- *               type: string
- *               description: Tên nhóm
- *             created_at:
- *               type: string
- *               format: date-time
- *               description: Thời gian tạo nhóm
- *             members:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   user_id:
- *                     type: number
- *                     description: ID của thành viên
- *                   role:
- *                     type: string
- *                     description: Vai trò trong nhóm (ADMIN/MEMBER)
- *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
- *       403:
- *         description: Không có quyền truy cập nhóm này
- *       404:
- *         description: Không tìm thấy nhóm
- *       500:
- *         description: Lỗi server
  */
 router.get(
     '/:groupId',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(groupIdSchema),
+    groupRoleMiddleware,
     asyncHandler(groupController.getGroup)
 );
 
 /**
- * Cập nhật tên nhóm.
+ * Cập nhật thông tin nhóm.
  * @swagger
  * /api/groups/{groupId}:
  *   put:
- *     tags:
- *       - Group
- *     summary: Cập nhật tên nhóm
- *     description: |
- *       Cập nhật tên của nhóm.
- *       Yêu cầu quyền ADMIN trong nhóm.
+ *     tags: [Group]
+ *     summary: Cập nhật thông tin nhóm
  *     security:
  *       - UserBearer: []
- *     parameters:
- *       - in: path
- *         name: groupId
- *         required: true
- *         type: string
- *         description: ID của nhóm cần cập nhật
- *       - in: body
- *         name: body
- *         description: Thông tin cập nhật cho nhóm
- *         schema:
- *           type: object
- *           required:
- *             - group_name
- *           properties:
- *             group_name:
- *               type: string
- *               description: Tên mới của nhóm (1-100 ký tự)
- *               example: "Nhà của tôi - Cập nhật"
- *     responses:
- *       200:
- *         description: Cập nhật tên nhóm thành công
- *       400:
- *         description: Dữ liệu đầu vào không hợp lệ
- *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
- *       403:
- *         description: Không có quyền ADMIN trong nhóm
- *       404:
- *         description: Không tìm thấy nhóm
- *       500:
- *         description: Lỗi server
  */
 router.put(
     '/:groupId',
     authMiddleware,
+    validateMiddleware(groupIdSchema),
     groupRoleMiddleware,
     validateMiddleware(groupSchema),
-    asyncHandler(groupController.updateGroupName)
+    asyncHandler(groupController.updateGroup)
 );
 
 /**
@@ -242,214 +121,89 @@ router.put(
  * @swagger
  * /api/groups/{groupId}:
  *   delete:
- *     tags:
- *       - Group
+ *     tags: [Group]
  *     summary: Xóa nhóm
- *     description: |
- *       Xóa một nhóm và tất cả dữ liệu liên quan.
- *       Yêu cầu quyền ADMIN trong nhóm.
  *     security:
  *       - UserBearer: []
- *     parameters:
- *       - in: path
- *         name: groupId
- *         required: true
- *         type: string
- *         description: ID của nhóm cần xóa
- *     responses:
- *       200:
- *         description: Xóa nhóm thành công
- *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
- *       403:
- *         description: Không có quyền ADMIN trong nhóm
- *       404:
- *         description: Không tìm thấy nhóm
- *       500:
- *         description: Lỗi server
  */
 router.delete(
     '/:groupId',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(groupIdSchema),
+    groupRoleMiddleware,
     asyncHandler(groupController.deleteGroup)
 );
 
 /**
  * Thêm người dùng vào nhóm.
  * @swagger
- * /api/groups/users:
+ * /api/groups/members:
  *   post:
- *     tags:
- *       - Group
+ *     tags: [Group]
  *     summary: Thêm người dùng vào nhóm
- *     description: |
- *       Thêm một người dùng mới vào nhóm.
- *       Yêu cầu quyền ADMIN trong nhóm.
  *     security:
  *       - UserBearer: []
- *     consumes:
- *       - application/json
- *     parameters:
- *       - in: body
- *         name: body
- *         description: Thông tin thêm người dùng vào nhóm
- *         schema:
- *           type: object
- *           required:
- *             - user_id
- *             - group_id
- *             - role
- *           properties:
- *             user_id:
- *               type: number
- *               description: ID của người dùng cần thêm
- *               example: 1
- *             group_id:
- *               type: number
- *               description: ID của nhóm
- *               example: 1
- *             role:
- *               type: string
- *               enum: [ADMIN, MEMBER]
- *               description: Vai trò trong nhóm
- *               example: "MEMBER"
- *     responses:
- *       201:
- *         description: Thêm người dùng vào nhóm thành công
- *       400:
- *         description: Dữ liệu đầu vào không hợp lệ
- *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
- *       403:
- *         description: Không có quyền ADMIN trong nhóm
- *       404:
- *         description: Không tìm thấy người dùng hoặc nhóm
- *       409:
- *         description: Người dùng đã là thành viên của nhóm
- *       500:
- *         description: Lỗi server
  */
 router.post(
-    '/users',
+    '/members',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(userGroupSchema),
+    groupRoleMiddleware,
     asyncHandler(groupController.addUserToGroup)
 );
 
 /**
  * Cập nhật vai trò của người dùng trong nhóm.
  * @swagger
- * /api/groups/{groupId}/users:
+ * /api/groups/{groupId}/members/role:
  *   put:
- *     tags:
- *       - Group
- *     summary: Cập nhật vai trò thành viên
- *     description: |
- *       Cập nhật vai trò của một thành viên trong nhóm.
- *       Yêu cầu quyền ADMIN trong nhóm.
+ *     tags: [Group]
+ *     summary: Cập nhật vai trò của người dùng trong nhóm
  *     security:
  *       - UserBearer: []
- *     parameters:
- *       - in: path
- *         name: groupId
- *         required: true
- *         type: string
- *         description: ID của nhóm
- *       - in: body
- *         name: body
- *         description: Thông tin cập nhật vai trò
- *         schema:
- *           type: object
- *           required:
- *             - user_id
- *             - role
- *           properties:
- *             user_id:
- *               type: number
- *               description: ID của thành viên cần cập nhật
- *               example: 1
- *             role:
- *               type: string
- *               enum: [ADMIN, MEMBER]
- *               description: Vai trò mới trong nhóm
- *               example: "ADMIN"
- *     responses:
- *       200:
- *         description: Cập nhật vai trò thành công
- *       400:
- *         description: Dữ liệu đầu vào không hợp lệ
- *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
- *       403:
- *         description: Không có quyền ADMIN trong nhóm
- *       404:
- *         description: Không tìm thấy thành viên trong nhóm
- *       500:
- *         description: Lỗi server
  */
 router.put(
-    '/:groupId/users',
+    '/:groupId/members/role',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(updateGroupRoleSchema),
+    groupRoleMiddleware,
     asyncHandler(groupController.updateUserRole)
 );
 
 /**
  * Xóa người dùng khỏi nhóm.
  * @swagger
- * /api/groups/{groupId}/users:
+ * /api/groups/{groupId}/members:
  *   delete:
- *     tags:
- *       - Group
- *     summary: Xóa thành viên khỏi nhóm
- *     description: |
- *       Xóa một thành viên ra khỏi nhóm.
- *       Yêu cầu quyền ADMIN trong nhóm.
+ *     tags: [Group]
+ *     summary: Xóa người dùng khỏi nhóm
  *     security:
  *       - UserBearer: []
- *     parameters:
- *       - in: path
- *         name: groupId
- *         required: true
- *         type: string
- *         description: ID của nhóm
- *       - in: body
- *         name: body
- *         description: Thông tin thành viên cần xóa
- *         schema:
- *           type: object
- *           required:
- *             - user_id
- *           properties:
- *             user_id:
- *               type: number
- *               description: ID của thành viên cần xóa
- *               example: 1
- *     responses:
- *       200:
- *         description: Xóa thành viên thành công
- *       400:
- *         description: Dữ liệu đầu vào không hợp lệ
- *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
- *       403:
- *         description: Không có quyền ADMIN trong nhóm
- *       404:
- *         description: Không tìm thấy thành viên trong nhóm
- *       500:
- *         description: Lỗi server
  */
 router.delete(
-    '/:groupId/users',
+    '/:groupId/members',
     authMiddleware,
+    validateMiddleware(groupIdSchema),
     groupRoleMiddleware,
-    validateMiddleware(updateGroupRoleSchema),
     asyncHandler(groupController.removeUserFromGroup)
 );
 
-export default router;
+/**
+ * Lấy danh sách thành viên trong nhóm.
+ * @swagger
+ * /api/groups/{groupId}/members:
+ *   get:
+ *     tags: [Group]
+ *     summary: Lấy danh sách thành viên trong nhóm
+ *     security:
+ *       - UserBearer: []
+ */
+router.get(
+    '/:groupId/members',
+    authMiddleware,
+    validateMiddleware(groupIdSchema),
+    groupRoleMiddleware,
+    asyncHandler(groupController.getUsersInGroup)
+);
 
+export default router;

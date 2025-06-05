@@ -3,7 +3,6 @@ generator client {
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
-
 datasource db {
   provider = "mysql"
   url      = env("AIVEN_URL")
@@ -469,14 +468,17 @@ model firmware_update_history {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model groups {
-  group_id    Int           @id @default(autoincrement())
-  created_at  DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at  DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
-  is_deleted  Boolean?      @default(false)
-  group_name  String        @db.VarChar(255)
-  devices     devices[]
-  houses      houses[]
-  user_groups user_groups[]
+  group_id          Int           @id @default(autoincrement())
+  created_at        DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at        DateTime?     @default(dbgenerated("(now())")) @db.DateTime(0)
+  is_deleted        Boolean?      @default(false)
+  group_name        String        @db.VarChar(255)
+  group_description String?       @db.LongText
+  icon_color        String?       @db.VarChar(100)
+  icon_name         String?       @db.VarChar(100)
+  devices           devices[]
+  houses            houses[]
+  user_groups       user_groups[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -501,7 +503,7 @@ model hourly_values {
 model houses {
   house_id   Int       @id @default(autoincrement())
   group_id   Int?
-  address    String?   @db.Text
+  address    String?   @db.LongText
   icon_name  String?   @db.VarChar(100)
   icon_color String?   @db.VarChar(100)
   created_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
@@ -529,7 +531,6 @@ model image_product {
 model import_warehouse {
   id                Int             @id
   import_number     Int?
-  import_id         String?         @db.VarChar(12)
   employee_id       String?         @db.VarChar(32)
   warehouse_id      Int?
   import_date       DateTime?       @db.Date
@@ -541,6 +542,7 @@ model import_warehouse {
   created_at        DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at        DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at        DateTime?       @db.DateTime(0)
+  import_id         String?         @db.VarChar(12)
   detail_import     detail_import[]
   employee          employee?       @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "import_warehouse_ibfk_1")
   warehouse         warehouse?      @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "import_warehouse_ibfk_2")
@@ -890,16 +892,19 @@ model slideshow {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model spaces {
-  space_id      Int             @id @default(autoincrement())
-  house_id      Int?
-  created_at    DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at    DateTime?       @db.DateTime(0)
-  is_deleted    Boolean?        @default(false)
-  space_name    String          @db.VarChar(100)
-  alerts        alerts[]
-  devices       devices[]
-  hourly_values hourly_values[]
-  houses        houses?         @relation(fields: [house_id], references: [house_id], onDelete: NoAction, onUpdate: NoAction, map: "spaces_ibfk_1")
+  space_id          Int             @id @default(autoincrement())
+  house_id          Int?
+  created_at        DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at        DateTime?       @db.DateTime(0)
+  is_deleted        Boolean?        @default(false)
+  space_name        String          @db.VarChar(100)
+  icon_color        String?         @db.VarChar(100)
+  icon_name         String?         @db.VarChar(100)
+  space_description String?         @db.LongText
+  alerts            alerts[]
+  devices           devices[]
+  hourly_values     hourly_values[]
+  houses            houses?         @relation(fields: [house_id], references: [house_id], onDelete: NoAction, onUpdate: NoAction, map: "spaces_ibfk_1")
 
   @@index([house_id], map: "house_id")
 }
