@@ -9,11 +9,19 @@ import {
     PlanningApprovalSchema,
     PlanningIdSchema,
     PlanningBatchCreateSchema,
-    PlanningBatchUpdateSchema
+    PlanningBatchUpdateSchema,
 } from '../utils/schemas/planning.schema';
 
 const router = Router();
 const planningController = new PlanningController();
+
+router.get('/list-batches-completed',
+    // authMiddleware,
+    // roleMiddleware,
+    // validateMiddleware(PlanningListBatchesCompletedSchema),
+    planningController.getListBatchesCompleted
+);
+
 
 //tạo kế hoạch --
 router.post(
