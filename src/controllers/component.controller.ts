@@ -138,9 +138,9 @@ class ComponentController {
             await this.componentService.deleteComponent(parseInt(componentId));
 
             const response: ComponentResponse = {
-                success: 200,
+                success: 204,
                 data: null,
-                message: 'Component deleted successfully',
+                message: 'Xóa linh kiện thành công',
             };
 
             res.status(200).json(response);
