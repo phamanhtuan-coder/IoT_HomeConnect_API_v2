@@ -1,31 +1,28 @@
-version: '3.8'
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     dns:
       - 8.8.8.8
       - 8.8.4.4
     ports:
-      - "3000:3000"
+      - "${PORT:-7777}:${PORT:-7777}"
     environment:
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=mysql://root:ckcfit@mysql:3306/homeconnectiot
       - AIVEN_URL=${AIVEN_URL}
       - APP_SECRET=${APP_SECRET}
-      - PORT=${PORT}
+      - PORT=${PORT:-7777}
       - JWT_SECRET=${JWT_SECRET}
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASS=${EMAIL_PASS}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=${NODE_ENV:-development}
     depends_on:
       - mysql
       - redis
-    volumes:
-      - ./src:/app/src
-      - ./templates:/app/templates
-      - ./.key:/app/.key
     restart: unless-stopped
 
   mysql:

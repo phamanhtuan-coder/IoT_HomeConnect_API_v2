@@ -80,7 +80,7 @@ class FirmwareController {
     };
 
     /**
-     * L���y danh sách tất cả firmware
+     * Lấy danh sách tất cả firmware
      * @param req Request Express
      * @param res Response Express
      * @param next Middleware tiếp theo
@@ -88,6 +88,22 @@ class FirmwareController {
     getFirmwares = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const firmwares = await this.firmwareService.getFirmwares();
+            res.json(firmwares);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Lấy danh sách firmware theo template ID
+     * @param req Request Express với template ID trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    getFirmwaresByTemplateId = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { templateId } = req.params;
+            const firmwares = await this.firmwareService.getFirmwaresByTemplateId(parseInt(templateId));
             res.json(firmwares);
         } catch (error) {
             next(error);

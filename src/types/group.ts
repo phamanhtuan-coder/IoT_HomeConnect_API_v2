@@ -14,16 +14,32 @@ export enum GroupRole {
 }
 
 /**
+ * Roles that can manage other users (add/remove/update roles)
+ */
+export const MANAGEMENT_ROLES = [GroupRole.OWNER, GroupRole.VICE];
+
+/**
+ * Roles that can edit group information
+ */
+export const GROUP_EDIT_ROLES = [GroupRole.OWNER];
+
+/**
  * Giao diện Group đại diện cho thông tin của một nhóm.
  * @property {number} group_id - ID của nhóm.
  * @property {string} group_name - Tên của nhóm.
- * @property {Date | null} created_at - Thời điểm tạo nhóm, có thể null.
- * @property {Date | null} updated_at - Thời điểm cập nhật gần nhất, có thể null.
- * @property {boolean | null} is_deleted - Trạng thái xóa mềm của nhóm, có thể null.
+ * @property {string | null} icon_name - Tên biểu tượng của nhóm.
+ * @property {string | null} icon_color - Màu sắc biểu tượng của nhóm.
+ * @property {string | null} group_description - Mô tả về nhóm.
+ * @property {Date | null} created_at - Thời điểm tạo nhóm.
+ * @property {Date | null} updated_at - Thời điểm cập nhật gần nhất.
+ * @property {boolean | null} is_deleted - Trạng thái xóa mềm của nhóm.
  */
 export interface Group {
     group_id: number;
     group_name: string;
+    icon_name?: string | null;
+    icon_color?: string | null;
+    group_description?: string | null;
     created_at: Date | null;
     updated_at: Date | null;
     is_deleted: boolean | null;
@@ -47,4 +63,28 @@ export interface UserGroup {
     joined_at: Date | null;
     updated_at: Date | null;
     is_deleted: boolean | null;
+}
+
+/**
+ * Giao diện GroupMember đại diện cho thông tin thành viên trong nhóm.
+ * @property {number} user_group_id - ID của mối quan hệ user-group.
+ * @property {string} account_id - ID tài khoản người dùng.
+ * @property {number} group_id - ID nhóm.
+ * @property {GroupRole} role - Vai trò của người dùng trong nhóm.
+ * @property {Date | null} joined_at - Thời điểm người dùng tham gia nhóm.
+ * @property {string | null} username - Tên đăng nhập của người dùng.
+ * @property {string | null} email - Email của người dùng.
+ * @property {string | null} full_name - Tên đầy đủ của người dùng.
+ * @property {string | null} avatar - Đường dẫn ảnh đại diện của người dùng.
+ */
+export interface GroupMember {
+    user_group_id: number;
+    account_id: string;
+    group_id: number;
+    role: GroupRole;
+    joined_at: Date | null;
+    username: string | null;
+    email: string | null;
+    full_name: string | null;
+    avatar: string | null;
 }
