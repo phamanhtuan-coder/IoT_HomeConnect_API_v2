@@ -5,22 +5,30 @@ import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
 import validateMiddleware from '../middleware/validate.middleware';
 import {
-    planningCreateSchema,
-    planningApprovalSchema,
-    planningIdSchema,
-    batchCreateSchema,
-    batchUpdateSchema
+    PlanningCreateSchema,
+    PlanningApprovalSchema,
+    PlanningIdSchema,
+    PlanningBatchCreateSchema,
+    PlanningBatchUpdateSchema,
 } from '../utils/schemas/planning.schema';
 
 const router = Router();
 const planningController = new PlanningController();
+
+router.get('/list-batches-completed',
+    // authMiddleware,
+    // roleMiddleware,
+    // validateMiddleware(PlanningListBatchesCompletedSchema),
+    planningController.getListBatchesCompleted
+);
+
 
 //tạo kế hoạch --
 router.post(
     '/',
     // authMiddleware,
     // roleMiddleware,
-    validateMiddleware(planningCreateSchema),
+    validateMiddleware(PlanningCreateSchema),
     planningController.createPlanningApi
 );
 
@@ -28,7 +36,7 @@ router.post(
 router.get(
     '/:planningId',
     // authMiddleware,
-    validateMiddleware(planningIdSchema),
+    validateMiddleware(PlanningIdSchema),
     planningController.getPlanningByIdApi
 );
 
@@ -44,7 +52,7 @@ router.post(
     '/:planningId/approve',
     // authMiddleware,
     // roleMiddleware,
-    validateMiddleware(planningApprovalSchema),
+    validateMiddleware(PlanningApprovalSchema),
     planningController.approvePlanningApi
 );
 
@@ -53,7 +61,7 @@ router.post(
     '/:planningId/batches',
     // authMiddleware,
     // roleMiddleware,
-    validateMiddleware(batchCreateSchema),
+    validateMiddleware(PlanningBatchCreateSchema),
     planningController.createBatchApi
 );
 
@@ -61,7 +69,7 @@ router.post(
 router.get(
     '/:planningId/batches',
     // authMiddleware,
-    validateMiddleware(planningIdSchema),
+    validateMiddleware(PlanningIdSchema),
     planningController.getBatchesByPlanningIdApi
 );
 
@@ -70,7 +78,7 @@ router.put(
     '/batches/:batchId/status',
     // authMiddleware,
     // roleMiddleware,
-    validateMiddleware(batchUpdateSchema),
+    validateMiddleware(PlanningBatchUpdateSchema),
     planningController.updateBatchStatusApi
 );
 
@@ -79,7 +87,7 @@ router.post(
     '/with-batches',
     // authMiddleware,
     // roleMiddleware,
-   
+    
     planningController.createPlanningWithBatchesApi
 );
 

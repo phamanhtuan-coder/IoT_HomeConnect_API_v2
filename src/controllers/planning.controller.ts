@@ -14,6 +14,12 @@ export class PlanningController {
         this.batchService = new BatchService();
     }
 
+    getListBatchesCompleted = async (req: Request, res: Response, next: NextFunction) => {
+
+        const result = await this.batchService.getListBatchesCompleted(req.query);
+        res.status(result.status_code).json(result);
+    }
+
     createPlanningApi = async (req: Request, res: Response, next: NextFunction) => {
         try {
             // const employeeId = req.user?.employeeId;

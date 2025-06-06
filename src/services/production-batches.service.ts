@@ -13,6 +13,21 @@ export class BatchService {
         this.prisma = new PrismaClient();
     }
 
+    async getListBatchesCompleted(filters: any): Promise<any> {
+        const { filter, logic, limit, sort, order } = filters;
+        const listBatches = await this.prisma.production_batches.findMany({
+            where: {
+                is_deleted: false,
+                status: 'completed'
+            }
+        });
+
+        return {
+            success: true,
+            data: listBatches
+        }
+    }
+
     async createBatch(planningId: string, data: BatchCreateInput, employeeId: string): Promise<ProductionBatch> {
         const planning = await this.prisma.planning.findFirst({
             where: {

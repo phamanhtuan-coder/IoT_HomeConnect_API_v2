@@ -280,6 +280,11 @@ class FirmwareService {
                 logs: [...(firmware?.logs as any), newLog]
             },
         });
+
+        return {
+            success: true,
+            message: 'Firmware đã được xoá'
+        }
     }
 
     async getFirmwareById(firmwareId: number): Promise<any> {
@@ -390,12 +395,12 @@ class FirmwareService {
         console.log(firmwareId)
         console.log(employeeId)
         console.log(testResult)
-        const employee = await this.prisma.employee.findUnique({
+        const employee = await this.prisma.employee.findFirst({
             where: { id: employeeId, deleted_at: null },
         });
         if (!employee) throwError(ErrorCodes.NOT_FOUND, 'Nhân viên không tồn tại');
 
-        const firmware = await this.prisma.firmware.findUnique({
+        const firmware = await this.prisma.firmware.findFirst({
             where: { firmware_id: firmwareId, is_deleted: false },
         });
         if (!firmware) throwError(ErrorCodes.NOT_FOUND, 'Firmware not found');
@@ -416,7 +421,9 @@ class FirmwareService {
             where: { firmware_id: firmwareId },
             data: {
                 tested_at: testResult ? new Date() : null,
-                logs: [...(firmware?.logs as any), newLog],
+                logs: Array.isArray(firmware?.logs) 
+                        ? [...firmware.logs, newLog]
+                        : [newLog], // Nếu logs là null/undefined, tạo array mới với newLog
                 },
         });
 

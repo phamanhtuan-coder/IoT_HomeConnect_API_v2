@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import DeviceTemplateService from '../services/device-template.service';
 import { ErrorCodes, throwError } from '../utils/errors';
-import {DeviceTemplateInput} from "../utils/schemas/device-template.schema";
+import {DeviceTemplateCreateInput, DeviceTemplateUpdateInput, DeviceTemplateIdParam, DeviceTemplateListQuery} from "../utils/schemas/device-template.schema";
 
 /**
  * Controller quản lý các thao tác liên quan đến Device Template.
@@ -28,7 +28,7 @@ class DeviceTemplateController {
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
-            const template = await this.deviceTemplateService.createDeviceTemplate(req.body as DeviceTemplateInput, employeeId);
+            const template = await this.deviceTemplateService.createDeviceTemplate(req.body as DeviceTemplateCreateInput, employeeId);
             res.status(201).json(template);
         } catch (error) {
             next(error);
@@ -86,7 +86,7 @@ class DeviceTemplateController {
 
         try {
             const { templateId } = req.params;
-            const template = await this.deviceTemplateService.updateDeviceTemplate(parseInt(templateId), req.body as DeviceTemplateInput);
+            const template = await this.deviceTemplateService.updateDeviceTemplate(parseInt(templateId), req.body as DeviceTemplateUpdateInput);
             res.json(template);
         } catch (error) {
             next(error);
