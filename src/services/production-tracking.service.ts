@@ -668,7 +668,7 @@ let error_list: { device_serial: string | null; error: string }[] = [];
                 `;
             } else if (type === 'batch' && planning_id) {
                 query = Prisma.sql`
-                        SELECT pb.production_batch_id, planning.planning_id, pb.template_id,pb.firmware_id
+                        SELECT DISTINCT pb.production_batch_id, planning.planning_id, pb.template_id,pb.firmware_id
                         FROM planning
                             LEFT JOIN production_batches pb ON pb.planning_id = planning.planning_id
                             LEFT JOIN production_tracking pt ON pt.production_batch_id = pb.production_batch_id
@@ -678,7 +678,7 @@ let error_list: { device_serial: string | null; error: string }[] = [];
                     `;
             } else if (type === 'tracking' && batch_id) {
                     query = Prisma.sql`
-                    SELECT need_firmware.device_serial, pb.production_batch_id,need_firmware.status
+                    SELECT DISTINCT need_firmware.device_serial, pb.production_batch_id,need_firmware.status
                     FROM production_batches pb
                         LEFT JOIN production_tracking pt ON pt.production_batch_id = pb.production_batch_id
                         LEFT JOIN serial_need_install_firmware need_firmware ON need_firmware.production_batch_id = pb.production_batch_id
