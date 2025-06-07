@@ -21,7 +21,7 @@ export interface BatchCreateInput {
     template_id: number;
     quantity: number;
     batch_note?: string;
-    firmware_id: number;
+    firmware_id?: number;
 }
 
 export interface PlanningApprovalInput {
