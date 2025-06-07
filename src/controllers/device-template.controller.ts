@@ -29,7 +29,11 @@ class DeviceTemplateController {
 
         try {
             const template = await this.deviceTemplateService.createDeviceTemplate(req.body as DeviceTemplateCreateInput, employeeId);
-            res.status(201).json(template);
+            return res.status(201).json({
+                status_code: 201,
+                message: "Tạo khuôn mẫu thành công",
+                data: template,
+            });
         } catch (error) {
             next(error);
         }
@@ -86,8 +90,12 @@ class DeviceTemplateController {
 
         try {
             const { templateId } = req.params;
-            const template = await this.deviceTemplateService.updateDeviceTemplate(parseInt(templateId), req.body as DeviceTemplateUpdateInput);
-            res.json(template);
+            const template = await this.deviceTemplateService.updateDeviceTemplate(parseInt(templateId), req.body);
+            return res.status(200).json({
+                status_code: 200,
+                message: "Câp nhật khuôn mẫu thành công",
+                data: template,
+            });
         } catch (error) {
             next(error);
         }
@@ -106,8 +114,12 @@ class DeviceTemplateController {
 
         try {
             const { templateId } = req.params;
-            await this.deviceTemplateService.deleteDeviceTemplate(parseInt(templateId));
-            res.status(204).send();
+            const template = await this.deviceTemplateService.deleteDeviceTemplate(parseInt(templateId));
+            return res.status(200).json({
+                status_code: 204,
+                message: "Xóa khuôn mẫu thành công",
+                data: template,
+            });
         } catch (error) {
             next(error);
         }

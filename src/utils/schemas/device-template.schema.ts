@@ -23,18 +23,12 @@ const ComponentSchema = z.object({
 // Schema cho việc tạo mới device template
 export const DeviceTemplateCreateSchema = z.object({
     body: z.object({
-        device_type_id: z.number({
-            invalid_type_error: `[${ERROR_CODES.DEVICE_TEMPLATE_TYPE_ID_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_TEMPLATE_TYPE_ID_INVALID]}`
-        }).positive(`[${ERROR_CODES.DEVICE_TEMPLATE_TYPE_ID_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_TEMPLATE_TYPE_ID_INVALID]}`).optional(),
-        name: TemplateNameSchema,
-        production_cost: z.number({
-            invalid_type_error: `[${ERROR_CODES.DEVICE_TEMPLATE_PRODUCTION_COST_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_TEMPLATE_PRODUCTION_COST_INVALID]}`
-        }).positive(`[${ERROR_CODES.DEVICE_TEMPLATE_PRODUCTION_COST_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_TEMPLATE_PRODUCTION_COST_INVALID]}`).optional(),
-        components: z.array(ComponentSchema).default([]),
-        device_template_note: z.string({
-            invalid_type_error: `[${ERROR_CODES.DEVICE_TEMPLATE_NOTE_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_TEMPLATE_NOTE_INVALID]}`
-        }).optional()
-    })
+        device_type_id: z.number().positive('Device type ID must be a positive number').optional(),
+        name: z.string().min(1, 'Template name is required').max(100, 'Template name must be 100 characters or less'),
+        production_cost: z.number().optional(),
+        status: z.string().optional(),
+        components: z.array(ComponentSchema).optional().default([]), // Sửa từ "component" thành "components" để rõ ràng hơn
+    }),
 });
 
 // Schema cho việc cập nhật device template
