@@ -16,8 +16,18 @@ export class PlanningController {
 
     getListBatchesCompleted = async (req: Request, res: Response, next: NextFunction) => {
 
-        const result = await this.batchService.getListBatchesCompleted(req.query);
-        res.status(result.status_code).json(result);
+        const planningId = req.params.planningId;
+        console.log('planningId', planningId);
+        const result = await this.batchService.getListBatchesCompleted(planningId);
+
+        res.status(200).json(result);
+    }
+
+    getPlanningsByBatchProductionStatusIsCompleted = async (req: Request, res: Response, next: NextFunction) => {
+        console.log('getPlanningsByBatchProductionStatusIsCompleted');
+        const result = await this.planningService.getPlanningsByBatchProductionStatusIsCompleted();
+
+        res.status(200).json(result);
     }
 
     createPlanningApi = async (req: Request, res: Response, next: NextFunction) => {
