@@ -28,8 +28,7 @@ class AuthController {
         const { username, password, rememberMe, deviceName, deviceId, deviceUuid } = req.body; // Thay email thành username, bỏ fcmToken
         const ipAddress = req.ip;
         try {
-            const tokens = await this.authService.loginUser({ username, password, rememberMe, deviceName, deviceId, deviceUuid, ipAddress });
-            res.json(tokens);
+           return await this.authService.loginUser({ username, password, rememberMe, deviceName, deviceId, deviceUuid, ipAddress });
         } catch (error) {
             next(error);
         }
@@ -100,8 +99,8 @@ class AuthController {
     loginEmployee = async (req: Request, res: Response, next: NextFunction) => {
         const { username, password } = req.body;
         try {
-            const tokens = await this.authService.loginEmployee({ username, password });
-            res.json(tokens);
+            return await this.authService.loginEmployee({ username, password });
+
         } catch (error) {
             next(error);
         }
