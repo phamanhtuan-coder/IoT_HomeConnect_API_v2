@@ -47,7 +47,7 @@ export class SyncTrackingService {
     }
 
     async getSyncHistoryByUserId(accountId: string) {
-        const accountExists = await this.prisma.account.findUnique({ where: { account_id: accountId } });
+        const accountExists = await this.prisma.account.findFirst({ where: { account_id: accountId } });
         if (!accountExists) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
 
         const devices = await this.prisma.user_devices.findMany({
@@ -58,7 +58,7 @@ export class SyncTrackingService {
     }
 
     async getFullSyncHistory(accountId: string) {
-        const accountExists = await this.prisma.account.findUnique({ where: { account_id: accountId } });
+        const accountExists = await this.prisma.account.findFirst({ where: { account_id: accountId } });
         if (!accountExists) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
         return this.prisma.sync_tracking.findMany({
             where: { account_id: accountId, is_deleted: false },

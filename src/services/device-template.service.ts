@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
 import {DeviceTemplateInput} from "../utils/schemas/device-template.schema";
 import {DeviceTemplate} from "../types/device-template";
+import {generatePlanningId, generateTemplateId} from "../utils/helpers";
 
 class DeviceTemplateService {
     private prisma: PrismaClient;
@@ -48,8 +49,21 @@ class DeviceTemplateService {
             }
         }
 
+        let template_id: string;
+        let attempts = 0;
+        const maxAttempts = 5;
+        do {
+            template_id = generateTemplateId();
+            const idExists = await this.prisma.firmware.findFirst({ where: { template_id:template_id}});
+            if (!idExists) break;
+            attempts++;
+            if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+        } while (true);
+
+
         const template = await this.prisma.device_templates.create({
             data: {
+                template_id: template_id,
                 device_type_id,
                 name,
                 production_cost: production_cost,

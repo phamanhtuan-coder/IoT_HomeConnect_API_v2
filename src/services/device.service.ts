@@ -5,7 +5,8 @@ import { Server } from "socket.io";
 import  AlertService  from "../services/alert.service";
 import {Device, DeviceAttributes} from "../types/device";
 import {GroupRole} from "../types/group";
-import {PermissionType} from "../types/share-request"; // Import AlertService
+import {PermissionType} from "../types/share-request";
+import {generateComponentId, generateDeviceId} from "../utils/helpers"; // Import AlertService
 
 let io: Server | null = null;
 const alertService = new AlertService(); // Instantiate AlertService
@@ -50,8 +51,20 @@ class DeviceService {
         });
         if (existingDevice) throwError(ErrorCodes.CONFLICT, "Serial number already exists");
 
+        let device_id: string;
+        let attempts = 0;
+        const maxAttempts = 5;
+        do {
+            device_id = generateDeviceId()
+            const idExists = await this.prisma.account.findFirst({ where: { device_id: device_id } });
+            if (!idExists) break;
+            attempts++;
+            if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+        } while (true);
+
         const device = await this.prisma.devices.create({
             data: {
+                device_id: device_id,
                 serial_number,
                 template_id: templateId,
                 space_id: spaceId,

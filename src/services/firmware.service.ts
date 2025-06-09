@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
 import { Firmware } from "../types/firmware";
-import { validateVersion } from '../utils/helpers';
+import {generateEmployeeId, generateFirmwareId, validateVersion} from '../utils/helpers';
 
 enum LogType {
     CREATE = 'create',
@@ -143,8 +143,20 @@ class FirmwareService {
             created_at: new Date(),
         };
 
+        let firmwareId: string;
+        let attempts = 0;
+        const maxAttempts = 5;
+        do {
+            firmwareId = generateFirmwareId();
+            const idExists = await this.prisma.firmware.findFirst({ where: { firmware_id: firmwareId }});
+            if (!idExists) break;
+            attempts++;
+            if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+        } while (true);
+
         const firmware = await this.prisma.firmware!.create({
             data: {
+                firmware_id: firmwareId,
                 version: normalizedVersion.normalizedVersion!,
                 name: name,
                 file_path: file_path,
@@ -466,4 +478,5 @@ class FirmwareService {
 }
 
 export default FirmwareService;
+
 

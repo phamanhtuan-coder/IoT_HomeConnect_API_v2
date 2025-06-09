@@ -34,7 +34,7 @@ export class UserDeviceService {
                 let attempts = 0;
                 const maxAttempts = 5;
                 do {
-                    deviceUuidToUse = generateUserDeviceId(Date.now()); // Pass Date.now() for dynamic seed
+                    deviceUuidToUse = generateUserDeviceId(); // Pass Date.now() for dynamic seed
                     const uuidExists = await this.prisma.user_devices.findFirst({
                         where: { device_uuid: deviceUuidToUse, is_deleted: false },
                     });
@@ -86,7 +86,7 @@ export class UserDeviceService {
     }
 
     async getDevicesByUserId(accountId: string) {
-        const accountExists = await this.prisma.account.findUnique({ where: { account_id: accountId } });
+        const accountExists = await this.prisma.account.findFirst({ where: { account_id: accountId } });
         if (!accountExists) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
         return this.prisma.user_devices.findMany({
             where: { user_id: accountId, is_deleted: false },
@@ -95,7 +95,7 @@ export class UserDeviceService {
     }
 
     async revokeDevice(userDeviceId: number, requesterId: string, requesterRole: string) {
-        const device = await this.prisma.user_devices.findUnique({
+        const device = await this.prisma.user_devices.findFirst({
             where: { user_device_id: userDeviceId },
         });
         if (!device) {
@@ -124,7 +124,7 @@ export class UserDeviceService {
     }
 
     async logoutDevice(userDeviceId: number, accountId: string, ipAddress?: string) {
-        const device = await this.prisma.user_devices.findUnique({
+        const device = await this.prisma.user_devices.findFirst({
             where: { user_device_id: userDeviceId },
         });
         if (!device) {

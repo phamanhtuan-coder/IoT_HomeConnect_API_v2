@@ -27,8 +27,8 @@ model account {
   is_locked                                                 Boolean?             @default(false)
   locked_at                                                 DateTime?            @db.DateTime(0)
   role                                                      role?                @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_ibfk_1")
-  employee                                                  employee?            @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_ibfk_2")
-  customer                                                  customer?            @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "account_ibfk_3")
+  employee                                                  employee?            @relation(fields: [employee_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "account_ibfk_2")
+  customer                                                  customer?            @relation(fields: [customer_id], references: [customer_id], onDelete: NoAction, onUpdate: NoAction, map: "account_ibfk_3")
   device_templates                                          device_templates[]
   devices                                                   devices[]
   notification                                              notification[]
@@ -61,7 +61,7 @@ model address_book {
   created_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at  DateTime? @db.DateTime(0)
-  customer    customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "address_book_ibfk_1")
+  customer    customer? @relation(fields: [customer_id], references: [customer_id], onDelete: NoAction, onUpdate: NoAction, map: "address_book_ibfk_1")
 
   @@index([customer_id], map: "customer_id")
 }
@@ -197,7 +197,7 @@ model cart {
   created_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at  DateTime? @db.DateTime(0)
-  customer    customer  @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "cart_ibfk_1")
+  customer    customer  @relation(fields: [customer_id], references: [customer_id], onDelete: NoAction, onUpdate: NoAction, map: "cart_ibfk_1")
   product     product?  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "cart_ibfk_2")
 
   @@index([customer_id], map: "customer_id")
@@ -228,7 +228,7 @@ model categories {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model components {
-  component_id        Int                   @id @default(autoincrement())
+  component_id        String                @id @db.VarChar(32)
   name                String                @db.VarChar(100)
   supplier            String?               @db.VarChar(100)
   unit_cost           Decimal?              @db.Decimal(10, 2)
@@ -252,7 +252,7 @@ model contact {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model customer {
-  id             String           @id @db.VarChar(32)
+  customer_id    String           @id @db.VarChar(32)
   surname        String?          @db.VarChar(500)
   lastname       String?          @db.VarChar(500)
   image          String?          @db.MediumText
@@ -308,6 +308,7 @@ model detail_import {
   created_at           DateTime?              @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at           DateTime?              @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at           DateTime?              @db.DateTime(0)
+  production_batch_id  String?                @db.VarChar(32)
   batch_product_detail batch_product_detail[]
   import_warehouse     import_warehouse       @relation(fields: [import_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "detail_import_ibfk_1")
   product              product                @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "detail_import_ibfk_2")
@@ -318,7 +319,7 @@ model detail_import {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model device_templates {
-  template_id          Int                   @id @default(autoincrement())
+  template_id          String                @id @db.VarChar(32)
   device_type_id       Int?
   name                 String                @db.VarChar(100)
   created_by           String?               @db.VarChar(32)
@@ -341,14 +342,14 @@ model device_templates {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model devices {
-  device_id               Int                       @default(autoincrement())
+  device_id               String                    @db.VarChar(32)
   serial_number           String                    @unique(map: "serial_number") @db.VarChar(50)
-  template_id             Int?
+  template_id             String                    @db.VarChar(32)
   space_id                Int?
   account_id              String?                   @db.VarChar(32)
   group_id                Int?
   hub_id                  String?                   @db.VarChar(50)
-  firmware_id             Int?
+  firmware_id             String?                   @db.VarChar(32)
   name                    String                    @db.VarChar(100)
   power_status            Boolean?                  @default(false)
   attribute               Json?
@@ -364,7 +365,7 @@ model devices {
   is_deleted              Boolean?                  @default(false)
   production_tracking_id  Int?
   alerts                  alerts[]
-  device_templates        device_templates?         @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_1")
+  device_templates        device_templates          @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_1")
   spaces                  spaces?                   @relation(fields: [space_id], references: [space_id], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_2")
   account                 account?                  @relation(fields: [account_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_3")
   groups                  groups?                   @relation(fields: [group_id], references: [group_id], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_4")
@@ -390,7 +391,7 @@ model devices {
 }
 
 model employee {
-  id                               String             @id @db.VarChar(32)
+  employee_id                      String             @id @db.VarChar(32)
   surname                          String?            @db.VarChar(500)
   lastname                         String?            @db.VarChar(500)
   image                            String?            @db.MediumText
@@ -422,17 +423,17 @@ model export_warehouse {
   updated_at        DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at        DateTime?       @db.DateTime(0)
   detail_export     detail_export[]
-  employee          employee?       @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "export_warehouse_ibfk_1")
+  employee          employee?       @relation(fields: [employee_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "export_warehouse_ibfk_1")
 
   @@index([employee_id], map: "employee_id")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model firmware {
-  firmware_id             Int                       @id @default(autoincrement())
+  firmware_id             String                    @id @db.VarChar(32)
   version                 String                    @db.VarChar(50)
   file_path               String                    @db.LongText
-  template_id             Int?
+  template_id             String?                   @db.VarChar(32)
   is_mandatory            Boolean?                  @default(false)
   created_at              DateTime?                 @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at              DateTime?                 @default(dbgenerated("(now())")) @db.DateTime(0)
@@ -454,13 +455,13 @@ model firmware {
 model firmware_update_history {
   update_id     Int       @id @default(autoincrement())
   device_serial String?   @db.VarChar(50)
-  firmware_id   Int?
+  firmware_id   String    @db.VarChar(32)
   updated_at    DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   status        String?   @default("success") @db.VarChar(20)
   created_at    DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted    Boolean?  @default(false)
   devices       devices?  @relation(fields: [device_serial], references: [serial_number], onDelete: NoAction, onUpdate: NoAction, map: "firmware_update_history_ibfk_1")
-  firmware      firmware? @relation(fields: [firmware_id], references: [firmware_id], onDelete: NoAction, onUpdate: NoAction, map: "firmware_update_history_ibfk_2")
+  firmware      firmware  @relation(fields: [firmware_id], references: [firmware_id], onDelete: NoAction, onUpdate: NoAction, map: "firmware_update_history_ibfk_2")
 
   @@index([device_serial], map: "device_serial")
   @@index([firmware_id], map: "firmware_id")
@@ -543,8 +544,9 @@ model import_warehouse {
   updated_at        DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at        DateTime?       @db.DateTime(0)
   import_id         String?         @db.VarChar(12)
+  status            Int?            @default(0) @db.TinyInt
   detail_import     detail_import[]
-  employee          employee?       @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "import_warehouse_ibfk_1")
+  employee          employee?       @relation(fields: [employee_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "import_warehouse_ibfk_1")
   warehouse         warehouse?      @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "import_warehouse_ibfk_2")
 
   @@index([employee_id], map: "employee_id")
@@ -568,7 +570,7 @@ model liked {
   created_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at  DateTime? @db.DateTime(0)
-  customer    customer  @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "liked_ibfk_1")
+  customer    customer  @relation(fields: [customer_id], references: [customer_id], onDelete: NoAction, onUpdate: NoAction, map: "liked_ibfk_1")
   product     product?  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "liked_ibfk_2")
 
   @@index([customer_id], map: "customer_id")
@@ -620,9 +622,9 @@ model order {
   updated_at                          DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at                          DateTime?       @db.DateTime(0)
   detail_export                       detail_export[]
-  customer                            customer?       @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_1")
-  employee_order_saler_idToemployee   employee?       @relation("order_saler_idToemployee", fields: [saler_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_2")
-  employee_order_shipper_idToemployee employee?       @relation("order_shipper_idToemployee", fields: [shipper_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_3")
+  customer                            customer?       @relation(fields: [customer_id], references: [customer_id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_1")
+  employee_order_saler_idToemployee   employee?       @relation("order_saler_idToemployee", fields: [saler_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_2")
+  employee_order_shipper_idToemployee employee?       @relation("order_shipper_idToemployee", fields: [shipper_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_3")
   order_detail                        order_detail[]
 
   @@index([customer_id], map: "customer_id")
@@ -666,7 +668,7 @@ model ownership_history {
   created_at                                      DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at                                      DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted                                      Boolean?  @default(false)
-  ticket_id                                       Int
+  ticket_id                                       String
   tickets                                         tickets   @relation(fields: [ticket_id], references: [ticket_id], onDelete: NoAction, onUpdate: NoAction, map: "ownership_history_ibfk_1")
   devices                                         devices?  @relation(fields: [device_serial], references: [serial_number], onDelete: NoAction, onUpdate: NoAction, map: "ownership_history_ibfk_2")
   account_ownership_history_from_user_idToaccount account?  @relation("ownership_history_from_user_idToaccount", fields: [from_user_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "ownership_history_ibfk_3")
@@ -689,7 +691,7 @@ model payment_info {
   created_at     DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at     DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at     DateTime? @db.DateTime(0)
-  customer       customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "payment_info_ibfk_1")
+  customer       customer? @relation(fields: [customer_id], references: [customer_id], onDelete: NoAction, onUpdate: NoAction, map: "payment_info_ibfk_1")
 
   @@index([customer_id], map: "customer_id")
 }
@@ -771,8 +773,8 @@ model planning {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model production_batches {
   batch_id            Int                   @default(autoincrement())
-  production_batch_id String                @unique @db.VarChar(255)
-  template_id         Int?
+  production_batch_id String                @unique @db.VarChar(32)
+  template_id         String                @db.VarChar(32)
   quantity            Int
   status              String                @default("pending") @db.VarChar(20)
   created_at          DateTime              @default(dbgenerated("(now())")) @db.DateTime(0)
@@ -781,8 +783,8 @@ model production_batches {
   batch_note          String?               @db.VarChar(500)
   logs                Json?
   planning_id         String                @db.VarChar(32)
-  firmware_id         Int?
-  device_templates    device_templates?     @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "production_batches_ibfk_1")
+  firmware_id         String?               @db.VarChar(32)
+  device_templates    device_templates      @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "production_batches_ibfk_1")
   planning            planning              @relation(fields: [planning_id], references: [planning_id], onDelete: NoAction, onUpdate: NoAction, map: "production_batches_ibfk_2")
   firmware            firmware?             @relation(fields: [firmware_id], references: [firmware_id], onDelete: NoAction, onUpdate: NoAction, map: "production_batches_ibfk_3")
   production_tracking production_tracking[]
@@ -802,7 +804,7 @@ model production_tracking {
   created_at          DateTime           @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at          DateTime           @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted          Boolean            @default(false)
-  production_batch_id String             @db.VarChar(255)
+  production_batch_id String             @db.VarChar(32)
   state_logs          Json?
   devices             devices[]
   production_batches  production_batches @relation(fields: [production_batch_id], references: [production_batch_id], onDelete: NoAction, onUpdate: NoAction, map: "production_tracking_ibfk_1")
@@ -823,7 +825,7 @@ model review_product {
   created_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at  DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at  DateTime? @db.DateTime(0)
-  customer    customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_product_ibfk_1")
+  customer    customer? @relation(fields: [customer_id], references: [customer_id], onDelete: NoAction, onUpdate: NoAction, map: "review_product_ibfk_1")
   product     product?  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "review_product_ibfk_2")
 
   @@index([customer_id], map: "customer_id")
@@ -913,7 +915,7 @@ model spaces {
 model sync_tracking {
   sync_id        Int           @id @default(autoincrement())
   account_id     String?       @db.VarChar(32)
-  user_device_id Int?
+  user_device_id String?       @db.VarChar(32)
   ip_address     String?       @db.VarChar(45)
   last_synced_at DateTime?     @db.DateTime(0)
   sync_type      String?       @db.VarChar(20)
@@ -930,15 +932,15 @@ model sync_tracking {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model template_components {
-  template_component_id Int               @id @default(autoincrement())
-  template_id           Int?
-  component_id          Int?
-  quantity_required     Int?              @default(1)
-  created_at            DateTime?         @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at            DateTime?         @default(dbgenerated("(now())")) @db.DateTime(0)
-  is_deleted            Boolean?          @default(false)
+  template_component_id Int              @id @default(autoincrement())
+  template_id           String?          @db.VarChar(32)
+  component_id          String?           @db.VarChar(32)
+  quantity_required     Int?             @default(1)
+  created_at            DateTime?        @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at            DateTime?        @default(dbgenerated("(now())")) @db.DateTime(0)
+  is_deleted            Boolean?         @default(false)
   device_templates      device_templates? @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "template_components_ibfk_1")
-  components            components?       @relation(fields: [component_id], references: [component_id], onDelete: NoAction, onUpdate: NoAction, map: "template_components_ibfk_2")
+  components            components?      @relation(fields: [component_id], references: [component_id], onDelete: NoAction, onUpdate: NoAction, map: "template_components_ibfk_2")
 
   @@index([component_id], map: "component_id")
   @@index([template_id], map: "template_id")
@@ -958,7 +960,7 @@ model ticket_types {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model tickets {
-  ticket_id                            Int                 @id @default(autoincrement())
+  ticket_id                            String                 @id @db.VarChar(32)
   user_id                              String?             @db.VarChar(32)
   device_serial                        String?             @db.VarChar(50)
   ticket_type_id                       Int
@@ -993,7 +995,7 @@ model unit {
 }
 
 model user_devices {
-  user_device_id Int             @id @default(autoincrement())
+  user_device_id String          @id @db.VarChar(32)
   user_id        String?         @db.VarChar(32)
   device_name    String          @db.VarChar(100)
   device_id      String          @db.VarChar(255)

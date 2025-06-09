@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import {Component} from "../types/component";
 import {ErrorCodes, throwError} from "../utils/errors";
+import {generateComponentId, generateCustomerId} from "../utils/helpers";
 
 /**
  * Dịch vụ quản lý các thành phần (components).
@@ -40,8 +41,20 @@ class ComponentService {
             throwError(ErrorCodes.CONFLICT, 'Component with this name already exists');
         }
 
+        let componentId: string;
+        let attempts = 0;
+        const maxAttempts = 5;
+        do {
+            componentId = generateComponentId();
+            const idExists = await this.prisma.account.findFirst({ where: { component_id: componentId } });
+            if (!idExists) break;
+            attempts++;
+            if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+        } while (true);
+
         const component = await this.prisma.components.create({
             data: {
+                component_id: componentId,
                 name,
                 supplier,
                 unit_cost,

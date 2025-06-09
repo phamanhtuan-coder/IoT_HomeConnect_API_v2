@@ -16,10 +16,21 @@ export class PlanningService {
             throwError(ErrorCodes.BAD_REQUEST, 'Batch count must be between 1 and 20');
         }
 
+        let planning_id: string;
+        let attempts = 0;
+        const maxAttempts = 5;
+        do {
+            planning_id = generatePlanningId();
+            const idExists = await this.prisma.firmware.findFirst({ where: { planning_id:planning_id}});
+            if (!idExists) break;
+            attempts++;
+            if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+        } while (true);
+
         try {
             const planning = await this.prisma.planning.create({
                 data: {
-                    planning_id: generatePlanningId(),
+                    planning_id: planning_id,
                     planning_note: data.planning_note,
                     created_by: employeeId,
                     status: 'pending',

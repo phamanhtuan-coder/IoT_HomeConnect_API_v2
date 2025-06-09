@@ -176,29 +176,33 @@ class AuthService {
         return jwt.sign(payload, appConfig.jwtSecret, { expiresIn: decoded.userId ? '1h' : '8h' });
     }
 
-    async registerUser(data: UserRegisterRequestBody): Promise<string> {
+    async registerUser(data: UserRegisterRequestBody): Promise<any> {
         const { surname, lastname, image, phone, email, birthdate, gender, password, username } = data;
 
         // Check for existing username
         const existingUsername = await this.prisma.account.findFirst({ where: { username } });
         if (existingUsername) throwError(ErrorCodes.CONFLICT, 'Username already exists');
 
+        let accountId: string='';
+        let customerId: string='';
+        let attempts = 0;
+        const maxAttempts = 5;
         // Check for existing email if provided
         if (email) {
+            do {
+                accountId = generateAccountId();
+                customerId = generateCustomerId();
+                const idExists = await this.prisma.account.findFirst({ where: { account_id: accountId } });
+                const customerExists = await this.prisma.customer.findFirst({ where: { customer_id: customerId } });
+                if (!idExists && !customerExists) break;
+                attempts++;
+                if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+            } while (true);
             const existingEmail = await this.prisma.customer.findFirst({ where: { email } });
             if (existingEmail) throwError(ErrorCodes.CONFLICT, 'Email already exists');
         }
 
-        let accountId: string;
-        let attempts = 0;
-        const maxAttempts = 5;
-        do {
-            accountId = generateCustomerId(Date.now());
-            const idExists = await this.prisma.account.findUnique({ where: { account_id: accountId } });
-            if (!idExists) break;
-            attempts++;
-            if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
-        } while (true);
+
 
         const passwordHash = await bcrypt.hash(password, 12);
         const account = await this.prisma.account.create({
@@ -208,7 +212,7 @@ class AuthService {
                 password: passwordHash,
                 customer: {
                     create: {
-                        id: accountId,
+                        customer_id: customerId,
                         surname,
                         lastname: lastname || null,
                         image: image || null,
@@ -227,12 +231,15 @@ class AuthService {
             { expiresIn: '1h' }
         );
 
-        return accessToken;
+        return {
+            success: true,
+            accessToken: accessToken,
+        }
     }
-    async registerEmployee(data: EmployeeRegisterRequestBody, adminId: string): Promise<string> {
+    async registerEmployee(data: EmployeeRegisterRequestBody, adminId: string): Promise<any> {
         const { surname, lastname, image, email, password, birthdate, gender, phone, status, role, username } = data; // Thêm username
 
-        const admin = await this.prisma.account.findUnique({ where: { account_id: adminId } });
+        const admin = await this.prisma.account.findFirst({ where: { account_id: adminId } });
         if (!admin) throwError(ErrorCodes.FORBIDDEN, 'Admin account not found');
         if (admin!.role_id !== 1) throwError(ErrorCodes.FORBIDDEN, 'Only admins can create employees');
 
@@ -242,13 +249,16 @@ class AuthService {
         const roleRecord = await this.prisma.role.findFirst({ where: { name: role } });
         if (!roleRecord) throwError(ErrorCodes.NOT_FOUND, `Role '${role}' not found`);
 
-        let accountId: string;
+        let accountId: string='';
+        let employeeId: string='';
         let attempts = 0;
         const maxAttempts = 5;
         do {
-            accountId = generateEmployeeId(Date.now());
-            const idExists = await this.prisma.account.findUnique({ where: { account_id: accountId } });
-            if (!idExists) break;
+            accountId = generateAccountId();
+            employeeId = generateEmployeeId();
+            const idExists = await this.prisma.account.findFirst({ where: { account_id: accountId } });
+            const employeeExists = await this.prisma.employee.findFirst({ where: { employee_id: employeeId } });
+            if (!idExists && !employeeExists) break;
             attempts++;
             if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
         } while (true);
@@ -264,7 +274,7 @@ class AuthService {
         });
         await this.prisma.employee.create({
             data: {
-                        id: accountId,
+                        employee_id: employeeId,
                         surname,
                         lastname: lastname || null,
                         image: image || null,
@@ -283,7 +293,10 @@ class AuthService {
             { expiresIn: '1h' }
         );
 
-        return accessToken;
+        return {
+            success: true,
+            accessToken: accessToken,
+        }
     }
 
     async logoutEmployee(employeeId: string) {
@@ -304,7 +317,7 @@ class AuthService {
     async updateDeviceToken(accountId: string, deviceToken: string): Promise<{ success: boolean; message: string }> {
         const userDeviceService = new UserDeviceService();
 
-        const account = await this.prisma.account.findUnique({ where: { account_id: accountId } });
+        const account = await this.prisma.account.findFirst({ where: { account_id: accountId } });
         if (!account) {
             return { success: false, message: 'Account not found' };
         }
