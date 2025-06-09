@@ -82,6 +82,31 @@ export const checkEmailVerificationSchema = z.object({
     }),
 });
 
+export const verifyEmailSchema = z.object({
+    body: z.object({
+        email: z.string().email('Invalid email format')
+    }),
+});
+
+export const updateUserSchema = z.object({
+    body: z.object({
+        surname: z.string().optional(),
+        lastname: z.string().optional(),
+        phone: z.string().max(12, 'Phone must be 12 characters or less').optional(),
+        email: z.string().email('Invalid email format').optional(),
+        birthdate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date of birth must be in YYYY-MM-DD format').optional(),
+        gender: z.boolean().optional(),
+        image: z.string().optional(),
+    }),
+});
+
+export const recoveryPasswordSchema = z.object({
+    body: z.object({
+        email: z.string().email('Invalid email format'),
+        newPassword: z.string().min(6, 'Password must be at least 6 characters'),
+    }),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>['body'];
 export type UserRegisterInput = z.infer<typeof userRegisterSchema>['body'];
 export type EmployeeRegisterInput = z.infer<typeof employeeRegisterSchema>['body'];

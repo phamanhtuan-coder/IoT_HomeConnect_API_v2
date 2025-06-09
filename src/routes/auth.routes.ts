@@ -17,7 +17,10 @@ import {
     loginSchema,
     refreshTokenSchema,
     userRegisterSchema,
-    checkEmailVerificationSchema
+    checkEmailVerificationSchema,
+    verifyEmailSchema,
+    updateUserSchema,
+    recoveryPasswordSchema
 } from "../utils/schemas/auth.schema";
 
 const router = Router();
@@ -492,5 +495,149 @@ router.post('/update-device-token', authMiddleware, authController.updateDeviceT
  *         description: Lỗi server
  */
 router.post('/check-email', validateMiddleware(checkEmailVerificationSchema), asyncHandler(authController.checkEmailVerification));
+
+/**
+ * Xác thực địa chỉ email.
+ * @swagger
+ * /api/auth/verify-email:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Xác thực địa chỉ email
+ *     description: Xác thực địa chỉ email người dùng thông qua mã xác thực
+ *     consumes:
+ *       - application/json
+ *     parameters:
+ *       - in: body
+ *         name: body
+ *         description: Thông tin xác thực email
+ *         schema:
+ *           type: object
+ *           required:
+ *             - email
+ *             - verificationCode
+ *           properties:
+ *             email:
+ *               type: string
+ *               description: Địa chỉ email
+ *               example: "user@example.com"
+ *             verificationCode:
+ *               type: string
+ *               description: Mã xác thực được gửi đến email
+ *               example: "123456"
+ *     responses:
+ *       200:
+ *         description: Xác thực email thành công
+ *       400:
+ *         description: Dữ liệu không hợp lệ
+ *       404:
+ *         description: Không tìm thấy người dùng với email đã cho
+ *       409:
+ *         description: Email đã được xác thực trước đó
+ *       500:
+ *         description: Lỗi server
+ */
+router.post('/verify-email', validateMiddleware(verifyEmailSchema), asyncHandler(authController.verifyEmail));
+
+/**
+ * Khôi phục mật khẩu.
+ * @swagger
+ * /api/auth/recovery-password:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Khôi phục mật khẩu
+ *     description: Khôi phục mật khẩu người dùng thông qua email và mã xác thực
+ *     consumes:
+ *       - application/json
+ *     parameters:
+ *       - in: body
+ *         name: body
+ *         description: Thông tin khôi phục mật khẩu
+ *         schema:
+ *           type: object
+ *           required:
+ *             - email
+ *             - verificationCode
+ *             - newPassword
+ *           properties:
+ *             email:
+ *               type: string
+ *               description: Địa chỉ email
+ *               example: "user@example.com"
+ *             verificationCode:
+ *               type: string
+ *               description: Mã xác thực được gửi đến email
+ *               example: "123456"
+ *             newPassword:
+ *               type: string
+ *               description: Mật khẩu mới
+ *               example: "newpassword123"
+ *     responses:
+ *       200:
+ *         description: Khôi phục mật khẩu thành công
+ *       400:
+ *         description: Dữ liệu không hợp lệ
+ *       404:
+ *         description: Không tìm thấy người dùng với email đã cho
+ *       409:
+ *         description: Mã xác thực không chính xác hoặc đã hết hạn
+ *       500:
+ *         description: Lỗi server
+ */
+router.post('/recovery-password', validateMiddleware(recoveryPasswordSchema), asyncHandler(authController.recoveryPassword));
+
+/**
+ * Cập nhật thông tin người dùng.
+ * @swagger
+ * /api/auth/update-profile:
+ *   patch:
+ *     tags:
+ *       - Auth
+ *     summary: Cập nhật thông tin người dùng
+ *     description: Cập nhật thông tin hồ sơ người dùng
+ *     security:
+ *       - UserBearer: []
+ *     consumes:
+ *       - application/json
+ *     parameters:
+ *       - in: body
+ *         name: body
+ *         description: Thông tin người dùng cần cập nhật
+ *         schema:
+ *           type: object
+ *           properties:
+ *             username:
+ *               type: string
+ *               description: Tên đăng nhập
+ *               example: "user123"
+ *             email:
+ *               type: string
+ *               description: Địa chỉ email
+ *               example: "user@example.com"
+ *             birthdate:
+ *               type: string
+ *               format: date
+ *               description: Ngày sinh (YYYY-MM-DD)
+ *               example: "1990-01-01"
+ *             phone:
+ *               type: string
+ *               description: Số điện thoại
+ *               example: "0123456789"
+ *             avatar:
+ *               type: string
+ *               description: URL ảnh đại diện
+ *               example: "http://example.com/avatar.jpg"
+ *     responses:
+ *       200:
+ *         description: Cập nhật thông tin thành công
+ *       400:
+ *         description: Dữ liệu không hợp lệ
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       500:
+ *         description: Lỗi server
+ */
+router.patch('/update-profile', authMiddleware, validateMiddleware(updateUserSchema), asyncHandler(authController.updateUser));
 
 export default router;

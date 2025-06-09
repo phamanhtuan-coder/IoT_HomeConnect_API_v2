@@ -212,6 +212,56 @@ class AuthController {
             next(error);
         }
     };
+
+    /**
+     * Xác thực email người dùng
+     * @param req Request Express với email trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { email } = req.body;
+            const result = await this.authService.verifyEmail(email);
+            res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Cập nhật thông tin người dùng
+     * @param req Request Express với thông tin cập nhật trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    updateUser = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.userId;
+            if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+            const result = await this.authService.updateUser(userId, req.body);
+            res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Khôi phục mật khẩu
+     * @param req Request Express với email và mật khẩu mới trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    recoveryPassword = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { email, newPassword } = req.body;
+            const result = await this.authService.recoveryPassword(email, newPassword);
+            res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 
 export default AuthController;

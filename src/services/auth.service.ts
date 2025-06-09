@@ -379,6 +379,126 @@ class AuthService {
             message: customer.email_verified ? 'Email is verified' : 'Email is not verified'
         };
     }
+
+    async verifyEmail(email: string): Promise<{ success: boolean; message: string }> {
+        const customer = await this.prisma.customer.findFirst({
+            where: {
+                email,
+                deleted_at: null
+            }
+        });
+
+        if (!customer) {
+            throwError(ErrorCodes.NOT_FOUND, 'Email not found');
+        }
+
+        await this.prisma.customer.update({
+            where: { customer_id: customer!.customer_id },
+            data: {
+                email_verified: true,
+                updated_at: new Date()
+            }
+        });
+
+        return {
+            success: true,
+            message: 'Email verified successfully'
+        };
+    }
+
+    async updateUser(userId: string, data: {
+        surname?: string;
+        lastname?: string;
+        phone?: string;
+        email?: string;
+        birthdate?: string;
+        gender?: boolean;
+        image?: string;
+    }): Promise<any> {
+        const account = await this.prisma.account.findFirst({
+            where: { account_id: userId },
+            include: { customer: true }
+        });
+
+        if (!account || !account.customer) {
+            throwError(ErrorCodes.NOT_FOUND, 'User not found');
+        }
+
+        const updateData: any = { ...data };
+
+        // Nếu email thay đổi, cập nhật trạng thái verified
+        if (data.email && data.email !== account!.customer!.email) {
+            // Kiểm tra email mới có tồn tại chưa
+            const existingEmail = await this.prisma.customer.findFirst({
+                where: {
+                    email: data.email,
+                    customer_id: { not: account!.customer!.customer_id }
+                }
+            });
+
+            if (existingEmail) {
+                throwError(ErrorCodes.CONFLICT, 'Email already exists');
+            }
+
+            updateData.email_verified = false;
+        }
+
+        if (data.birthdate) {
+            updateData.birthdate = new Date(data.birthdate);
+        }
+
+        const customer = await this.prisma.customer.update({
+            where: { customer_id: account!.customer!.customer_id },
+            data: {
+                ...updateData,
+                updated_at: new Date()
+            }
+        });
+
+        return {
+            success: true,
+            data: customer
+        };
+    }
+
+    async recoveryPassword(email: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+        const customer = await this.prisma.customer.findFirst({
+            where: {
+                email,
+                deleted_at: null
+            },
+            include: {
+                account: {
+                    where: {
+                        deleted_at: null,
+                        is_locked: false
+                    }
+                }
+            }
+        });
+
+        if (!customer || customer.account.length === 0) {
+            throwError(ErrorCodes.NOT_FOUND, 'Account not found or inactive');
+        }
+
+        if (!customer!.email_verified) {
+            throwError(ErrorCodes.FORBIDDEN, 'Email not verified');
+        }
+
+        const passwordHash = await bcrypt.hash(newPassword, 12);
+        await this.prisma.account.update({
+            where: { account_id: customer!.account[0].account_id },
+            data: {
+                password: passwordHash,
+                updated_at: new Date()
+            }
+        });
+
+        return {
+            success: true,
+            message: 'Password updated successfully'
+        };
+    }
 }
 
 export default AuthService;
