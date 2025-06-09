@@ -196,7 +196,22 @@ class AuthController {
             next(error);
         }
     };
+
+    /**
+     * Kiểm tra trạng thái xác thực email
+     * @param req Request Express với email trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    checkEmailVerification = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { email } = req.body;
+            const result = await this.authService.checkEmailVerification(email);
+            res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 
 export default AuthController;
-

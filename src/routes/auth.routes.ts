@@ -16,7 +16,8 @@ import {
     employeeRegisterSchema,
     loginSchema,
     refreshTokenSchema,
-    userRegisterSchema
+    userRegisterSchema,
+    checkEmailVerificationSchema
 } from "../utils/schemas/auth.schema";
 
 const router = Router();
@@ -323,7 +324,7 @@ router.post('/employee/refresh', validateMiddleware(refreshTokenSchema), asyncHa
  *     tags:
  *       - Auth
  *     summary: Đăng xuất khỏi thiết bị hiện tại
- *     description: Vô hiệu hóa token truy cập của thiết bị hiện tại
+ *     description: Vô hiệu hóa token truy cập của thi��t bị hiện tại
  *     security:
  *       - UserBearer: []
  *     responses:
@@ -344,7 +345,7 @@ router.post('/logout', authMiddleware, authController.logoutUser);
  *     tags:
  *       - Auth
  *     summary: Đăng xuất nhân viên khỏi thiết bị hiện tại
- *     description: Vô hiệu hóa token truy cập của thiết bị hiện tại cho tài khoản nhân viên
+ *     description: Vô hiệu hóa token truy cập của thiết bị hiện tại cho t��i khoản nhân viên
  *     security:
  *       - EmployeeBearer: []
  *     responses:
@@ -456,5 +457,40 @@ router.post('/logout/all', authMiddleware, authController.logoutAllDevices);
  */
 router.post('/update-device-token', authMiddleware, authController.updateDeviceToken);
 
-export default router;
+/**
+ * Kiểm tra trạng thái verify email.
+ * @swagger
+ * /api/auth/check-email:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Kiểm tra trạng thái verify email
+ *     description: Kiểm tra xem địa chỉ email có đã được xác thực hay chưa
+ *     consumes:
+ *       - application/json
+ *     parameters:
+ *       - in: body
+ *         name: body
+ *         description: Thông tin kiểm tra email
+ *         schema:
+ *           type: object
+ *           required:
+ *             - email
+ *           properties:
+ *             email:
+ *               type: string
+ *               description: Địa chỉ email
+ *               example: "user@example.com"
+ *     responses:
+ *       200:
+ *         description: Trả về trạng thái xác thực của email
+ *       400:
+ *         description: Dữ liệu không hợp lệ
+ *       404:
+ *         description: Không tìm thấy người dùng với email đã cho
+ *       500:
+ *         description: Lỗi server
+ */
+router.post('/check-email', validateMiddleware(checkEmailVerificationSchema), asyncHandler(authController.checkEmailVerification));
 
+export default router;

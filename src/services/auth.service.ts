@@ -337,7 +337,48 @@ class AuthService {
         return { success: true, message: 'Device token updated successfully' };
     }
 
+    async checkEmailVerification(email: string): Promise<{
+        exists: boolean;
+        isVerified: boolean;
+        message: string;
+    }> {
+        const customer = await this.prisma.customer.findFirst({
+            where: {
+                email,
+                deleted_at: null
+            },
+            include: {
+                account: {
+                    where: {
+                        is_locked: false,
+                        deleted_at: null
+                    }
+                }
+            }
+        });
+
+        if (!customer) {
+            return {
+                exists: false,
+                isVerified: false,
+                message: 'Email not found'
+            };
+        }
+
+        if (customer.account.length === 0) {
+            return {
+                exists: true,
+                isVerified: false,
+                message: 'Account is locked or deleted'
+            };
+        }
+
+        return {
+            exists: true,
+            isVerified: customer.email_verified || false,
+            message: customer.email_verified ? 'Email is verified' : 'Email is not verified'
+        };
+    }
 }
 
 export default AuthService;
-

@@ -76,6 +76,12 @@ export const verifyOtpSchema = z.object({
     }),
 });
 
+export const checkEmailVerificationSchema = z.object({
+    body: z.object({
+        email: z.string().email('Invalid email format'),
+    }),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>['body'];
 export type UserRegisterInput = z.infer<typeof userRegisterSchema>['body'];
 export type EmployeeRegisterInput = z.infer<typeof employeeRegisterSchema>['body'];
