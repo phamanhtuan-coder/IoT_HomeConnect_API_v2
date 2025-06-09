@@ -11,7 +11,7 @@ class ShareRequestService {
         this.prisma = new PrismaClient();
     }
 
-    private async validateDeviceAndGroup(deviceId: number, serial_number: string, groupId: number): Promise<{ device: any; groupId: number }> {
+    private async validateDeviceAndGroup(deviceId: string, serial_number: string, groupId: number): Promise<{ device: any; groupId: number }> {
         const device = await this.prisma.devices.findUnique({
             where: { device_id_serial_number: { device_id: deviceId, serial_number }, is_deleted: false },
             include: { spaces: { include: { houses: true } } },
@@ -53,7 +53,7 @@ class ShareRequestService {
         }
 
         const customer = await this.prisma.customer.findUnique({ where: { email: to_user_email } });
-        const recipient = await this.prisma.account.findFirst({ where: { customer_id: customer!.id } });
+        const recipient = await this.prisma.account.findFirst({ where: { customer_id: customer!.customer_id } });
 
         if (!recipient) throwError(ErrorCodes.NOT_FOUND, 'Recipient account not found');
 
@@ -162,7 +162,7 @@ class ShareRequestService {
         });
     }
 
-    async getShareRequestsByDevice(deviceId: number, _serial_number: string, groupId: number): Promise<ShareRequest[]> {
+    async getShareRequestsByDevice(deviceId: string, _serial_number: string, groupId: number): Promise<ShareRequest[]> {
         const { device } = await this.validateDeviceAndGroup(deviceId, deviceId.toString(), groupId);
 
         const requests = await this.prisma.share_requests.findMany({
@@ -172,7 +172,7 @@ class ShareRequestService {
         return requests.map(request => this.mapPrismaShareRequestToAuthShareRequest(request));
     }
 
-    async getSharedPermissionsByDevice(deviceId: number, serial_number: string, groupId: number): Promise<SharedPermission[]> {
+    async getSharedPermissionsByDevice(deviceId: string, serial_number: string, groupId: number): Promise<SharedPermission[]> {
         const { device } = await this.validateDeviceAndGroup(deviceId, serial_number, groupId);
 
         const permissions = await this.prisma.shared_permissions.findMany({

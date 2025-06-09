@@ -21,7 +21,7 @@ export class PlanningService {
         const maxAttempts = 5;
         do {
             planning_id = generatePlanningId();
-            const idExists = await this.prisma.firmware.findFirst({ where: { planning_id:planning_id}});
+            const idExists = await this.prisma.planning.findFirst({ where: { planning_id:planning_id}});
             if (!idExists) break;
             attempts++;
             if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');

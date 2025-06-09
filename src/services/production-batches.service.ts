@@ -57,7 +57,7 @@ export class BatchService {
         const maxAttempts = 5;
         do {
             batch_id = generateBatchId();
-            const idExists = await this.prisma.firmware.findFirst({ where: { batch_id: batch_id }});
+            const idExists = await this.prisma.production_batches.findFirst({ where: { production_batch_id: batch_id }});
             if (!idExists) break;
             attempts++;
             if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');

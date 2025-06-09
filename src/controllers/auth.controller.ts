@@ -43,7 +43,7 @@ class AuthController {
      */
     logoutUser = async (req: Request, res: Response, next: NextFunction) => {
         const userId = req.user?.userId;
-        const userDeviceId = parseInt(req.body.userDeviceId, 10);
+        const userDeviceId =req.body.userDeviceId;
         const ipAddress = req.ip;
 
         if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -71,7 +71,7 @@ class AuthController {
             throwError(ErrorCodes.BAD_REQUEST, 'Valid array of UserDeviceIDs is required');
         }
 
-        await this.userDeviceService.logoutDevices(userDeviceIds.map(id => parseInt(id.toString())), userId, ipAddress);
+        await this.userDeviceService.logoutDevices(userDeviceIds.map(id => id.toString()), userId, ipAddress);
         res.status(204).send();
     };
 

@@ -46,7 +46,7 @@ class TicketService {
     const maxAttempts = 5;
     do {
       ticket_id = generateTicketId();
-      const idExists = await this.prisma.firmware.findFirst({ where: { ticket_id:ticket_id}});
+      const idExists = await this.prisma.tickets.findFirst({ where: { ticket_id:ticket_id}});
       if (!idExists) break;
       attempts++;
       if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
@@ -76,7 +76,7 @@ class TicketService {
   }
 
   async updateTicket(
-      ticketId: number,
+      ticketId: string,
       data: {
         description?: string;
         evidence?: any;
@@ -114,7 +114,7 @@ class TicketService {
     return this.mapPrismaTicketToAuthTicket(updatedTicket);
   }
 
-  async deleteTicket(ticketId: number): Promise<void> {
+  async deleteTicket(ticketId: string): Promise<void> {
     const ticket = await this.prisma.tickets.findUnique({
       where: { ticket_id: ticketId, is_deleted: false },
     });
@@ -132,7 +132,7 @@ class TicketService {
     });
   }
 
-  async getTicketById(ticketId: number): Promise<Ticket> {
+  async getTicketById(ticketId: string): Promise<Ticket> {
     const ticket = await this.prisma.tickets.findUnique({
       where: { ticket_id: ticketId, is_deleted: false },
     });

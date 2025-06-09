@@ -68,6 +68,8 @@ export class UserDeviceService {
 
         return this.prisma.user_devices.create({
             data: {
+                // @ts-ignore
+                user_device_id: deviceUuidToUse,
                 user_id: accountId,
                 device_name: deviceName,
                 device_id: deviceId,
@@ -94,7 +96,7 @@ export class UserDeviceService {
         });
     }
 
-    async revokeDevice(userDeviceId: number, requesterId: string, requesterRole: string) {
+    async revokeDevice(userDeviceId: string, requesterId: string, requesterRole: string) {
         const device = await this.prisma.user_devices.findFirst({
             where: { user_device_id: userDeviceId },
         });
@@ -123,7 +125,7 @@ export class UserDeviceService {
         });
     }
 
-    async logoutDevice(userDeviceId: number, accountId: string, ipAddress?: string) {
+    async logoutDevice(userDeviceId: string, accountId: string, ipAddress?: string) {
         const device = await this.prisma.user_devices.findFirst({
             where: { user_device_id: userDeviceId },
         });
@@ -157,7 +159,7 @@ export class UserDeviceService {
         });
     }
 
-    async logoutDevices(userDeviceIds: number[], accountId: string, ipAddress?: string) {
+    async logoutDevices(userDeviceIds: string[], accountId: string, ipAddress?: string) {
         const devices = await this.prisma.user_devices.findMany({
             where: { user_device_id: { in: userDeviceIds }, is_deleted: false },
         });

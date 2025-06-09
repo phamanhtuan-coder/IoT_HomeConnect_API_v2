@@ -16,7 +16,7 @@ class DeviceTemplateService {
 
         // Validate device_type_id if provided
         if (device_type_id) {
-            const category = await this.prisma.categories.findUnique({
+            const category = await this.prisma.categories.findFirst({
                 where: { category_id: device_type_id},
             });
             if (!category) throwError(ErrorCodes.NOT_FOUND, 'Device type not found');
@@ -120,7 +120,7 @@ class DeviceTemplateService {
         return this.mapPrismaDeviceTemplateToDeviceTemplate(completeTemplate);
     }
 
-    async getDeviceTemplateById(templateId: number): Promise<DeviceTemplate> {
+    async getDeviceTemplateById(templateId: string): Promise<DeviceTemplate> {
         const template = await this.prisma.device_templates.findUnique({
             where: { template_id: templateId, is_deleted: false },
             include: {
@@ -214,7 +214,7 @@ class DeviceTemplateService {
         return templates.map((template: any) => this.mapPrismaDeviceTemplateToDeviceTemplate(template));
     }
 
-    async updateDeviceTemplate(templateId: number, input: DeviceTemplateInput): Promise<DeviceTemplate> {
+    async updateDeviceTemplate(templateId: string, input: DeviceTemplateInput): Promise<DeviceTemplate> {
         const template = await this.prisma.device_templates.findUnique({
             where: { template_id: templateId, is_deleted: false },
         });
@@ -246,7 +246,7 @@ class DeviceTemplateService {
         if (components.length > 0) {
             const componentIds = components
                 .map(component => component.component_id)
-                .filter((id): id is number => id !== null && id !== undefined); // Loại bỏ null và undefined
+                .filter((id): id is string => id !== null && id !== undefined); // Loại bỏ null và undefined
     
             if (componentIds.length !== components.length) {
                 throwError(ErrorCodes.NOT_FOUND, 'Some component IDs are invalid (null or undefined)');
@@ -261,7 +261,7 @@ class DeviceTemplateService {
     
             const foundComponentIds = existingComponents
                 .map(comp => comp.component_id)
-                .filter((id): id is number => id !== null);
+                .filter((id): id is string => id !== null);
     
             const missingComponents = componentIds.filter(id => !foundComponentIds.includes(id));
     
@@ -296,10 +296,10 @@ class DeviceTemplateService {
             // Tạo danh sách component_id hiện tại (bao gồm cả đã soft delete)
             const existingComponentIds = allTemplateComponents
                 .map(tc => tc.component_id)
-                .filter((id): id is number => id !== null);
+                .filter((id): id is string => id !== null);
             const newComponentIds = components
                 .map(component => component.component_id)
-                .filter((id): id is number => id !== null);
+                .filter((id): id is string => id !== null);
     
             // Tìm các component_id cần xóa (có trong danh sách cũ nhưng không có trong danh sách mới)
             const componentsToDelete = existingComponentIds.filter(id => !newComponentIds.includes(id));
@@ -379,7 +379,7 @@ class DeviceTemplateService {
         return this.mapPrismaDeviceTemplateToDeviceTemplate(completeUpdatedTemplate);
     }
 
-    async deleteDeviceTemplate(templateId: number): Promise<void> {
+    async deleteDeviceTemplate(templateId: string): Promise<void> {
         const template = await this.prisma.device_templates.findUnique({
             where: { template_id: templateId, is_deleted: false },
         });

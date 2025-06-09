@@ -8,7 +8,7 @@ export class SyncTrackingService {
         this.prisma = new PrismaClient();
     }
 
-    async recordLogin(accountId: string, userDeviceId: number, ipAddress: string) {
+    async recordLogin(accountId: string, userDeviceId:string, ipAddress: string) {
         return this.prisma.sync_tracking.create({
             data: {
                 account_id: accountId,
@@ -21,7 +21,7 @@ export class SyncTrackingService {
         });
     }
 
-    private async getLatestSyncsPerDevice(accountId: string, devices: { user_device_id: number }[]) {
+    private async getLatestSyncsPerDevice(accountId: string, devices: { user_device_id: string }[]) {
         const latestSyncs = await Promise.all(
             devices.map(async (device) => {
                 return this.prisma.sync_tracking.findFirst({

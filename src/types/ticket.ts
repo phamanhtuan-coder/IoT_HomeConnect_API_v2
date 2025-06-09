@@ -16,7 +16,7 @@
  * @property {boolean | null} is_deleted Trạng thái xoá của ticket.
  */
 export interface Ticket {
-    ticket_id: number;
+    ticket_id: string;
     user_id: string | null;
     device_serial: string | null;
     ticket_type_id: number;

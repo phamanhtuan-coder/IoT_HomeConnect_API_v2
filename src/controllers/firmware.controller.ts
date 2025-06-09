@@ -36,7 +36,7 @@ class FirmwareController {
 
         try {
             const { firmwareId } = req.params;
-            const firmware = await this.firmwareService.updateFirmware(parseInt(firmwareId), req.body, employeeId);
+            const firmware = await this.firmwareService.updateFirmware(firmwareId, req.body, employeeId);
             res.json(firmware);
         } catch (error) {
             next(error);
@@ -54,7 +54,7 @@ class FirmwareController {
 
         try {
             const { firmwareId } = req.params;
-            const response = await this.firmwareService.deleteFirmware(parseInt(firmwareId), employeeId);
+            const response = await this.firmwareService.deleteFirmware(firmwareId, employeeId);
             
             console.log('response', response)
             res.status(204).json(response);
@@ -72,7 +72,7 @@ class FirmwareController {
     getFirmwareById = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { firmwareId } = req.params;
-            const firmware = await this.firmwareService.getFirmwareById(parseInt(firmwareId));
+            const firmware = await this.firmwareService.getFirmwareById(firmwareId);
             res.json(firmware);
         } catch (error) {
             next(error);

@@ -11,7 +11,7 @@
 export interface FirmwareUpdateHistory {
     update_id: number;
     device_serial: string | null;
-    firmware_id: number | null;
+    firmware_id: string| null;
     updated_at: Date | null;
     status: string | null;
     created_at: Date | null;
