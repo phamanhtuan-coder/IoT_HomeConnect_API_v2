@@ -71,7 +71,7 @@ class ShareRequestController {
         try {
             const { deviceId, serial_number, groupId } = req.params;
             if (!serial_number) throwError(ErrorCodes.BAD_REQUEST, 'Serial number is required');
-            const requests = await this.shareRequestService.getShareRequestsByDevice(parseInt(deviceId), serial_number, parseInt(groupId));
+            const requests = await this.shareRequestService.getShareRequestsByDevice(deviceId, serial_number, parseInt(groupId));
             res.json(requests);
         } catch (error) {
             next(error);
@@ -88,7 +88,7 @@ class ShareRequestController {
         try {
             const { deviceId, serial_number, groupId } = req.params;
             if (!serial_number) throwError(ErrorCodes.BAD_REQUEST, 'Serial number is required');
-            const permissions = await this.shareRequestService.getSharedPermissionsByDevice(parseInt(deviceId), serial_number, parseInt(groupId));
+            const permissions = await this.shareRequestService.getSharedPermissionsByDevice(deviceId, serial_number, parseInt(groupId));
             res.json(permissions);
         } catch (error) {
             next(error);

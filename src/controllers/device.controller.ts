@@ -69,7 +69,7 @@ class DeviceController {
             const { deviceId } = req.params;
             const { power_status, serial_number } = req.body; // Add serial_number
             const device = await this.deviceService.toggleDevice(
-                parseInt(deviceId),
+                deviceId,
                 serial_number,
                 power_status,
                 accountId
@@ -94,7 +94,7 @@ class DeviceController {
             const { deviceId } = req.params;
             const { serial_number } = req.body; // Add serial_number
             const device = await this.deviceService.updateDeviceAttributes(
-                parseInt(deviceId),
+                deviceId,
                 serial_number,
                 req.body,
                 accountId
@@ -119,7 +119,7 @@ class DeviceController {
             const { deviceId } = req.params;
             const { serial_number } = req.body; // Add serial_number
             const device = await this.deviceService.getDeviceById(
-                parseInt(deviceId),
+                deviceId,
                 serial_number,
                 accountId
             );
@@ -146,7 +146,7 @@ class DeviceController {
         try {
             const { deviceId } = req.params;
             const { serial_number } = req.body; // Add serial_number
-            await this.deviceService.unlinkDevice(parseInt(deviceId), serial_number, accountId);
+            await this.deviceService.unlinkDevice(deviceId, serial_number, accountId);
             res.status(204).send();
         } catch (error) {
             next(error);
@@ -171,7 +171,7 @@ class DeviceController {
             const { deviceId } = req.params;
             const { spaceId, serial_number } = req.body; // Add serial_number
             const device = await this.deviceService.updateDeviceSpace(
-                parseInt(deviceId),
+                deviceId,
                 serial_number,
                 spaceId,
                 accountId
@@ -200,7 +200,7 @@ class DeviceController {
             const { deviceId } = req.params;
             const { serial_number } = req.body; // Add serial_number
             const device = await this.deviceService.updateDeviceWifi(
-                parseInt(deviceId),
+                deviceId,
                 serial_number,
                 req.body,
                 accountId

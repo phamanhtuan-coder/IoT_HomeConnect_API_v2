@@ -34,23 +34,17 @@ export const initApp = (): { app: Application; io: Server; httpServer: any } => 
         path: '/socket.io',
         adapter: createAdapter(pubClient, subClient),
     });
-    app.use(cors({
-        origin: '*', // Cho phép tất cả origin (có thể giới hạn cụ thể nếu cần)
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        // allowedHeaders: ['Content-Type', 'Authorization'],
-        allowedHeaders: '*',
-    }));
 
+    // Configure CORS once with appropriate settings
     app.use(cors({
-        origin: '*', // Cho phép tất cả origin (có thể giới hạn cụ thể nếu cần)
+        origin: appConfig.corsOrigins, // Use the same origins as defined in appConfig
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        // allowedHeaders: ['Content-Type', 'Authorization'],
-        allowedHeaders: '*',
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+        credentials: true
     }));
     
     // Khởi tạo routes API
     app.use('/api', routes);
-
 
     // Cấu hình Swagger sau khi đã có routes
     configureSwagger(app);

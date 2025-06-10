@@ -5,10 +5,11 @@
   "main": "index.js",
   "scripts": {
     "merge-postman": "ts-node postman_collection/merge-collection.ts",
-    "build": "npx tsc",
+    "build": "tsc && npm run copy-templates",
+    "copy-templates": "copyfiles -u 1 src/templates/**/*.handlebars dist/",
     "start": "node dist/server.js",
-    "dev": "nodemon --watch \"src/**/*.ts\" --exec \"ts-node\" src/server.ts",
-    "install": "pnpm install"
+    "heroku-postbuild": "tsc && npm run copy-templates",
+    "dev": "cross-env NODE_OPTIONS=--max-old-space-size=1024 nodemon --watch \"src/**/*.ts\" --exec \"ts-node\" src/server.ts"
   },
   "keywords": [],
   "author": "",
@@ -33,6 +34,7 @@
     "socket.io": "^4.8.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "ulid": "^3.0.0",
     "uuid": "^11.1.0",
     "zod": "^3.24.2"
   },
@@ -49,9 +51,11 @@
     "@types/swagger-ui-express": "^4.1.8",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
     "@typescript-eslint/parser": "^8.28.0",
+    "copyfiles": "^2.4.1",
+    "cross-env": "^7.0.3",
     "eslint": "^9.23.0",
     "nodemon": "^3.1.9",
-    "prisma": "^6.8.2",
+    "prisma": "^6.9.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
   },

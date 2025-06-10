@@ -36,7 +36,7 @@ class FirmwareController {
 
         try {
             const { firmwareId } = req.params;
-            const firmware = await this.firmwareService.updateFirmware(parseInt(firmwareId), req.body, employeeId);
+            const firmware = await this.firmwareService.updateFirmware(firmwareId, req.body, employeeId);
             res.json(firmware);
         } catch (error) {
             next(error);
@@ -54,7 +54,7 @@ class FirmwareController {
 
         try {
             const { firmwareId } = req.params;
-            const response = await this.firmwareService.deleteFirmware(parseInt(firmwareId), employeeId);
+            const response = await this.firmwareService.deleteFirmware(firmwareId, employeeId);
             
             console.log('response', response)
             res.status(204).json(response);
@@ -72,7 +72,7 @@ class FirmwareController {
     getFirmwareById = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { firmwareId } = req.params;
-            const firmware = await this.firmwareService.getFirmwareById(parseInt(firmwareId));
+            const firmware = await this.firmwareService.getFirmwareById(firmwareId);
             res.json(firmware);
         } catch (error) {
             next(error);
@@ -80,7 +80,7 @@ class FirmwareController {
     };
 
     /**
-     * L���y danh sách tất cả firmware
+     * Lấy danh sách tất cả firmware
      * @param req Request Express
      * @param res Response Express
      * @param next Middleware tiếp theo
@@ -88,6 +88,22 @@ class FirmwareController {
     getFirmwares = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const firmwares = await this.firmwareService.getFirmwares();
+            res.json(firmwares);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Lấy danh sách firmware theo template ID
+     * @param req Request Express với template ID trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    getFirmwaresByTemplateId = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { templateId } = req.params;
+            const firmwares = await this.firmwareService.getFirmwaresByTemplateId(parseInt(templateId));
             res.json(firmwares);
         } catch (error) {
             next(error);

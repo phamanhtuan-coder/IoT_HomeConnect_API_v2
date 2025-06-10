@@ -10,7 +10,7 @@
  */
 export interface DeviceTemplate {
     template_id: number;
-    device_type_id: number | null;
+    device_type_id: string| null;
     category_name: string | null;
     name: string;
     created_by: string | null;

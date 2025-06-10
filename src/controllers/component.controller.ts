@@ -55,7 +55,7 @@ class ComponentController {
 
         try {
             const { componentId } = req.params;
-            const component: Component = await this.componentService.getComponentById(parseInt(componentId));
+            const component: Component = await this.componentService.getComponentById(componentId);
 
             const response: ComponentResponse = {
                 success: 200,
@@ -108,7 +108,7 @@ class ComponentController {
 
         try {
             const { componentId } = req.params;
-            const component: Component = await this.componentService.updateComponent(parseInt(componentId), req.body);
+            const component: Component = await this.componentService.updateComponent(componentId, req.body);
 
             const response: ComponentResponse = {
                 success: 200,
@@ -135,7 +135,7 @@ class ComponentController {
 
         try {
             const { componentId } = req.params;
-            await this.componentService.deleteComponent(parseInt(componentId));
+            await this.componentService.deleteComponent(componentId);
 
             const response: ComponentResponse = {
                 success: 200,

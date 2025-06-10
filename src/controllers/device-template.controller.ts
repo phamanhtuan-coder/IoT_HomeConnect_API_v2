@@ -48,7 +48,7 @@ class DeviceTemplateController {
 
         try {
             const { templateId } = req.params;
-            const template = await this.deviceTemplateService.getDeviceTemplateById(parseInt(templateId));
+            const template = await this.deviceTemplateService.getDeviceTemplateById(templateId);
             res.json(template);
         } catch (error) {
             next(error);
@@ -86,7 +86,7 @@ class DeviceTemplateController {
 
         try {
             const { templateId } = req.params;
-            const template = await this.deviceTemplateService.updateDeviceTemplate(parseInt(templateId), req.body as DeviceTemplateInput);
+            const template = await this.deviceTemplateService.updateDeviceTemplate(templateId, req.body as DeviceTemplateInput);
             res.json(template);
         } catch (error) {
             next(error);
@@ -106,7 +106,7 @@ class DeviceTemplateController {
 
         try {
             const { templateId } = req.params;
-            await this.deviceTemplateService.deleteDeviceTemplate(parseInt(templateId));
+            await this.deviceTemplateService.deleteDeviceTemplate(templateId);
             res.status(204).send();
         } catch (error) {
             next(error);

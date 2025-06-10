@@ -1,33 +1,66 @@
 import { z } from 'zod';
 
+// Schema cho việc tạo firmware mới
 export const firmwareSchema = z.object({
     body: z.object({
-        name:z.string(),
-        version: z.string().min(1, 'Version is required').max(50, 'Version must be 50 characters or less'),
-        file_path: z.string().min(1, 'File path is required').max(255, 'File path must be 255 characters or less'),
-        template_id: z.number().positive('Template ID must be a positive number').optional(),
-        is_mandatory: z.boolean().optional().default(false),
-        note: z.string().max(5000, 'Note must be 5000 characters or less').optional(),
-    }),
-});
-
-export const updateFirmwareSchema = z.object({
-    body: z.object({
-        version: z.string().min(1, 'Version is required').max(50, 'Version must be 50 characters or less').optional(),
-        file_path: z.string().min(1, 'File path is required').max(255, 'File path must be 255 characters or less').optional(),
-        template_id: z.number().positive('Template ID must be a positive number').optional(),
+        version: z.string({
+            required_error: 'Phiên bản firmware là bắt buộc',
+            invalid_type_error: 'Phiên bản firmware phải là chuỗi'
+        }),
+        name: z.string({
+            required_error: 'Tên firmware là bắt buộc',
+            invalid_type_error: 'Tên firmware phải là chuỗi'
+        }),
+        file_path: z.string({
+            required_error: 'Đường dẫn file là bắt buộc',
+            invalid_type_error: 'Đường dẫn file phải là chuỗi'
+        }),
+        template_id: z.number({
+            required_error: 'ID template là bắt buộc',
+            invalid_type_error: 'ID template phải là số'
+        }),
         is_mandatory: z.boolean().optional(),
-        is_approved: z.boolean().optional(),
-        tested_at: z.string().datetime().optional().transform((val) => (val ? new Date(val) : undefined)),
-        note: z.string().max(5000, 'Note must be 5000 characters or less').optional(),
-    }),
+        note: z.string().optional()
+    })
 });
 
+// Schema cho việc cập nhật firmware
+export const updateFirmwareSchema = z.object({
+    params: z.object({
+        firmwareId: z.string()
+            .transform((val) => parseInt(val))
+            .refine((val) => val > 0, 'ID firmware phải là số dương')
+    }),
+    body: z.object({
+        version: z.string({
+            required_error: 'Phiên bản firmware là bắt buộc',
+            invalid_type_error: 'Phiên bản firmware phải là chuỗi'
+        }),
+        name: z.string({
+            required_error: 'Tên firmware là bắt buộc',
+            invalid_type_error: 'Tên firmware phải là chuỗi'
+        }),
+        template_id: z.number({
+            required_error: 'ID template là bắt buộc',
+            invalid_type_error: 'ID template phải là số'
+        }),
+        is_mandatory: z.boolean({
+            required_error: 'Trạng thái bắt buộc là bắt buộc',
+            invalid_type_error: 'Trạng thái bắt buộc phải là boolean'
+        }),
+        note: z.string().optional()
+    })
+});
+
+// Schema cho việc xác thực firmware ID
 export const firmwareIdSchema = z.object({
     params: z.object({
-        firmwareId: z.string().transform((val) => parseInt(val)).refine((val) => val > 0, 'Firmware ID must be a positive number'),
-    }),
+        firmwareId: z.string()
+            .transform((val) => parseInt(val))
+            .refine((val) => val > 0, 'ID firmware phải là số dương')
+    })
 });
+
 
 export const firmwareUpdateHistorySchema = z.object({
     body: z.object({
@@ -61,9 +94,12 @@ export const firmwareUpdateHistoryFilterSchema = z.object({
     }),
 });
 
+
+// Export các type từ schema
 export type FirmwareInput = z.infer<typeof firmwareSchema>['body'];
 export type UpdateFirmwareInput = z.infer<typeof updateFirmwareSchema>['body'];
 export type FirmwareIdInput = z.infer<typeof firmwareIdSchema>['params'];
+
 export type FirmwareUpdateHistoryInput = z.infer<typeof firmwareUpdateHistorySchema>['body'];
 export type UpdateFirmwareUpdateHistoryInput = z.infer<typeof updateFirmwareUpdateHistorySchema>['body'];
 export type FirmwareUpdateHistoryIdInput = z.infer<typeof firmwareUpdateHistoryIdSchema>['params'];

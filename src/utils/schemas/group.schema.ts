@@ -11,6 +11,9 @@ export const paginationSchema = z.object({
 export const groupSchema = z.object({
     body: z.object({
         group_name: z.string().min(1, 'Group name is required').max(255, 'Group name must be 255 characters or less'),
+        icon_name: z.string().max(100, 'Icon name must be 100 characters or less').nullable().optional(),
+        icon_color: z.string().max(100, 'Icon color must be 100 characters or less').nullable().optional(),
+        group_description: z.string().nullable().optional(),
     }),
 });
 
@@ -36,6 +39,12 @@ export const updateGroupRoleSchema = z.object({
     params: z.object({
         groupId: z.string().transform((val) => parseInt(val)).refine((val) => val > 0, 'Group ID must be a positive number'),
     }),
+});
+
+export const myGroupsSchema = z.object({
+    query: z.object({}).optional(),
+    params: z.object({}),
+    body: z.object({}).optional()
 });
 
 export type GroupInput = z.infer<typeof groupSchema>['body'];

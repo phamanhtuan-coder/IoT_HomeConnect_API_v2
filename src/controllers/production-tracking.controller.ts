@@ -45,4 +45,16 @@ export class ProductionTrackingController {
 
         res.status(200).json(result);
     }
+
+    getSerialWithNeedFirmwareInProgress = async (req: Request, res: Response, next: NextFunction) => {
+        const { type, planning_id, batch_id } = req.params;
+
+        const result = await this.productionTrackingService.getSerialWithNeedFirmwareInProgress(type, planning_id, batch_id);
+
+        if (result.success) {
+            res.status(200).json(result);
+        } else {
+            res.status(400).json(result);
+        }
+    }
 }

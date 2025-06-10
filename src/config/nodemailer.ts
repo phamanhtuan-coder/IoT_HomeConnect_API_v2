@@ -11,14 +11,19 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+const templatesPath = process.env.NODE_ENV === 'production'
+    ? path.join(process.cwd(), 'dist', 'templates', 'emails')
+    : path.join(process.cwd(), 'src', 'templates', 'emails');
+
 transporter.use('compile', (hbs as any)({
     viewEngine: {
         extName: '.handlebars',
-        layoutsDir: path.join(__dirname, '../templates/emails'),
+        layoutsDir: templatesPath,
         defaultLayout: false,
     },
-    viewPath: path.join(__dirname, '../templates/emails'),
+    viewPath: templatesPath,
     extName: '.handlebars',
 }));
 
 export default transporter;
+

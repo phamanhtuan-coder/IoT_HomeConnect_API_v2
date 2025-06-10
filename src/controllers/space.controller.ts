@@ -22,7 +22,14 @@ class SpaceController {
         }
 
         try {
-            const space = await this.spaceService.createSpace(req.body);
+            const { houseId, space_name, icon_name, icon_color, space_description } = req.body;
+            const space = await this.spaceService.createSpace({
+                houseId,
+                space_name,
+                icon_name,
+                icon_color,
+                space_description
+            });
             res.status(201).json(space);
         } catch (error) {
             next(error);
@@ -65,19 +72,23 @@ class SpaceController {
 
     /**
      * Cập nhật thông tin không gian
-     * @param req Request Express với ID không gian trong params và tên không gian trong body
+     * @param req Request Express với ID không gian trong params và thông tin cập nhật trong body
      * @param res Response Express
      * @param next Middleware tiếp theo
      */
     updateSpace = async (req: Request, res: Response, next: NextFunction) => {
         const { spaceId } = req.params;
-        const { space_name } = req.body;
+        const { space_name, icon_name, icon_color, space_description } = req.body;
+
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
             throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can update spaces');
         }
 
         try {
-            const space = await this.spaceService.updateSpace(parseInt(spaceId), space_name);
+            const space = await this.spaceService.updateSpace(
+                parseInt(spaceId),
+                { space_name, icon_name, icon_color, space_description }
+            );
             res.json(space);
         } catch (error) {
             next(error);
@@ -123,4 +134,3 @@ class SpaceController {
 }
 
 export default SpaceController;
-

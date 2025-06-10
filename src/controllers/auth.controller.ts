@@ -28,8 +28,7 @@ class AuthController {
         const { username, password, rememberMe, deviceName, deviceId, deviceUuid } = req.body; // Thay email thành username, bỏ fcmToken
         const ipAddress = req.ip;
         try {
-            const tokens = await this.authService.loginUser({ username, password, rememberMe, deviceName, deviceId, deviceUuid, ipAddress });
-            res.json(tokens);
+           return await this.authService.loginUser({ username, password, rememberMe, deviceName, deviceId, deviceUuid, ipAddress });
         } catch (error) {
             next(error);
         }
@@ -43,7 +42,7 @@ class AuthController {
      */
     logoutUser = async (req: Request, res: Response, next: NextFunction) => {
         const userId = req.user?.userId;
-        const userDeviceId = parseInt(req.body.userDeviceId, 10);
+        const userDeviceId =req.body.userDeviceId;
         const ipAddress = req.ip;
 
         if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -71,7 +70,7 @@ class AuthController {
             throwError(ErrorCodes.BAD_REQUEST, 'Valid array of UserDeviceIDs is required');
         }
 
-        await this.userDeviceService.logoutDevices(userDeviceIds.map(id => parseInt(id.toString())), userId, ipAddress);
+        await this.userDeviceService.logoutDevices(userDeviceIds.map(id => id.toString()), userId, ipAddress);
         res.status(204).send();
     };
 
@@ -100,8 +99,8 @@ class AuthController {
     loginEmployee = async (req: Request, res: Response, next: NextFunction) => {
         const { username, password } = req.body;
         try {
-            const tokens = await this.authService.loginEmployee({ username, password });
-            res.json(tokens);
+            return await this.authService.loginEmployee({ username, password });
+
         } catch (error) {
             next(error);
         }
@@ -197,7 +196,22 @@ class AuthController {
             next(error);
         }
     };
+
+    /**
+     * Kiểm tra trạng thái xác thực email
+     * @param req Request Express với email trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    checkEmailVerification = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { email } = req.body;
+            const result = await this.authService.checkEmailVerification(email);
+            res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 
 export default AuthController;
-
