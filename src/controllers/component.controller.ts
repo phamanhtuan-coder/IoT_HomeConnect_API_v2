@@ -33,7 +33,7 @@ class ComponentController {
             const response: ComponentResponse = {
                 success: 201,
                 data: component,
-                message: 'Component created successfully',
+                message: 'Tạo linh kiện thành công',
             };
 
             res.status(201).json(response);
@@ -113,7 +113,7 @@ class ComponentController {
             const response: ComponentResponse = {
                 success: 200,
                 data: component,
-                message: 'Component updated successfully',
+                message: 'Cập nhật linh kiện thành công',
             };
 
             res.status(200).json(response);
