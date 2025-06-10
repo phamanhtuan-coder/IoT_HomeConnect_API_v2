@@ -302,7 +302,7 @@ export class PlanningService {
                     throwError(ErrorCodes.NOT_FOUND, 'Device template not found');
                 }
 
-                const firmwareBelongsToTemplate = template?.firmware.some(f => f.firmware_id === batchData.firmware_id);
+                const firmwareBelongsToTemplate = !batchData.firmware_id || template?.firmware.some(f => f.firmware_id === batchData.firmware_id);
                 if (!firmwareBelongsToTemplate) {
                     throwError(ErrorCodes.BAD_REQUEST, 'Firmware not associated with this template');
                 }
@@ -313,7 +313,7 @@ export class PlanningService {
                         planning_id: planning.planning_id,
                         production_batch_id: generateBatchId(),
                         template_id: batchData.template_id,
-                        firmware_id: batchData.firmware_id,
+                        firmware_id: batchData.firmware_id || null,
                         quantity: batchData.quantity,
                         batch_note: batchData.batch_note,
                         status: 'pending',
@@ -324,7 +324,7 @@ export class PlanningService {
                                 action: 'created',
                                 details: {
                                     ...JSON.parse(JSON.stringify(batchData)),
-                                    firmware_id: batchData.firmware_id
+                                    firmware_id: batchData.firmware_id || null
                                 }
                             }
                         } as any
@@ -348,8 +348,8 @@ export class PlanningService {
                             device_serial: deviceSerial,
                             stage: 'pending',
                             status: 'pending',
-                            state_logs:[]
-                            
+                            state_logs: []
+
                         }
                     });
                 });
