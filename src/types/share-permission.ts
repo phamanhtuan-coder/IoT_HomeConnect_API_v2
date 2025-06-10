@@ -12,7 +12,7 @@ import {PermissionType} from "./share-request";
  */
 export interface SharedPermission {
     permission_id: number;
-    device_id: number | null;
+    device_id: string | null;
     shared_with_user_id: string | null;
     permission_type: PermissionType;
     created_at: Date | null;

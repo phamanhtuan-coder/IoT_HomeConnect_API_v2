@@ -10,7 +10,7 @@
  * @property {boolean | null} [is_deleted] - Đánh dấu đã xóa (có thể không có).
  */
 interface Component {
-    component_id: number;
+    component_id: string;
     name: string;
     supplier?: string | null;
     unit_cost?: number | null;

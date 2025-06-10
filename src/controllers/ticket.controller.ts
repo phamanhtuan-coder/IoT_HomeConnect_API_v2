@@ -48,7 +48,7 @@ class TicketController {
     const { ticketId } = req.params;
     const { description, evidence, status, assigned_to, resolve_solution } = req.body;
     try {
-      const ticket = await this.ticketService.updateTicket(parseInt(ticketId), {
+      const ticket = await this.ticketService.updateTicket(ticketId, {
         description,
         evidence,
         status,
@@ -73,7 +73,7 @@ class TicketController {
 
     const { ticketId } = req.params;
     try {
-      await this.ticketService.deleteTicket(parseInt(ticketId));
+      await this.ticketService.deleteTicket(ticketId);
       res.status(204).send();
     } catch (error) {
       next(error);
@@ -92,7 +92,7 @@ class TicketController {
 
     const { ticketId } = req.params;
     try {
-      const ticket = await this.ticketService.getTicketById(parseInt(ticketId));
+      const ticket = await this.ticketService.getTicketById(ticketId);
       if (ticket.user_id !== accountId && !req.user?.employeeId) {
         throwError(ErrorCodes.FORBIDDEN, 'No permission to access this ticket');
       }

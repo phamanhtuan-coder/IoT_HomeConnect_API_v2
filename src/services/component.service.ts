@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import {Component} from "../types/component";
 import {ErrorCodes, throwError} from "../utils/errors";
+import {generateComponentId, generateCustomerId} from "../utils/helpers";
 
 /**
  * Dịch vụ quản lý các thành phần (components).
@@ -40,8 +41,20 @@ class ComponentService {
             throwError(ErrorCodes.CONFLICT, 'Component with this name already exists');
         }
 
+        let componentId: string;
+        let attempts = 0;
+        const maxAttempts = 5;
+        do {
+            componentId = generateComponentId();
+            const idExists = await this.prisma.components.findFirst({ where: { component_id: componentId } });
+            if (!idExists) break;
+            attempts++;
+            if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+        } while (true);
+
         const component = await this.prisma.components.create({
             data: {
+                component_id: componentId,
                 name,
                 supplier,
                 unit_cost,
@@ -58,7 +71,7 @@ class ComponentService {
      * @returns {Promise<Component>} Thành phần tương ứng với ID.
      * @throws {Error} Nếu không tìm thấy thành phần.
      */
-    async getComponentById(componentId: number): Promise<Component> {
+    async getComponentById(componentId: string): Promise<Component> {
         const component = await this.prisma.components.findUnique({
             where: { component_id: componentId, is_deleted: false },
         });
@@ -91,7 +104,7 @@ class ComponentService {
      * @returns {Promise<Component>} Thành phần sau khi được cập nhật.
      * @throws {Error} Nếu không tìm thấy thành phần hoặc tên đã tồn tại.
      */
-    async updateComponent(componentId: number, input: {
+    async updateComponent(componentId: string, input: {
         name?: string;
         supplier?: string | null;
         unit_cost?: number;
@@ -133,7 +146,7 @@ class ComponentService {
      * @returns {Promise<void>} Không trả về giá trị.
      * @throws {Error} Nếu không tìm thấy thành phần.
      */
-    async deleteComponent(componentId: number): Promise<void> {
+    async deleteComponent(componentId: string): Promise<void> {
         const component = await this.prisma.components.findUnique({
             where: { component_id: componentId, is_deleted: false },
         });

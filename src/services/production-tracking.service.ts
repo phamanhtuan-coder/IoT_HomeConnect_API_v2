@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
 import { ProductionTracking, ProductionTrackingNextStageInput, StageSerialStage, StatusSerialStage, ProductionTrackingRejectForQCInput, ProductionTrackingResponsePhaseChangeInput, RejectReason, ProductionTrackingResponse, SerialData, StageLog, ProductionTrackingCancelInput, ProductionTrackingSerialUpdateInput, ProductionTrackingApproveInput, ProductionTrackingApproveTestedInput } from '../types/production-tracking';
 import sseController from '../controllers/sse.controller';
@@ -8,6 +8,7 @@ function errorResponse(errorCode: ErrorCodes, message: string, data: any[] = [])
         success: false,
         errorCode: errorCode,
         message: message,
+        data: data
     }
 }
 
@@ -198,8 +199,7 @@ export class ProductionTrackingService {
             return errorResponse(ErrorCodes.PRODUCTION_NOT_FOUND, 'Production not found');
         }
 
-        let error_list = [];
-
+let error_list: { device_serial: string | null; error: string }[] = [];
         await this.prisma.$transaction(async (tx: any) => {
             for (const production of production_list) {
                 if (production.stage !== StageSerialStage.QC) {
@@ -280,6 +280,7 @@ export class ProductionTrackingService {
             return errorResponse(ErrorCodes.BAD_REQUEST, 'Stage is not the same');
         }
 
+        let newStatus = status;
         let stageLogList = production.state_logs as any[];
         let stageLog = stageLogList[stageLogList.length - 1];
         let newStage = stage;
@@ -299,6 +300,8 @@ export class ProductionTrackingService {
                     started_at: new Date()
                 };
                 stageLogList.push(newLog);
+
+                newStatus = StatusSerialStage.FIRMWARE_UPLOAD;
 
                 // Gửi SSE update
                 sseController.sendProductionUpdate({
@@ -324,6 +327,8 @@ export class ProductionTrackingService {
                 };
                 stageLogList.push(newLog);
 
+                newStatus = StatusSerialStage.FIRMWARE_UPLOADING;
+
                 sseController.sendProductionUpdate({
                     type: 'update_status',
                     device_serial: device_serial,
@@ -348,7 +353,8 @@ export class ProductionTrackingService {
                 stageLogList.push(newLog);
 
                 newStage = StageSerialStage.QC;
-                
+                newStatus = StatusSerialStage.FIRMWARE_UPLOADED;
+
                 sseController.sendProductionUpdate({
                     type: 'update_stage',
                     device_serial: device_serial,
@@ -373,6 +379,7 @@ export class ProductionTrackingService {
                 stageLogList.push(newLog);
 
                 newStage = StageSerialStage.ASSEMBLY;
+                newStatus = StatusSerialStage.FIXING_PRODUCT;
                 
                 sseController.sendProductionUpdate({
                     type: 'update_stage',
@@ -403,6 +410,8 @@ export class ProductionTrackingService {
                 };
                 stageLogList.push(newLog);
 
+                newStatus = StatusSerialStage.TESTING;
+
                 sseController.sendProductionUpdate({
                     type: 'update_stage',
                     device_serial: device_serial,
@@ -428,6 +437,8 @@ export class ProductionTrackingService {
                     started_at: new Date()
                 };
                 stageLogList.push(newLog);
+
+                newStatus = StatusSerialStage.PENDING_PACKAGING;
 
                 newStage = StageSerialStage.COMPLETED;
 
@@ -458,6 +469,8 @@ export class ProductionTrackingService {
                     started_at: new Date()
                 };
                 stageLogList.push(newLog);
+
+                newStatus = StatusSerialStage.PENDING_PACKAGING;
                 
                 sseController.sendProductionUpdate({
                     type: 'update_status',
@@ -479,7 +492,7 @@ export class ProductionTrackingService {
                 where: { production_id: production.production_id },
                 data: { 
                     stage: newStage, 
-                    status: stageLogList[stageLogList.length - 1].status,
+                    status: newStatus,
                     state_logs: stageLogList 
                 }
             });
@@ -509,8 +522,8 @@ export class ProductionTrackingService {
         if (device_serials.length !== production_list.length) {
             return errorResponse(ErrorCodes.PRODUCTION_NOT_FOUND, 'Production not found');
         }
-        
-        let error_list = [];
+
+        let error_list: { device_serial: string | null; error: string }[] = [];
         await this.prisma.$transaction(async (tx) => {
             for (const production of production_list) {
                 if (production.status !== StatusSerialStage.PENDING) {
@@ -575,8 +588,8 @@ export class ProductionTrackingService {
         if (device_serials.length !== production_list.length) {
             return errorResponse(ErrorCodes.PRODUCTION_NOT_FOUND, 'Production not found');
         }
-        
-        let error_list = [];
+
+        let error_list: { device_serial: string | null; error: string }[] = [];
         await this.prisma.$transaction(async (tx) => {
             for (const production of production_list) {
                 if (production.status !== StatusSerialStage.TESTING) {
@@ -637,6 +650,78 @@ export class ProductionTrackingService {
             success: true,
             errorCode: null,
             message: 'Duyệt sản phẩm thành công'
+        }
+    }
+
+    async getSerialWithNeedFirmwareInProgress(type: string, planning_id: string | null, batch_id: string | null): Promise<any> {
+        try {
+            
+            let query = Prisma.sql``;
+            if (type === 'planning') {
+                query = Prisma.sql`
+                    SELECT DISTINCT planning.planning_id
+                    FROM planning
+                        LEFT JOIN production_batches pb ON pb.planning_id = planning.planning_id
+                        LEFT JOIN production_tracking pt ON pt.production_batch_id = pb.production_batch_id
+                        LEFT JOIN serial_need_install_firmware need_firmware ON need_firmware.production_batch_id = pb.production_batch_id
+                    WHERE pt.device_serial IN (SELECT device_serial FROM serial_need_install_firmware)
+                `;
+            } else if (type === 'batch' && planning_id) {
+                query = Prisma.sql`
+                        SELECT DISTINCT pb.production_batch_id, planning.planning_id, pb.template_id,pb.firmware_id
+                        FROM planning
+                            LEFT JOIN production_batches pb ON pb.planning_id = planning.planning_id
+                            LEFT JOIN production_tracking pt ON pt.production_batch_id = pb.production_batch_id
+                            LEFT JOIN serial_need_install_firmware need_firmware ON need_firmware.production_batch_id = pb.production_batch_id
+                        WHERE pt.device_serial IN (SELECT device_serial FROM serial_need_install_firmware)
+                        AND planning.planning_id = ${planning_id}
+                    `;
+            } else if (type === 'tracking' && batch_id) {
+                    query = Prisma.sql`
+                    SELECT DISTINCT need_firmware.device_serial, pb.production_batch_id,need_firmware.status
+                    FROM production_batches pb
+                        LEFT JOIN production_tracking pt ON pt.production_batch_id = pb.production_batch_id
+                        LEFT JOIN serial_need_install_firmware need_firmware ON need_firmware.production_batch_id = pb.production_batch_id
+                    WHERE pt.device_serial IN (SELECT device_serial FROM serial_need_install_firmware)
+                    AND pb.production_batch_id = ${batch_id}
+                `;
+            } else {
+                return errorResponse(ErrorCodes.BAD_REQUEST, 'Type và tham số gửi về không trùng khớp');
+            }
+
+            let querySerialNeedInstallFirmware = Prisma.sql`
+            WITH serial_need_install_firmware AS (
+                SELECT production_batch_id, device_serial,status
+                FROM production_tracking
+                WHERE
+                    (   stage = 'assembly'
+                        AND status IN ('in_progress','firmware_upload', 'firmware_uploading', 'firmware_failed')
+                    )
+                   OR 
+                    (
+                        stage = 'qc'
+                        AND status = 'firmware_uploaded'
+                    )
+                    AND is_deleted = false
+
+            )`;
+
+            const finalQuery = Prisma.sql`
+                ${querySerialNeedInstallFirmware}
+                ${query}
+            `;
+
+            const result = await this.prisma.$queryRaw`${finalQuery}`;
+
+            return {
+                success: true,
+                errorCode: null,
+                message: 'Lấy dữ liệu thành công',
+                data: result
+            }
+        } catch (error) {
+            console.error('Error executing query:', error);
+            return errorResponse(ErrorCodes.INTERNAL_SERVER_ERROR, 'Internal server error');
         }
     }
 }

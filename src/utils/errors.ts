@@ -27,6 +27,86 @@ export enum ErrorCodes {
     INSUFFICIENT_QUANTITY = 'INSUFFICIENT_QUANTITY', // 400
 }
 
+// Interface cho Error Response
+export interface ErrorResponse {
+    code: string;
+    message: string;
+    status_code: number;
+}
+
+// Object chứa chi tiết các error response
+export const ERROR_RESPONSES: { [key: string]: ErrorResponse } = {
+    'BAD_REQUEST': {
+        code: ErrorCodes.BAD_REQUEST,
+        message: 'Bad request',
+        status_code: 400
+    },
+    'NOT_FOUND': {
+        code: ErrorCodes.NOT_FOUND,
+        message: 'Resource not found',
+        status_code: 404
+    },
+    'UNAUTHORIZED': {
+        code: ErrorCodes.UNAUTHORIZED,
+        message: 'Unauthorized access',
+        status_code: 401
+    },
+    'FORBIDDEN': {
+        code: ErrorCodes.FORBIDDEN,
+        message: 'Forbidden access',
+        status_code: 403
+    },
+    'CONFLICT': {
+        code: ErrorCodes.CONFLICT,
+        message: 'Resource conflict',
+        status_code: 409
+    },
+    'INTERNAL_SERVER_ERROR': {
+        code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        message: 'Internal server error',
+        status_code: 500
+    },
+    'DATABASE_ERROR': {
+        code: ErrorCodes.DATABASE_ERROR,
+        message: 'Database error',
+        status_code: 500
+    },
+    'INVALID_CREDENTIALS': {
+        code: ErrorCodes.INVALID_CREDENTIALS,
+        message: 'Invalid credentials',
+        status_code: 401
+    },
+    'DEVICE_ALREADY_LINKED': {
+        code: ErrorCodes.DEVICE_ALREADY_LINKED,
+        message: 'Device already linked to another user',
+        status_code: 409
+    },
+    'INSUFFICIENT_COMPONENTS': {
+        code: ErrorCodes.INSUFFICIENT_COMPONENTS,
+        message: 'Insufficient components for production',
+        status_code: 400
+    },
+    'TEMPLATE_NOT_FOUND': {
+        code: ErrorCodes.TEMPLATE_NOT_FOUND,
+        message: 'Template not found',
+        status_code: 404
+    }
+};
+
+export function get_error_response(error_code: string, status_code?: number): ErrorResponse {
+    const response = ERROR_RESPONSES[error_code] || {
+        code: error_code,
+        message: 'Unknown error',
+        status_code: status_code || 500
+    };
+
+    if (status_code) {
+        response.status_code = status_code;
+    }
+
+    return response;
+}
+
 // Interface cho AppError
 interface ErrorDetails {
     status: number;
@@ -106,3 +186,4 @@ export class AppError extends Error {
 export const throwError = (code: ErrorCodes, message?: string) => {
     throw AppError.create(code, message);
 };
+

@@ -28,13 +28,22 @@ class HouseService {
             data: { group_id: groupId, house_name, address, icon_name, icon_color },
         });
 
-        // Create default space
+        // Create default space with some default values
         await this.prisma.spaces.create({
-            data: { house_id: house.house_id, space_name: 'Phòng Mặc Định' },
+            data: {
+                house_id: house.house_id,
+                space_name: 'Phòng Mặc Định',
+                icon_name: 'home',
+                icon_color: '#4A90E2',
+                space_description: 'Không gian mặc định của ngôi nhà',
+                created_at: new Date(),
+                updated_at: new Date()
+            },
         });
 
+        // Return only the fields defined in the House interface
         return {
-            ...house,
+            house_id: house.house_id,
             group_id: house.group_id || null,
             house_name: house.house_name,
             address: house.address || null,

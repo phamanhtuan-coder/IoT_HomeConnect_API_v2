@@ -2,7 +2,7 @@
 import { PrismaClient } from '@prisma/client';
 import { BatchCreateInput, BatchUpdateInput, ProductionBatch } from '../types/planning';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { generateBatchId } from '../utils/helpers';
+import {generateBatchId, generateFirmwareId} from '../utils/helpers';
 import { PlanningService } from './planning.service';
 import { calculatePlanningStatus } from '../utils/helpers';
 
@@ -52,11 +52,22 @@ export class BatchService {
             }
         }
 
+        let batch_id: string;
+        let attempts = 0;
+        const maxAttempts = 5;
+        do {
+            batch_id = generateBatchId();
+            const idExists = await this.prisma.production_batches.findFirst({ where: { production_batch_id: batch_id }});
+            if (!idExists) break;
+            attempts++;
+            if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+        } while (true);
+
         // Tạo batch mới
         const batch = await this.prisma.production_batches.create({
             data: {
                 planning_id: planningId,
-                production_batch_id: generateBatchId(),
+                production_batch_id: batch_id,
                 template_id: data.template_id,
                 quantity: data.quantity,
                 batch_note: data.batch_note,
@@ -163,6 +174,7 @@ export class BatchService {
             data: {
                 status: data.status,
                 batch_note: data.batch_note,
+                updated_at: new Date(),
                 logs: {
                     ...(batch?.logs as Record<string, any> || {}),
                     [data.status]: {
@@ -189,7 +201,7 @@ export class BatchService {
         // 5. Cập nhật status của planning
         await this.prisma.planning.update({
             where: { planning_id: batch!.planning_id },
-            data: { status: newPlanningStatus }
+            data: { status: newPlanningStatus, updated_at: new Date() }
         });
 
         // 6. Lấy lại thông tin batch với thông tin mới nhất
@@ -211,7 +223,7 @@ export class BatchService {
         return this.prisma.production_batches.findMany({
             where: {
                 planning_id: planningId,
-                is_deleted: false
+                // is_deleted: false
             },
             include: {
                 device_templates: {
@@ -228,5 +240,22 @@ export class BatchService {
             },
             orderBy: { created_at: 'asc' }
         });
+    }
+
+    async getListBatch(): Promise<any> {
+        const listBatch = await this.prisma.production_batches.findMany({
+            where: {
+                is_deleted: false
+            },
+            select: {
+                production_batch_id: true,
+                quantity: true,
+            }
+        });
+
+        return {
+            success: true,
+            data: listBatch
+        }
     }
 }

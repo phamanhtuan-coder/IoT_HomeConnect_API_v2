@@ -47,7 +47,7 @@ class OwnershipHistoryController {
             const userId = req.user?.userId || req.user?.employeeId;
             if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
-            await this.ownershipHistoryService.approveOwnershipTransfer(parseInt(ticketId), accept, userId);
+            await this.ownershipHistoryService.approveOwnershipTransfer(ticketId, accept, userId);
 
             res.status(200).json({ message: accept ? 'Ownership transfer approved' : 'Ownership transfer rejected' });
         } catch (error) {

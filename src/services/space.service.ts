@@ -9,8 +9,14 @@ class SpaceService {
         this.prisma = new PrismaClient();
     }
 
-    async createSpace(input: { houseId: number; space_name: string }): Promise<Space> {
-        const { houseId, space_name } = input;
+    async createSpace(input: {
+        houseId: number;
+        space_name: string;
+        icon_name?: string;
+        icon_color?: string;
+        space_description?: string;
+    }): Promise<Space> {
+        const { houseId, space_name, icon_name, icon_color, space_description } = input;
 
         // Verify house exists
         const house = await this.prisma.houses.findUnique({
@@ -19,13 +25,22 @@ class SpaceService {
         if (!house) throwError(ErrorCodes.NOT_FOUND, 'House not found');
 
         const space = await this.prisma.spaces.create({
-            data: { house_id: houseId, space_name },
+            data: {
+                house_id: houseId,
+                space_name,
+                icon_name,
+                icon_color,
+                space_description
+            },
         });
 
         return {
             ...space,
             house_id: space.house_id || null,
             space_name: space.space_name,
+            icon_name: space.icon_name || null,
+            icon_color: space.icon_color || null,
+            space_description: space.space_description || null,
             created_at: space.created_at || null,
             updated_at: space.updated_at || null,
             is_deleted: space.is_deleted || null,
@@ -41,6 +56,9 @@ class SpaceService {
             ...space,
             house_id: space.house_id || null,
             space_name: space.space_name,
+            icon_name: space.icon_name || null,
+            icon_color: space.icon_color || null,
+            space_description: space.space_description || null,
             created_at: space.created_at || null,
             updated_at: space.updated_at || null,
             is_deleted: space.is_deleted || null,
@@ -58,16 +76,27 @@ class SpaceService {
             space_id: space!.space_id ,
             house_id: space!.house_id || null,
             space_name: space!.space_name,
+            icon_name: space!.icon_name || null,
+            icon_color: space!.icon_color || null,
+            space_description: space!.space_description || null,
             created_at: space!.created_at || null,
             updated_at: space!.updated_at || null,
             is_deleted: space!.is_deleted || null,
         };
     }
 
-    async updateSpace(spaceId: number, space_name: string): Promise<Space> {
+    async updateSpace(spaceId: number, input: {
+        space_name: string;
+        icon_name?: string;
+        icon_color?: string;
+        space_description?: string;
+    }): Promise<Space> {
         const space = await this.prisma.spaces.update({
             where: { space_id: spaceId, is_deleted: false },
-            data: { space_name, updated_at: new Date() },
+            data: {
+                ...input,
+                updated_at: new Date()
+            },
         });
         if (!space) throwError(ErrorCodes.NOT_FOUND, 'Space not found');
 
@@ -75,6 +104,9 @@ class SpaceService {
             ...space,
             house_id: space.house_id || null,
             space_name: space.space_name,
+            icon_name: space.icon_name || null,
+            icon_color: space.icon_color || null,
+            space_description: space.space_description || null,
             created_at: space.created_at || null,
             updated_at: space.updated_at || null,
             is_deleted: space.is_deleted || null,

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Định nghĩa schema cho từng component trong mảng
 const componentSchema = z.object({
-    component_id: z.number().positive('Component ID must be a positive number'),
+    component_id: z.string() ,// ID của linh kiện, có thể là chuỗi
     quantity_required: z.number().positive('Quantity required must be a positive number').optional().default(1), // Mặc định là 1 nếu không được cung cấp
 });
 

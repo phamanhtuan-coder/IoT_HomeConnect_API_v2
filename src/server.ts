@@ -8,7 +8,7 @@ import { setSocketInstance } from './services/device.service';
 // Check Firebase Admin initialization
 console.log('Firebase Admin SDK version:', admin.SDK_VERSION);
 
-const { app, io } = initApp();
+const { app, io, httpServer } = initApp();
 
 // Initialize sockets
 initSocket(io);
@@ -16,6 +16,8 @@ initSocket(io);
 // Pass Socket.IO instance to device.ts service
 setSocketInstance(io);
 
-app.listen(appConfig.port, () => {
-    console.log(`Server is running on port ${appConfig.port}`);
+// Use httpServer instead of app.listen to properly support Socket.IO
+httpServer.listen(Number(appConfig.port), '0.0.0.0', () => {
+    console.log(`Server is running on port ${appConfig.port} in ${appConfig.env} mode`);
 });
+

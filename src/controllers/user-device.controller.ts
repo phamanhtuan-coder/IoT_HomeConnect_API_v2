@@ -47,7 +47,7 @@ export class UserDeviceController {
      * @param next Middleware tiếp theo
      */
     revokeDevice = async (req: Request, res: Response, next: NextFunction) => {
-        const userDeviceId = parseInt(req.params.deviceId, 10);
+        const userDeviceId = req.params.deviceId;
         const requesterId = req.user?.userId || req.user?.employeeId;
         const requesterRole = req.user?.role || 'user';
         if (!requesterId) throwError(ErrorCodes.UNAUTHORIZED, 'Requester ID not found');

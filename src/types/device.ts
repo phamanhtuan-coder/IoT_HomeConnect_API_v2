@@ -34,13 +34,13 @@ export interface DeviceAttributes {
  * @property {boolean | null} is_deleted - Đánh dấu đã xóa (có thể null).
  */
 export interface Device {
-    device_id: number;
+    device_id: string;
     serial_number: string;
-    template_id: number | null;
+    template_id: string | null;
     space_id: number | null;
     account_id: string | null;
     hub_id: string | null;
-    firmware_id: number | null;
+    firmware_id: string | null;
     name: string;
     power_status: boolean | null;
     attribute: Record<string, any> | null;

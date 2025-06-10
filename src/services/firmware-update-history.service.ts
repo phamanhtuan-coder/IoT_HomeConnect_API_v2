@@ -11,17 +11,17 @@ class FirmwareUpdateHistoryService {
 
     async createFirmwareUpdateHistory(input: {
         device_serial: string;
-        firmware_id: number;
+        firmware_id: string;
         status?: string;
     }): Promise<FirmwareUpdateHistory> {
         const { device_serial, firmware_id, status } = input;
 
-        const device = await this.prisma.devices.findUnique({
+        const device = await this.prisma.devices.findFirst({
             where: { serial_number: device_serial, is_deleted: false },
         });
         if (!device) throwError(ErrorCodes.NOT_FOUND, 'Device not found');
 
-        const firmware = await this.prisma.firmware.findUnique({
+        const firmware = await this.prisma.firmware.findFirst({
             where: { firmware_id, is_deleted: false },
         });
         if (!firmware) throwError(ErrorCodes.NOT_FOUND, 'Firmware not found');
