@@ -288,8 +288,97 @@
           }
         },
         "response": []
+      },
+      {
+        "name": "Get User Role in Group",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Role retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.role).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/groups/role/1",
+            "host": ["{{baseUrl}}"],
+            "path": ["groups", "role", "1"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Owned Groups",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Owned groups retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/groups/owned",
+            "host": ["{{baseUrl}}"],
+            "path": ["groups", "owned"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Member Groups",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Member groups retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/groups/member",
+            "host": ["{{baseUrl}}"],
+            "path": ["groups", "member"]
+          }
+        },
+        "response": []
       }
     ]
   }
 ]
-

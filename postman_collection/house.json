@@ -29,7 +29,8 @@
             "raw": "{\n  \"groupId\": 1,\n  \"house_name\": \"MyHouse\",\n  \"address\": \"123 Main St\",\n  \"icon_name\": \"home\",\n  \"icon_color\": \"blue\"\n}",
             "options": { "raw": { "language": "json" } }
           },
-          "url": { "raw": "{{baseUrl}}/houses", "host": ["{{baseUrl}}"], "path": ["houses"] }
+          "url": { "raw": "{{baseUrl}}/houses", "host": ["{{baseUrl}}"], "path": ["houses"] },
+          "description": "Requires owner or vice role in group"
         },
         "response": []
       },
@@ -59,7 +60,8 @@
             "raw": "{{baseUrl}}/houses/group/1",
             "host": ["{{baseUrl}}"],
             "path": ["houses", "group", "1"]
-          }
+          },
+          "description": "Any group member can view houses"
         },
         "response": []
       },
@@ -89,7 +91,8 @@
             "raw": "{{baseUrl}}/houses/1",
             "host": ["{{baseUrl}}"],
             "path": ["houses", "1"]
-          }
+          },
+          "description": "Any group member can view house details"
         },
         "response": []
       },
@@ -120,7 +123,8 @@
             "raw": "{\n  \"house_name\": \"UpdatedHouse\",\n  \"address\": \"456 Elm St\",\n  \"icon_name\": \"house\",\n  \"icon_color\": \"green\"\n}",
             "options": { "raw": { "language": "json" } }
           },
-          "url": { "raw": "{{baseUrl}}/houses/1", "host": ["{{baseUrl}}"], "path": ["houses", "1"] }
+          "url": { "raw": "{{baseUrl}}/houses/1", "host": ["{{baseUrl}}"], "path": ["houses", "1"] },
+          "description": "Requires owner or vice role in group"
         },
         "response": []
       },
@@ -144,11 +148,11 @@
           "header": [
             { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
-          "url": { "raw": "{{baseUrl}}/houses/1", "host": ["{{baseUrl}}"], "path": ["houses", "1"] }
+          "url": { "raw": "{{baseUrl}}/houses/1", "host": ["{{baseUrl}}"], "path": ["houses", "1"] },
+          "description": "Requires owner or vice role in group. Cannot delete house with existing spaces."
         },
         "response": []
       }
     ]
   }
 ]
-
