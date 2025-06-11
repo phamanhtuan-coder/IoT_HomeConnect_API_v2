@@ -264,28 +264,39 @@ class AuthService {
         } while (true);
 
         const passwordHash = await bcrypt.hash(password, 12);
+
+        // Step 1: Create the account first
         const account = await this.prisma.account.create({
             data: {
                 account_id: accountId,
                 username,
                 password: passwordHash,
                 role_id: roleRecord!.id,
+                // employee_id will be set after employee is created
             },
         });
-        await this.prisma.employee.create({
-            data: {
-                        employee_id: employeeId,
-                        surname,
-                        lastname: lastname || null,
-                        image: image || null,
-                        email: email || null, // email là tùy chọn
-                        birthdate: birthdate ? new Date(birthdate) : null,
-                        gender: gender !== undefined ? gender : null,
-                        phone: phone || null,
-                        status: status !== undefined ? status : null,
-                    },
 
+        // Step 2: Create the employee and link to account
+        const employee = await this.prisma.employee.create({
+            data: {
+                employee_id: employeeId,
+                surname,
+                lastname: lastname || null,
+                image: image || null,
+                email: email || null, // email là tùy chọn
+                birthdate: birthdate ? new Date(birthdate) : null,
+                gender: gender !== undefined ? gender : null,
+                phone: phone || null,
+                status: status !== undefined ? status : null,
+            },
         });
+
+        // Optionally update account with employee_id if needed
+        await this.prisma.account.update({
+            where: { account_id: accountId },
+            data: { employee_id: employeeId },
+        });
+
 
         const accessToken = jwt.sign(
             { employeeId: account.account_id, username: account.username, role } as EmployeeJwtPayload,

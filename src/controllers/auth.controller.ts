@@ -28,7 +28,8 @@ class AuthController {
         const { username, password, rememberMe, deviceName, deviceId, deviceUuid } = req.body; // Thay email thành username, bỏ fcmToken
         const ipAddress = req.ip;
         try {
-           return await this.authService.loginUser({ username, password, rememberMe, deviceName, deviceId, deviceUuid, ipAddress });
+            const result = await this.authService.loginUser({ username, password, rememberMe, deviceName, deviceId, deviceUuid, ipAddress });
+            return res.status(200).json(result);
         } catch (error) {
             next(error);
         }
@@ -86,8 +87,8 @@ class AuthController {
 
         if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
-        await this.userDeviceService.logoutAllDevices(userId, ipAddress);
-        res.status(204).send();
+        const result = await this.userDeviceService.logoutAllDevices(userId, ipAddress);
+        res.status(204).send(result);
     };
 
     /**
@@ -99,8 +100,8 @@ class AuthController {
     loginEmployee = async (req: Request, res: Response, next: NextFunction) => {
         const { username, password } = req.body;
         try {
-            return await this.authService.loginEmployee({ username, password });
-
+            const result = await this.authService.loginEmployee({ username, password });
+            return res.status(200).json(result);
         } catch (error) {
             next(error);
         }
