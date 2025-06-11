@@ -24,5 +24,13 @@ export const deviceTemplateIdSchema = z.object({
     }),
 });
 
+export const approveDeviceTemplateSchema = z.object({
+    params: z.object({
+        templateId: z.string(),
+        status: z.string().optional(),
+    }),
+});
+
 export type DeviceTemplateInput = z.infer<typeof deviceTemplateSchema>['body'];
 export type DeviceTemplateIdInput = z.infer<typeof deviceTemplateIdSchema>['params'];
+export type ApproveDeviceTemplateInput = z.infer<typeof approveDeviceTemplateSchema>['params'];

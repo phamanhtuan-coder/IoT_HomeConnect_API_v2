@@ -102,6 +102,30 @@ class DeviceTemplateController {
     };
 
     /**
+     * Cập nhật một Device Template theo ID.
+     * @param {Request} req - Yêu cầu HTTP chứa ID và trạng thái của Device Template.
+     * @param {Response} res - Phản hồi HTTP.
+     * @param {NextFunction} next - Hàm middleware tiếp theo.
+     */
+    approveDeviceTemplate = async (req: Request, res: Response, next: NextFunction) => {
+        // const employeeId = req.user?.employeeId;
+        const employeeId = "admin123";
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+        try {
+            const { templateId } = req.params;
+            console.log("data", templateId + " " + req.body)
+            const template = await this.deviceTemplateService.approveDeviceTemplate(templateId, req.body);
+            return res.status(200).json({
+                status_code: 200,
+                message: "Chuyển trạng thái thiết bị thành công",
+                data: template,
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
      * Xóa một Device Template theo ID.
      * @param {Request} req - Yêu cầu HTTP chứa ID của Device Template.
      * @param {Response} res - Phản hồi HTTP.
