@@ -16,6 +16,7 @@ import { AuthJwtPayload } from '../types/auth';
  * @param next Hàm next để chuyển sang middleware tiếp theo
  */
 const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+    console.log('req.header', req.headers)
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         throwError(ErrorCodes.UNAUTHORIZED, 'Invalid authorization format');
@@ -30,9 +31,11 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
 
     try {
         const decoded = jwt.verify(token, secretKey) as AuthJwtPayload;
+        console.log('decoded', decoded)
         req.user = decoded;
         next();
     } catch (error: unknown) {
+        console.log('error', error)
         if (error instanceof Error) {
             if (error.name === 'TokenExpiredError') {
                 throwError(ErrorCodes.UNAUTHORIZED, 'Token has expired');

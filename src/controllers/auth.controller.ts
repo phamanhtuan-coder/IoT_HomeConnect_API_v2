@@ -25,10 +25,13 @@ class AuthController {
      * @param next Middleware tiếp theo
      */
     loginUser = async (req: Request, res: Response, next: NextFunction) => {
+        
         const { username, password, rememberMe, deviceName, deviceId, deviceUuid } = req.body; // Thay email thành username, bỏ fcmToken
+        console.log("req", req.body)
         const ipAddress = req.ip;
         try {
-           return await this.authService.loginUser({ username, password, rememberMe, deviceName, deviceId, deviceUuid, ipAddress });
+            const response = await this.authService.loginUser({ username, password, rememberMe, deviceName, deviceId, deviceUuid, ipAddress });
+            res.status(200).json(response)
         } catch (error) {
             next(error);
         }
@@ -99,8 +102,8 @@ class AuthController {
     loginEmployee = async (req: Request, res: Response, next: NextFunction) => {
         const { username, password } = req.body;
         try {
-            return await this.authService.loginEmployee({ username, password });
-
+            const response =  await this.authService.loginEmployee({ username, password });
+            return res.status(200).json(response)
         } catch (error) {
             next(error);
         }
