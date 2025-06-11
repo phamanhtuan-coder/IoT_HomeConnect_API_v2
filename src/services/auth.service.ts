@@ -83,8 +83,8 @@ class AuthService {
         return response;
     }
 
-    async loginEmployee({ username, password }: LoginRequestBody): Promise<TokenResponse> {
-        const account = await this.prisma.account!.findFirst({ where: { username: username } });
+    async loginEmployee({ username, password }: LoginRequestBody, ip?: string, userAgent?: string): Promise<TokenResponse> {
+        const account = await this.prisma.account.findFirst({ where: { username: username } });
         if (!account!) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Account not found');
 
         if (!account!.password) {
@@ -106,6 +106,14 @@ class AuthService {
             { expiresIn: '8h' }
         );
 
+        // Lưu thông tin session vào Redis
+        const sessionInfo = {
+            ip: ip || 'unknown',
+            userAgent: userAgent || 'unknown',
+            loginTime: new Date().toISOString(),
+            lastActiveTime: new Date().toISOString()
+        };
+
         // Redis logic - có thể comment để disable
         const previousAccessToken = await redisClient.get(`employee:token:${account!.account_id}`);
         const previousRefreshToken = await redisClient.get(`employee:refresh:${account!.account_id}`);
@@ -117,6 +125,7 @@ class AuthService {
         }
         await redisClient.setex(`employee:token:${account!.account_id}`, 8 * 60 * 60, accessToken);
         await redisClient.setex(`employee:refresh:${account!.account_id}`, 8 * 60 * 60, refreshToken);
+        await redisClient.setex(`employee:session:${account!.account_id}`, 8 * 60 * 60, JSON.stringify(sessionInfo));
 
         return { accessToken, refreshToken };
     }
