@@ -2306,6 +2306,124 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Get User Role in Group",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Role retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.role).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/groups/role/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "groups",
+                "role",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Owned Groups",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Owned groups retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/groups/owned",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "groups",
+                "owned"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Member Groups",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Member groups retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/groups/member",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "groups",
+                "member"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -2355,7 +2473,8 @@
               "path": [
                 "houses"
               ]
-            }
+            },
+            "description": "Requires owner or vice role in group"
           },
           "response": []
         },
@@ -2395,7 +2514,8 @@
                 "group",
                 "1"
               ]
-            }
+            },
+            "description": "Any group member can view houses"
           },
           "response": []
         },
@@ -2434,7 +2554,8 @@
                 "houses",
                 "1"
               ]
-            }
+            },
+            "description": "Any group member can view house details"
           },
           "response": []
         },
@@ -2482,7 +2603,8 @@
                 "houses",
                 "1"
               ]
-            }
+            },
+            "description": "Requires owner or vice role in group"
           },
           "response": []
         },
@@ -2519,7 +2641,8 @@
                 "houses",
                 "1"
               ]
-            }
+            },
+            "description": "Requires owner or vice role in group. Cannot delete house with existing spaces."
           },
           "response": []
         }
@@ -2556,7 +2679,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"houseId\": 1,\n  \"space_name\": \"MyRoom\"\n}",
+              "raw": "{\n  \"houseId\": 1,\n  \"space_name\": \"Living Room\",\n  \"icon_name\": \"room\",\n  \"icon_color\": \"#4A90E2\",\n  \"space_description\": \"Main living room\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2571,7 +2694,8 @@
               "path": [
                 "spaces"
               ]
-            }
+            },
+            "description": "Requires owner or vice role in the group that owns the house"
           },
           "response": []
         },
@@ -2602,22 +2726,17 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/spaces/house/:houseId",
+              "raw": "{{baseUrl}}/spaces/house/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "spaces",
                 "house",
-                ":houseId"
-              ],
-              "variable": [
-                {
-                  "key": "houseId",
-                  "value": "1"
-                }
+                "1"
               ]
-            }
+            },
+            "description": "Any member of the group can view spaces"
           },
           "response": []
         },
@@ -2648,21 +2767,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/spaces/:spaceId",
+              "raw": "{{baseUrl}}/spaces/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "spaces",
-                ":spaceId"
-              ],
-              "variable": [
-                {
-                  "key": "spaceId",
-                  "value": "1"
-                }
+                "1"
               ]
-            }
+            },
+            "description": "Any member of the group can view space details"
           },
           "response": []
         },
@@ -2694,7 +2808,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"space_name\": \"UpdatedRoom\"\n}",
+              "raw": "{\n  \"space_name\": \"Updated Living Room\",\n  \"icon_name\": \"living-room\",\n  \"icon_color\": \"#3366FF\",\n  \"space_description\": \"Updated main living room\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2702,21 +2816,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/spaces/:spaceId",
+              "raw": "{{baseUrl}}/spaces/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "spaces",
-                ":spaceId"
-              ],
-              "variable": [
-                {
-                  "key": "spaceId",
-                  "value": "1"
-                }
+                "1"
               ]
-            }
+            },
+            "description": "Requires owner or vice role in the group that owns the house"
           },
           "response": []
         },
@@ -2745,21 +2854,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/spaces/:spaceId",
+              "raw": "{{baseUrl}}/spaces/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "spaces",
-                ":spaceId"
-              ],
-              "variable": [
-                {
-                  "key": "spaceId",
-                  "value": "1"
-                }
+                "1"
               ]
-            }
+            },
+            "description": "Requires owner or vice role in the group that owns the house"
           },
           "response": []
         },
@@ -2790,22 +2894,17 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/spaces/:spaceId/name",
+              "raw": "{{baseUrl}}/spaces/1/name",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "spaces",
-                ":spaceId",
+                "1",
                 "name"
-              ],
-              "variable": [
-                {
-                  "key": "spaceId",
-                  "value": "1"
-                }
               ]
-            }
+            },
+            "description": "Any member of the group can view space name"
           },
           "response": []
         }
@@ -3943,35 +4042,111 @@
       "name": "Firmware",
       "item": [
         {
-          "name": "Create Firmware",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Firmware created successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.firmware_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
+          "name": "Get Firmware by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}"
               }
-            }
-          ],
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/firmwares/detail/:firmwareId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "firmwares",
+                "detail",
+                ":firmwareId"
+              ]
+            },
+            "description": "Get firmware details by ID"
+          }
+        },
+        {
+          "name": "Get All Firmwares",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/firmwares",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "firmwares"
+              ]
+            },
+            "description": "Get list of all firmwares"
+          }
+        },
+        {
+          "name": "Get Latest Firmware Versions by Template",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/firmwares/latest-version-by-template",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "firmwares",
+                "latest-version-by-template"
+              ]
+            },
+            "description": "Get latest firmware versions for each device template"
+          }
+        },
+        {
+          "name": "Get Firmwares by Template ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/firmwares/by-template/:templateId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "firmwares",
+                "by-template",
+                ":templateId"
+              ]
+            },
+            "description": "Get all firmwares for a specific device template"
+          }
+        },
+        {
+          "name": "Create Firmware",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
+                "value": "Bearer {{employeeAccessToken}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"version\": \"1.0.0\",\n  \"file_path\": \"/firmware/v1.0.0.bin\",\n  \"template_id\": 1,\n  \"is_mandatory\": true,\n  \"note\": \"Initial firmware release\"\n}",
+              "raw": "{\n  \"name\": \"Firmware v1.0\",\n  \"version\": \"1.0.0\",\n  \"file_path\": \"/firmware/v1.0.0.bin\",\n  \"template_id\": \"TEMPLATE001\",\n  \"is_mandatory\": true,\n  \"note\": \"Initial firmware release\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3987,39 +4162,21 @@
                 "firmwares"
               ]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "Update Firmware",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Firmware updated successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.firmware_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
           "request": {
             "method": "PUT",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
+                "value": "Bearer {{employeeAccessToken}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"version\": \"1.0.1\",\n  \"file_path\": \"/firmware/v1.0.1.bin\",\n  \"is_mandatory\": false,\n  \"is_approved\": true,\n  \"tested_at\": \"2025-05-20T12:00:00Z\",\n  \"note\": \"Updated firmware release\"\n}",
+              "raw": "{\n  \"name\": \"Updated Firmware\",\n  \"version\": \"1.0.1\",\n  \"file_path\": \"/firmware/v1.0.1.bin\",\n  \"is_mandatory\": false,\n  \"note\": \"Updated firmware release\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4027,47 +4184,88 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/firmwares/:firmwareId",
+              "raw": "{{baseUrl}}/firmwares/edit/:firmwareId",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "firmwares",
+                "edit",
                 ":firmwareId"
-              ],
-              "variable": [
-                {
-                  "key": "firmwareId",
-                  "value": "1"
-                }
               ]
             }
-          },
-          "response": []
+          }
+        },
+        {
+          "name": "Confirm Firmware By Tester",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/firmwares/confirm-by-tester",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "firmwares",
+                "confirm-by-tester"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firmwareId\": \"FIRMWARE001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Confirm Firmware By RD",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/firmwares/confirm-by-rd",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "firmwares",
+                "confirm-by-rd"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firmwareId\": \"FIRMWARE001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
         },
         {
           "name": "Delete Firmware",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Firmware deleted successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(204);",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
           "request": {
             "method": "DELETE",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
+                "value": "Bearer {{employeeAccessToken}}"
               }
             ],
             "url": {
@@ -4078,101 +4276,9 @@
               "path": [
                 "firmwares",
                 ":firmwareId"
-              ],
-              "variable": [
-                {
-                  "key": "firmwareId",
-                  "value": "1"
-                }
               ]
             }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Firmware by ID",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Firmware retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.firmware_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/firmwares/:firmwareId",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "firmwares",
-                ":firmwareId"
-              ],
-              "variable": [
-                {
-                  "key": "firmwareId",
-                  "value": "1"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get All Firmwares",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Firmwares retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/firmwares",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "firmwares"
-              ]
-            }
-          },
-          "response": []
+          }
         }
       ]
     },
@@ -5794,25 +5900,10 @@
     },
     {
       "name": "Component",
+      "description": "Quản lý linh kiện dùng trong sản xuất",
       "item": [
         {
           "name": "Create Component",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Component created successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.component_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
           "request": {
             "method": "POST",
             "header": [
@@ -5824,7 +5915,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Test Component\",\n  \"supplier\": \"Supplier ABC\",\n  \"quantity_in_stock\": 100,\n  \"unit_cost\": 10.50\n}",
+              "raw": "{\n  \"name\": \"Motor Control Board\",\n  \"supplier\": \"Electronics Ltd\",\n  \"unit_cost\": 15.50,\n  \"status\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5839,28 +5930,68 @@
               "path": [
                 "component"
               ]
-            }
+            },
+            "description": "Tạo mới một linh kiện. Yêu cầu quyền nhân viên."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Component by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/component/:componentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "component",
+                ":componentId"
+              ],
+              "variable": [
+                {
+                  "key": "componentId",
+                  "value": "COMP001"
+                }
+              ]
+            },
+            "description": "Lấy thông tin chi tiết của một linh kiện"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Components",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/component",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "component"
+              ]
+            },
+            "description": "Lấy danh sách tất cả linh kiện"
           },
           "response": []
         },
         {
           "name": "Update Component",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Component updated successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.component_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
           "request": {
             "method": "PUT",
             "header": [
@@ -5872,7 +6003,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Component\",\n  \"supplier\": \"New Supplier\",\n  \"quantity_in_stock\": 150,\n  \"unit_cost\": 12.75\n}",
+              "raw": "{\n  \"name\": \"Updated Motor Board\",\n  \"supplier\": \"New Electronics Ltd\",\n  \"unit_cost\": 18.75,\n  \"status\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5891,29 +6022,16 @@
               "variable": [
                 {
                   "key": "componentId",
-                  "value": "1"
+                  "value": "COMP001"
                 }
               ]
-            }
+            },
+            "description": "Cập nhật thông tin linh kiện"
           },
           "response": []
         },
         {
           "name": "Delete Component",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Component deleted successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(204);",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
           "request": {
             "method": "DELETE",
             "header": [
@@ -5935,89 +6053,11 @@
               "variable": [
                 {
                   "key": "componentId",
-                  "value": "1"
+                  "value": "COMP001"
                 }
               ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Component by ID",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Component retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.component_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/component/:componentId",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "component",
-                ":componentId"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get All Components",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Components retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/component",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "component"
-              ]
-            }
+            },
+            "description": "Xóa một linh kiện (soft delete)"
           },
           "response": []
         }
