@@ -20,6 +20,7 @@ import HouseController from '../controllers/house.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import groupRoleMiddleware from '../middleware/group.middleware';
+import houseGroupMiddleware from '../middleware/house-group.middleware';
 import {houseIdSchema, houseSchema} from "../utils/schemas/house.schema";
 
 const router = Router();
@@ -84,8 +85,9 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
 router.post(
     '/',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(houseSchema),
+    houseGroupMiddleware,
+    groupRoleMiddleware,
     asyncHandler(houseController.createHouse)
 );
 
@@ -139,8 +141,9 @@ router.post(
 router.put(
     '/:houseId',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(houseSchema),
+    houseGroupMiddleware,
+    groupRoleMiddleware,
     asyncHandler(houseController.updateHouse)
 );
 
@@ -195,6 +198,8 @@ router.get(
     '/:houseId',
     authMiddleware,
     validateMiddleware(houseIdSchema),
+    houseGroupMiddleware,
+    groupRoleMiddleware,
     asyncHandler(houseController.getHouseById)
 );
 
@@ -232,8 +237,9 @@ router.get(
 router.delete(
     '/:houseId',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(houseIdSchema),
+    houseGroupMiddleware,
+    groupRoleMiddleware,
     asyncHandler(houseController.deleteHouse)
 );
 
@@ -289,9 +295,9 @@ router.delete(
 router.get(
     '/group/:groupId',
     authMiddleware,
+    groupRoleMiddleware,
     asyncHandler(houseController.getHousesByGroup)
 );
 
 
 export default router;
-
