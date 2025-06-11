@@ -60,7 +60,10 @@ class AuthService {
             { expiresIn: '1h' }
         );
 
-        const response: TokenResponse = { accessToken };
+        const response: TokenResponse = {
+            accessToken,
+            userId: account!.account_id // Thêm userId vào response
+        };
 
         if (rememberMe) {
             const refreshToken = jwt.sign(
@@ -83,9 +86,10 @@ class AuthService {
         return response;
     }
 
-    async loginEmployee({ username, password }: LoginRequestBody, ip?: string, userAgent?: string): Promise<TokenResponse> {
-        const account = await this.prisma.account.findFirst({ where: { username: username } });
-        if (!account!) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Account not found');
+    async loginEmployee(loginData: LoginRequestBody, ip?: string, userAgent?: string): Promise<TokenResponse> {
+        const { username, password } = loginData;
+        const account = await this.prisma.account.findFirst({ where: { username } });
+        if (!account) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Account not found');
 
         if (!account!.password) {
             throwError(ErrorCodes.INVALID_CREDENTIALS, 'Account password not set');
@@ -127,7 +131,11 @@ class AuthService {
         await redisClient.setex(`employee:refresh:${account!.account_id}`, 8 * 60 * 60, refreshToken);
         await redisClient.setex(`employee:session:${account!.account_id}`, 8 * 60 * 60, JSON.stringify(sessionInfo));
 
-        return { accessToken, refreshToken };
+        return {
+            accessToken,
+            refreshToken,
+            userId: account!.account_id // Thêm userId cho consistency với loginUser
+        };
     }
 
     async refreshEmployeeToken(refreshToken: string): Promise<string> {
@@ -163,7 +171,7 @@ class AuthService {
 
     async refreshToken(refreshToken: string): Promise<string> {
         const decoded = jwt.verify(refreshToken, appConfig.jwtSecret) as RefreshTokenPayload;
-        if (decoded.type !== 'refresh') throwError(ErrorCodes.UNAUTHORIZED, 'Invalid refresh token');
+        if (decoded.type !== 'refresh' ) throwError(ErrorCodes.UNAUTHORIZED, 'Invalid refresh token');
 
         const accountId = decoded.userId || decoded.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Invalid refresh token payload');
