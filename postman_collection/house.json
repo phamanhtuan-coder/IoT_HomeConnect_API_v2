@@ -22,26 +22,14 @@
         "request": {
           "method": "POST",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "body": {
             "mode": "raw",
             "raw": "{\n  \"groupId\": 1,\n  \"house_name\": \"MyHouse\",\n  \"address\": \"123 Main St\",\n  \"icon_name\": \"home\",\n  \"icon_color\": \"blue\"\n}",
-            "options": {
-              "raw": {
-                "language": "json"
-              }
-            }
+            "options": { "raw": { "language": "json" } }
           },
-          "url": {
-            "raw": "{{baseUrl}}/houses",
-            "host": ["{{baseUrl}}"],
-            "path": ["houses"]
-          }
+          "url": { "raw": "{{baseUrl}}/houses", "host": ["{{baseUrl}}"], "path": ["houses"] }
         },
         "response": []
       },
@@ -65,22 +53,12 @@
         "request": {
           "method": "GET",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "url": {
-            "raw": "{{baseUrl}}/houses/group/:groupId",
+            "raw": "{{baseUrl}}/houses/group/1",
             "host": ["{{baseUrl}}"],
-            "path": ["houses", "group", ":groupId"],
-            "variable": [
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
+            "path": ["houses", "group", "1"]
           }
         },
         "response": []
@@ -105,22 +83,12 @@
         "request": {
           "method": "GET",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "url": {
-            "raw": "{{baseUrl}}/houses/:houseId",
+            "raw": "{{baseUrl}}/houses/1",
             "host": ["{{baseUrl}}"],
-            "path": ["houses", ":houseId"],
-            "variable": [
-              {
-                "key": "houseId",
-                "value": "1"
-              }
-            ]
+            "path": ["houses", "1"]
           }
         },
         "response": []
@@ -145,32 +113,14 @@
         "request": {
           "method": "PUT",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"groupId\": 1,\n  \"house_name\": \"UpdatedHouse\",\n  \"address\": \"456 Elm St\",\n  \"icon_name\": \"house\",\n  \"icon_color\": \"green\"\n}",
-            "options": {
-              "raw": {
-                "language": "json"
-              }
-            }
+            "raw": "{\n  \"house_name\": \"UpdatedHouse\",\n  \"address\": \"456 Elm St\",\n  \"icon_name\": \"house\",\n  \"icon_color\": \"green\"\n}",
+            "options": { "raw": { "language": "json" } }
           },
-          "url": {
-            "raw": "{{baseUrl}}/houses/:houseId",
-            "host": ["{{baseUrl}}"],
-            "path": ["houses", ":houseId"],
-            "variable": [
-              {
-                "key": "houseId",
-                "value": "1"
-              }
-            ]
-          }
+          "url": { "raw": "{{baseUrl}}/houses/1", "host": ["{{baseUrl}}"], "path": ["houses", "1"] }
         },
         "response": []
       },
@@ -192,26 +142,13 @@
         "request": {
           "method": "DELETE",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
-          "url": {
-            "raw": "{{baseUrl}}/houses/:houseId",
-            "host": ["{{baseUrl}}"],
-            "path": ["houses", ":houseId"],
-            "variable": [
-              {
-                "key": "houseId",
-                "value": "1"
-              }
-            ]
-          }
+          "url": { "raw": "{{baseUrl}}/houses/1", "host": ["{{baseUrl}}"], "path": ["houses", "1"] }
         },
         "response": []
       }
     ]
   }
 ]
+

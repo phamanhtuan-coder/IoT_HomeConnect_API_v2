@@ -61,32 +61,12 @@
       "item": [
         {
           "name": "Login User",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.environment.set('userAccessToken', response.accessToken);",
-                  "pm.environment.set('userRefreshToken', response.refreshToken || pm.environment.get('userRefreshToken'));",
-                  "pm.environment.set('deviceUuid', response.deviceUuid);",
-                  "pm.test('User login successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.accessToken).to.exist;",
-                  "  pm.expect(response.deviceUuid).to.be.a('string');",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
           "request": {
             "method": "POST",
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"rememberMe\": true,\n  \"deviceName\": \"MyDevice\",\n  \"deviceId\": \"device123\",\n  \"deviceUuid\": \"\" // Có thể rỗng lần đầu, hoặc điền UUID từ lần trước\n}",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"rememberMe\": true,\n  \"deviceName\": \"MyDevice\",\n  \"deviceId\": \"device123\",\n  \"deviceUuid\": \"\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -104,38 +84,28 @@
               ]
             }
           },
-          "response": []
-        },
-        {
-          "name": "Login Employee",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "console.log('Login Employee Response:', response);",
-                  "if (response.accessToken) {",
-                  "    pm.environment.set('employeeAccessToken', response.accessToken);",
-                  "    console.log('employeeAccessToken set to:', response.accessToken);",
-                  "} else {",
-                  "    console.log('No accessToken found in response');",
-                  "}",
-                  "if (response.refreshToken) {",
-                  "    pm.environment.set('employeeRefreshToken', response.refreshToken);",
-                  "} else {",
-                  "    console.log('No refreshToken found, keeping existing:', pm.environment.get('employeeRefreshToken'));",
-                  "}",
-                  "pm.test('Employee login successful', () => {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "    pm.expect(response).to.have.property('accessToken').that.is.a('string').and.not.empty;",
+                  "pm.environment.set('userAccessToken', response.accessToken);",
+                  "pm.environment.set('userRefreshToken', response.refreshToken || pm.environment.get('userRefreshToken'));",
+                  "pm.environment.set('deviceUuid', response.deviceUuid);",
+                  "pm.test('User login successful', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.accessToken).to.exist;",
+                  "  pm.expect(response.deviceUuid).to.be.a('string');",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Login Employee",
           "request": {
             "method": "POST",
             "header": [],
@@ -160,26 +130,26 @@
               ]
             }
           },
-          "response": []
-        },
-        {
-          "name": "Register User",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.environment.set('userAccessToken', response.token);",
-                  "pm.test('User registration successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.token).to.exist;",
+                  "if (response.accessToken) pm.environment.set('employeeAccessToken', response.accessToken);",
+                  "if (response.refreshToken) pm.environment.set('employeeRefreshToken', response.refreshToken);",
+                  "pm.test('Employee login successful', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.accessToken).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Register User",
           "request": {
             "method": "POST",
             "header": [],
@@ -203,26 +173,25 @@
               ]
             }
           },
-          "response": []
-        },
-        {
-          "name": "Register Employee",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.test('Employee registration successful', () => {",
+                  "pm.environment.set('userAccessToken', response.accessToken);",
+                  "pm.test('User registration successful', () => {",
                   "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.token).to.exist;",
+                  "  pm.expect(response.accessToken).to.exist;",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Register Employee",
           "request": {
             "method": "POST",
             "header": [
@@ -234,7 +203,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"newadmin\",\n  \"surname\": \"New\",\n  \"lastname\": \"Admin\",\n  \"email\": \"newadmin@example.com\",\n  \"password\": \"admin123\",\n  \"role\": \"admin\",\n  \"phone\": \"0123456789\"\n}",
+              "raw": "{\n  \"username\": \"newadmin\",\n  \"surname\": \"New\",\n  \"lastname\": \"Admin\",\n  \"email\": \"newadmin@example.com\",\n  \"password\": \"admin123\",\n  \"role\": \"ADMIN\",\n  \"phone\": \"0123456789\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -253,75 +222,24 @@
               ]
             }
           },
-          "response": []
-        },
-        {
-          "name": "Update Device Token",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.test('Device token updated successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.message).to.equal('Device token updated successfully');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"deviceToken\": \"newFcmToken123\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/update-device-token",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "update-device-token"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Refresh User Token",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.environment.set('userAccessToken', response.accessToken);",
-                  "pm.test('User token refreshed', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "pm.test('Employee registration successful', () => {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
                   "  pm.expect(response.accessToken).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Refresh User Token",
           "request": {
             "method": "POST",
             "header": [],
@@ -345,26 +263,25 @@
               ]
             }
           },
-          "response": []
-        },
-        {
-          "name": "Refresh Employee Token",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.environment.set('employeeAccessToken', response.accessToken);",
-                  "pm.test('Employee token refreshed', () => {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "    pm.expect(response.accessToken).to.exist;",
+                  "pm.environment.set('userAccessToken', response.accessToken);",
+                  "pm.test('User token refreshed', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.accessToken).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Refresh Employee Token",
           "request": {
             "method": "POST",
             "header": [],
@@ -389,7 +306,22 @@
               ]
             }
           },
-          "response": []
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.environment.set('employeeAccessToken', response.accessToken);",
+                  "pm.test('Employee token refreshed', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.accessToken).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
           "name": "Logout User (Single Device)",
@@ -421,8 +353,7 @@
                 "logout"
               ]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "Logout Employee (Single Device)",
@@ -455,8 +386,7 @@
                 "logout"
               ]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "Logout Multiple Devices",
@@ -489,8 +419,7 @@
                 "multiple"
               ]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "Logout All Devices",
@@ -523,8 +452,149 @@
                 "all"
               ]
             }
-          },
-          "response": []
+          }
+        },
+        {
+          "name": "Update Device Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deviceToken\": \"newFcmToken123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/update-device-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "update-device-token"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Check Email Verification",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/check-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "check-email"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-email"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Recovery Password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"newPassword\": \"newpassword123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/recovery-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "recovery-password"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"surname\": \"Updated\",\n  \"lastname\": \"User\",\n  \"phone\": \"0987654321\",\n  \"email\": \"updateduser@example.com\",\n  \"birthdate\": \"1991-02-02\",\n  \"gender\": false,\n  \"image\": \"http://example.com/avatar.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/update-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "update-profile"
+              ]
+            }
+          }
         }
       ]
     },
@@ -1955,19 +2025,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/groups/:groupId",
+              "raw": "{{baseUrl}}/groups/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "groups",
-                ":groupId"
-              ],
-              "variable": [
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
+                "1"
               ]
             }
           },
@@ -2009,19 +2073,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/groups/:groupId",
+              "raw": "{{baseUrl}}/groups/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "groups",
-                ":groupId"
-              ],
-              "variable": [
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
+                "1"
               ]
             }
           },
@@ -2052,19 +2110,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/groups/:groupId",
+              "raw": "{{baseUrl}}/groups/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "groups",
-                ":groupId"
-              ],
-              "variable": [
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
+                "1"
               ]
             }
           },
@@ -2080,7 +2132,7 @@
                   "const response = pm.response.json();",
                   "pm.test('User added to group successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.group_id).to.exist;",
+                  "  pm.expect(response.user_group_id).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -2098,7 +2150,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"groupId\": 1,\n  \"accountId\": \"user123\",\n  \"role\": \"MEMBER\"\n}",
+              "raw": "{\n  \"groupId\": 1,\n  \"accountId\": \"user123\",\n  \"role\": \"member\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2128,7 +2180,7 @@
                   "const response = pm.response.json();",
                   "pm.test('User role updated successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.group_id).to.exist;",
+                  "  pm.expect(response.user_group_id).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -2146,7 +2198,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"accountId\": \"user123\",\n  \"role\": \"VICE\"\n}",
+              "raw": "{\n  \"accountId\": \"user123\",\n  \"role\": \"vice\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2154,21 +2206,15 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/groups/:groupId/members/role",
+              "raw": "{{baseUrl}}/groups/1/members/role",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "groups",
-                ":groupId",
+                "1",
                 "members",
                 "role"
-              ],
-              "variable": [
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
               ]
             }
           },
@@ -2201,20 +2247,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/groups/:groupId/members",
+              "raw": "{{baseUrl}}/groups/1/members",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "groups",
-                ":groupId",
+                "1",
                 "members"
-              ],
-              "variable": [
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
               ]
             }
           },
@@ -2254,20 +2294,14 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/groups/:groupId/members",
+              "raw": "{{baseUrl}}/groups/1/members",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "groups",
-                ":groupId",
+                "1",
                 "members"
-              ],
-              "variable": [
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
               ]
             }
           },
@@ -2352,20 +2386,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/houses/group/:groupId",
+              "raw": "{{baseUrl}}/houses/group/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "houses",
                 "group",
-                ":groupId"
-              ],
-              "variable": [
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
+                "1"
               ]
             }
           },
@@ -2398,19 +2426,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/houses/:houseId",
+              "raw": "{{baseUrl}}/houses/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "houses",
-                ":houseId"
-              ],
-              "variable": [
-                {
-                  "key": "houseId",
-                  "value": "1"
-                }
+                "1"
               ]
             }
           },
@@ -2444,7 +2466,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"groupId\": 1,\n  \"house_name\": \"UpdatedHouse\",\n  \"address\": \"456 Elm St\",\n  \"icon_name\": \"house\",\n  \"icon_color\": \"green\"\n}",
+              "raw": "{\n  \"house_name\": \"UpdatedHouse\",\n  \"address\": \"456 Elm St\",\n  \"icon_name\": \"house\",\n  \"icon_color\": \"green\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2452,19 +2474,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/houses/:houseId",
+              "raw": "{{baseUrl}}/houses/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "houses",
-                ":houseId"
-              ],
-              "variable": [
-                {
-                  "key": "houseId",
-                  "value": "1"
-                }
+                "1"
               ]
             }
           },
@@ -2495,19 +2511,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/houses/:houseId",
+              "raw": "{{baseUrl}}/houses/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "houses",
-                ":houseId"
-              ],
-              "variable": [
-                {
-                  "key": "houseId",
-                  "value": "1"
-                }
+                "1"
               ]
             }
           },

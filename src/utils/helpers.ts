@@ -30,7 +30,7 @@ export const generateDeviceId = () => generateUlidId("IOTD");
 export const generateFirmwareId = () => generateUlidId("FIRM");
 export const generateComponentId = () => generateUlidId("COMP");
 export const generatePlanningId = () => generateUlidId("PLAN");
-export const generateBatchId = () => generateUlidId("BATCH");
+export const generateBatchId = () => generateUlidId("BTCH");
 export const generateTemplateId = () => generateUlidId("DEVC");
 export const generateTicketId = () => generateUlidId("TICK");
 
