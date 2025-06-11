@@ -17,7 +17,8 @@ export class UserDeviceService {
         if (!account) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
 
         const isEmployee = account!.employee_id !== null;
-        const maxDevices = isEmployee ? 1 : 5;
+        // Cập nhật giới hạn thiết bị cho nhân viên từ 1 lên 5
+        const maxDevices = 5;
 
         const deviceCount = await this.prisma.user_devices.count({
             where: { user_id: accountId, is_deleted: false },
