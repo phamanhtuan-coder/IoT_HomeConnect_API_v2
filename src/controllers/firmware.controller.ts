@@ -103,7 +103,7 @@ class FirmwareController {
     getFirmwaresByTemplateId = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { templateId } = req.params;
-            const firmwares = await this.firmwareService.getFirmwaresByTemplateId(parseInt(templateId));
+            const firmwares = await this.firmwareService.getFirmwaresByTemplateId(templateId);
             res.json(firmwares);
         } catch (error) {
             next(error);
