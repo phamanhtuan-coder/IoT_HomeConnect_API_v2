@@ -10,7 +10,7 @@ export enum GroupRole {
     OWNER = 'owner',
     VICE = 'vice',
     ADMIN = 'admin',
-    MEMBER = 'member',
+    MEMBER = 'member'
 }
 
 /**
@@ -37,12 +37,13 @@ export const GROUP_EDIT_ROLES = [GroupRole.OWNER];
 export interface Group {
     group_id: number;
     group_name: string;
+    group_description?: string | null;
     icon_name?: string | null;
     icon_color?: string | null;
-    group_description?: string | null;
-    created_at: Date | null;
-    updated_at: Date | null;
-    is_deleted: boolean | null;
+    created_at?: Date | null;
+    updated_at?: Date | null;
+    is_deleted?: boolean | null;
+    role?: GroupRole;  // Thêm role để trả về vai trò của user trong group
 }
 
 /**
@@ -87,4 +88,12 @@ export interface GroupMember {
     email: string | null;
     full_name: string | null;
     avatar: string | null;
+}
+
+/**
+ * Giao diện GroupWithRole mở rộng từ Group, bao gồm cả vai trò của người dùng trong nhóm.
+ * @property {GroupRole} role - Vai trò của người dùng trong nhóm.
+ */
+export interface GroupWithRole extends Omit<Group, 'role'> {
+    role: GroupRole;  // Make role required in this interface
 }

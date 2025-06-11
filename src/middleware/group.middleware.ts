@@ -8,32 +8,62 @@ const prisma = new PrismaClient();
 /**
  * Middleware kiểm tra vai trò của người dùng trong một nhóm.
  *
- * - Lấy `groupId` từ params hoặc body, và `accountId` từ thông tin user.
- * - Nếu thiếu thông tin xác thực hoặc groupId không hợp lệ, trả về lỗi tương ứng.
- * - Truy vấn bảng `user_groups` để xác định vai trò của user trong nhóm.
- * - Nếu user không phải thành viên nhóm hoặc không có vai trò, trả về lỗi FORBIDDEN.
- * - Nếu thành công, gán vai trò vào `req.groupRole` và gọi `next()`.
- *
- * @param req Request từ Express, yêu cầu phải có user đã xác thực.
- * @param res Response từ Express.
- * @param next Hàm next để chuyển sang middleware tiếp theo hoặc xử lý lỗi.
+ * - Lấy `groupId` từ params hoặc body
+ * - Lấy `accountId` từ thông tin user đã xác thực
+ * - Kiểm tra user có trong nhóm không và role của họ
+ * - Thêm role vào request nếu hợp lệ
  */
 export const groupRoleMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-    const groupId = parseInt(req.params.groupId || req.body.groupId, 10);
-    const accountId = req.user?.userId || req.user?.employeeId;
-
-    if (!accountId) return next(AppError.create(ErrorCodes.UNAUTHORIZED, 'User not authenticated'));
-    if (!groupId || isNaN(groupId)) return next(AppError.create(ErrorCodes.BAD_REQUEST, 'Valid Group ID is required'));
-
     try {
-        const userGroup = await prisma.user_groups.findFirst({
-            where: { group_id: groupId, account_id: accountId, is_deleted: false },
-        });
+        // Lấy groupId từ params hoặc body
+        const groupId = parseInt(req.params.groupId || req.body.groupId, 10);
+        const accountId = req.user?.userId || req.user?.employeeId;
 
-        if (!userGroup || !userGroup.role) {
+        // Validate input
+        if (!accountId) {
+            return next(AppError.create(ErrorCodes.UNAUTHORIZED, 'User not authenticated'));
+        }
+        if (!groupId || isNaN(groupId)) {
+            return next(AppError.create(ErrorCodes.BAD_REQUEST, 'Valid Group ID is required'));
+        }
+
+        // Kiểm tra group và user_group
+        const [group, userGroup] = await Promise.all([
+            prisma.groups.findFirst({
+                where: {
+                    group_id: groupId,
+                    is_deleted: false
+                }
+            }),
+            prisma.user_groups.findFirst({
+                where: {
+                    group_id: groupId,
+                    account_id: accountId,
+                    is_deleted: false
+                },
+                select: {
+                    role: true,
+                    is_deleted: true
+                }
+            })
+        ]);
+
+        // Validate group tồn tại
+        if (!group) {
+            return next(AppError.create(ErrorCodes.NOT_FOUND, 'Group not found or has been deleted'));
+        }
+
+        // Validate user membership
+        if (!userGroup || userGroup.is_deleted) {
             return next(AppError.create(ErrorCodes.FORBIDDEN, 'User is not a member of this group'));
         }
 
+        // Validate role
+        if (!userGroup.role) {
+            return next(AppError.create(ErrorCodes.FORBIDDEN, 'User has no role in this group'));
+        }
+
+        // Thêm role vào request để các middleware/controller sau có thể sử dụng
         req.groupRole = userGroup.role as GroupRole;
         next();
     } catch (error) {

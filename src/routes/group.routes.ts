@@ -206,4 +206,89 @@ router.get(
     asyncHandler(groupController.getUsersInGroup)
 );
 
+/**
+ * Lấy role của user trong một group cụ thể.
+ * @swagger
+ * /api/groups/role/{groupId}:
+ *   get:
+ *     tags:
+ *       - Group
+ *     summary: Lấy role của user trong group
+ *     description: Lấy vai trò của người dùng hiện tại trong một nhóm cụ thể
+ *     security:
+ *       - UserBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: groupId
+ *         required: true
+ *         type: string
+ *         description: ID của nhóm cần kiểm tra role
+ *     responses:
+ *       200:
+ *         description: Trả về role của user trong group
+ *         schema:
+ *           type: object
+ *           properties:
+ *             role:
+ *               type: string
+ *               enum: [owner, vice, admin, member]
+ *               description: Vai trò của user trong group
+ */
+router.get(
+    '/role/:groupId',
+    authMiddleware,
+    validateMiddleware(groupIdSchema),
+    groupController.getUserGroupRole
+);
+
+/**
+ * Lấy danh sách group mà user là owner.
+ * @swagger
+ * /api/groups/owned:
+ *   get:
+ *     tags:
+ *       - Group
+ *     summary: Lấy danh sách group của user là chủ sở hữu
+ *     description: Lấy tất cả các nhóm mà người dùng hiện tại là chủ sở hữu (owner)
+ *     security:
+ *       - UserBearer: []
+ *     responses:
+ *       200:
+ *         description: Trả về danh sách các group
+ *         schema:
+ *           type: array
+ *           items:
+ *             $ref: '#/definitions/GroupWithRole'
+ */
+router.get(
+    '/owned',
+    authMiddleware,
+    groupController.getOwnedGroups
+);
+
+/**
+ * Lấy danh sách group mà user là member (bao gồm vice, admin, member).
+ * @swagger
+ * /api/groups/member:
+ *   get:
+ *     tags:
+ *       - Group
+ *     summary: Lấy danh sách group của user là thành viên
+ *     description: Lấy tất cả các nhóm mà người dùng hiện tại là thành viên (vice, admin, member)
+ *     security:
+ *       - UserBearer: []
+ *     responses:
+ *       200:
+ *         description: Trả về danh sách các group
+ *         schema:
+ *           type: array
+ *           items:
+ *             $ref: '#/definitions/GroupWithRole'
+ */
+router.get(
+    '/member',
+    authMiddleware,
+    groupController.getMemberGroups
+);
+
 export default router;
