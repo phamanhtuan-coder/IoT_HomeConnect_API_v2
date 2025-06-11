@@ -17,6 +17,7 @@ class SpaceService {
         space_description?: string;
     }): Promise<Space> {
         const { houseId, space_name, icon_name, icon_color, space_description } = input;
+        const now = new Date();
 
         const space = await this.prisma.spaces.create({
             data: {
@@ -24,20 +25,22 @@ class SpaceService {
                 space_name,
                 icon_name,
                 icon_color,
-                space_description
+                space_description,
+                created_at: now,
+                updated_at: now
             },
         });
 
         return {
             ...space,
-            house_id: space!.house_id || null,
-            space_name: space!.space_name,
-            icon_name: space!.icon_name || null,
-            icon_color: space!.icon_color || null,
-            space_description: space!.space_description || null,
-            created_at: space!.created_at || null,
-            updated_at: space!.updated_at || null,
-            is_deleted: space!.is_deleted || null,
+            house_id: space.house_id || null,
+            space_name: space.space_name,
+            icon_name: space.icon_name || null,
+            icon_color: space.icon_color || null,
+            space_description: space.space_description || null,
+            created_at: space.created_at || null,
+            updated_at: space.updated_at || null,
+            is_deleted: space.is_deleted || null,
         };
     }
 
