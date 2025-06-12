@@ -16,7 +16,10 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     createFirmware = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = 'admin123';
+        const employeeId = req.user?.employeeId;
+        console.log("nhân viên", employeeId)
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+
         try {
             const firmware = await this.firmwareService.createFirmware(req.body, employeeId);
             res.status(201).json(firmware);
@@ -70,11 +73,15 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     getFirmwareById = async (req: Request, res: Response, next: NextFunction) => {
+        const employeeId = req.user?.employeeId;
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+
         try {
             const { firmwareId } = req.params;
             const firmware = await this.firmwareService.getFirmwareById(firmwareId);
-            res.json(firmware);
+            res.status(200).json(firmware);
         } catch (error) {
+            console.log("err",error)
             next(error);
         }
     };

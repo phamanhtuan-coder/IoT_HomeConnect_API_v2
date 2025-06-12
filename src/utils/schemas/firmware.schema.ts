@@ -15,9 +15,9 @@ export const firmwareSchema = z.object({
             required_error: 'Đường dẫn file là bắt buộc',
             invalid_type_error: 'Đường dẫn file phải là chuỗi'
         }),
-        template_id: z.number({
+        template_id: z.string({
             required_error: 'ID template là bắt buộc',
-            invalid_type_error: 'ID template phải là số'
+            invalid_type_error: 'ID template phải là chuỗi'
         }),
         is_mandatory: z.boolean().optional(),
         note: z.string().optional()
@@ -55,9 +55,7 @@ export const updateFirmwareSchema = z.object({
 // Schema cho việc xác thực firmware ID
 export const firmwareIdSchema = z.object({
     params: z.object({
-        firmwareId: z.string()
-            .transform((val) => parseInt(val))
-            .refine((val) => val > 0, 'ID firmware phải là số dương')
+        firmwareId: z.string().optional()
     })
 });
 

@@ -108,10 +108,23 @@ class FirmwareService {
         console.log("Test")
         const { version, name, file_path, template_id, is_mandatory, note } = input;
 
-        const employee = await this.prisma.employee.findFirst({
-            where: { employee_id: employeeId, deleted_at: null },
+        console.log("input",input)
+
+        const account = await this.prisma.account.findFirst({
+            where: { 
+                account_id: employeeId, 
+                deleted_at: null 
+            },
+            include: {
+                employee: {
+                    select: {
+                        surname: true,
+                        lastname: true,
+                    }
+                }
+            }
         });
-        if (!employee) throwError(ErrorCodes.NOT_FOUND, 'Nhân viên không tồn tại');
+        if (!account) throwError(ErrorCodes.NOT_FOUND, 'Nhân viên không tồn tại');
 
         const template = await this.prisma.device_templates.findFirst({
             where: { template_id: template_id, is_deleted: false },
@@ -139,7 +152,7 @@ class FirmwareService {
         const newLog = {
             log_type: LogType.CREATE,
             log_message: note || 'Firmware đã được tạo mới thành công',
-            employee: employee?.surname + ' ' + employee?.lastname,
+            employee: account?.employee?.surname + ' ' + account?.employee?.lastname,
             created_at: new Date(),
         };
 
@@ -168,7 +181,7 @@ class FirmwareService {
         });
 
         if (is_mandatory) {
-            await this.updateFirmwares(template_id, firmware.firmware_id, employee);
+            await this.updateFirmwares(template_id, firmware.firmware_id, account);
         }
 
         return {

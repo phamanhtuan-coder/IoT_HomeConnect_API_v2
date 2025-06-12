@@ -95,7 +95,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  */
 router.get(
     '/detail/:firmwareId',
-    // authMiddleware,
+    authMiddleware,
     validateMiddleware(firmwareIdSchema),
     asyncHandler(firmwareController.getFirmwareById)
 );
@@ -220,7 +220,7 @@ router.get(
  */
 router.post(
     '/',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     validateMiddleware(firmwareSchema),
     asyncHandler(firmwareController.createFirmware)

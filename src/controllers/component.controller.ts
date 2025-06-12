@@ -107,6 +107,8 @@ class ComponentController {
             const { componentId } = req.params;
             const component: Component = await this.componentService.updateComponent(componentId, req.body);
 
+            console.log("component",component)
+
             const response: ComponentResponse = {
                 success: 200,
                 data: component,
@@ -115,6 +117,7 @@ class ComponentController {
 
             res.status(200).json(response);
         } catch (error) {
+            console.log("error",error)
             next(error);
         }
     };
