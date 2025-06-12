@@ -58,9 +58,15 @@ export class PlanningService {
         const planning = await this.prisma.planning.findFirst({
             where: {
                 planning_id: planningId,
-                // is_deleted: false
             },
             include: {
+                account: {
+                    include: {
+                        employee: {
+                            select: { surname: true, lastname: true }
+                        }
+                    }
+                },
                 production_batches: {
                     where: {},
                     include: {
@@ -71,11 +77,9 @@ export class PlanningService {
                                         firmware_id: true,
                                         name: true,
                                         version: true
-
                                     }
                                 }
                             }
-
                         },
                         production_tracking: true
                     }
@@ -87,16 +91,29 @@ export class PlanningService {
             throwError(ErrorCodes.NOT_FOUND, 'Planning not found');
         }
 
-        return planning as Planning;
+        const creatorName = planning?.account?.employee
+            ? `${planning.account.employee.surname} ${planning.account.employee.lastname}`.trim()
+            : planning?.account?.username || '';
+
+        return {
+            ...planning,
+            created_by: creatorName
+        } as Planning;
     }
 
     async getAllPlannings(): Promise<Planning[]> {
         const plannings = await this.prisma.planning.findMany({
             where: {
                 // is_deleted: false,
-
             },
             include: {
+                account: {
+                    include: {
+                        employee: {
+                            select: { surname: true, lastname: true }
+                        }
+                    }
+                },
                 production_batches: {
                     where: {},
                     include: {
@@ -107,7 +124,6 @@ export class PlanningService {
                                         firmware_id: true,
                                         name: true,
                                         version: true
-
                                     }
                                 }
                             }
@@ -117,10 +133,27 @@ export class PlanningService {
             },
             orderBy: { created_at: 'desc' }
         });
-        return plannings;
+
+        // Map lại để trả về created_by là tên người tạo
+        return plannings.map(planning => {
+            const creatorName = planning.account?.employee
+                ? `${planning.account.employee.surname} ${planning.account.employee.lastname}`.trim()
+                : planning.account?.username || '';
+            return {
+                ...planning,
+                created_by: creatorName
+            } as Planning;
+        });
     }
 
     async approvePlanning(planningId: string, data: PlanningApprovalInput, employeeId: string): Promise<Planning> {
+        const account = await this.prisma.account.findFirst({
+            where: { account_id: employeeId },
+            include: { employee: { select: { surname: true, lastname: true } } }
+        });
+        const approverName = account?.employee
+            ? `${account.employee.surname} ${account.employee.lastname}`.trim()
+            : account?.username || '';
         const planning = await this.prisma.planning.findFirst({
             where: {
                 planning_id: planningId,
@@ -151,6 +184,7 @@ export class PlanningService {
                     [data.status]: {
                         timestamp: new Date(),
                         employee_id: employeeId,
+                        creator_name: approverName,
                         action: data.status,
                         notes: data.notes
                     }
@@ -171,6 +205,7 @@ export class PlanningService {
                         approved: {
                             timestamp: new Date(),
                             employee_id: employeeId,
+                            creator_name: approverName,
                             action: 'approved',
                             notes: data.notes
                         }
@@ -193,6 +228,7 @@ export class PlanningService {
                             rejected: {
                                 timestamp: new Date(),
                                 employee_id: employeeId,
+                                creator_name: approverName,
                                 action: 'rejected',
                                 notes: data.notes
                             }
@@ -212,6 +248,7 @@ export class PlanningService {
                             rejected: {
                                 timestamp: new Date(),
                                 employee_id: employeeId,
+                                creator_name: approverName,
                                 action: 'rejected',
                                 notes: data.notes
                             }
@@ -267,6 +304,16 @@ export class PlanningService {
     // src/services/planning.service.ts
     async createPlanningWithBatches(planningData: PlanningCreateInput, batches: BatchCreateInput[], employeeId: string): Promise<any> {
         return this.prisma.$transaction(async (prisma) => {
+
+            const account = await prisma.account.findFirst({
+                where: { account_id: employeeId },
+                include: {
+                    employee: { select: { surname: true, lastname: true } }
+                }
+            });
+            const approverName = account?.employee
+                ? `${account.employee.surname} ${account.employee.lastname}`.trim()
+                : account?.username || '';
             // 1. Tạo planning với ID mới
             let planning_id: string;
             let attempts = 0;
@@ -292,6 +339,7 @@ export class PlanningService {
                         created: {
                             timestamp: new Date().toISOString(),
                             employee_id: employeeId,
+                            creator_name: approverName,
                             action: 'created',
                             details: JSON.parse(JSON.stringify(planningData))
                         }
@@ -348,6 +396,7 @@ export class PlanningService {
                             created: {
                                 timestamp: new Date().toISOString(),
                                 employee_id: employeeId,
+                                creator_name: approverName,
                                 action: 'created',
                                 details: {
                                     ...JSON.parse(JSON.stringify(batchData)),
