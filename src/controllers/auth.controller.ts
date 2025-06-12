@@ -99,8 +99,8 @@ class AuthController {
     loginEmployee = async (req: Request, res: Response, next: NextFunction) => {
         const { username, password } = req.body;
         try {
-            return await this.authService.loginEmployee({ username, password });
-
+            const result = await this.authService.loginEmployee({ username, password });
+            res.status(200).json(result);
         } catch (error) {
             next(error);
         }
