@@ -60,7 +60,10 @@ class AuthService {
             { expiresIn: '1h' }
         );
 
-        const response: TokenResponse = { accessToken };
+        const response: TokenResponse = { 
+            accessToken,
+            userId: account!.account_id 
+        };
 
         if (rememberMe) {
             const refreshToken = jwt.sign(
