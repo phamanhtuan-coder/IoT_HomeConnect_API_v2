@@ -1,6 +1,7 @@
 import { get_error_response } from './response.helper';
 import QueryHelper from './query.helper';
 import { PrismaClient } from '@prisma/client';
+import queryHelper from './query.helper';
 
 interface FilterCondition {
     field: string;
@@ -32,7 +33,6 @@ interface SelectDataResult {
     data: any[];
     total_page: number;
 }
-
 function buildWhereQuery(filter: Filter | Filter[] | null, table: string): string {
     if (!filter) {
         return `WHERE ${table}.deleted_at IS NULL`;
@@ -94,13 +94,13 @@ function buildWhereQuery(filter: Filter | Filter[] | null, table: string): strin
     if (Array.isArray(filter)) {
         const conditions = filter.map(parseFilter).filter(Boolean);
         whereClause = conditions.length > 0
-            ? `WHERE ${conditions.join(' AND ')} AND ${table}.deleted_at IS NULL`
-            : `WHERE ${table}.deleted_at IS NULL`;
+            ? `WHERE ${conditions.join(' AND ')} AND ${table}.is_deleted IS False`
+            : `WHERE ${table}.is_deleted IS False`;
     } else {
         const condition = parseFilter(filter);
         whereClause = condition
-            ? `WHERE ${condition} AND ${table}.deleted_at IS NULL`
-            : `WHERE ${table}.deleted_at IS NULL`;
+            ? `WHERE ${condition} AND ${table}.is_deleted IS False`
+            : `WHERE ${table}.is_deleted IS False`;
     }
 
     return whereClause;
@@ -132,7 +132,11 @@ async function executeSelectData(params: SelectDataParams): Promise<SelectDataRe
     const buildLimit = parsedLimit ? `LIMIT ${parsedLimit}` : '';
     const buildOffset = skip ? `OFFSET ${skip}` : '';
 
-    const idColumn = table === 'categories' ? 'category_id' : 'id';
+    let idColumn = table === 'categories' ? 'category_id' : 'id';
+
+    if (table === 'production_batches') {
+        idColumn = 'batch_id';
+    }
 
     const queryGetIdTable = `
         SELECT DISTINCT ${idColumn}
@@ -146,7 +150,7 @@ async function executeSelectData(params: SelectDataParams): Promise<SelectDataRe
             ${buildOffset}
         ) AS sub
     `;
-
+    console.log('queryGetIdTable', queryGetIdTable);
     const idResult = await QueryHelper.queryRaw<Record<string, any>>(queryGetIdTable);
     const resultIds = idResult
         .map(row => row[idColumn])
@@ -156,7 +160,7 @@ async function executeSelectData(params: SelectDataParams): Promise<SelectDataRe
         ? `${table}.${idColumn} IN (${resultIds.map(id => typeof id === 'string' ? `'${id}'` : id).join(',')})`
         : '1=0';
 
-    const queryGetTime = `${table}.created_at, ${table}.updated_at, ${table}.deleted_at`;
+    const queryGetTime = `${table}.created_at, ${table}.updated_at`;
 
     const queryPrimary = `
         SELECT DISTINCT ${queryJoin ? `${table}.` : ''}${idColumn}, ${strGetColumn}, ${queryGetTime}
@@ -166,7 +170,7 @@ async function executeSelectData(params: SelectDataParams): Promise<SelectDataRe
         ${buildSort}
     `;
 
-    let data = await QueryHelper.queryRaw(queryPrimary);
+    let data = await queryHelper.queryRaw(queryPrimary);
     if (configData && typeof configData === 'function') {
         data = configData(data);
     }
@@ -212,3 +216,7 @@ async function check_reference_existence(
     return null;
 }
 
+export {
+    executeSelectData,
+    check_reference_existence
+}

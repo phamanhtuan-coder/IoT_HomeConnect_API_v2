@@ -13,7 +13,7 @@ import ComponentController from '../controllers/component.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
-import { componentSchema, componentIdSchema, updateComponentSchema } from '../utils/schemas/component.schema';
+import { ComponentCreateSchema, ComponentIdSchema, ComponentUpdateSchema } from '../utils/schemas/component.schema';
 
 const router = Router();
 const componentController = new ComponentController();
@@ -77,9 +77,9 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  */
 router.post(
     '/',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
-    validateMiddleware(componentSchema),
+    validateMiddleware(ComponentCreateSchema),
     asyncHandler(componentController.createComponent)
 );
 
@@ -113,9 +113,9 @@ router.post(
  */
 router.get(
     '/:componentId',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
-    validateMiddleware(componentIdSchema),
+    validateMiddleware(ComponentIdSchema),
     asyncHandler(componentController.getComponentById)
 );
 
@@ -141,7 +141,7 @@ router.get(
  */
 router.get(
     '/',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     asyncHandler(componentController.getAllComponents)
 );
@@ -202,10 +202,10 @@ router.get(
  */
 router.put(
     '/:componentId',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
-    validateMiddleware(componentIdSchema),
-    validateMiddleware(updateComponentSchema),
+    validateMiddleware(ComponentIdSchema),
+    validateMiddleware(ComponentUpdateSchema),
     asyncHandler(componentController.updateComponent)
 );
 
@@ -239,9 +239,9 @@ router.put(
  */
 router.delete(
     '/:componentId',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
-    validateMiddleware(componentIdSchema),
+    validateMiddleware(ComponentIdSchema),
     asyncHandler(componentController.deleteComponent)
 );
 
