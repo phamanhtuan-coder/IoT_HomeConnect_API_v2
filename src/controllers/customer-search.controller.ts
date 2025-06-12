@@ -19,7 +19,7 @@ export class CustomerSearchController {
             const filters = {
                 email: req.query.email as string,
                 phone: req.query.phone as string,
-                name: req.query.name as string,
+           
                 customerId: req.query.customerId as string,
                 username: req.query.username as string,
                 deviceType: req.query.deviceType as string | number,
