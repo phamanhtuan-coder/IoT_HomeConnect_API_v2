@@ -96,7 +96,7 @@ export const DeviceTemplateListSchema = z.object({
     })
 });
 
-export const approveDeviceTemplateSchema = z.object({
+export const ApproveDeviceTemplateSchema = z.object({
     params: z.object({
         templateId: z.string(),
         status: z.string().optional(),
@@ -109,3 +109,4 @@ export type DeviceTemplateUpdateInput = z.infer<typeof DeviceTemplateUpdateSchem
 export type DeviceTemplateIdParam = z.infer<typeof DeviceTemplateIdSchema>['params'];
 export type DeviceTemplateListQuery = z.infer<typeof DeviceTemplateListSchema>['query'];
 export type ComponentInput = z.infer<typeof ComponentSchema>;
+export type ApproveDeviceTemplateInput = z.infer<typeof ApproveDeviceTemplateSchema>['params'];

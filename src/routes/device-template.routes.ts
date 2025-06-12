@@ -10,7 +10,7 @@ import DeviceTemplateController from '../controllers/device-template.controller'
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
-import { DeviceTemplateCreateSchema, DeviceTemplateIdSchema, DeviceTemplateUpdateSchema, approveDeviceTemplateSchema } from '../utils/schemas/device-template.schema';
+import { DeviceTemplateCreateSchema, DeviceTemplateIdSchema, DeviceTemplateUpdateSchema, ApproveDeviceTemplateSchema } from '../utils/schemas/device-template.schema';
 
 const router = Router();
 const deviceTemplateController = new DeviceTemplateController();
@@ -97,7 +97,7 @@ router.put(
     '/approveDevice/:templateId',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(approveDeviceTemplateSchema),
+    validateMiddleware(ApproveDeviceTemplateSchema),
     asyncHandler(deviceTemplateController.approveDeviceTemplate)
 );
 

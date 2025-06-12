@@ -420,10 +420,18 @@ class FirmwareService {
         console.log(firmwareId)
         console.log(employeeId)
         console.log(testResult)
-        const employee = await this.prisma.account.findFirst({
+        const account = await this.prisma.account.findFirst({
             where: { employee_id: employeeId, deleted_at: null },
+            include: {
+                employee: {
+                    select: {
+                        surname: true,
+                        lastname: true,
+                    }
+                }
+            }
         });
-        if (!employee) throwError(ErrorCodes.NOT_FOUND, 'Nhân viên không tồn tại');
+        if (!account) throwError(ErrorCodes.NOT_FOUND, 'Nhân viên không tồn tại');
 
         const firmware = await this.prisma.firmware.findFirst({
             where: { firmware_id: firmwareId, is_deleted: false },
@@ -438,7 +446,7 @@ class FirmwareService {
             log_type: testResult ? LogType.TESTER_CONFIRM : LogType.TEST_FAILED,
             log_message: 'Firmware đã được xác nhận bởi tester',
             employee_id: employeeId,
-            employee: employee?.surname + ' ' + employee?.lastname,
+            employee: account?.employee?.surname + ' ' + account?.employee?.lastname,
             created_at: new Date(),
         };
 

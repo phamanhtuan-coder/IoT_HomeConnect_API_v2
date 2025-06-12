@@ -189,7 +189,9 @@ class AuthController {
             const result = await this.authService.loginEmployee({
                 username,
                 password
-            }, req.ip || 'unknown', req.headers['user-agent'] || 'unknown');
+            },
+                // req.ip || 'unknown', req.headers['user-agent'] || 'unknown'
+            );
 
             return res.status(200).json(result);
         } catch (error) {
