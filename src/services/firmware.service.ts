@@ -203,10 +203,10 @@ class FirmwareService {
         });
         if (!firmware) throwError(ErrorCodes.NOT_FOUND, 'Firmware not found');
 
-        const employee = await this.prisma.employee.findFirst({
-            where: { employee_id: employeeId, deleted_at: null },
+        const account = await this.prisma.account.findFirst({
+            where: { account_id: employeeId, deleted_at: null },
         });
-        if (!employee) throwError(ErrorCodes.NOT_FOUND, 'Nhân viên không tồn tại');
+        if (!account) throwError(ErrorCodes.NOT_FOUND, 'Nhân viên không tồn tại');
 
         const template = await this.prisma.device_templates.findFirst({
             where: { template_id: input.template_id, is_deleted: false },
@@ -257,7 +257,7 @@ class FirmwareService {
         });
 
         if (input.is_mandatory && input.is_mandatory !== firmware!.is_mandatory) {
-            await this.updateFirmwares(input.template_id, firmwareId, employee);
+            await this.updateFirmwares(input.template_id, firmwareId, account);
         }
 
             return {
@@ -285,16 +285,27 @@ class FirmwareService {
         });
         if (productionBatches) throwError(ErrorCodes.CONFLICT, 'Không thể xoá firmware đang được sử dụng bởi các lô sản phẩm');
 
-        const employee = await this.prisma.employee.findFirst({
-            where: { employee_id: employeeId, deleted_at: null },
+        const account = await this.prisma.account.findFirst({
+            where: { 
+                account_id: employeeId, 
+                deleted_at: null 
+            },
+            include: {
+                employee: {
+                    select: {
+                        surname: true,
+                        lastname: true,
+                    }
+                }
+            }
         });
-        if (!employee) throwError(ErrorCodes.NOT_FOUND, 'Nhân viên không tồn tại');
+        if (!account) throwError(ErrorCodes.NOT_FOUND, 'Nhân viên không tồn tại');
 
         const newLog = {
             log_type: LogType.DELETE,
             log_message: 'Firmware đã được xoá',
             employee_id: employeeId,
-            employee: employee?.surname + ' ' + employee?.lastname,
+            employee: account?.employee?.surname + ' ' + account?.employee?.lastname,
             created_at: new Date(),
         };
 
@@ -302,9 +313,13 @@ class FirmwareService {
             where: { firmware_id: firmwareId },
             data: {
                 is_deleted: true, updated_at: new Date(),
-                logs: [...(firmware?.logs as any), newLog]
+                logs: [ ...(Array.isArray(firmware?.logs) ? firmware.logs : []), newLog ]
             },
         });
+
+        return {
+            success: true
+        };
     }
 
     async getFirmwareById(firmwareId:string): Promise<any> {
@@ -416,7 +431,7 @@ class FirmwareService {
         console.log(employeeId)
         console.log(testResult)
         const account = await this.prisma.account.findFirst({
-            where: { employee_id: employeeId, deleted_at: null },
+            where: { account_id: employeeId, deleted_at: null },
             include: {
                 employee: {
                     select: {
@@ -449,7 +464,7 @@ class FirmwareService {
             where: { firmware_id: firmwareId },
             data: {
                 tested_at: testResult ? new Date() : null,
-                logs: [...(firmware?.logs as any), newLog],
+                logs: [ ...(Array.isArray(firmware?.logs) ? firmware.logs : []), newLog ]
                 },
         });
 
@@ -460,10 +475,18 @@ class FirmwareService {
     }
 
     async confirmFirmwareByRD(firmwareId: string, employeeId: string, testResult: boolean): Promise<any> {
-        const employee = await this.prisma.employee.findUnique({
-            where: { employee_id: employeeId, deleted_at: null },
+        const account = await this.prisma.account.findFirst({
+            where: { account_id: employeeId, deleted_at: null },
+            include: {
+                employee: {
+                    select: {
+                        surname: true,
+                        lastname: true,
+                    }
+                }
+            }
         });
-        if (!employee) throwError(ErrorCodes.NOT_FOUND, 'Nhân viên không tồn tại');
+        if (!account) throwError(ErrorCodes.NOT_FOUND, 'Nhân viên không tồn tại');
 
         const firmware = await this.prisma.firmware.findUnique({
             where: { firmware_id: firmwareId, is_deleted: false },
@@ -478,7 +501,7 @@ class FirmwareService {
             log_type: testResult ? LogType.RD_CONFIRM : LogType.RD_FAILED,
             log_message: 'Firmware đã được xác nhận bởi RD',
             employee_id: employeeId,
-            employee: employee?.surname + ' ' + employee?.lastname,
+            employee: account?.employee?.surname + ' ' + account?.employee?.lastname,
             created_at: new Date(),
         };
 

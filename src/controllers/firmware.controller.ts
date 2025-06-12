@@ -54,14 +54,13 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     deleteFirmware = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = 'admin123';
+        const employeeId = req.user?.employeeId;
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
             const { firmwareId } = req.params;
             const response = await this.firmwareService.deleteFirmware(firmwareId, employeeId);
-            
-            console.log('response', response)
-            res.status(204).json(response);
+            res.status(200).json(response);
         } catch (error) {
             next(error);
         }
@@ -125,12 +124,15 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     confirmFirmwareByTester = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = 'admin123';
+        const employeeId = req.user?.employeeId;
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+
         try {
             const response = await this.firmwareService.confirmFirmwareByTester(req.body.firmwareId, employeeId, req.body.testResult);
-            
+            console.log("response",response)
             res.status(200).json(response);
         } catch (error) {
+            console.log("err",error)
             next(error);
         }
     };
@@ -142,7 +144,9 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     confirmFirmwareByRD = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = 'admin123';
+        const employeeId = req.user?.employeeId;
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+
         try {
             const response = await this.firmwareService.confirmFirmwareByRD(req.body.firmwareId, employeeId, req.body.testResult);
             

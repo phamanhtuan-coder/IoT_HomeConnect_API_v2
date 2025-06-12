@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction, response } from 'express';
 import DeviceTemplateService from '../services/device-template.service';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { DeviceTemplateInput } from "../utils/schemas/device-template.schema";
+import {DeviceTemplateCreateInput, DeviceTemplateUpdateInput, DeviceTemplateIdParam, DeviceTemplateListQuery} from "../utils/schemas/device-template.schema";
 
 /**
  * Controller quản lý các thao tác liên quan đến Device Template.
@@ -27,7 +27,7 @@ class DeviceTemplateController {
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
-            const template = await this.deviceTemplateService.createDeviceTemplate(req.body as DeviceTemplateInput, employeeId);
+            const template = await this.deviceTemplateService.createDeviceTemplate(req.body as DeviceTemplateCreateInput, employeeId);
             return res.status(201).json({
                 status_code: 201,
                 message: "Tạo khuôn mẫu thành công",

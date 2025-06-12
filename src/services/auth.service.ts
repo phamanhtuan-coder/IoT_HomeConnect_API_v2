@@ -80,6 +80,8 @@ class AuthService {
             response.deviceUuid = device.device_uuid;
         }
 
+        console.log("res", response)
+
         return response;
     }
 

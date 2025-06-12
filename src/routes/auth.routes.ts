@@ -78,7 +78,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  *         description: Lỗi server
  */
 router.post('/login',
-    loginRateLimiter,
+    // loginRateLimiter,
     validateMiddleware(loginSchema),
     asyncHandler(authController.loginUser),
     afterSuccessfulLogin
