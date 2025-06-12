@@ -12,12 +12,8 @@ export const firmwareSchema = z.object({
             invalid_type_error: 'Tên firmware phải là chuỗi'
         }),
         file_path: z.string({
-            required_error: 'Đường dẫn file là bắt buộc',
-            invalid_type_error: 'Đường dẫn file phải là chuỗi'
-        }),
-        template_id: z.string({
-            required_error: 'ID template là bắt buộc',
-            invalid_type_error: 'ID template phải là chuỗi'
+            required_error: `[${ERROR_CODES.FIRMWARE_FILE_PATH_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.FIRMWARE_FILE_PATH_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.FIRMWARE_FILE_PATH_INVALID}]${ERROR_MESSAGES[ERROR_CODES.FIRMWARE_FILE_PATH_INVALID]}`
         }),
         is_mandatory: z.boolean().optional(),
         note: z.string().optional()

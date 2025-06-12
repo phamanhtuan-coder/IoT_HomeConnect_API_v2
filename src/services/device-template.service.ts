@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
-import {DeviceTemplateInput} from "../utils/schemas/device-template.schema";
+import {DeviceTemplateCreateInput, DeviceTemplateUpdateInput, ApproveDeviceTemplateInput } from "../utils/schemas/device-template.schema";
 import {DeviceTemplate} from "../types/device-template";
 import {generatePlanningId, generateTemplateId} from "../utils/helpers";
 
@@ -11,7 +11,7 @@ class DeviceTemplateService {
         this.prisma = new PrismaClient();
     }
 
-    async createDeviceTemplate(input: DeviceTemplateInput, createdBy: string): Promise<DeviceTemplate> {
+    async createDeviceTemplate(input: DeviceTemplateCreateInput, createdBy: string): Promise<DeviceTemplate> {
         const { device_type_id, name, production_cost, components } = input;
 
         // Kiểm tra loại thiết bị đã có chưa
@@ -216,7 +216,7 @@ class DeviceTemplateService {
         return templates.map((template: any) => this.mapPrismaDeviceTemplateToDeviceTemplate(template));
     }
 
-    async updateDeviceTemplate(templateId: string, input: DeviceTemplateInput): Promise<DeviceTemplate> {
+    async updateDeviceTemplate(templateId: string, input: DeviceTemplateUpdateInput): Promise<DeviceTemplate> {
         console.log("data cập nhật template", input);
         const template = await this.prisma.device_templates.findUnique({
             where: { template_id: templateId, is_deleted: false },
@@ -403,7 +403,7 @@ class DeviceTemplateService {
         return this.mapPrismaDeviceTemplateToDeviceTemplate(completeUpdatedTemplate);
     }
 
-    async approveDeviceTemplate(templateId: string, input: DeviceTemplateInput): Promise<DeviceTemplate> {
+    async approveDeviceTemplate(templateId: string, input: ApproveDeviceTemplateInput): Promise<DeviceTemplate> {
         const template = await this.prisma.device_templates.findUnique({
             where: { template_id: templateId, is_deleted: false },
         });

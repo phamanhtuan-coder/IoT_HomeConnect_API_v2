@@ -35,7 +35,8 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     updateFirmware = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = 'admin123';
+        const employeeId = req.user?.employeeId;
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
             const { firmwareId } = req.params;
@@ -110,7 +111,7 @@ class FirmwareController {
     getFirmwaresByTemplateId = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { templateId } = req.params;
-            const firmwares = await this.firmwareService.getFirmwaresByTemplateId(parseInt(templateId));
+            const firmwares = await this.firmwareService.getFirmwaresByTemplateId(templateId);
             res.json(firmwares);
         } catch (error) {
             next(error);

@@ -28,6 +28,11 @@ export interface LoginRequestBody {
     username: string;
     password: string;
     rememberMe?: boolean;
+    deviceName?: string;
+    deviceId?: string;
+    deviceUuid?: string;
+    ipAddress?: string;
+    userAgent?: string;
 }
 
 /**
@@ -39,7 +44,8 @@ export interface LoginRequestBody {
 export interface TokenResponse {
     accessToken: string;
     refreshToken?: string;
-    deviceUuid?: string; // Đổi từ 'any' thành 'string', thêm '?' vì không phải lúc nào cũng có
+    deviceUuid?: string;
+    userId?: string; // Thêm userId vào response
 }
 
 /**

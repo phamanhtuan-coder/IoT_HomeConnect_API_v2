@@ -10,7 +10,7 @@ import DeviceTemplateController from '../controllers/device-template.controller'
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
-import { deviceTemplateSchema, deviceTemplateIdSchema, approveDeviceTemplateSchema } from '../utils/schemas/device-template.schema';
+import { DeviceTemplateCreateSchema, DeviceTemplateIdSchema, DeviceTemplateUpdateSchema, ApproveDeviceTemplateSchema, deviceTemplateIdSchema } from '../utils/schemas/device-template.schema';
 
 const router = Router();
 const deviceTemplateController = new DeviceTemplateController();
@@ -37,7 +37,7 @@ router.post(
     '/',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(deviceTemplateSchema),
+    validateMiddleware(DeviceTemplateCreateSchema),
     asyncHandler(deviceTemplateController.createDeviceTemplate)
 );
 
@@ -81,7 +81,7 @@ router.put(
     '/:templateId',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(deviceTemplateSchema),
+    validateMiddleware(DeviceTemplateUpdateSchema),
     asyncHandler(deviceTemplateController.updateDeviceTemplate)
 );
 
@@ -97,7 +97,7 @@ router.put(
     '/approveDevice/:templateId',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(approveDeviceTemplateSchema),
+    validateMiddleware(ApproveDeviceTemplateSchema),
     asyncHandler(deviceTemplateController.approveDeviceTemplate)
 );
 

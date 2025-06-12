@@ -25,13 +25,58 @@ class AuthController {
      * @param next Middleware tiếp theo
      */
     loginUser = async (req: Request, res: Response, next: NextFunction) => {
-        
-        const { username, password, rememberMe, deviceName, deviceId, deviceUuid } = req.body; // Thay email thành username, bỏ fcmToken
-        console.log("req", req.body)
+        const { username, password, rememberMe, deviceName, deviceId, deviceUuid } = req.body;
         const ipAddress = req.ip;
+        const userAgent = req.headers['user-agent'];
+
         try {
-            const result = await this.authService.loginUser({ username, password, rememberMe, deviceName, deviceId, deviceUuid, ipAddress });
-            return res.status(200).json(result);
+            // Thực hiện login
+            const result = await this.authService.loginUser({
+                username,
+                password,
+                rememberMe,
+                deviceName,
+                deviceId,
+                deviceUuid,
+                ipAddress
+            });
+
+            // Ensure userId exists before proceeding
+            if (!result.userId) {
+                throwError(ErrorCodes.UNAUTHORIZED, 'User ID not found in login result');
+            }
+
+            // Lấy thông tin thiết bị
+            const devices = await this.userDeviceService.getUserDevices(result!.userId!);
+            const currentDevice = devices.find(d => d.device_id === deviceId);
+
+            // Tính toán thông tin response
+            const maxDevices = 5;
+            const response = {
+                ...result,
+                deviceInfo: {
+                    current: currentDevice ? {
+                        deviceId: currentDevice.device_id,
+                        deviceName: currentDevice.device_name,
+                        lastLogin: currentDevice.last_login,
+                        ipAddress,
+                        userAgent
+                    } : null,
+                    total: {
+                        active: devices.length,
+                        limit: maxDevices,
+                        remaining: maxDevices - devices.length
+                    }
+                },
+                devices: devices.map(device => ({
+                    deviceId: device.device_id,
+                    deviceName: device.device_name,
+                    lastLogin: device.last_login,
+                    isCurrentDevice: device.device_id === deviceId
+                }))
+            };
+
+            return res.status(200).json(response);
         } catch (error) {
             next(error);
         }
@@ -45,7 +90,7 @@ class AuthController {
      */
     logoutUser = async (req: Request, res: Response, next: NextFunction) => {
         const userId = req.user?.userId;
-        const userDeviceId =req.body.userDeviceId;
+        const userDeviceId = req.body.userDeviceId;
         const ipAddress = req.ip;
 
         if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -54,7 +99,26 @@ class AuthController {
         }
 
         await this.userDeviceService.logoutDevice(userDeviceId, userId, ipAddress);
-        res.status(204).send();
+
+        // Lấy danh sách thiết bị còn lại sau khi logout
+        const remainingDevices = await this.userDeviceService.getUserDevices(userId);
+
+        // Trả về thông tin chi tiết sau khi logout
+        res.status(200).json({
+            success: true,
+            message: 'Logged out successfully',
+            remainingDevices: {
+                total: remainingDevices.length,
+                active: remainingDevices.filter(d => !d.last_out || d.last_login > d.last_out).length,
+                devices: remainingDevices.map(device => ({
+                    deviceId: device.device_id,
+                    deviceName: device.device_name,
+                    lastLogin: device.last_login,
+                    lastLogout: device.last_out,
+                    status: !device.last_out || device.last_login > device.last_out ? 'active' : 'inactive'
+                }))
+            }
+        });
     };
 
     /**
@@ -65,16 +129,36 @@ class AuthController {
      */
     logoutMultipleDevices = async (req: Request, res: Response, next: NextFunction) => {
         const userId = req.user?.userId;
-        const { userDeviceIds } = req.body as LogoutMultipleDevicesRequest; // Type the body
+        const { userDeviceIds } = req.body as LogoutMultipleDevicesRequest;
         const ipAddress = req.ip;
 
         if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
-        if (!Array.isArray(userDeviceIds) || userDeviceIds.length === 0 || userDeviceIds.some(id => isNaN(parseInt(id.toString())))) {
+        if (!Array.isArray(userDeviceIds) || userDeviceIds.length === 0) {
             throwError(ErrorCodes.BAD_REQUEST, 'Valid array of UserDeviceIDs is required');
         }
 
         await this.userDeviceService.logoutDevices(userDeviceIds.map(id => id.toString()), userId, ipAddress);
-        res.status(204).send();
+
+        // Lấy danh sách thiết bị còn lại sau khi logout
+        const remainingDevices = await this.userDeviceService.getUserDevices(userId);
+
+        // Trả về thông tin chi tiết sau khi logout
+        res.status(200).json({
+            success: true,
+            message: `Logged out from ${userDeviceIds.length} devices`,
+            loggedOutDevices: userDeviceIds.length,
+            remainingDevices: {
+                total: remainingDevices.length,
+                active: remainingDevices.filter(d => !d.last_out || d.last_login > d.last_out).length,
+                devices: remainingDevices.map(device => ({
+                    deviceId: device.device_id,
+                    deviceName: device.device_name,
+                    lastLogin: device.last_login,
+                    lastLogout: device.last_out,
+                    status: !device.last_out || device.last_login > device.last_out ? 'active' : 'inactive'
+                }))
+            }
+        });
     };
 
     /**
@@ -102,7 +186,13 @@ class AuthController {
     loginEmployee = async (req: Request, res: Response, next: NextFunction) => {
         const { username, password } = req.body;
         try {
-            const result = await this.authService.loginEmployee({ username, password });
+            const result = await this.authService.loginEmployee({
+                username,
+                password
+            },
+                // req.ip || 'unknown', req.headers['user-agent'] || 'unknown'
+            );
+
             return res.status(200).json(result);
         } catch (error) {
             next(error);

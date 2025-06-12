@@ -96,7 +96,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
 router.get(
     '/detail/:firmwareId',
     authMiddleware,
-    validateMiddleware(firmwareIdSchema),
+    validateMiddleware(FirmwareIdSchema),
     asyncHandler(firmwareController.getFirmwareById)
 );
 

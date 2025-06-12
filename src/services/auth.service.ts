@@ -211,7 +211,7 @@ class AuthService {
                 username,
                 password: passwordHash,
                 customer: {
-                    create: {
+                    create: {   
                         customer_id: customerId,
                         surname,
                         lastname: lastname || null,
