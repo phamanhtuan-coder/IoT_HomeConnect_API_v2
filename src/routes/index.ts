@@ -135,6 +135,7 @@ import productionTrackingRoutes from "./production-tracking.routes";
 import planningRoutes from "./planning.routes";
 import sseRoutes from './sse.routes';
 import productionBatchesRoutes from './production-batches.routes';
+import customerSearchRoutes from './customer-search.routes';
 
 
 const router = Router();
@@ -164,6 +165,7 @@ router.use('/production-tracking', productionTrackingRoutes);
 router.use('/planning', planningRoutes);
 router.use('/production-batches', productionBatchesRoutes);
 router.use('/sse', sseRoutes);
+router.use('/customer-search', customerSearchRoutes);
 
 export default router;
 
