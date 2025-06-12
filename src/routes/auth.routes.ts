@@ -126,7 +126,7 @@ router.post('/login',
  *         description: Lỗi server
  */
 router.post('/employee/login',
-    loginRateLimiter,
+    // loginRateLimiter,
     validateMiddleware(loginSchema),
     asyncHandler(authController.loginEmployee),
     afterSuccessfulLogin
@@ -182,7 +182,7 @@ router.post('/employee/login',
  *         description: Lỗi server
  */
 router.post('/register',
-    rateLimiter('register', 5, 60),
+    // rateLimiter('register', 5, 60),
     validateMiddleware(userRegisterSchema),
     asyncHandler(authController.registerUser)
 );
@@ -257,7 +257,7 @@ router.post('/register',
  */
 router.post(
     '/employee/register',
-    rateLimiter('employee-register', 5, 60),
+    // rateLimiter('employee-register', 5, 60),
     authMiddleware,
     validateMiddleware(employeeRegisterSchema),
     asyncHandler(authController.registerEmployee)
@@ -297,13 +297,13 @@ router.post(
  *         description: Lỗi server
  */
 router.post('/refresh',
-    rateLimiter('refresh', 10, 60),
+    // rateLimiter('refresh', 10, 60),
     validateMiddleware(refreshTokenSchema),
     asyncHandler(authController.refreshToken)
 );
 
 router.post('/employee/refresh',
-    rateLimiter('employee-refresh', 10, 60),
+    // rateLimiter('employee-refresh', 10, 60),
     validateMiddleware(refreshTokenSchema),
     asyncHandler(authController.refreshEmployeeToken)
 );
