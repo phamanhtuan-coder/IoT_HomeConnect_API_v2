@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import DeviceTemplateService from '../services/device-template.service';
 import { ErrorCodes, throwError } from '../utils/errors';
-import {DeviceTemplateInput} from "../utils/schemas/device-template.schema";
+import { DeviceTemplateInput } from "../utils/schemas/device-template.schema";
 
 /**
  * Controller quản lý các thao tác liên quan đến Device Template.
@@ -29,7 +29,11 @@ class DeviceTemplateController {
 
         try {
             const template = await this.deviceTemplateService.createDeviceTemplate(req.body as DeviceTemplateInput, employeeId);
-            res.status(201).json(template);
+            return res.status(201).json({
+                status_code: 201,
+                message: "Tạo khuôn mẫu thành công",
+                data: template,
+            });
         } catch (error) {
             next(error);
         }
@@ -86,8 +90,36 @@ class DeviceTemplateController {
 
         try {
             const { templateId } = req.params;
-            const template = await this.deviceTemplateService.updateDeviceTemplate(templateId, req.body as DeviceTemplateInput);
-            res.json(template);
+            const template = await this.deviceTemplateService.updateDeviceTemplate(templateId, req.body);
+            return res.status(200).json({
+                status_code: 200,
+                message: "Câp nhật khuôn mẫu thành công",
+                data: template,
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Cập nhật một Device Template theo ID.
+     * @param {Request} req - Yêu cầu HTTP chứa ID và trạng thái của Device Template.
+     * @param {Response} res - Phản hồi HTTP.
+     * @param {NextFunction} next - Hàm middleware tiếp theo.
+     */
+    approveDeviceTemplate = async (req: Request, res: Response, next: NextFunction) => {
+        // const employeeId = req.user?.employeeId;
+        const employeeId = "admin123";
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+        try {
+            const { templateId } = req.params;
+            console.log("data", templateId + " " + req.body)
+            const template = await this.deviceTemplateService.approveDeviceTemplate(templateId, req.body);
+            return res.status(200).json({
+                status_code: 200,
+                message: "Chuyển trạng thái thiết bị thành công",
+                data: template,
+            });
         } catch (error) {
             next(error);
         }
@@ -106,8 +138,12 @@ class DeviceTemplateController {
 
         try {
             const { templateId } = req.params;
-            await this.deviceTemplateService.deleteDeviceTemplate(templateId);
-            res.status(204).send();
+            const template = await this.deviceTemplateService.deleteDeviceTemplate(templateId);
+            return res.status(200).json({
+                status_code: 204,
+                message: "Xóa khuôn mẫu thành công",
+                data: template,
+            });
         } catch (error) {
             next(error);
         }

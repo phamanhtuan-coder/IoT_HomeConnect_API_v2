@@ -10,7 +10,7 @@ import DeviceTemplateController from '../controllers/device-template.controller'
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
-import { deviceTemplateSchema, deviceTemplateIdSchema } from '../utils/schemas/device-template.schema';
+import { deviceTemplateSchema, deviceTemplateIdSchema, approveDeviceTemplateSchema } from '../utils/schemas/device-template.schema';
 
 const router = Router();
 const deviceTemplateController = new DeviceTemplateController();
@@ -83,6 +83,22 @@ router.put(
     // roleMiddleware,
     validateMiddleware(deviceTemplateSchema),
     asyncHandler(deviceTemplateController.updateDeviceTemplate)
+);
+
+/**
+ * Cập nhật thông tin của một mẫu thiết bị theo ID.
+ * @route PUT /api/device-templates/approveDevice/{templateId}
+ * @middleware authMiddleware, roleMiddleware, validateMiddleware
+ * @param {number} templateId - ID của mẫu thiết bị.
+ * @body {object} body - Trạng thái của thiết bị.
+ * @returns {200|400|401|403|404|409|500} Trạng thái HTTP và thông báo tương ứng.
+ */
+router.put(
+    '/approveDevice/:templateId',
+    // authMiddleware,
+    // roleMiddleware,
+    validateMiddleware(approveDeviceTemplateSchema),
+    asyncHandler(deviceTemplateController.approveDeviceTemplate)
 );
 
 /**

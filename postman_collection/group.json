@@ -22,25 +22,15 @@
         "request": {
           "method": "GET",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "url": {
             "raw": "{{baseUrl}}/groups/my-groups?page=1&limit=10",
             "host": ["{{baseUrl}}"],
             "path": ["groups", "my-groups"],
             "query": [
-              {
-                "key": "page",
-                "value": "1"
-              },
-              {
-                "key": "limit",
-                "value": "10"
-              }
+              { "key": "page", "value": "1" },
+              { "key": "limit", "value": "10" }
             ]
           }
         },
@@ -66,26 +56,14 @@
         "request": {
           "method": "POST",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "body": {
             "mode": "raw",
             "raw": "{\n  \"group_name\": \"MyGroup\",\n  \"icon_name\": \"home\",\n  \"icon_color\": \"#FF5733\",\n  \"group_description\": \"My test group\"\n}",
-            "options": {
-              "raw": {
-                "language": "json"
-              }
-            }
+            "options": { "raw": { "language": "json" } }
           },
-          "url": {
-            "raw": "{{baseUrl}}/groups",
-            "host": ["{{baseUrl}}"],
-            "path": ["groups"]
-          }
+          "url": { "raw": "{{baseUrl}}/groups", "host": ["{{baseUrl}}"], "path": ["groups"] }
         },
         "response": []
       },
@@ -109,22 +87,12 @@
         "request": {
           "method": "GET",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "url": {
-            "raw": "{{baseUrl}}/groups/:groupId",
+            "raw": "{{baseUrl}}/groups/1",
             "host": ["{{baseUrl}}"],
-            "path": ["groups", ":groupId"],
-            "variable": [
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
+            "path": ["groups", "1"]
           }
         },
         "response": []
@@ -149,31 +117,17 @@
         "request": {
           "method": "PUT",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "body": {
             "mode": "raw",
             "raw": "{\n  \"group_name\": \"UpdatedGroup\",\n  \"icon_name\": \"building\",\n  \"icon_color\": \"#3366FF\",\n  \"group_description\": \"Updated group description\"\n}",
-            "options": {
-              "raw": {
-                "language": "json"
-              }
-            }
+            "options": { "raw": { "language": "json" } }
           },
           "url": {
-            "raw": "{{baseUrl}}/groups/:groupId",
+            "raw": "{{baseUrl}}/groups/1",
             "host": ["{{baseUrl}}"],
-            "path": ["groups", ":groupId"],
-            "variable": [
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
+            "path": ["groups", "1"]
           }
         },
         "response": []
@@ -196,22 +150,12 @@
         "request": {
           "method": "DELETE",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "url": {
-            "raw": "{{baseUrl}}/groups/:groupId",
+            "raw": "{{baseUrl}}/groups/1",
             "host": ["{{baseUrl}}"],
-            "path": ["groups", ":groupId"],
-            "variable": [
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
+            "path": ["groups", "1"]
           }
         },
         "response": []
@@ -226,7 +170,7 @@
                 "const response = pm.response.json();",
                 "pm.test('User added to group successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(201);",
-                "  pm.expect(response.group_id).to.exist;",
+                "  pm.expect(response.user_group_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript"
@@ -236,26 +180,14 @@
         "request": {
           "method": "POST",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"groupId\": 1,\n  \"accountId\": \"user123\",\n  \"role\": \"MEMBER\"\n}",
-            "options": {
-              "raw": {
-                "language": "json"
-              }
-            }
+            "raw": "{\n  \"groupId\": 1,\n  \"accountId\": \"user123\",\n  \"role\": \"member\"\n}",
+            "options": { "raw": { "language": "json" } }
           },
-          "url": {
-            "raw": "{{baseUrl}}/groups/members",
-            "host": ["{{baseUrl}}"],
-            "path": ["groups", "members"]
-          }
+          "url": { "raw": "{{baseUrl}}/groups/members", "host": ["{{baseUrl}}"], "path": ["groups", "members"] }
         },
         "response": []
       },
@@ -269,7 +201,7 @@
                 "const response = pm.response.json();",
                 "pm.test('User role updated successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.group_id).to.exist;",
+                "  pm.expect(response.user_group_id).to.exist;",
                 "});"
               ],
               "type": "text/javascript"
@@ -279,31 +211,17 @@
         "request": {
           "method": "PUT",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"accountId\": \"user123\",\n  \"role\": \"VICE\"\n}",
-            "options": {
-              "raw": {
-                "language": "json"
-              }
-            }
+            "raw": "{\n  \"accountId\": \"user123\",\n  \"role\": \"vice\"\n}",
+            "options": { "raw": { "language": "json" } }
           },
           "url": {
-            "raw": "{{baseUrl}}/groups/:groupId/members/role",
+            "raw": "{{baseUrl}}/groups/1/members/role",
             "host": ["{{baseUrl}}"],
-            "path": ["groups", ":groupId", "members", "role"],
-            "variable": [
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
+            "path": ["groups", "1", "members", "role"]
           }
         },
         "response": []
@@ -328,22 +246,12 @@
         "request": {
           "method": "GET",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "url": {
-            "raw": "{{baseUrl}}/groups/:groupId/members",
+            "raw": "{{baseUrl}}/groups/1/members",
             "host": ["{{baseUrl}}"],
-            "path": ["groups", ":groupId", "members"],
-            "variable": [
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
+            "path": ["groups", "1", "members"]
           }
         },
         "response": []
@@ -366,31 +274,107 @@
         "request": {
           "method": "DELETE",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "body": {
             "mode": "raw",
             "raw": "{\n  \"accountId\": \"user123\"\n}",
-            "options": {
-              "raw": {
-                "language": "json"
-              }
-            }
+            "options": { "raw": { "language": "json" } }
           },
           "url": {
-            "raw": "{{baseUrl}}/groups/:groupId/members",
+            "raw": "{{baseUrl}}/groups/1/members",
             "host": ["{{baseUrl}}"],
-            "path": ["groups", ":groupId", "members"],
-            "variable": [
-              {
-                "key": "groupId",
-                "value": "1"
-              }
-            ]
+            "path": ["groups", "1", "members"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get User Role in Group",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Role retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.role).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/groups/role/1",
+            "host": ["{{baseUrl}}"],
+            "path": ["groups", "role", "1"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Owned Groups",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Owned groups retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/groups/owned",
+            "host": ["{{baseUrl}}"],
+            "path": ["groups", "owned"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Member Groups",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Member groups retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/groups/member",
+            "host": ["{{baseUrl}}"],
+            "path": ["groups", "member"]
           }
         },
         "response": []

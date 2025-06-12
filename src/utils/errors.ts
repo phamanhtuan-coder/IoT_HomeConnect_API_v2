@@ -7,6 +7,7 @@ export enum ErrorCodes {
     FORBIDDEN = 'FORBIDDEN',                   // 403
     NOT_FOUND = 'NOT_FOUND',                   // 404
     CONFLICT = 'CONFLICT',                     // 409
+    TOO_MANY_REQUESTS = 'TOO_MANY_REQUESTS', // 429
 
     // Internal Errors
     INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR', // 500
@@ -60,6 +61,11 @@ export const ERROR_RESPONSES: { [key: string]: ErrorResponse } = {
         code: ErrorCodes.CONFLICT,
         message: 'Resource conflict',
         status_code: 409
+    },
+    'TOO_MANY_REQUESTS': {
+        code: ErrorCodes.TOO_MANY_REQUESTS,
+        message: 'Too many requests',
+        status_code: 429
     },
     'INTERNAL_SERVER_ERROR': {
         code: ErrorCodes.INTERNAL_SERVER_ERROR,
@@ -143,6 +149,8 @@ export class AppError extends Error {
                 return new AppError({ status: 404, code, message: message || 'Not found' });
             case ErrorCodes.CONFLICT:
                 return new AppError({ status: 409, code, message: message || 'Conflict' });
+            case ErrorCodes.TOO_MANY_REQUESTS:
+                return new AppError({ status: 429, code, message: message || 'Too many requests' });
 
             // Internal Errors
             case ErrorCodes.INTERNAL_SERVER_ERROR:

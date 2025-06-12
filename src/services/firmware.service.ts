@@ -374,7 +374,7 @@ class FirmwareService {
         }
     }
 
-    async getFirmwaresByTemplateId(templateId: number): Promise<any> {
+    async getFirmwaresByTemplateId(templateId: String): Promise<any> {
         const firmwares = await this.prisma.$queryRaw`
             SELECT 
                 f.firmware_id, f.version, f.name, f.file_path, f.template_id, f.is_mandatory,

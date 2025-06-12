@@ -2,7 +2,7 @@
 import { PrismaClient } from '@prisma/client';
 import { BatchCreateInput, BatchUpdateInput, ProductionBatch } from '../types/planning';
 import { ErrorCodes, throwError } from '../utils/errors';
-import {generateBatchId, generateFirmwareId} from '../utils/helpers';
+import {generateBatchId, generateDeviceId, generateDeviceSerialId, generateFirmwareId} from '../utils/helpers';
 import { PlanningService } from './planning.service';
 import { calculatePlanningStatus } from '../utils/helpers';
 
@@ -101,18 +101,16 @@ export class BatchService {
 
         // Tạo production_tracking records cho từng sản phẩm trong lô
         const trackingPromises = Array.from({ length: data.quantity }, async (_, index) => {
-            // Tạo từ tắt từ template name
-            const templateName = template!.name;
-            const shortName = templateName
-                .split(' ')
-                .map(word => word[0])
-                .join('')
-                .toUpperCase();
-
-            // Tạo device_serial theo format: {SHORT_NAME}{BATCH_ID}{SEQUENCE_NUMBER}
-            // Ví dụ: SL-BATCH1234-001
-            const sequenceNumber = (index + 1).toString().padStart(3, '0');
-            const deviceSerial = `${shortName}-${batch.production_batch_id}-${sequenceNumber}`;
+            let deviceSerial: string;
+            let attempts = 0;
+            const maxAttempts = 5;
+            do {
+                deviceSerial = generateDeviceSerialId();
+                const idExists = await this.prisma.production_tracking.findFirst({ where: { device_serial: deviceSerial} });
+                if (!idExists) break;
+                attempts++;
+                if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+            } while (true);
 
             return this.prisma.production_tracking.create({
                 data: {

@@ -1,6 +1,7 @@
 import {PrismaClient} from '@prisma/client';
 import {ErrorCodes, throwError} from '../utils/errors';
-import {generateUserDeviceId} from '../utils/helpers'
+import {generateUserDeviceId} from '../utils/helpers';
+import { DeviceCache } from '../utils/device-cache';
 
 export class UserDeviceService {
     private prisma: PrismaClient;
@@ -17,7 +18,8 @@ export class UserDeviceService {
         if (!account) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
 
         const isEmployee = account!.employee_id !== null;
-        const maxDevices = isEmployee ? 1 : 5;
+        // Cập nhật giới hạn thiết bị cho nhân viên từ 1 lên 5
+        const maxDevices = 5;
 
         const deviceCount = await this.prisma.user_devices.count({
             where: { user_id: accountId, is_deleted: false },
@@ -49,8 +51,8 @@ export class UserDeviceService {
             where: { user_id: accountId, device_uuid: deviceUuidToUse, is_deleted: false },
         });
 
-        if (existingDevice) {
-            return this.prisma.user_devices.update({
+        const result = existingDevice
+            ? await this.prisma.user_devices.update({
                 where: { user_device_id: existingDevice.user_device_id },
                 data: {
                     device_name: deviceName,
@@ -59,32 +61,44 @@ export class UserDeviceService {
                     last_login: new Date(),
                     updated_at: new Date(),
                 },
+            })
+            : await this.prisma.user_devices.create({
+                data: {
+                    // @ts-ignore
+                    user_device_id: deviceUuidToUse,
+                    user_id: accountId,
+                    device_name: deviceName,
+                    device_id: deviceId,
+                    device_uuid: deviceUuidToUse,
+                    device_token: fcmToken,
+                    last_login: new Date(),
+                },
             });
-        }
 
-        if (deviceCount >= maxDevices) {
-            throwError(ErrorCodes.FORBIDDEN, 'Maximum device.ts limit reached. Please revoke an existing device.ts.');
-        }
+        // Xóa cache khi có thay đổi
+        await DeviceCache.invalidateDeviceCache(`user:${accountId}:devices`);
 
-        return this.prisma.user_devices.create({
-            data: {
-                // @ts-ignore
-                user_device_id: deviceUuidToUse,
-                user_id: accountId,
-                device_name: deviceName,
-                device_id: deviceId,
-                device_uuid: deviceUuidToUse,
-                device_token: fcmToken,
-                last_login: new Date(),
-            },
-        });
+        return result;
     }
 
     async getUserDevices(accountId: string) {
-        return this.prisma.user_devices.findMany({
+        // Thử lấy từ cache trước
+        const cacheKey = `user:${accountId}:devices`;
+        const cachedDevices = await DeviceCache.getDeviceInfo(cacheKey);
+        if (cachedDevices) {
+            return cachedDevices;
+        }
+
+        // Nếu không có trong cache, lấy từ database
+        const devices = await this.prisma.user_devices.findMany({
             where: { user_id: accountId, is_deleted: false },
             orderBy: { last_login: 'desc' },
         });
+
+        // Cache kết quả
+        await DeviceCache.setDeviceInfo(cacheKey, devices);
+
+        return devices;
     }
 
     async getDevicesByUserId(accountId: string) {
@@ -139,24 +153,29 @@ export class UserDeviceService {
             throwError(ErrorCodes.FORBIDDEN, 'You can only log out from your own devices');
         }
 
-        await this.prisma.sync_tracking.create({
-            data: {
-                account_id: accountId,
-                user_device_id: userDeviceId,
-                ip_address: ipAddress || 'unknown',
-                last_synced_at: new Date(),
-                sync_type: 'logout',
-                sync_status: 'success',
-            },
+        await this.prisma.$transaction(async (prisma) => {
+            await prisma.sync_tracking.create({
+                data: {
+                    account_id: accountId,
+                    user_device_id: userDeviceId,
+                    ip_address: ipAddress || 'unknown',
+                    last_synced_at: new Date(),
+                    sync_type: 'logout',
+                    sync_status: 'success',
+                },
+            });
+
+            await prisma.user_devices.update({
+                where: { user_device_id: userDeviceId },
+                data: {
+                    last_out: new Date(),
+                    updated_at: new Date(),
+                },
+            });
         });
 
-        return this.prisma.user_devices.update({
-            where: { user_device_id: userDeviceId },
-            data: {
-                last_out: new Date(),
-                updated_at: new Date(),
-            },
-        });
+        // Xóa cache khi có thay đổi
+        await DeviceCache.invalidateDeviceCache(`user:${accountId}:devices`);
     }
 
     async logoutDevices(userDeviceIds: string[], accountId: string, ipAddress?: string) {
@@ -166,14 +185,11 @@ export class UserDeviceService {
 
         if (devices.length === 0) throwError(ErrorCodes.NOT_FOUND, 'No valid devices found');
 
-        // if (devices.some((device.ts: { user_id: string; }) => device.ts.user_id !== accountId)) {
-        //     throwError(ErrorCodes.FORBIDDEN, 'You can only log out from your own devices');
-        // }
-
-
-        return await Promise.all(
-            devices.map(async (device: { user_device_id: any; }) => {
-                await this.prisma.sync_tracking.create({
+        // Sử dụng transaction để đảm bảo tính nhất quán của dữ liệu
+        return await this.prisma.$transaction(async (prisma) => {
+            const logoutPromises = devices.map(async (device) => {
+                // Tạo sync tracking record
+                await prisma.sync_tracking.create({
                     data: {
                         account_id: accountId,
                         user_device_id: device.user_device_id,
@@ -181,27 +197,32 @@ export class UserDeviceService {
                         last_synced_at: new Date(),
                         sync_type: 'logout',
                         sync_status: 'success',
-                    },
+                    }
                 });
 
-                return this.prisma.user_devices.update({
-                    where: {user_device_id: device.user_device_id},
+                // Cập nhật trạng thái thiết bị
+                return prisma.user_devices.update({
+                    where: { user_device_id: device.user_device_id },
                     data: {
                         last_out: new Date(),
                         updated_at: new Date(),
-                    },
+                    }
                 });
-            })
-        );
+            });
+
+            return Promise.all(logoutPromises);
+        });
     }
 
     async logoutAllDevices(accountId: string, ipAddress?: string) {
         const devices = await this.getUserDevices(accountId);
         if (devices.length === 0) return [];
 
-        return await Promise.all(
-            devices.map(async (device: { user_device_id: any; }) => {
-                await this.prisma.sync_tracking.create({
+        // Sử dụng transaction để đảm bảo tính nhất quán của dữ liệu
+        return await this.prisma.$transaction(async (prisma) => {
+            const logoutPromises = devices.map(async (device) => {
+                // Tạo sync tracking record
+                await prisma.sync_tracking.create({
                     data: {
                         account_id: accountId,
                         user_device_id: device.user_device_id,
@@ -209,17 +230,20 @@ export class UserDeviceService {
                         last_synced_at: new Date(),
                         sync_type: 'logout',
                         sync_status: 'success',
-                    },
+                    }
                 });
 
-                return this.prisma.user_devices.update({
-                    where: {user_device_id: device.user_device_id},
+                // Cập nhật trạng thái thiết bị
+                return prisma.user_devices.update({
+                    where: { user_device_id: device.user_device_id },
                     data: {
                         last_out: new Date(),
                         updated_at: new Date(),
-                    },
+                    }
                 });
-            })
-        );
+            });
+
+            return Promise.all(logoutPromises);
+        });
     }
 }

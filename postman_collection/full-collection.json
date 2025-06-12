@@ -61,32 +61,12 @@
       "item": [
         {
           "name": "Login User",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.environment.set('userAccessToken', response.accessToken);",
-                  "pm.environment.set('userRefreshToken', response.refreshToken || pm.environment.get('userRefreshToken'));",
-                  "pm.environment.set('deviceUuid', response.deviceUuid);",
-                  "pm.test('User login successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.accessToken).to.exist;",
-                  "  pm.expect(response.deviceUuid).to.be.a('string');",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
           "request": {
             "method": "POST",
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"rememberMe\": true,\n  \"deviceName\": \"MyDevice\",\n  \"deviceId\": \"device123\",\n  \"deviceUuid\": \"\" // Có thể rỗng lần đầu, hoặc điền UUID từ lần trước\n}",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"rememberMe\": true,\n  \"deviceName\": \"MyDevice\",\n  \"deviceId\": \"device123\",\n  \"deviceUuid\": \"\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -104,38 +84,28 @@
               ]
             }
           },
-          "response": []
-        },
-        {
-          "name": "Login Employee",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "console.log('Login Employee Response:', response);",
-                  "if (response.accessToken) {",
-                  "    pm.environment.set('employeeAccessToken', response.accessToken);",
-                  "    console.log('employeeAccessToken set to:', response.accessToken);",
-                  "} else {",
-                  "    console.log('No accessToken found in response');",
-                  "}",
-                  "if (response.refreshToken) {",
-                  "    pm.environment.set('employeeRefreshToken', response.refreshToken);",
-                  "} else {",
-                  "    console.log('No refreshToken found, keeping existing:', pm.environment.get('employeeRefreshToken'));",
-                  "}",
-                  "pm.test('Employee login successful', () => {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "    pm.expect(response).to.have.property('accessToken').that.is.a('string').and.not.empty;",
+                  "pm.environment.set('userAccessToken', response.accessToken);",
+                  "pm.environment.set('userRefreshToken', response.refreshToken || pm.environment.get('userRefreshToken'));",
+                  "pm.environment.set('deviceUuid', response.deviceUuid);",
+                  "pm.test('User login successful', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.accessToken).to.exist;",
+                  "  pm.expect(response.deviceUuid).to.be.a('string');",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Login Employee",
           "request": {
             "method": "POST",
             "header": [],
@@ -160,26 +130,26 @@
               ]
             }
           },
-          "response": []
-        },
-        {
-          "name": "Register User",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.environment.set('userAccessToken', response.token);",
-                  "pm.test('User registration successful', () => {",
-                  "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.token).to.exist;",
+                  "if (response.accessToken) pm.environment.set('employeeAccessToken', response.accessToken);",
+                  "if (response.refreshToken) pm.environment.set('employeeRefreshToken', response.refreshToken);",
+                  "pm.test('Employee login successful', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.accessToken).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Register User",
           "request": {
             "method": "POST",
             "header": [],
@@ -203,26 +173,25 @@
               ]
             }
           },
-          "response": []
-        },
-        {
-          "name": "Register Employee",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.test('Employee registration successful', () => {",
+                  "pm.environment.set('userAccessToken', response.accessToken);",
+                  "pm.test('User registration successful', () => {",
                   "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.token).to.exist;",
+                  "  pm.expect(response.accessToken).to.exist;",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Register Employee",
           "request": {
             "method": "POST",
             "header": [
@@ -234,7 +203,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"newadmin\",\n  \"surname\": \"New\",\n  \"lastname\": \"Admin\",\n  \"email\": \"newadmin@example.com\",\n  \"password\": \"admin123\",\n  \"role\": \"admin\",\n  \"phone\": \"0123456789\"\n}",
+              "raw": "{\n  \"username\": \"newadmin\",\n  \"surname\": \"New\",\n  \"lastname\": \"Admin\",\n  \"email\": \"newadmin@example.com\",\n  \"password\": \"admin123\",\n  \"role\": \"ADMIN\",\n  \"phone\": \"0123456789\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -253,75 +222,24 @@
               ]
             }
           },
-          "response": []
-        },
-        {
-          "name": "Update Device Token",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.test('Device token updated successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.message).to.equal('Device token updated successfully');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"deviceToken\": \"newFcmToken123\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/update-device-token",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "update-device-token"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Refresh User Token",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.environment.set('userAccessToken', response.accessToken);",
-                  "pm.test('User token refreshed', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "pm.test('Employee registration successful', () => {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
                   "  pm.expect(response.accessToken).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Refresh User Token",
           "request": {
             "method": "POST",
             "header": [],
@@ -345,26 +263,25 @@
               ]
             }
           },
-          "response": []
-        },
-        {
-          "name": "Refresh Employee Token",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.environment.set('employeeAccessToken', response.accessToken);",
-                  "pm.test('Employee token refreshed', () => {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "    pm.expect(response.accessToken).to.exist;",
+                  "pm.environment.set('userAccessToken', response.accessToken);",
+                  "pm.test('User token refreshed', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.accessToken).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Refresh Employee Token",
           "request": {
             "method": "POST",
             "header": [],
@@ -389,7 +306,22 @@
               ]
             }
           },
-          "response": []
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.environment.set('employeeAccessToken', response.accessToken);",
+                  "pm.test('Employee token refreshed', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.accessToken).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
           "name": "Logout User (Single Device)",
@@ -421,8 +353,7 @@
                 "logout"
               ]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "Logout Employee (Single Device)",
@@ -455,8 +386,7 @@
                 "logout"
               ]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "Logout Multiple Devices",
@@ -489,8 +419,7 @@
                 "multiple"
               ]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "Logout All Devices",
@@ -523,8 +452,149 @@
                 "all"
               ]
             }
-          },
-          "response": []
+          }
+        },
+        {
+          "name": "Update Device Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deviceToken\": \"newFcmToken123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/update-device-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "update-device-token"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Check Email Verification",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/check-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "check-email"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-email"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Recovery Password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"newPassword\": \"newpassword123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/recovery-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "recovery-password"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"surname\": \"Updated\",\n  \"lastname\": \"User\",\n  \"phone\": \"0987654321\",\n  \"email\": \"updateduser@example.com\",\n  \"birthdate\": \"1991-02-02\",\n  \"gender\": false,\n  \"image\": \"http://example.com/avatar.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/update-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "update-profile"
+              ]
+            }
+          }
         }
       ]
     },
@@ -1955,19 +2025,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/groups/:groupId",
+              "raw": "{{baseUrl}}/groups/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "groups",
-                ":groupId"
-              ],
-              "variable": [
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
+                "1"
               ]
             }
           },
@@ -2009,19 +2073,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/groups/:groupId",
+              "raw": "{{baseUrl}}/groups/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "groups",
-                ":groupId"
-              ],
-              "variable": [
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
+                "1"
               ]
             }
           },
@@ -2052,19 +2110,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/groups/:groupId",
+              "raw": "{{baseUrl}}/groups/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "groups",
-                ":groupId"
-              ],
-              "variable": [
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
+                "1"
               ]
             }
           },
@@ -2080,7 +2132,7 @@
                   "const response = pm.response.json();",
                   "pm.test('User added to group successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.group_id).to.exist;",
+                  "  pm.expect(response.user_group_id).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -2098,7 +2150,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"groupId\": 1,\n  \"accountId\": \"user123\",\n  \"role\": \"MEMBER\"\n}",
+              "raw": "{\n  \"groupId\": 1,\n  \"accountId\": \"user123\",\n  \"role\": \"member\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2128,7 +2180,7 @@
                   "const response = pm.response.json();",
                   "pm.test('User role updated successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.group_id).to.exist;",
+                  "  pm.expect(response.user_group_id).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -2146,7 +2198,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"accountId\": \"user123\",\n  \"role\": \"VICE\"\n}",
+              "raw": "{\n  \"accountId\": \"user123\",\n  \"role\": \"vice\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2154,21 +2206,15 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/groups/:groupId/members/role",
+              "raw": "{{baseUrl}}/groups/1/members/role",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "groups",
-                ":groupId",
+                "1",
                 "members",
                 "role"
-              ],
-              "variable": [
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
               ]
             }
           },
@@ -2201,20 +2247,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/groups/:groupId/members",
+              "raw": "{{baseUrl}}/groups/1/members",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "groups",
-                ":groupId",
+                "1",
                 "members"
-              ],
-              "variable": [
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
               ]
             }
           },
@@ -2254,20 +2294,132 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/groups/:groupId/members",
+              "raw": "{{baseUrl}}/groups/1/members",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "groups",
-                ":groupId",
+                "1",
                 "members"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Role in Group",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Role retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.role).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/groups/role/1",
+              "host": [
+                "{{baseUrl}}"
               ],
-              "variable": [
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
+              "path": [
+                "groups",
+                "role",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Owned Groups",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Owned groups retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/groups/owned",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "groups",
+                "owned"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Member Groups",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Member groups retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/groups/member",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "groups",
+                "member"
               ]
             }
           },
@@ -2321,7 +2473,8 @@
               "path": [
                 "houses"
               ]
-            }
+            },
+            "description": "Requires owner or vice role in group"
           },
           "response": []
         },
@@ -2352,22 +2505,17 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/houses/group/:groupId",
+              "raw": "{{baseUrl}}/houses/group/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "houses",
                 "group",
-                ":groupId"
-              ],
-              "variable": [
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
+                "1"
               ]
-            }
+            },
+            "description": "Any group member can view houses"
           },
           "response": []
         },
@@ -2398,21 +2546,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/houses/:houseId",
+              "raw": "{{baseUrl}}/houses/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "houses",
-                ":houseId"
-              ],
-              "variable": [
-                {
-                  "key": "houseId",
-                  "value": "1"
-                }
+                "1"
               ]
-            }
+            },
+            "description": "Any group member can view house details"
           },
           "response": []
         },
@@ -2444,7 +2587,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"groupId\": 1,\n  \"house_name\": \"UpdatedHouse\",\n  \"address\": \"456 Elm St\",\n  \"icon_name\": \"house\",\n  \"icon_color\": \"green\"\n}",
+              "raw": "{\n  \"house_name\": \"UpdatedHouse\",\n  \"address\": \"456 Elm St\",\n  \"icon_name\": \"house\",\n  \"icon_color\": \"green\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2452,21 +2595,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/houses/:houseId",
+              "raw": "{{baseUrl}}/houses/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "houses",
-                ":houseId"
-              ],
-              "variable": [
-                {
-                  "key": "houseId",
-                  "value": "1"
-                }
+                "1"
               ]
-            }
+            },
+            "description": "Requires owner or vice role in group"
           },
           "response": []
         },
@@ -2495,21 +2633,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/houses/:houseId",
+              "raw": "{{baseUrl}}/houses/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "houses",
-                ":houseId"
-              ],
-              "variable": [
-                {
-                  "key": "houseId",
-                  "value": "1"
-                }
+                "1"
               ]
-            }
+            },
+            "description": "Requires owner or vice role in group. Cannot delete house with existing spaces."
           },
           "response": []
         }
@@ -2546,7 +2679,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"houseId\": 1,\n  \"space_name\": \"MyRoom\"\n}",
+              "raw": "{\n  \"houseId\": 1,\n  \"space_name\": \"Living Room\",\n  \"icon_name\": \"room\",\n  \"icon_color\": \"#4A90E2\",\n  \"space_description\": \"Main living room\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2561,7 +2694,8 @@
               "path": [
                 "spaces"
               ]
-            }
+            },
+            "description": "Requires owner or vice role in the group that owns the house"
           },
           "response": []
         },
@@ -2592,22 +2726,17 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/spaces/house/:houseId",
+              "raw": "{{baseUrl}}/spaces/house/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "spaces",
                 "house",
-                ":houseId"
-              ],
-              "variable": [
-                {
-                  "key": "houseId",
-                  "value": "1"
-                }
+                "1"
               ]
-            }
+            },
+            "description": "Any member of the group can view spaces"
           },
           "response": []
         },
@@ -2638,21 +2767,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/spaces/:spaceId",
+              "raw": "{{baseUrl}}/spaces/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "spaces",
-                ":spaceId"
-              ],
-              "variable": [
-                {
-                  "key": "spaceId",
-                  "value": "1"
-                }
+                "1"
               ]
-            }
+            },
+            "description": "Any member of the group can view space details"
           },
           "response": []
         },
@@ -2684,7 +2808,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"space_name\": \"UpdatedRoom\"\n}",
+              "raw": "{\n  \"space_name\": \"Updated Living Room\",\n  \"icon_name\": \"living-room\",\n  \"icon_color\": \"#3366FF\",\n  \"space_description\": \"Updated main living room\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2692,21 +2816,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/spaces/:spaceId",
+              "raw": "{{baseUrl}}/spaces/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "spaces",
-                ":spaceId"
-              ],
-              "variable": [
-                {
-                  "key": "spaceId",
-                  "value": "1"
-                }
+                "1"
               ]
-            }
+            },
+            "description": "Requires owner or vice role in the group that owns the house"
           },
           "response": []
         },
@@ -2735,21 +2854,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/spaces/:spaceId",
+              "raw": "{{baseUrl}}/spaces/1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "spaces",
-                ":spaceId"
-              ],
-              "variable": [
-                {
-                  "key": "spaceId",
-                  "value": "1"
-                }
+                "1"
               ]
-            }
+            },
+            "description": "Requires owner or vice role in the group that owns the house"
           },
           "response": []
         },
@@ -2780,22 +2894,17 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/spaces/:spaceId/name",
+              "raw": "{{baseUrl}}/spaces/1/name",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "spaces",
-                ":spaceId",
+                "1",
                 "name"
-              ],
-              "variable": [
-                {
-                  "key": "spaceId",
-                  "value": "1"
-                }
               ]
-            }
+            },
+            "description": "Any member of the group can view space name"
           },
           "response": []
         }
@@ -3933,35 +4042,111 @@
       "name": "Firmware",
       "item": [
         {
-          "name": "Create Firmware",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Firmware created successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.firmware_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
+          "name": "Get Firmware by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}"
               }
-            }
-          ],
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/firmwares/detail/:firmwareId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "firmwares",
+                "detail",
+                ":firmwareId"
+              ]
+            },
+            "description": "Get firmware details by ID"
+          }
+        },
+        {
+          "name": "Get All Firmwares",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/firmwares",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "firmwares"
+              ]
+            },
+            "description": "Get list of all firmwares"
+          }
+        },
+        {
+          "name": "Get Latest Firmware Versions by Template",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/firmwares/latest-version-by-template",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "firmwares",
+                "latest-version-by-template"
+              ]
+            },
+            "description": "Get latest firmware versions for each device template"
+          }
+        },
+        {
+          "name": "Get Firmwares by Template ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/firmwares/by-template/:templateId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "firmwares",
+                "by-template",
+                ":templateId"
+              ]
+            },
+            "description": "Get all firmwares for a specific device template"
+          }
+        },
+        {
+          "name": "Create Firmware",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
+                "value": "Bearer {{employeeAccessToken}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"version\": \"1.0.0\",\n  \"file_path\": \"/firmware/v1.0.0.bin\",\n  \"template_id\": 1,\n  \"is_mandatory\": true,\n  \"note\": \"Initial firmware release\"\n}",
+              "raw": "{\n  \"name\": \"Firmware v1.0\",\n  \"version\": \"1.0.0\",\n  \"file_path\": \"/firmware/v1.0.0.bin\",\n  \"template_id\": \"TEMPLATE001\",\n  \"is_mandatory\": true,\n  \"note\": \"Initial firmware release\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3977,39 +4162,21 @@
                 "firmwares"
               ]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "Update Firmware",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Firmware updated successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.firmware_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
           "request": {
             "method": "PUT",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
+                "value": "Bearer {{employeeAccessToken}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"version\": \"1.0.1\",\n  \"file_path\": \"/firmware/v1.0.1.bin\",\n  \"is_mandatory\": false,\n  \"is_approved\": true,\n  \"tested_at\": \"2025-05-20T12:00:00Z\",\n  \"note\": \"Updated firmware release\"\n}",
+              "raw": "{\n  \"name\": \"Updated Firmware\",\n  \"version\": \"1.0.1\",\n  \"file_path\": \"/firmware/v1.0.1.bin\",\n  \"is_mandatory\": false,\n  \"note\": \"Updated firmware release\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4017,47 +4184,88 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/firmwares/:firmwareId",
+              "raw": "{{baseUrl}}/firmwares/edit/:firmwareId",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "firmwares",
+                "edit",
                 ":firmwareId"
-              ],
-              "variable": [
-                {
-                  "key": "firmwareId",
-                  "value": "1"
-                }
               ]
             }
-          },
-          "response": []
+          }
+        },
+        {
+          "name": "Confirm Firmware By Tester",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/firmwares/confirm-by-tester",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "firmwares",
+                "confirm-by-tester"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firmwareId\": \"FIRMWARE001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Confirm Firmware By RD",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/firmwares/confirm-by-rd",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "firmwares",
+                "confirm-by-rd"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firmwareId\": \"FIRMWARE001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
         },
         {
           "name": "Delete Firmware",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Firmware deleted successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(204);",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
           "request": {
             "method": "DELETE",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
+                "value": "Bearer {{employeeAccessToken}}"
               }
             ],
             "url": {
@@ -4068,101 +4276,9 @@
               "path": [
                 "firmwares",
                 ":firmwareId"
-              ],
-              "variable": [
-                {
-                  "key": "firmwareId",
-                  "value": "1"
-                }
               ]
             }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Firmware by ID",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Firmware retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.firmware_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/firmwares/:firmwareId",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "firmwares",
-                ":firmwareId"
-              ],
-              "variable": [
-                {
-                  "key": "firmwareId",
-                  "value": "1"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get All Firmwares",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Firmwares retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/firmwares",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "firmwares"
-              ]
-            }
-          },
-          "response": []
+          }
         }
       ]
     },
@@ -5784,25 +5900,10 @@
     },
     {
       "name": "Component",
+      "description": "Quản lý linh kiện dùng trong sản xuất",
       "item": [
         {
           "name": "Create Component",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Component created successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.component_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
           "request": {
             "method": "POST",
             "header": [
@@ -5814,7 +5915,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Test Component\",\n  \"supplier\": \"Supplier ABC\",\n  \"quantity_in_stock\": 100,\n  \"unit_cost\": 10.50\n}",
+              "raw": "{\n  \"name\": \"Motor Control Board\",\n  \"supplier\": \"Electronics Ltd\",\n  \"unit_cost\": 15.50,\n  \"status\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5829,28 +5930,68 @@
               "path": [
                 "component"
               ]
-            }
+            },
+            "description": "Tạo mới một linh kiện. Yêu cầu quyền nhân viên."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Component by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/component/:componentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "component",
+                ":componentId"
+              ],
+              "variable": [
+                {
+                  "key": "componentId",
+                  "value": "COMP001"
+                }
+              ]
+            },
+            "description": "Lấy thông tin chi tiết của một linh kiện"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Components",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/component",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "component"
+              ]
+            },
+            "description": "Lấy danh sách tất cả linh kiện"
           },
           "response": []
         },
         {
           "name": "Update Component",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Component updated successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.component_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
           "request": {
             "method": "PUT",
             "header": [
@@ -5862,7 +6003,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Component\",\n  \"supplier\": \"New Supplier\",\n  \"quantity_in_stock\": 150,\n  \"unit_cost\": 12.75\n}",
+              "raw": "{\n  \"name\": \"Updated Motor Board\",\n  \"supplier\": \"New Electronics Ltd\",\n  \"unit_cost\": 18.75,\n  \"status\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5881,29 +6022,16 @@
               "variable": [
                 {
                   "key": "componentId",
-                  "value": "1"
+                  "value": "COMP001"
                 }
               ]
-            }
+            },
+            "description": "Cập nhật thông tin linh kiện"
           },
           "response": []
         },
         {
           "name": "Delete Component",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Component deleted successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(204);",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
           "request": {
             "method": "DELETE",
             "header": [
@@ -5925,89 +6053,11 @@
               "variable": [
                 {
                   "key": "componentId",
-                  "value": "1"
+                  "value": "COMP001"
                 }
               ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Component by ID",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Component retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.component_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/component/:componentId",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "component",
-                ":componentId"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get All Components",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Components retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/component",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "component"
-              ]
-            }
+            },
+            "description": "Xóa một linh kiện (soft delete)"
           },
           "response": []
         }

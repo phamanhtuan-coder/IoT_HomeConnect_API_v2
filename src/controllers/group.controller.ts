@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import GroupService from '../services/group.service';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { GroupRole } from "../types/group";
+import { GroupRole } from '../types/group';
 
 class GroupController {
     private groupService: GroupService;
@@ -205,6 +205,59 @@ class GroupController {
                 success: true,
                 data: users
             });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Lấy role của user trong một group cụ thể
+     */
+    getUserGroupRole = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const groupId = parseInt(req.params.groupId);
+            const accountId = req.user?.userId || req.user?.employeeId;
+
+            if (!accountId) {
+                throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+            }
+
+            const role = await this.groupService.getUserGroupRole(groupId, accountId);
+            res.json({ role });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Lấy danh sách group mà user là owner
+     */
+    getOwnedGroups = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const accountId = req.user?.userId || req.user?.employeeId;
+            if (!accountId) {
+                throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+            }
+
+            const groups = await this.groupService.getGroupsByUserRole(accountId, [GroupRole.OWNER]);
+            res.json(groups);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Lấy danh sách group mà user là member (bao gồm các role vice, admin, member)
+     */
+    getMemberGroups = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const accountId = req.user?.userId || req.user?.employeeId;
+            if (!accountId) {
+                throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+            }
+
+            const groups = await this.groupService.getGroupsByUserRole(accountId, [GroupRole.VICE, GroupRole.ADMIN, GroupRole.MEMBER]);
+            res.json(groups);
         } catch (error) {
             next(error);
         }
