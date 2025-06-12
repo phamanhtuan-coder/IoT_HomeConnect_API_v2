@@ -16,7 +16,13 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     createFirmware = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = 'admin123';
+        const accountId = req.user?.accountId;
+
+        if (!accountId) {
+            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
+        }
+
+        const employeeId = accountId;
         try {
             const firmware = await this.firmwareService.createFirmware(req.body, employeeId);
             res.status(201).json(firmware);
@@ -32,7 +38,13 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     updateFirmware = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = 'admin123';
+        const accountId = req.user?.accountId;
+        
+        if (!accountId) {
+            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
+        }
+        
+        const employeeId = accountId;
 
         try {
             const { firmwareId } = req.params;
@@ -50,7 +62,13 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     deleteFirmware = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = 'admin123';
+        const accountId = req.user?.accountId;
+        
+        if (!accountId) {
+            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
+        }
+        
+        const employeeId = accountId;
 
         try {
             const { firmwareId } = req.params;
@@ -70,6 +88,12 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     getFirmwareById = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.accountId;
+        
+        if (!accountId) {
+            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
+        }
+        
         try {
             const { firmwareId } = req.params;
             const firmware = await this.firmwareService.getFirmwareById(parseInt(firmwareId));
@@ -86,6 +110,12 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     getFirmwares = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.accountId;
+        
+        if (!accountId) {
+            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
+        }
+        
         try {
             const firmwares = await this.firmwareService.getFirmwares();
             res.json(firmwares);
@@ -101,6 +131,12 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     getFirmwaresByTemplateId = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.accountId;
+        
+        if (!accountId) {
+            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
+        }
+        
         try {
             const { templateId } = req.params;
             const firmwares = await this.firmwareService.getFirmwaresByTemplateId(parseInt(templateId));
@@ -117,7 +153,13 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     confirmFirmwareByTester = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = 'admin123';
+        const accountId = req.user?.accountId;
+        
+        if (!accountId) {
+            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
+        }
+        
+        const employeeId = accountId;
         try {
             const response = await this.firmwareService.confirmFirmwareByTester(req.body.firmwareId, employeeId, req.body.testResult);
             
@@ -135,7 +177,13 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     confirmFirmwareByRD = async (req: Request, res: Response, next: NextFunction) => {
-        const employeeId = 'admin123';
+        const accountId = req.user?.accountId;
+        
+        if (!accountId) {
+            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
+        }
+        
+        const employeeId = accountId;
         try {
             const response = await this.firmwareService.confirmFirmwareByRD(req.body.firmwareId, employeeId, req.body.testResult);
             
@@ -146,6 +194,11 @@ class FirmwareController {
     };
 
     getLatestVersionFirmwaresByTemplate = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.accountId;
+
+        if (!accountId) {
+            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
+        }
         try {
             const latestVersionFirmwares = await this.firmwareService.getLatestVersionFirmwaresByTemplate();
             res.json(latestVersionFirmwares);

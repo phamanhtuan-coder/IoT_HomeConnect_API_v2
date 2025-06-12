@@ -16,7 +16,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
 
 router.get(
     '/production-batch/:production_batch_id',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     productionTrackingController.getProductionTrackingByProductionBatchId
 );
@@ -24,7 +24,7 @@ router.get(
 // Xác nhận sản phẩm đã được kiểm tra
 router.post(
     '/approve-production-serial',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     validateMiddleware(ApproveProductionSchema),
     productionTrackingController.ApproveProductionSerial
@@ -32,7 +32,7 @@ router.post(
 
 router.patch(
     '/cancel-production-serial',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     validateMiddleware(CancelProductionSchema),
     productionTrackingController.CancelProductionSerial
@@ -40,7 +40,7 @@ router.patch(
 
 router.patch(
     '/update-serial',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     validateMiddleware(UpdateProductionSchema),
     productionTrackingController.UpdateProductionSerial
@@ -48,7 +48,7 @@ router.patch(
 
 router.patch(
     '/reject-qc',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     validateMiddleware(RejectProductionSchema),
     productionTrackingController.RejectProductionSerial
@@ -56,7 +56,7 @@ router.patch(
 
 router.patch(
     '/approve-tested-serial',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     validateMiddleware(ApproveTestedSchema),
     productionTrackingController.ApproveTestedSerial
@@ -64,7 +64,7 @@ router.patch(
 
 router.get(
     '/info-need-upload-firmware/:type/:planning_id?/:batch_id?',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     validateMiddleware(GetSerialFirmwareSchema),
     productionTrackingController.getSerialWithNeedFirmwareInProgress

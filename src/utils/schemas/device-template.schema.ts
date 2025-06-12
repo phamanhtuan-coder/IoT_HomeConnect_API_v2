@@ -51,7 +51,8 @@ export const DeviceTemplateUpdateSchema = z.object({
         components: z.array(ComponentSchema).optional(),
         device_template_note: z.string({
             invalid_type_error: `[${ERROR_CODES.DEVICE_TEMPLATE_NOTE_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_TEMPLATE_NOTE_INVALID]}`
-        }).optional()
+        }).optional(),
+        status: z.string().optional()
     }).refine(
         (data) => {
             // Kiểm tra nếu có ít nhất một trường được cập nhật

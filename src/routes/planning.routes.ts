@@ -16,7 +16,7 @@ const router = Router();
 const planningController = new PlanningController();
 
 router.get('/list-batches-completed/:planningId',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     // validateMiddleware(PlanningListBatchesCompletedSchema),
     planningController.getListBatchesCompleted
