@@ -10,7 +10,7 @@ import DeviceTemplateController from '../controllers/device-template.controller'
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
-import { DeviceTemplateCreateSchema, DeviceTemplateIdSchema, DeviceTemplateUpdateSchema } from '../utils/schemas/device-template.schema';
+import { DeviceTemplateCreateSchema, DeviceTemplateIdSchema, DeviceTemplateUpdateSchema, approveDeviceTemplateSchema } from '../utils/schemas/device-template.schema';
 
 const router = Router();
 const deviceTemplateController = new DeviceTemplateController();
@@ -35,7 +35,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  */
 router.post(
     '/',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     validateMiddleware(DeviceTemplateCreateSchema),
     asyncHandler(deviceTemplateController.createDeviceTemplate)
@@ -49,7 +49,7 @@ router.post(
  */
 router.get(
     '/',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     asyncHandler(deviceTemplateController.getAllDeviceTemplates)
 );
@@ -63,7 +63,7 @@ router.get(
  */
 router.get(
     '/:templateId',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     validateMiddleware(DeviceTemplateIdSchema),
     asyncHandler(deviceTemplateController.getDeviceTemplateById)
@@ -79,10 +79,26 @@ router.get(
  */
 router.put(
     '/:templateId',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     validateMiddleware(DeviceTemplateUpdateSchema),
     asyncHandler(deviceTemplateController.updateDeviceTemplate)
+);
+
+/**
+ * Cập nhật thông tin của một mẫu thiết bị theo ID.
+ * @route PUT /api/device-templates/approveDevice/{templateId}
+ * @middleware authMiddleware, roleMiddleware, validateMiddleware
+ * @param {number} templateId - ID của mẫu thiết bị.
+ * @body {object} body - Trạng thái của thiết bị.
+ * @returns {200|400|401|403|404|409|500} Trạng thái HTTP và thông báo tương ứng.
+ */
+router.put(
+    '/approveDevice/:templateId',
+    authMiddleware,
+    // roleMiddleware,
+    validateMiddleware(approveDeviceTemplateSchema),
+    asyncHandler(deviceTemplateController.approveDeviceTemplate)
 );
 
 /**
@@ -94,7 +110,7 @@ router.put(
  */
 router.delete(
     '/:templateId',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     validateMiddleware(DeviceTemplateIdSchema),
     asyncHandler(deviceTemplateController.deleteDeviceTemplate)

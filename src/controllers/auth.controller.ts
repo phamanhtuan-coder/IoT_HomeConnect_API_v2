@@ -25,11 +25,13 @@ class AuthController {
      * @param next Middleware tiếp theo
      */
     loginUser = async (req: Request, res: Response, next: NextFunction) => {
+        
         const { username, password, rememberMe, deviceName, deviceId, deviceUuid } = req.body; // Thay email thành username, bỏ fcmToken
+        console.log("req", req.body)
         const ipAddress = req.ip;
         try {
-            const tokens = await this.authService.loginUser({ username, password, rememberMe, deviceName, deviceId, deviceUuid, ipAddress });
-            res.json(tokens);
+            const result = await this.authService.loginUser({ username, password, rememberMe, deviceName, deviceId, deviceUuid, ipAddress });
+            return res.status(200).json(result);
         } catch (error) {
             next(error);
         }
@@ -43,7 +45,7 @@ class AuthController {
      */
     logoutUser = async (req: Request, res: Response, next: NextFunction) => {
         const userId = req.user?.userId;
-        const userDeviceId = parseInt(req.body.userDeviceId, 10);
+        const userDeviceId =req.body.userDeviceId;
         const ipAddress = req.ip;
 
         if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
@@ -71,7 +73,7 @@ class AuthController {
             throwError(ErrorCodes.BAD_REQUEST, 'Valid array of UserDeviceIDs is required');
         }
 
-        await this.userDeviceService.logoutDevices(userDeviceIds.map(id => parseInt(id.toString())), userId, ipAddress);
+        await this.userDeviceService.logoutDevices(userDeviceIds.map(id => id.toString()), userId, ipAddress);
         res.status(204).send();
     };
 
@@ -87,8 +89,8 @@ class AuthController {
 
         if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
-        await this.userDeviceService.logoutAllDevices(userId, ipAddress);
-        res.status(204).send();
+        const result = await this.userDeviceService.logoutAllDevices(userId, ipAddress);
+        res.status(204).send(result);
     };
 
     /**
@@ -100,8 +102,8 @@ class AuthController {
     loginEmployee = async (req: Request, res: Response, next: NextFunction) => {
         const { username, password } = req.body;
         try {
-            const tokens = await this.authService.loginEmployee({ username, password });
-            res.json(tokens);
+            const result = await this.authService.loginEmployee({ username, password });
+            return res.status(200).json(result);
         } catch (error) {
             next(error);
         }
@@ -197,7 +199,72 @@ class AuthController {
             next(error);
         }
     };
+
+    /**
+     * Kiểm tra trạng thái xác thực email
+     * @param req Request Express với email trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    checkEmailVerification = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { email } = req.body;
+            const result = await this.authService.checkEmailVerification(email);
+            res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Xác thực email người dùng
+     * @param req Request Express với email trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { email } = req.body;
+            const result = await this.authService.verifyEmail(email);
+            res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Cập nhật thông tin người dùng
+     * @param req Request Express với thông tin cập nhật trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    updateUser = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.userId;
+            if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+            const result = await this.authService.updateUser(userId, req.body);
+            res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Khôi phục mật khẩu
+     * @param req Request Express với email và mật khẩu mới trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    recoveryPassword = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { email, newPassword } = req.body;
+            const result = await this.authService.recoveryPassword(email, newPassword);
+            res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 
 export default AuthController;
-

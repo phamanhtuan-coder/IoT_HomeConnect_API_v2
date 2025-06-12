@@ -19,6 +19,7 @@ import SpaceController from '../controllers/space.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import groupRoleMiddleware from '../middleware/group.middleware';
+import spaceGroupMiddleware from '../middleware/space-group.middleware';
 import {spaceIdSchema, spaceSchema} from "../utils/schemas/space.schema";
 
 const router = Router();
@@ -85,8 +86,9 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
 router.post(
     '/',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(spaceSchema),
+    spaceGroupMiddleware,
+    groupRoleMiddleware,
     asyncHandler(spaceController.createSpace)
 );
 
@@ -142,8 +144,55 @@ router.post(
 router.get(
     '/house/:houseId',
     authMiddleware,
+    spaceGroupMiddleware,
     groupRoleMiddleware,
     asyncHandler(spaceController.getSpacesByHouse)
+);
+
+/**
+ * Lấy tên của một Space.
+ * @swagger
+ * /api/spaces/{spaceId}/name:
+ *   get:
+ *     tags:
+ *       - Space
+ *     summary: Lấy tên không gian
+ *     description: |
+ *       Lấy tên của một không gian theo ID.
+ *       Yêu cầu người dùng có quyền trong nhóm chứa nhà.
+ *     security:
+ *       - UserBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: spaceId
+ *         required: true
+ *         type: string
+ *         description: ID của không gian cần lấy tên
+ *     responses:
+ *       200:
+ *         description: Trả về tên của không gian
+ *         schema:
+ *           type: object
+ *           properties:
+ *             space_name:
+ *               type: string
+ *               description: Tên của không gian
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       403:
+ *         description: Không có quyền trong nhóm
+ *       404:
+ *         description: Không tìm thấy không gian
+ *       500:
+ *         description: Lỗi server
+ */
+router.get(
+    '/:spaceId/name',
+    authMiddleware,
+    validateMiddleware(spaceIdSchema),
+    spaceGroupMiddleware,
+    groupRoleMiddleware,
+    asyncHandler(spaceController.getSpaceName)
 );
 
 /**
@@ -196,8 +245,9 @@ router.get(
 router.get(
     '/:spaceId',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(spaceIdSchema),
+    spaceGroupMiddleware,
+    groupRoleMiddleware,
     asyncHandler(spaceController.getSpaceById)
 );
 
@@ -249,8 +299,9 @@ router.get(
 router.put(
     '/:spaceId',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(spaceSchema),
+    spaceGroupMiddleware,
+    groupRoleMiddleware,
     asyncHandler(spaceController.updateSpace)
 );
 
@@ -288,55 +339,10 @@ router.put(
 router.delete(
     '/:spaceId',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(spaceIdSchema),
+    spaceGroupMiddleware,
+    groupRoleMiddleware,
     asyncHandler(spaceController.deleteSpace)
 );
 
-/**
- * Lấy tên của một Space.
- * @swagger
- * /api/spaces/{spaceId}/name:
- *   get:
- *     tags:
- *       - Space
- *     summary: Lấy tên không gian
- *     description: |
- *       Lấy tên của một không gian theo ID.
- *       Yêu cầu người dùng có quyền trong nhóm chứa nhà.
- *     security:
- *       - UserBearer: []
- *     parameters:
- *       - in: path
- *         name: spaceId
- *         required: true
- *         type: string
- *         description: ID của không gian cần lấy tên
- *     responses:
- *       200:
- *         description: Trả về tên của không gian
- *         schema:
- *           type: object
- *           properties:
- *             space_name:
- *               type: string
- *               description: Tên của không gian
- *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
- *       403:
- *         description: Không có quyền trong nhóm
- *       404:
- *         description: Không tìm thấy không gian
- *       500:
- *         description: Lỗi server
- */
-router.get(
-    '/:spaceId/name',
-    authMiddleware,
-    groupRoleMiddleware,
-    validateMiddleware(spaceIdSchema),
-    asyncHandler(spaceController.getSpaceName)
-);
-
 export default router;
-

@@ -13,11 +13,11 @@
  * @property {string | null} note - Ghi chú thêm cho firmware (có thể null).
  */
 export interface Firmware {
-    firmware_id: number;
+    firmware_id: string;
     name: string;
     version: string;
     file_path: string;
-    template_id: number;
+    template_id: string;
     is_mandatory: boolean;
     created_at: Date | null;
     tested_at: Date | null;

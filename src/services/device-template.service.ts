@@ -1,7 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
-import {DeviceTemplateCreateInput, DeviceTemplateUpdateInput} from "../utils/schemas/device-template.schema";
+import {DeviceTemplateCreateInput, DeviceTemplateUpdateInput, ApproveDeviceTemplateInput } from "../utils/schemas/device-template.schema";
 import {DeviceTemplate} from "../types/device-template";
+import {generatePlanningId, generateTemplateId} from "../utils/helpers";
 
 class DeviceTemplateService {
     private prisma: PrismaClient;
@@ -13,19 +14,19 @@ class DeviceTemplateService {
     async createDeviceTemplate(input: DeviceTemplateCreateInput, createdBy: string): Promise<DeviceTemplate> {
         const { device_type_id, name, production_cost, components } = input;
 
-        // Validate device_type_id if provided
+        // Kiểm tra loại thiết bị đã có chưa
         if (device_type_id) {
-            const category = await this.prisma.categories.findUnique({
+            const category = await this.prisma.categories.findFirst({
                 where: { category_id: device_type_id},
             });
-            if (!category) throwError(ErrorCodes.NOT_FOUND, 'Device type not found');
+            if (!category) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy thiết bị');
         }
 
-        // Check for existing template name
+        // Kiểm tra tên đã tồn tại chưa
         const existingTemplate = await this.prisma.device_templates.findFirst({
             where: { name, is_deleted: false },
         });
-        if (existingTemplate) throwError(ErrorCodes.TEMPLATE_ALREADY_EXISTS, 'Template name already exists');
+        if (existingTemplate) throwError(ErrorCodes.TEMPLATE_ALREADY_EXISTS, 'Tên thiết bị đã tồn tại');
 
         if (components.length > 0) {
             // Tạo danh sách component_id cần kiểm tra
@@ -46,10 +47,25 @@ class DeviceTemplateService {
             if (missingComponents.length > 0) {
                 throwError(ErrorCodes.NOT_FOUND, `Components with IDs ${missingComponents.join(', ')} not found`);
             }
+        }else {
+            throwError(ErrorCodes.BAD_REQUEST, 'Cần ít nhất 1 loại thiết bị khi thêm');
         }
+
+        let template_id: string;
+        let attempts = 0;
+        const maxAttempts = 5;
+        do {
+            template_id = generateTemplateId();
+            const idExists = await this.prisma.firmware.findFirst({ where: { template_id:template_id}});
+            if (!idExists) break;
+            attempts++;
+            if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+        } while (true);
+
 
         const template = await this.prisma.device_templates.create({
             data: {
+                template_id: template_id,
                 device_type_id,
                 name,
                 production_cost: production_cost,
@@ -106,7 +122,7 @@ class DeviceTemplateService {
         return this.mapPrismaDeviceTemplateToDeviceTemplate(completeTemplate);
     }
 
-    async getDeviceTemplateById(templateId: number): Promise<DeviceTemplate> {
+    async getDeviceTemplateById(templateId: string): Promise<DeviceTemplate> {
         const template = await this.prisma.device_templates.findUnique({
             where: { template_id: templateId, is_deleted: false },
             include: {
@@ -200,42 +216,43 @@ class DeviceTemplateService {
         return templates.map((template: any) => this.mapPrismaDeviceTemplateToDeviceTemplate(template));
     }
 
-    async updateDeviceTemplate(templateId: number, input: DeviceTemplateUpdateInput): Promise<DeviceTemplate> {
+    async updateDeviceTemplate(templateId: string, input: DeviceTemplateUpdateInput): Promise<DeviceTemplate> {
+        console.log("data cập nhật template", input);
         const template = await this.prisma.device_templates.findUnique({
             where: { template_id: templateId, is_deleted: false },
         });
-        if (!template) throwError(ErrorCodes.TEMPLATE_NOT_FOUND, 'Device template not found');
+        if (!template) throwError(ErrorCodes.TEMPLATE_NOT_FOUND, 'Không tìm thấy thiết bị');
     
-        const { device_type_id, name, production_cost, status,  components = [] } = input;
+        const { device_type_id, name, production_cost, status, components = [] } = input;
     
         // Validate device_type_id if provided
         if (device_type_id) {
             const category = await this.prisma.categories.findUnique({
                 where: { category_id: device_type_id },
             });
-            if (!category) throwError(ErrorCodes.NOT_FOUND, 'Device type not found');
+            if (!category) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy loại thiết bị');
         }
     
         // Check for duplicate name, excluding the current template
-        if (name && name !== template!.name) {
+        if (name && name !== template?.name) {
             const existingTemplate = await this.prisma.device_templates.findFirst({
                 where: {
                     name,
                     is_deleted: false,
-                    template_id: { not: templateId }, // Loại trừ template hiện tại
+                    template_id: { not: templateId },
                 },
             });
-            if (existingTemplate) throwError(ErrorCodes.TEMPLATE_ALREADY_EXISTS, 'Template name already exists');
+            if (existingTemplate) throwError(ErrorCodes.TEMPLATE_ALREADY_EXISTS, 'Tên thiết bị đã tồn tại');
         }
     
-        // Validate component IDs if components are provided
+        // Validate component IDs
         if (components.length > 0) {
             const componentIds = components
                 .map(component => component.component_id)
-                .filter((id): id is number => id !== null && id !== undefined); // Loại bỏ null và undefined
+                .filter((id): id is string => id !== null && id !== undefined);
     
             if (componentIds.length !== components.length) {
-                throwError(ErrorCodes.NOT_FOUND, 'Some component IDs are invalid (null or undefined)');
+                throwError(ErrorCodes.NOT_FOUND, 'Có ID linh kiện không hợp lệ');
             }
     
             const existingComponents = await this.prisma.components.findMany({
@@ -247,30 +264,32 @@ class DeviceTemplateService {
     
             const foundComponentIds = existingComponents
                 .map(comp => comp.component_id)
-                .filter((id): id is number => id !== null);
+                .filter((id): id is string => id !== null);
     
             const missingComponents = componentIds.filter(id => !foundComponentIds.includes(id));
     
             if (missingComponents.length > 0) {
                 throwError(ErrorCodes.NOT_FOUND, `Components with IDs ${missingComponents.join(', ')} not found`);
             }
+        } else {
+            throwError(ErrorCodes.BAD_REQUEST, 'Cần ít nhất 1 loại thiết bị');
         }
     
-        // Update the device template
+        // Update device template
         await this.prisma.device_templates.update({
             where: { template_id: templateId },
             data: {
-                device_type_id: device_type_id ?? template!.device_type_id,
-                name: name ?? template!.name,
-                production_cost: production_cost ?? template!.production_cost,
+                device_type_id: device_type_id ?? template?.device_type_id,
+                name: name ?? template?.name,
+                production_cost: production_cost ?? template?.production_cost,
                 updated_at: new Date(),
-                status: status ?? template!.status,
+                status: status ?? template?.status,
             },
         });
     
-        // Handle components update, restoration, or deletion
+        // Handle component updates
         if (components.length > 0) {
-            // Lấy tất cả template_components (bao gồm cả đã soft delete) để kiểm tra
+            // Fetch all existing template_components (including soft-deleted ones)
             const allTemplateComponents = await this.prisma.template_components.findMany({
                 where: { template_id: templateId },
                 select: {
@@ -280,18 +299,17 @@ class DeviceTemplateService {
                 },
             });
     
-            // Tạo danh sách component_id hiện tại (bao gồm cả đã soft delete)
             const existingComponentIds = allTemplateComponents
                 .map(tc => tc.component_id)
-                .filter((id): id is number => id !== null);
+                .filter((id): id is string => id !== null);
             const newComponentIds = components
                 .map(component => component.component_id)
-                .filter((id): id is number => id !== null);
+                .filter((id): id is string => id !== null);
     
-            // Tìm các component_id cần xóa (có trong danh sách cũ nhưng không có trong danh sách mới)
+            // Identify components to delete (exist in old list but not in new list)
             const componentsToDelete = existingComponentIds.filter(id => !newComponentIds.includes(id));
     
-            // Soft delete các component không còn trong danh sách mới
+            // Soft delete components no longer in the list
             if (componentsToDelete.length > 0) {
                 await this.prisma.template_components.updateMany({
                     where: {
@@ -306,7 +324,9 @@ class DeviceTemplateService {
                 });
             }
     
-            // Xử lý từng component trong danh sách mới
+            // Process components: update existing ones and create new ones
+            const componentsToCreate: { template_id: string; component_id: string; quantity_required: number; created_at: Date; updated_at: Date; is_deleted: boolean }[] = [];
+            
             await Promise.all(
                 components.map(async (component) => {
                     if (component.component_id === null || component.component_id === undefined) {
@@ -318,7 +338,7 @@ class DeviceTemplateService {
                     );
     
                     if (existingComponent) {
-                        // Nếu component đã tồn tại (dù đã soft delete), khôi phục và cập nhật quantity
+                        // Update or restore existing component
                         await this.prisma.template_components.updateMany({
                             where: {
                                 template_id: templateId,
@@ -330,9 +350,26 @@ class DeviceTemplateService {
                                 updated_at: new Date(),
                             },
                         });
+                    } else {
+                        // Collect new components to create
+                        componentsToCreate.push({
+                            template_id: templateId,
+                            component_id: component.component_id,
+                            quantity_required: component.quantity_required || 1,
+                            created_at: new Date(),
+                            updated_at: new Date(),
+                            is_deleted: false,
+                        });
                     }
                 })
             );
+    
+            // Create new components if any
+            if (componentsToCreate.length > 0) {
+                await this.prisma.template_components.createMany({
+                    data: componentsToCreate,
+                });
+            }
         }
     
         // Fetch the complete updated template with related data
@@ -366,7 +403,56 @@ class DeviceTemplateService {
         return this.mapPrismaDeviceTemplateToDeviceTemplate(completeUpdatedTemplate);
     }
 
-    async deleteDeviceTemplate(templateId: number): Promise<void> {
+    async approveDeviceTemplate(templateId: string, input: ApproveDeviceTemplateInput): Promise<DeviceTemplate> {
+        const template = await this.prisma.device_templates.findUnique({
+            where: { template_id: templateId, is_deleted: false },
+        });
+        if (!template) throwError(ErrorCodes.TEMPLATE_NOT_FOUND, 'Không tìm thấy thiết bị');
+    
+        const { status } = input;
+        console.log("data", templateId + " " + status)
+    
+        // Update the device template
+        await this.prisma.device_templates.update({
+            where: { template_id: templateId },
+            data: {
+                updated_at: new Date(),
+                status: status ?? template!.status,
+            },
+        });
+    
+        // Fetch the complete updated template with related data
+        const completeUpdatedTemplate = await this.prisma.device_templates.findUnique({
+            where: { template_id: templateId },
+            include: {
+                categories: { select: { name: true } },
+                account: {
+                    include: {
+                        employee: { select: { surname: true, lastname: true } },
+                    },
+                },
+                template_components: {
+                    where: { is_deleted: false },
+                    include: {
+                        components: {
+                            select: {
+                                component_id: true,
+                                name: true,
+                                supplier: true,
+                                unit_cost: true,
+                                status: true,
+                            },
+                        },
+                    },
+                },
+                firmware: { where: { is_deleted: false } },
+            },
+        });
+    
+        return this.mapPrismaDeviceTemplateToDeviceTemplate(completeUpdatedTemplate);
+    }
+
+    async deleteDeviceTemplate(templateId: string): Promise<void> {
         const template = await this.prisma.device_templates.findUnique({
             where: { template_id: templateId, is_deleted: false },
         });

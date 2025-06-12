@@ -34,10 +34,21 @@ export class PlanningService {
             throwError(ErrorCodes.BAD_REQUEST, 'Batch count must be between 1 and 20');
         }
 
+        let planning_id: string;
+        let attempts = 0;
+        const maxAttempts = 5;
+        do {
+            planning_id = generatePlanningId();
+            const idExists = await this.prisma.planning.findFirst({ where: { planning_id:planning_id}});
+            if (!idExists) break;
+            attempts++;
+            if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+        } while (true);
+
         try {
             const planning = await this.prisma.planning.create({
                 data: {
-                    planning_id: generatePlanningId(),
+                    planning_id: planning_id,
                     planning_note: data.planning_note,
                     created_by: employeeId,
                     status: 'pending',
@@ -309,7 +320,7 @@ export class PlanningService {
                     throwError(ErrorCodes.NOT_FOUND, 'Device template not found');
                 }
 
-                const firmwareBelongsToTemplate = template?.firmware.some(f => f.firmware_id === batchData.firmware_id);
+                const firmwareBelongsToTemplate = !batchData.firmware_id || template?.firmware.some(f => f.firmware_id === batchData.firmware_id);
                 if (!firmwareBelongsToTemplate) {
                     throwError(ErrorCodes.BAD_REQUEST, 'Firmware not associated with this template');
                 }
@@ -320,7 +331,7 @@ export class PlanningService {
                         planning_id: planning.planning_id,
                         production_batch_id: generateBatchId(),
                         template_id: batchData.template_id,
-                        firmware_id: batchData.firmware_id,
+                        firmware_id: batchData.firmware_id || null,
                         quantity: batchData.quantity,
                         batch_note: batchData.batch_note,
                         status: 'pending',
@@ -331,7 +342,7 @@ export class PlanningService {
                                 action: 'created',
                                 details: {
                                     ...JSON.parse(JSON.stringify(batchData)),
-                                    firmware_id: batchData.firmware_id
+                                    firmware_id: batchData.firmware_id || null
                                 }
                             }
                         } as any
@@ -355,8 +366,8 @@ export class PlanningService {
                             device_serial: deviceSerial,
                             stage: 'pending',
                             status: 'pending',
-                            state_logs:[]
-                            
+                            state_logs: []
+
                         }
                     });
                 });

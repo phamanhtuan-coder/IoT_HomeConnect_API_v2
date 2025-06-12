@@ -4,6 +4,7 @@ import TicketTypeService from './ticket-type.service';
 import NotificationService from './notification.service';
 import { NotificationType } from '../types/notification';
 import {OwnershipHistory, OwnershipTransferStatus} from "../types/ownership-history";
+import {generateTicketId} from "../utils/helpers";
 
 class OwnershipHistoryService {
     private prisma: PrismaClient;
@@ -40,7 +41,7 @@ class OwnershipHistoryService {
 
         // Find recipient
         const customer = await this.prisma.customer.findUnique({ where: { email: to_user_email } });
-        const recipient = await this.prisma.account.findFirst({ where: { customer_id: customer?.id } });
+        const recipient = await this.prisma.account.findFirst({ where: { customer_id: customer?.customer_id } });
         if (!recipient) throwError(ErrorCodes.NOT_FOUND, 'Recipient account not found');
 
         // Check if device.ts is already associated with recipient
@@ -60,10 +61,21 @@ class OwnershipHistoryService {
                 is_active: true,
             });
         }
+        let ticket_id: string;
+        let attempts = 0;
+        const maxAttempts = 5;
+        do {
+            ticket_id = generateTicketId();
+            const idExists = await this.prisma.tickets.findFirst({ where: { ticket_id:ticket_id}});
+            if (!idExists) break;
+            attempts++;
+            if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+        } while (true);
 
         // Create ticket for ownership transfer
         const ticket = await this.prisma.tickets.create({
             data: {
+                ticket_id: ticket_id,
                 user_id: from_user_id,
                 device_serial,
                 ticket_type_id: ticketType!.ticket_type_id,
@@ -93,7 +105,7 @@ class OwnershipHistoryService {
         });
     }
 
-    async approveOwnershipTransfer(ticketId: number, accept: boolean, approverId: string): Promise<void> {
+    async approveOwnershipTransfer(ticketId: string, accept: boolean, approverId: string): Promise<void> {
         const ownershipHistory = await this.prisma.ownership_history.findFirst({
             where: { ticket_id: ticketId, is_deleted: false },
             include: { devices: true, tickets: true },

@@ -22,26 +22,15 @@
         "request": {
           "method": "POST",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"houseId\": 1,\n  \"space_name\": \"MyRoom\"\n}",
-            "options": {
-              "raw": {
-                "language": "json"
-              }
-            }
+            "raw": "{\n  \"houseId\": 1,\n  \"space_name\": \"Living Room\",\n  \"icon_name\": \"room\",\n  \"icon_color\": \"#4A90E2\",\n  \"space_description\": \"Main living room\"\n}",
+            "options": { "raw": { "language": "json" } }
           },
-          "url": {
-            "raw": "{{baseUrl}}/spaces",
-            "host": ["{{baseUrl}}"],
-            "path": ["spaces"]
-          }
+          "url": { "raw": "{{baseUrl}}/spaces", "host": ["{{baseUrl}}"], "path": ["spaces"] },
+          "description": "Requires owner or vice role in the group that owns the house"
         },
         "response": []
       },
@@ -65,23 +54,14 @@
         "request": {
           "method": "GET",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "url": {
-            "raw": "{{baseUrl}}/spaces/house/:houseId",
+            "raw": "{{baseUrl}}/spaces/house/1",
             "host": ["{{baseUrl}}"],
-            "path": ["spaces", "house", ":houseId"],
-            "variable": [
-              {
-                "key": "houseId",
-                "value": "1"
-              }
-            ]
-          }
+            "path": ["spaces", "house", "1"]
+          },
+          "description": "Any member of the group can view spaces"
         },
         "response": []
       },
@@ -105,23 +85,14 @@
         "request": {
           "method": "GET",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "url": {
-            "raw": "{{baseUrl}}/spaces/:spaceId",
+            "raw": "{{baseUrl}}/spaces/1",
             "host": ["{{baseUrl}}"],
-            "path": ["spaces", ":spaceId"],
-            "variable": [
-              {
-                "key": "spaceId",
-                "value": "1"
-              }
-            ]
-          }
+            "path": ["spaces", "1"]
+          },
+          "description": "Any member of the group can view space details"
         },
         "response": []
       },
@@ -145,32 +116,19 @@
         "request": {
           "method": "PUT",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"space_name\": \"UpdatedRoom\"\n}",
-            "options": {
-              "raw": {
-                "language": "json"
-              }
-            }
+            "raw": "{\n  \"space_name\": \"Updated Living Room\",\n  \"icon_name\": \"living-room\",\n  \"icon_color\": \"#3366FF\",\n  \"space_description\": \"Updated main living room\"\n}",
+            "options": { "raw": { "language": "json" } }
           },
           "url": {
-            "raw": "{{baseUrl}}/spaces/:spaceId",
+            "raw": "{{baseUrl}}/spaces/1",
             "host": ["{{baseUrl}}"],
-            "path": ["spaces", ":spaceId"],
-            "variable": [
-              {
-                "key": "spaceId",
-                "value": "1"
-              }
-            ]
-          }
+            "path": ["spaces", "1"]
+          },
+          "description": "Requires owner or vice role in the group that owns the house"
         },
         "response": []
       },
@@ -192,23 +150,14 @@
         "request": {
           "method": "DELETE",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "url": {
-            "raw": "{{baseUrl}}/spaces/:spaceId",
+            "raw": "{{baseUrl}}/spaces/1",
             "host": ["{{baseUrl}}"],
-            "path": ["spaces", ":spaceId"],
-            "variable": [
-              {
-                "key": "spaceId",
-                "value": "1"
-              }
-            ]
-          }
+            "path": ["spaces", "1"]
+          },
+          "description": "Requires owner or vice role in the group that owns the house"
         },
         "response": []
       },
@@ -232,23 +181,14 @@
         "request": {
           "method": "GET",
           "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
+            { "key": "Authorization", "value": "Bearer {{userAccessToken}}", "type": "text" }
           ],
           "url": {
-            "raw": "{{baseUrl}}/spaces/:spaceId/name",
+            "raw": "{{baseUrl}}/spaces/1/name",
             "host": ["{{baseUrl}}"],
-            "path": ["spaces", ":spaceId", "name"],
-            "variable": [
-              {
-                "key": "spaceId",
-                "value": "1"
-              }
-            ]
-          }
+            "path": ["spaces", "1", "name"]
+          },
+          "description": "Any member of the group can view space name"
         },
         "response": []
       }

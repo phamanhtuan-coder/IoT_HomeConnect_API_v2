@@ -1,77 +1,38 @@
-import { v4 as uuidV4 } from "uuid";
-import crypto from "crypto";
+import { ulid } from 'ulid';
 
 /**
- * Tạo seed động dựa trên APP_SECRET và input từ caller.
- * Kết hợp giá trị bí mật nội bộ với input để tạo seed 16 byte dùng cho UUID.
- *
- * @param callerInput - Giá trị đầu vào từ caller (string hoặc number)
- * @returns Buffer - Seed 16 byte
+ * Chuyển ngày hiện tại thành định dạng DDMMMYY (ví dụ: 06JUN25)
  */
-const generateDynamicSeed = (callerInput: string | number): Buffer => {
-    const internalValue = process.env.APP_SECRET || "pMqH9zVM+0ENpDS/BF6ASyF0RgCPvTxyQh5seLYllsajYqH37xbYUeRoEITnGWDz"; // Fallback if no APP_SECRET
-    const combinedValue = `${internalValue}${callerInput}`; // Combine static secret with dynamic input
-    return crypto.createHash("sha256").update(combinedValue).digest().slice(0, 16); // 16-byte seed
+const getReadableDate = (): string => {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = now.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+    const year = String(now.getFullYear()).slice(-2);
+    return `${day}${month}${year}`;
 };
 
 /**
- * Sinh UUID có prefix, độ dài tối đa 32 ký tự.
- * Sử dụng seed động để tạo UUID duy nhất dựa trên input.
- *
- * @param prefix - Tiền tố cho UUID (ví dụ: "ACCT", "CUST")
- * @param callerInput - Giá trị đầu vào để tạo seed (string hoặc number)
- * @returns string - UUID có prefix, viết hoa, tối đa 32 ký tự
+ * Sinh ULID-based ID với prefix + readable date + ULID21
+ * Ví dụ: ACCT06JUN25X8F5G2E7Z4N9D81FJ7VTP
  */
-export function generatePrefixedUUID(prefix: string, callerInput: string | number): string {
-    const dynamicSeed = generateDynamicSeed(callerInput); // Use caller input for seed
-    const baseUUID = uuidV4({ random: dynamicSeed }); // Generate UUID with dynamic seed
-    const base36UUID = BigInt(`0x${baseUUID.replace(/-/g, "")}`).toString(36); // Convert to Base-36
-    const shortUUID = base36UUID.slice(0, 28 - prefix.length); // Adjust length (28 = 32 - prefix length)
-    return `${prefix}${shortUUID}`.toUpperCase(); // Total length ≤ 32
+export function generateUlidId(prefix: string): string {
+    const date = getReadableDate(); // 06JUN25
+    const ulidPart = ulid().slice(0, 21); // cắt để tổng 32 ký tự
+    return `${prefix}${date}${ulidPart}`;
 }
 
-// Usage with Date.now() as default caller input
-/**
- * Sinh Account ID với prefix "ACCT".
- * @param input - Giá trị đầu vào (string hoặc number), mặc định là Date.now()
- * @returns string - Account ID
- */
-export const generateAccountId = (input: string | number = Date.now()) => generatePrefixedUUID("ACCT", input);
-
-/**
- * Sinh Customer ID với prefix "CUST".
- * @param input - Giá trị đầu vào (string hoặc number), mặc định là Date.now()
- * @returns string - Customer ID
- */
-export const generateCustomerId = (input: string | number = Date.now()) => generatePrefixedUUID("CUST", input);
-
-/**
- * Sinh Employee ID với prefix "EMPL".
- * @param input - Giá trị đầu vào (string hoặc number), mặc định là Date.now()
- * @returns string - Employee ID
- */
-export const generateEmployeeId = (input: string | number = Date.now()) => generatePrefixedUUID("EMPL", input);
-
-/**
- * Sinh User Device ID với prefix "UDVC".
- * @param input - Giá trị đầu vào (string hoặc number), mặc định là Date.now()
- * @returns string - User Device ID
- */
-export const generateUserDeviceId = (input: string | number = Date.now()) => generatePrefixedUUID("UDVC", input);
-
-/**
- * Sinh Planning ID với prefix "PLAN".
- * @param input - Giá trị đầu vào (string hoặc number), mặc định là Date.now()
- * @returns string - Planning ID
- */
-
-export const generatePlanningId = (): string => {
-    return `PLAN-${uuidV4().slice(0, 8).toUpperCase()}`;
-};
-
-export const generateBatchId = (): string => {
-    return `BATCH-${uuidV4().slice(0, 8).toUpperCase()}`;
-};
+// === ID generators cho từng thực thể ===
+export const generateAccountId = () => generateUlidId("ACCT");
+export const generateCustomerId = () => generateUlidId("CUST");
+export const generateEmployeeId = () => generateUlidId("EMPL");
+export const generateUserDeviceId = () => generateUlidId("UDVC");
+export const generateDeviceId = () => generateUlidId("IOTD");
+export const generateFirmwareId = () => generateUlidId("FIRM");
+export const generateComponentId = () => generateUlidId("COMP");
+export const generatePlanningId = () => generateUlidId("PLAN");
+export const generateBatchId = () => generateUlidId("BTCH");
+export const generateTemplateId = () => generateUlidId("DEVC");
+export const generateTicketId = () => generateUlidId("TICK");
 
 export const calculatePlanningStatus = (batches: any[]): string => {
     if (!batches || batches.length === 0) return "pending";

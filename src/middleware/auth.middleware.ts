@@ -33,6 +33,7 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
         req.user = decoded;
         next();
     } catch (error: unknown) {
+        console.log('error', error)
         if (error instanceof Error) {
             if (error.name === 'TokenExpiredError') {
                 throwError(ErrorCodes.UNAUTHORIZED, 'Token has expired');

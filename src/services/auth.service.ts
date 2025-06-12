@@ -180,29 +180,33 @@ class AuthService {
         return jwt.sign(payload, appConfig.jwtSecret, { expiresIn: decoded.userId ? '1h' : '8h' });
     }
 
-    async registerUser(data: UserRegisterRequestBody): Promise<string> {
+    async registerUser(data: UserRegisterRequestBody): Promise<any> {
         const { surname, lastname, image, phone, email, birthdate, gender, password, username } = data;
 
         // Check for existing username
         const existingUsername = await this.prisma.account.findFirst({ where: { username } });
         if (existingUsername) throwError(ErrorCodes.CONFLICT, 'Username already exists');
 
+        let accountId: string='';
+        let customerId: string='';
+        let attempts = 0;
+        const maxAttempts = 5;
         // Check for existing email if provided
         if (email) {
+            do {
+                accountId = generateAccountId();
+                customerId = generateCustomerId();
+                const idExists = await this.prisma.account.findFirst({ where: { account_id: accountId } });
+                const customerExists = await this.prisma.customer.findFirst({ where: { customer_id: customerId } });
+                if (!idExists && !customerExists) break;
+                attempts++;
+                if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+            } while (true);
             const existingEmail = await this.prisma.customer.findFirst({ where: { email } });
             if (existingEmail) throwError(ErrorCodes.CONFLICT, 'Email already exists');
         }
 
-        let accountId: string;
-        let attempts = 0;
-        const maxAttempts = 5;
-        do {
-            accountId = generateCustomerId(Date.now());
-            const idExists = await this.prisma.account.findUnique({ where: { account_id: accountId } });
-            if (!idExists) break;
-            attempts++;
-            if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
-        } while (true);
+
 
         const passwordHash = await bcrypt.hash(password, 12);
         const account = await this.prisma.account.create({
@@ -212,7 +216,7 @@ class AuthService {
                 password: passwordHash,
                 customer: {
                     create: {
-                        id: accountId,
+                        customer_id: customerId,
                         surname,
                         lastname: lastname || null,
                         image: image || null,
@@ -231,12 +235,15 @@ class AuthService {
             { expiresIn: '1h' }
         );
 
-        return accessToken;
+        return {
+            success: true,
+            accessToken: accessToken,
+        }
     }
-    async registerEmployee(data: EmployeeRegisterRequestBody, adminId: string): Promise<string> {
+    async registerEmployee(data: EmployeeRegisterRequestBody, adminId: string): Promise<any> {
         const { surname, lastname, image, email, password, birthdate, gender, phone, status, role, username } = data; // Thêm username
 
-        const admin = await this.prisma.account.findUnique({ where: { account_id: adminId } });
+        const admin = await this.prisma.account.findFirst({ where: { account_id: adminId } });
         if (!admin) throwError(ErrorCodes.FORBIDDEN, 'Admin account not found');
         if (admin!.role_id !== 1) throwError(ErrorCodes.FORBIDDEN, 'Only admins can create employees');
 
@@ -246,40 +253,54 @@ class AuthService {
         const roleRecord = await this.prisma.role.findFirst({ where: { name: role } });
         if (!roleRecord) throwError(ErrorCodes.NOT_FOUND, `Role '${role}' not found`);
 
-        let accountId: string;
+        let accountId: string='';
+        let employeeId: string='';
         let attempts = 0;
         const maxAttempts = 5;
         do {
-            accountId = generateEmployeeId(Date.now());
-            const idExists = await this.prisma.account.findUnique({ where: { account_id: accountId } });
-            if (!idExists) break;
+            accountId = generateAccountId();
+            employeeId = generateEmployeeId();
+            const idExists = await this.prisma.account.findFirst({ where: { account_id: accountId } });
+            const employeeExists = await this.prisma.employee.findFirst({ where: { employee_id: employeeId } });
+            if (!idExists && !employeeExists) break;
             attempts++;
             if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
         } while (true);
 
         const passwordHash = await bcrypt.hash(password, 12);
+
+        // Step 1: Create the account first
         const account = await this.prisma.account.create({
             data: {
                 account_id: accountId,
                 username,
                 password: passwordHash,
                 role_id: roleRecord!.id,
+                // employee_id will be set after employee is created
             },
         });
-        await this.prisma.employee.create({
-            data: {
-                        id: accountId,
-                        surname,
-                        lastname: lastname || null,
-                        image: image || null,
-                        email: email || null, // email là tùy chọn
-                        birthdate: birthdate ? new Date(birthdate) : null,
-                        gender: gender !== undefined ? gender : null,
-                        phone: phone || null,
-                        status: status !== undefined ? status : null,
-                    },
 
+        // Step 2: Create the employee and link to account
+        const employee = await this.prisma.employee.create({
+            data: {
+                employee_id: employeeId,
+                surname,
+                lastname: lastname || null,
+                image: image || null,
+                email: email || null, // email là tùy chọn
+                birthdate: birthdate ? new Date(birthdate) : null,
+                gender: gender !== undefined ? gender : null,
+                phone: phone || null,
+                status: status !== undefined ? status : null,
+            },
         });
+
+        // Optionally update account with employee_id if needed
+        await this.prisma.account.update({
+            where: { account_id: accountId },
+            data: { employee_id: employeeId },
+        });
+
 
         const accessToken = jwt.sign(
             { employeeId: account.account_id, username: account.username, role } as EmployeeJwtPayload,
@@ -287,7 +308,10 @@ class AuthService {
             { expiresIn: '1h' }
         );
 
-        return accessToken;
+        return {
+            success: true,
+            accessToken: accessToken,
+        }
     }
 
     async logoutEmployee(employeeId: string) {
@@ -308,7 +332,7 @@ class AuthService {
     async updateDeviceToken(accountId: string, deviceToken: string): Promise<{ success: boolean; message: string }> {
         const userDeviceService = new UserDeviceService();
 
-        const account = await this.prisma.account.findUnique({ where: { account_id: accountId } });
+        const account = await this.prisma.account.findFirst({ where: { account_id: accountId } });
         if (!account) {
             return { success: false, message: 'Account not found' };
         }
@@ -328,7 +352,168 @@ class AuthService {
         return { success: true, message: 'Device token updated successfully' };
     }
 
+    async checkEmailVerification(email: string): Promise<{
+        exists: boolean;
+        isVerified: boolean;
+        message: string;
+    }> {
+        const customer = await this.prisma.customer.findFirst({
+            where: {
+                email,
+                deleted_at: null
+            },
+            include: {
+                account: {
+                    where: {
+                        is_locked: false,
+                        deleted_at: null
+                    }
+                }
+            }
+        });
+
+        if (!customer) {
+            return {
+                exists: false,
+                isVerified: false,
+                message: 'Email not found'
+            };
+        }
+
+        if (customer.account.length === 0) {
+            return {
+                exists: true,
+                isVerified: false,
+                message: 'Account is locked or deleted'
+            };
+        }
+
+        return {
+            exists: true,
+            isVerified: customer.email_verified || false,
+            message: customer.email_verified ? 'Email is verified' : 'Email is not verified'
+        };
+    }
+
+    async verifyEmail(email: string): Promise<{ success: boolean; message: string }> {
+        const customer = await this.prisma.customer.findFirst({
+            where: {
+                email,
+                deleted_at: null
+            }
+        });
+
+        if (!customer) {
+            throwError(ErrorCodes.NOT_FOUND, 'Email not found');
+        }
+
+        await this.prisma.customer.update({
+            where: { customer_id: customer!.customer_id },
+            data: {
+                email_verified: true,
+                updated_at: new Date()
+            }
+        });
+
+        return {
+            success: true,
+            message: 'Email verified successfully'
+        };
+    }
+
+    async updateUser(userId: string, data: {
+        surname?: string;
+        lastname?: string;
+        phone?: string;
+        email?: string;
+        birthdate?: string;
+        gender?: boolean;
+        image?: string;
+    }): Promise<any> {
+        const account = await this.prisma.account.findFirst({
+            where: { account_id: userId },
+            include: { customer: true }
+        });
+
+        if (!account || !account.customer) {
+            throwError(ErrorCodes.NOT_FOUND, 'User not found');
+        }
+
+        const updateData: any = { ...data };
+
+        // Nếu email thay đổi, cập nhật trạng thái verified
+        if (data.email && data.email !== account!.customer!.email) {
+            // Kiểm tra email mới có tồn tại chưa
+            const existingEmail = await this.prisma.customer.findFirst({
+                where: {
+                    email: data.email,
+                    customer_id: { not: account!.customer!.customer_id }
+                }
+            });
+
+            if (existingEmail) {
+                throwError(ErrorCodes.CONFLICT, 'Email already exists');
+            }
+
+            updateData.email_verified = false;
+        }
+
+        if (data.birthdate) {
+            updateData.birthdate = new Date(data.birthdate);
+        }
+
+        const customer = await this.prisma.customer.update({
+            where: { customer_id: account!.customer!.customer_id },
+            data: {
+                ...updateData,
+                updated_at: new Date()
+            }
+        });
+
+        return {
+            success: true,
+            data: customer
+        };
+    }
+
+    async recoveryPassword(email: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+        const customer = await this.prisma.customer.findFirst({
+            where: {
+                email,
+                deleted_at: null
+            },
+            include: {
+                account: {
+                    where: {
+                        deleted_at: null,
+                        is_locked: false
+                    }
+                }
+            }
+        });
+
+        if (!customer || customer.account.length === 0) {
+            throwError(ErrorCodes.NOT_FOUND, 'Account not found or inactive');
+        }
+
+        if (!customer!.email_verified) {
+            throwError(ErrorCodes.FORBIDDEN, 'Email not verified');
+        }
+
+        const passwordHash = await bcrypt.hash(newPassword, 12);
+        await this.prisma.account.update({
+            where: { account_id: customer!.account[0].account_id },
+            data: {
+                password: passwordHash,
+                updated_at: new Date()
+            }
+        });
+
+        return {
+            success: true,
+            message: 'Password updated successfully'
+        };
+    }
 }
 
 export default AuthService;
-

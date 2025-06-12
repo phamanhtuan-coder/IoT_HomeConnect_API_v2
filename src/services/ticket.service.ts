@@ -4,6 +4,7 @@ import { ErrorCodes, throwError } from '../utils/errors';
 import NotificationService from './notification.service';
 import { NotificationType } from '../types/notification';
 import {Ticket} from "../types/ticket";
+import {generateTicketId} from "../utils/helpers";
 
 class TicketService {
   private prisma: PrismaClient;
@@ -40,8 +41,20 @@ class TicketService {
     });
     if (!ticketType) throwError(ErrorCodes.NOT_FOUND, 'Ticket type not found');
 
+    let ticket_id: string;
+    let attempts = 0;
+    const maxAttempts = 5;
+    do {
+      ticket_id = generateTicketId();
+      const idExists = await this.prisma.tickets.findFirst({ where: { ticket_id:ticket_id}});
+      if (!idExists) break;
+      attempts++;
+      if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+    } while (true);
+
     const ticket = await this.prisma.tickets.create({
       data: {
+        ticket_id: ticket_id,
         user_id,
         device_serial,
         ticket_type_id,
@@ -63,7 +76,7 @@ class TicketService {
   }
 
   async updateTicket(
-      ticketId: number,
+      ticketId: string,
       data: {
         description?: string;
         evidence?: any;
@@ -101,7 +114,7 @@ class TicketService {
     return this.mapPrismaTicketToAuthTicket(updatedTicket);
   }
 
-  async deleteTicket(ticketId: number): Promise<void> {
+  async deleteTicket(ticketId: string): Promise<void> {
     const ticket = await this.prisma.tickets.findUnique({
       where: { ticket_id: ticketId, is_deleted: false },
     });
@@ -119,7 +132,7 @@ class TicketService {
     });
   }
 
-  async getTicketById(ticketId: number): Promise<Ticket> {
+  async getTicketById(ticketId: string): Promise<Ticket> {
     const ticket = await this.prisma.tickets.findUnique({
       where: { ticket_id: ticketId, is_deleted: false },
     });

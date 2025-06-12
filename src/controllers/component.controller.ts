@@ -24,8 +24,8 @@ class ComponentController {
      * @param {NextFunction} next - Hàm tiếp theo để xử lý lỗi.
      */
     createComponent = async (req: Request, res: Response, next: NextFunction) => {
-        // const employeeId = req.user?.employeeId;
-        // if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+        const employeeId = req.user?.employeeId;
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
             const component: Component = await this.componentService.createComponent(req.body);
@@ -33,7 +33,7 @@ class ComponentController {
             const response: ComponentResponse = {
                 success: 201,
                 data: component,
-                message: 'Component created successfully',
+                message: 'Tạo linh kiện thành công',
             };
 
             res.status(201).json(response);
@@ -49,13 +49,12 @@ class ComponentController {
      * @param {NextFunction} next - Hàm tiếp theo để xử lý lỗi.
      */
     getComponentById = async (req: Request, res: Response, next: NextFunction) => {
-        // const employeeId = req.user?.employeeId;
-        const employeeId = "admin123";
+        const employeeId = req.user?.employeeId;
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
             const { componentId } = req.params;
-            const component: Component = await this.componentService.getComponentById(parseInt(componentId));
+            const component: Component = await this.componentService.getComponentById(componentId);
 
             const response: ComponentResponse = {
                 success: 200,
@@ -76,8 +75,7 @@ class ComponentController {
      * @param {NextFunction} next - Hàm tiếp theo để xử lý lỗi.
      */
     getAllComponents = async (req: Request, res: Response, next: NextFunction) => {
-        // const employeeId = req.user?.employeeId;
-        const employeeId = "admin123";
+        const employeeId = req.user?.employeeId;
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
@@ -102,22 +100,24 @@ class ComponentController {
      * @param {NextFunction} next - Hàm tiếp theo để xử lý lỗi.
      */
     updateComponent = async (req: Request, res: Response, next: NextFunction) => {
-        // const employeeId = req.user?.employeeId;
-        const employeeId = "admin123";
+        const employeeId = req.user?.employeeId;
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
             const { componentId } = req.params;
-            const component: Component = await this.componentService.updateComponent(parseInt(componentId), req.body);
+            const component: Component = await this.componentService.updateComponent(componentId, req.body);
+
+            console.log("component",component)
 
             const response: ComponentResponse = {
                 success: 200,
                 data: component,
-                message: 'Component updated successfully',
+                message: 'Cập nhật linh kiện thành công',
             };
 
             res.status(200).json(response);
         } catch (error) {
+            console.log("error",error)
             next(error);
         }
     };
@@ -129,13 +129,12 @@ class ComponentController {
      * @param {NextFunction} next - Hàm tiếp theo để xử lý lỗi.
      */
     deleteComponent = async (req: Request, res: Response, next: NextFunction) => {
-        // const employeeId = req.user?.employeeId;
-        const employeeId = "admin123";
+        const employeeId = req.user?.employeeId;
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
             const { componentId } = req.params;
-            await this.componentService.deleteComponent(parseInt(componentId));
+            await this.componentService.deleteComponent(componentId);
 
             const response: ComponentResponse = {
                 success: 204,

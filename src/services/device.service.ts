@@ -5,7 +5,8 @@ import { Server } from "socket.io";
 import  AlertService  from "../services/alert.service";
 import {Device, DeviceAttributes} from "../types/device";
 import {GroupRole} from "../types/group";
-import {PermissionType} from "../types/share-request"; // Import AlertService
+import {PermissionType} from "../types/share-request";
+import {generateComponentId, generateDeviceId} from "../utils/helpers"; // Import AlertService
 
 let io: Server | null = null;
 const alertService = new AlertService(); // Instantiate AlertService
@@ -22,7 +23,7 @@ class DeviceService {
     }
 
     async createDevice(input: {
-        templateId: number;
+        templateId: string;
         serial_number: string;
         spaceId?: number;
         accountId: string;
@@ -50,8 +51,20 @@ class DeviceService {
         });
         if (existingDevice) throwError(ErrorCodes.CONFLICT, "Serial number already exists");
 
+        let device_id: string;
+        let attempts = 0;
+        const maxAttempts = 5;
+        do {
+            device_id = generateDeviceId()
+            const idExists = await this.prisma.devices.findFirst({ where: { device_id: device_id } });
+            if (!idExists) break;
+            attempts++;
+            if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+        } while (true);
+
         const device = await this.prisma.devices.create({
             data: {
+                device_id: device_id,
                 serial_number,
                 template_id: templateId,
                 space_id: spaceId,
@@ -93,7 +106,7 @@ class DeviceService {
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);
     }
 
-    async toggleDevice(deviceId: number, serial_number: string, power_status: boolean, accountId: string): Promise<Device> {
+    async toggleDevice(deviceId: string, serial_number: string, power_status: boolean, accountId: string): Promise<Device> {
         const device = await this.prisma.devices.findUnique({
             where: { device_id_serial_number: { device_id: deviceId, serial_number }, is_deleted: false },
         });
@@ -116,7 +129,7 @@ class DeviceService {
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);
     }
 
-    async updateDeviceAttributes(deviceId: number, serial_number: string, input: { brightness?: number; color?: string }, accountId: string): Promise<Device> {
+    async updateDeviceAttributes(deviceId: string, serial_number: string, input: { brightness?: number; color?: string }, accountId: string): Promise<Device> {
         const device = await this.prisma.devices.findUnique({
             where: { device_id_serial_number: { device_id: deviceId, serial_number }, is_deleted: false },
         });
@@ -144,7 +157,7 @@ class DeviceService {
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);
     }
 
-    async updateDeviceWifi(deviceId: number, serial_number: string, input: { wifi_ssid?: string; wifi_password?: string }, accountId: string): Promise<Device> {
+    async updateDeviceWifi(deviceId: string, serial_number: string, input: { wifi_ssid?: string; wifi_password?: string }, accountId: string): Promise<Device> {
         const device = await this.prisma.devices.findUnique({
             where: { device_id_serial_number: { device_id: deviceId, serial_number }, is_deleted: false },
         });
@@ -213,11 +226,11 @@ class DeviceService {
         return devices.map((device) => this.mapPrismaDeviceToAuthDevice(device));
     }
 
-    async getDeviceById(deviceId: number, serial_number: string, accountId: string): Promise<Device> {
-        const device = await this.prisma.devices.findUnique({
-            where: { device_id_serial_number: { device_id: deviceId, serial_number }, is_deleted: false },
-            include: { device_templates: true, spaces: true },
-        });
+async getDeviceById(deviceId: string, serial_number: string, accountId: string): Promise<Device> {
+                const device = await this.prisma.devices.findFirst({
+                    where: { device_id: deviceId, serial_number: serial_number, is_deleted: false },
+                    include: { device_templates: true, spaces: true },
+                });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found");
 
         await this.checkDevicePermission(deviceId, serial_number, accountId, false);
@@ -225,10 +238,10 @@ class DeviceService {
         return this.mapPrismaDeviceToAuthDevice(device);
     }
 
-    async unlinkDevice(deviceId: number, serial_number: string, accountId: string): Promise<void> {
-        const device = await this.prisma.devices.findUnique({
-            where: { device_id_serial_number: { device_id: deviceId, serial_number }, account_id: accountId, is_deleted: false },
-        });
+  async unlinkDevice(deviceId: string, serial_number: string, accountId: string): Promise<void> {
+      const device = await this.prisma.devices.findFirst({
+          where: { device_id: deviceId, serial_number: serial_number, account_id: accountId, is_deleted: false },
+      });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found or access denied");
 
         await this.prisma.devices.update({
@@ -249,7 +262,7 @@ class DeviceService {
         }
     }
 
-    async updateDeviceSpace(deviceId: number, serial_number: string, spaceId: number | null, accountId: string): Promise<Device> {
+    async updateDeviceSpace(deviceId: string, serial_number: string, spaceId: number | null, accountId: string): Promise<Device> {
         const device = await this.prisma.devices.findUnique({
             where: { device_id_serial_number: { device_id: deviceId, serial_number }, account_id: accountId, is_deleted: false },
         });
@@ -270,7 +283,7 @@ class DeviceService {
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);
     }
 
-    async checkDevicePermission(deviceId: number, serial_number: string, accountId: string, requireControl: boolean): Promise<void> {
+    async checkDevicePermission(deviceId: string, serial_number: string, accountId: string, requireControl: boolean): Promise<void> {
         const device = await this.prisma.devices.findUnique({
             where: { device_id_serial_number: { device_id: deviceId, serial_number }, is_deleted: false },
             include: { spaces: { include: { houses: true } } },

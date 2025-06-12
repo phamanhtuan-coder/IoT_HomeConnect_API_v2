@@ -23,7 +23,7 @@ export interface ProductionBatch {
     batch_id: number;
     production_batch_id: string;
     planning_id: string;
-    template_id: number;
+    template_id: string;
     quantity: number;
     status: string;
     batch_note?: string;
@@ -63,7 +63,7 @@ export interface ProductionBatch {
  * @property {string | null} batch_note - Ghi chú lô sản xuất
  */
 export interface ProductionBatchCreateInput {
-    template_id: number;
+    template_id: string;
     quantity: number;
     batch_note?: string;
 }
@@ -92,7 +92,7 @@ export interface BatchLog {
 }
 
 export interface DeviceTemplate {
-    template_id: number;
+    template_id: string;
     name: string;
     device_template_note?: string;
     status: boolean;

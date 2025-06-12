@@ -9,14 +9,13 @@ const TemplateNameSchema = z.string({
 
 // Schema cơ bản cho component
 const ComponentSchema = z.object({
-    component_id: z.number({
+    component_id: z.string({
         required_error: `[${ERROR_CODES.DEVICE_TEMPLATE_COMPONENT_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_TEMPLATE_COMPONENT_REQUIRED]}`,
         invalid_type_error: `[${ERROR_CODES.DEVICE_TEMPLATE_COMPONENT_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_TEMPLATE_COMPONENT_INVALID]}`
-    }).positive(`[${ERROR_CODES.DEVICE_TEMPLATE_COMPONENT_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_TEMPLATE_COMPONENT_INVALID]}`),
+    }),
     quantity_required: z.number({
         invalid_type_error: `[${ERROR_CODES.DEVICE_TEMPLATE_COMPONENT_QUANTITY_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_TEMPLATE_COMPONENT_QUANTITY_INVALID]}`
     })
-    .positive(`[${ERROR_CODES.DEVICE_TEMPLATE_COMPONENT_QUANTITY_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_TEMPLATE_COMPONENT_QUANTITY_INVALID]}`)
     .default(1)
 });
 
@@ -37,8 +36,6 @@ export const DeviceTemplateUpdateSchema = z.object({
         templateId: z.string({
             required_error: `[${ERROR_CODES.DEVICE_TEMPLATE_ID_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_TEMPLATE_ID_REQUIRED]}`
         })
-        .transform((val) => parseInt(val))
-        .refine((val) => val > 0, `[${ERROR_CODES.DEVICE_TEMPLATE_ID_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_TEMPLATE_ID_INVALID]}`)
     }),
     body: z.object({
         device_type_id: z.number({
@@ -97,6 +94,13 @@ export const DeviceTemplateListSchema = z.object({
         sort_by: z.enum(['name', 'device_type_id', 'production_cost', 'created_at', 'updated_at']).optional(),
         sort_order: z.enum(['asc', 'desc']).optional()
     })
+});
+
+export const approveDeviceTemplateSchema = z.object({
+    params: z.object({
+        templateId: z.string(),
+        status: z.string().optional(),
+    }),
 });
 
 // Types từ schema

@@ -12,8 +12,8 @@
  */
 export interface TemplateComponent {
     template_component_id: number;
-    template_id: number | null;
-    component_id: number | null;
+    template_id: string | null;
+    component_id: string | null;
     quantity_required: number;
     created_at: Date | null;
     updated_at: Date | null;
@@ -29,7 +29,7 @@ export interface TemplateComponent {
  * @property {number} quantity_required - Số lượng yêu cầu của thành phần.
  */
 export interface TemplateComponentInput {
-    template_id: number;
-    component_id: number;
+    template_id: string;
+    component_id: string;
     quantity_required: number;
 }

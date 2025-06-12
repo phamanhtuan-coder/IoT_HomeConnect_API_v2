@@ -69,6 +69,9 @@ importers:
       swagger-ui-express:
         specifier: ^5.0.1
         version: 5.0.1(express@4.21.2)
+      ulid:
+        specifier: ^3.0.0
+        version: 3.0.0
       uuid:
         specifier: ^11.1.0
         version: 11.1.0
@@ -2060,6 +2063,10 @@ packages:
   uint8array-extras@1.4.0:
     resolution: {integrity: sha512-ZPtzy0hu4cZjv3z5NW9gfKnNLjoz4y6uv4HlelAjDK7sY/xOkKZv9xK/WQpcsBB3jEybChz9DPC2U/+cusjJVQ==}
     engines: {node: '>=18'}
+
+  ulid@3.0.0:
+    resolution: {integrity: sha512-yvZYdXInnJve6LdlPIuYmURdS2NP41ZoF4QW7SXwbUKYt53+0eDAySO+rGSvM2O/ciuB/G+8N7GQrZ1mCJpuqw==}
+    hasBin: true
 
   undefsafe@2.0.5:
     resolution: {integrity: sha512-WxONCrssBM8TSPRqN5EmsjVrsv4A8X12J4ArBiiayv3DyyG3ZlIg6yysuuSYdZsVz3TKcTg2fd//Ujd4CHV1iA==}
@@ -4386,6 +4393,8 @@ snapshots:
       '@lukeed/csprng': 1.1.0
 
   uint8array-extras@1.4.0: {}
+
+  ulid@3.0.0: {}
 
   undefsafe@2.0.5: {}
 

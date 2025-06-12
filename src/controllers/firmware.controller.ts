@@ -16,13 +16,10 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     createFirmware = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.accountId;
+        const employeeId = req.user?.employeeId;
+        console.log("nhân viên", employeeId)
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
-        if (!accountId) {
-            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
-        }
-
-        const employeeId = accountId;
         try {
             const firmware = await this.firmwareService.createFirmware(req.body, employeeId);
             res.status(201).json(firmware);
@@ -38,17 +35,12 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     updateFirmware = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.accountId;
-        
-        if (!accountId) {
-            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
-        }
-        
-        const employeeId = accountId;
+        const employeeId = req.user?.employeeId;
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
             const { firmwareId } = req.params;
-            const firmware = await this.firmwareService.updateFirmware(parseInt(firmwareId), req.body, employeeId);
+            const firmware = await this.firmwareService.updateFirmware(firmwareId, req.body, employeeId);
             res.json(firmware);
         } catch (error) {
             next(error);
@@ -72,7 +64,7 @@ class FirmwareController {
 
         try {
             const { firmwareId } = req.params;
-            const response = await this.firmwareService.deleteFirmware(parseInt(firmwareId), employeeId);
+            const response = await this.firmwareService.deleteFirmware(firmwareId, employeeId);
             
             console.log('response', response)
             res.status(200).json(response);
@@ -88,17 +80,15 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     getFirmwareById = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.accountId;
-        
-        if (!accountId) {
-            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
-        }
-        
+        const employeeId = req.user?.employeeId;
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+
         try {
             const { firmwareId } = req.params;
-            const firmware = await this.firmwareService.getFirmwareById(parseInt(firmwareId));
-            res.json(firmware);
+            const firmware = await this.firmwareService.getFirmwareById(firmwareId);
+            res.status(200).json(firmware);
         } catch (error) {
+            console.log("err",error)
             next(error);
         }
     };
