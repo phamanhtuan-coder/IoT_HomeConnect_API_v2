@@ -10,7 +10,7 @@ import DeviceTemplateController from '../controllers/device-template.controller'
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
-import { deviceTemplateSchema, deviceTemplateIdSchema, approveDeviceTemplateSchema } from '../utils/schemas/device-template.schema';
+import { DeviceTemplateCreateSchema, DeviceTemplateIdSchema, DeviceTemplateUpdateSchema, ApproveDeviceTemplateSchema } from '../utils/schemas/device-template.schema';
 
 const router = Router();
 const deviceTemplateController = new DeviceTemplateController();
@@ -35,9 +35,9 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  */
 router.post(
     '/',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
-    validateMiddleware(deviceTemplateSchema),
+    validateMiddleware(DeviceTemplateCreateSchema),
     asyncHandler(deviceTemplateController.createDeviceTemplate)
 );
 
@@ -49,7 +49,7 @@ router.post(
  */
 router.get(
     '/',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     asyncHandler(deviceTemplateController.getAllDeviceTemplates)
 );
@@ -63,9 +63,9 @@ router.get(
  */
 router.get(
     '/:templateId',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
-    validateMiddleware(deviceTemplateIdSchema),
+    validateMiddleware(DeviceTemplateIdSchema),
     asyncHandler(deviceTemplateController.getDeviceTemplateById)
 );
 
@@ -79,9 +79,9 @@ router.get(
  */
 router.put(
     '/:templateId',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
-    validateMiddleware(deviceTemplateSchema),
+    validateMiddleware(DeviceTemplateUpdateSchema),
     asyncHandler(deviceTemplateController.updateDeviceTemplate)
 );
 
@@ -95,9 +95,9 @@ router.put(
  */
 router.put(
     '/approveDevice/:templateId',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
-    validateMiddleware(approveDeviceTemplateSchema),
+    validateMiddleware(ApproveDeviceTemplateSchema),
     asyncHandler(deviceTemplateController.approveDeviceTemplate)
 );
 
@@ -110,9 +110,9 @@ router.put(
  */
 router.delete(
     '/:templateId',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
-    validateMiddleware(deviceTemplateIdSchema),
+    validateMiddleware(DeviceTemplateIdSchema),
     asyncHandler(deviceTemplateController.deleteDeviceTemplate)
 );
 

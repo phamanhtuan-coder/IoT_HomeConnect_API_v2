@@ -4,10 +4,10 @@ import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
 import validateMiddleware from '../middleware/validate.middleware';
 import {
-    firmwareUpdateHistoryFilterSchema,
-    firmwareUpdateHistoryIdSchema,
-    firmwareUpdateHistorySchema,
-    updateFirmwareUpdateHistorySchema
+    // FirmwareUpdateHistoryFilterSchema,
+    // FirmwareUpdateHistoryIdSchema,
+    // FirmwareUpdateHistorySchema,
+    // UpdateFirmwareUpdateHistorySchema
 } from "../utils/schemas/firmware.schema";
 
 /**
@@ -91,7 +91,7 @@ router.post(
     '/',
     authMiddleware,
     roleMiddleware,
-    validateMiddleware(firmwareUpdateHistorySchema),
+    // validateMiddleware(FirmwareUpdateHistorySchema),
     asyncHandler(firmwareUpdateHistoryController.createFirmwareUpdateHistory)
 );
 
@@ -147,7 +147,7 @@ router.put(
     '/:updateId',
     authMiddleware,
     roleMiddleware,
-    validateMiddleware(updateFirmwareUpdateHistorySchema),
+    // validateMiddleware(UpdateFirmwareUpdateHistorySchema),
     asyncHandler(firmwareUpdateHistoryController.updateFirmwareUpdateHistory)
 );
 
@@ -186,7 +186,7 @@ router.delete(
     '/:updateId',
     authMiddleware,
     roleMiddleware,
-    validateMiddleware(firmwareUpdateHistoryIdSchema),
+    // validateMiddleware(FirmwareUpdateHistoryIdSchema),
     asyncHandler(firmwareUpdateHistoryController.deleteFirmwareUpdateHistory)
 );
 
@@ -249,7 +249,7 @@ router.delete(
 router.get(
     '/:updateId',
     authMiddleware,
-    validateMiddleware(firmwareUpdateHistoryIdSchema),
+    // validateMiddleware(FirmwareUpdateHistoryIdSchema),
     asyncHandler(firmwareUpdateHistoryController.getFirmwareUpdateHistoryById)
 );
 
@@ -330,7 +330,7 @@ router.get(
 router.get(
     '/',
     authMiddleware,
-    validateMiddleware(firmwareUpdateHistoryFilterSchema),
+    // validateMiddleware(FirmwareUpdateHistoryFilterSchema),
     asyncHandler(firmwareUpdateHistoryController.getFirmwareUpdateHistories)
 );
 

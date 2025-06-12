@@ -1,90 +1,88 @@
 import { z } from 'zod';
+import { RejectReason, StageSerialStage, StatusSerialStage } from '../../types/production-tracking';
+import { ERROR_CODES, ERROR_MESSAGES } from '../../contants/error';
 
-// Schema cho việc duyệt sản phẩm
-export const approveProductionSchema = z.object({
-    body: z.object({
-        device_serials: z.array(z.string(), {
-            required_error: 'Danh sách serial là bắt buộc',
-            invalid_type_error: 'Danh sách serial phải là một mảng các chuỗi'
-        }).min(1, 'Danh sách serial không được để trống')
-    })
+// Schema cơ bản cho danh sách serial
+const SerialListSchema = z.object({
+    device_serials: z.array(z.string(), {
+        required_error: `[${ERROR_CODES.PRODUCTION_TRACKING_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_SERIAL_REQUIRED]}`,
+        invalid_type_error: `[${ERROR_CODES.PRODUCTION_TRACKING_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_SERIAL_INVALID]}`
+    }).min(1, `[${ERROR_CODES.PRODUCTION_TRACKING_SERIAL_LIST_EMPTY}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_SERIAL_LIST_EMPTY]}`)
+});
+
+// Schema cho việc xác nhận sản phẩm đã được kiểm tra
+export const ApproveProductionSchema = z.object({
+    body: SerialListSchema
 });
 
 // Schema cho việc từ chối sản phẩm QC
-export const rejectProductionSchema = z.object({
-    body: z.object({
-        device_serials: z.array(z.string(), {
-            required_error: 'Danh sách serial là bắt buộc',
-            invalid_type_error: 'Danh sách serial phải là một mảng các chuỗi'
-        }).min(1, 'Danh sách serial không được để trống'),
-        reason: z.enum(['BLUR_ERROR', 'PRODUCT_ERROR', 'OTHER'], {
-            required_error: 'Lý do từ chối là bắt buộc',
-            invalid_type_error: 'Lý do từ chối không hợp lệ'
+export const RejectProductionSchema = z.object({
+    body: SerialListSchema.extend({
+        reason: z.enum([RejectReason.BLUR_ERROR, RejectReason.PRODUCT_ERROR, RejectReason.ALL_ERROR], {
+            required_error: `[${ERROR_CODES.PRODUCTION_TRACKING_REASON_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_REASON_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.PRODUCTION_TRACKING_REASON_INVALID}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_REASON_INVALID]}`
         }),
         note: z.string().optional()
     })
 });
 
 // Schema cho việc cập nhật trạng thái sản phẩm
-export const updateProductionSchema = z.object({
+export const UpdateProductionSchema = z.object({
     body: z.object({
         device_serial: z.string({
-            required_error: 'Mã serial là bắt buộc',
-            invalid_type_error: 'Mã serial phải là chuỗi'
+            required_error: `[${ERROR_CODES.PRODUCTION_TRACKING_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_SERIAL_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.PRODUCTION_TRACKING_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_SERIAL_INVALID]}`
         }),
-        stage: z.enum(['PENDING', 'ASSEMBLY', 'FIRMWARE_UPLOAD', 'QC', 'COMPLETED'], {
-            required_error: 'Giai đoạn là bắt buộc',
-            invalid_type_error: 'Giai đoạn không hợp lệ'
+        stage: z.enum([
+            StageSerialStage.PENDING,
+            StageSerialStage.ASSEMBLY,
+            StageSerialStage.QC,
+            StageSerialStage.COMPLETED
+        ], {
+            required_error: `[${ERROR_CODES.PRODUCTION_TRACKING_STAGE_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_STAGE_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.PRODUCTION_TRACKING_STAGE_INVALID}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_STAGE_INVALID]}`
         }),
         status: z.enum([
-            'PENDING',
-            'IN_PROGRESS',
-            'FIRMWARE_UPLOAD',
-            'FIRMWARE_UPLOADING',
-            'FIRMWARE_UPLOADED',
-            'FIRMWARE_FAILED',
-            'TESTING',
-            'PENDING_PACKAGING',
-            'COMPLETED',
-            'FIXING_LABEL',
-            'FIXING_PRODUCT',
-            'FIXING_ALL',
-            'FAILED'
+            StatusSerialStage.PENDING,
+            StatusSerialStage.IN_PROGRESS,
+            StatusSerialStage.FIRMWARE_UPLOAD,
+            StatusSerialStage.FIRMWARE_UPLOADING,
+            StatusSerialStage.FIRMWARE_UPLOADED,
+            StatusSerialStage.FIRMWARE_FAILED,
+            StatusSerialStage.TESTING,
+            StatusSerialStage.PENDING_PACKAGING,
+            StatusSerialStage.COMPLETED,
+            StatusSerialStage.FIXING_LABEL,
+            StatusSerialStage.FIXING_PRODUCT,
+            StatusSerialStage.FIXING_ALL,
+            StatusSerialStage.FAILED
         ], {
-            required_error: 'Trạng thái là bắt buộc',
-            invalid_type_error: 'Trạng thái không hợp lệ'
+            required_error: `[${ERROR_CODES.PRODUCTION_TRACKING_STATUS_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_STATUS_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.PRODUCTION_TRACKING_STATUS_INVALID}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_STATUS_INVALID]}`
         })
     })
 });
 
 // Schema cho việc huỷ sản phẩm
-export const cancelProductionSchema = z.object({
-    body: z.object({
-        device_serials: z.array(z.string(), {
-            required_error: 'Danh sách serial là bắt buộc',
-            invalid_type_error: 'Danh sách serial phải là một mảng các chuỗi'
-        }).min(1, 'Danh sách serial không được để trống'),
+export const CancelProductionSchema = z.object({
+    body: SerialListSchema.extend({
         note: z.string().optional()
     })
 });
 
 // Schema cho việc duyệt sản phẩm đã kiểm thử
-export const approveTestedSchema = z.object({
-    body: z.object({
-        device_serials: z.array(z.string(), {
-            required_error: 'Danh sách serial là bắt buộc',
-            invalid_type_error: 'Danh sách serial phải là một mảng các chuỗi'
-        }).min(1, 'Danh sách serial không được để trống'),
+export const ApproveTestedSchema = z.object({
+    body: SerialListSchema.extend({
         note: z.string().optional()
     })
 });
 
 // Schema cho việc lấy danh sách serial cần cài firmware
-export const getSerialFirmwareSchema = z.object({
+export const GetSerialFirmwareSchema = z.object({
     query: z.object({
         type: z.enum(['planning', 'batch', 'tracking'], {
-            required_error: 'Loại truy vấn là bắt buộc',
-            invalid_type_error: 'Loại truy vấn không hợp lệ'
+            required_error: `[${ERROR_CODES.PRODUCTION_TRACKING_QUERY_TYPE_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_QUERY_TYPE_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.PRODUCTION_TRACKING_QUERY_TYPE_INVALID}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_QUERY_TYPE_INVALID]}`
         }),
         planning_id: z.string().optional(),
         batch_id: z.string().optional()
@@ -99,17 +97,16 @@ export const getSerialFirmwareSchema = z.object({
             return true;
         },
         {
-            message: 'Tham số không phù hợp với loại truy vấn'
+            message: `[${ERROR_CODES.PRODUCTION_TRACKING_PLANNING_ID_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_PLANNING_ID_REQUIRED]}`
         }
     )
 });
 
 
-
 // Export các type từ schema
-export type ApproveProductionInput = z.infer<typeof approveProductionSchema>['body'];
-export type RejectProductionInput = z.infer<typeof rejectProductionSchema>['body'];
-export type UpdateProductionInput = z.infer<typeof updateProductionSchema>['body'];
-export type CancelProductionInput = z.infer<typeof cancelProductionSchema>['body'];
-export type ApproveTestedInput = z.infer<typeof approveTestedSchema>['body'];
-export type GetSerialFirmwareInput = z.infer<typeof getSerialFirmwareSchema>['query'];
+export type ApproveProductionInput = z.infer<typeof ApproveProductionSchema>['body'];
+export type RejectProductionInput = z.infer<typeof RejectProductionSchema>['body'];
+export type UpdateProductionInput = z.infer<typeof UpdateProductionSchema>['body'];
+export type CancelProductionInput = z.infer<typeof CancelProductionSchema>['body'];
+export type ApproveTestedInput = z.infer<typeof ApproveTestedSchema>['body'];
+export type GetSerialFirmwareInput = z.infer<typeof GetSerialFirmwareSchema>['query'];

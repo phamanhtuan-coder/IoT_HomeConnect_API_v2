@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, response } from 'express';
 import DeviceTemplateService from '../services/device-template.service';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { DeviceTemplateInput } from "../utils/schemas/device-template.schema";
+import {DeviceTemplateCreateInput, DeviceTemplateUpdateInput, DeviceTemplateIdParam, DeviceTemplateListQuery} from "../utils/schemas/device-template.schema";
 
 /**
  * Controller quản lý các thao tác liên quan đến Device Template.
@@ -23,12 +23,11 @@ class DeviceTemplateController {
      * @param {NextFunction} next - Hàm middleware tiếp theo.
      */
     createDeviceTemplate = async (req: Request, res: Response, next: NextFunction) => {
-        // const employeeId = req.user?.employeeId;
-        const employeeId = "admin123";
+        const employeeId = req.user?.employeeId;
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
-            const template = await this.deviceTemplateService.createDeviceTemplate(req.body as DeviceTemplateInput, employeeId);
+            const template = await this.deviceTemplateService.createDeviceTemplate(req.body as DeviceTemplateCreateInput, employeeId);
             return res.status(201).json({
                 status_code: 201,
                 message: "Tạo khuôn mẫu thành công",
@@ -46,8 +45,7 @@ class DeviceTemplateController {
      * @param {NextFunction} next - Hàm middleware tiếp theo.
      */
     getDeviceTemplateById = async (req: Request, res: Response, next: NextFunction) => {
-        // const employeeId = req.user?.employeeId;
-        const employeeId = "admin123";
+        const employeeId = req.user?.employeeId;
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
@@ -66,12 +64,15 @@ class DeviceTemplateController {
      * @param {NextFunction} next - Hàm middleware tiếp theo.
      */
     getAllDeviceTemplates = async (req: Request, res: Response, next: NextFunction) => {
-        // const employeeId = req.user?.employeeId;
-        const employeeId = "admin123";
+        const employeeId = req.user?.employeeId;
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
         try {
             const templates = await this.deviceTemplateService.getAllDeviceTemplates();
-            res.json(templates);
+            console.log("res", templates)
+            res.status(200).json({
+                status_code: 200,
+                data: templates,
+            });
         } catch (error) {
             next(error);
         }
@@ -84,8 +85,7 @@ class DeviceTemplateController {
      * @param {NextFunction} next - Hàm middleware tiếp theo.
      */
     updateDeviceTemplate = async (req: Request, res: Response, next: NextFunction) => {
-        // const employeeId = req.user?.employeeId;
-        const employeeId = "admin123";
+        const employeeId = req.user?.employeeId;
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
@@ -108,8 +108,7 @@ class DeviceTemplateController {
      * @param {NextFunction} next - Hàm middleware tiếp theo.
      */
     approveDeviceTemplate = async (req: Request, res: Response, next: NextFunction) => {
-        // const employeeId = req.user?.employeeId;
-        const employeeId = "admin123";
+        const employeeId = req.user?.employeeId;
         if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
         try {
             const { templateId } = req.params;
