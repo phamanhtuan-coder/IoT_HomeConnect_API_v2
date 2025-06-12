@@ -34,19 +34,19 @@ class DeviceService {
     }): Promise<Device> {
         const { templateId, serial_number, spaceId, accountId, name, attribute, wifi_ssid, wifi_password } = input;
 
-        const template = await this.prisma.device_templates.findUnique({
+        const template = await this.prisma.device_templates.findFirst({
             where: { template_id: templateId, is_deleted: false },
         });
         if (!template) throwError(ErrorCodes.NOT_FOUND, "Device template not found");
 
         if (spaceId) {
-            const space = await this.prisma.spaces.findUnique({
+            const space = await this.prisma.spaces.findFirst({
                 where: { space_id: spaceId, is_deleted: false },
             });
             if (!space) throwError(ErrorCodes.NOT_FOUND, "Space not found");
         }
 
-        const existingDevice = await this.prisma.devices.findUnique({
+        const existingDevice = await this.prisma.devices.findFirst({
             where: { serial_number },
         });
         if (existingDevice) throwError(ErrorCodes.CONFLICT, "Serial number already exists");
@@ -74,7 +74,7 @@ class DeviceService {
                 attribute,
                 wifi_ssid,
                 wifi_password,
-                link_status: "linked",
+                link_status: "unlinked",
             },
         });
 

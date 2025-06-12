@@ -27,6 +27,7 @@ export const generateCustomerId = () => generateUlidId("CUST");
 export const generateEmployeeId = () => generateUlidId("EMPL");
 export const generateUserDeviceId = () => generateUlidId("UDVC");
 export const generateDeviceId = () => generateUlidId("IOTD");
+export const generateDeviceSerialId = () => generateUlidId("SERL");
 export const generateFirmwareId = () => generateUlidId("FIRM");
 export const generateComponentId = () => generateUlidId("COMP");
 export const generatePlanningId = () => generateUlidId("PLAN");

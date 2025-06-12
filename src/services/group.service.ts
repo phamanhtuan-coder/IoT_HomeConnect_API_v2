@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
 import DeviceService from './device.service';
-import {Group, GroupRole, UserGroup, GroupMember} from "../types/group";
+import {Group, GroupRole, UserGroup, GroupMember, GroupWithRole} from "../types/group";
 
 class GroupService {
     private prisma: PrismaClient;
@@ -159,13 +159,59 @@ class GroupService {
         return this.mapPrismaUserGroupToAuthUserGroup(updatedUserGroup);
     }
 
-    async getUserRole(groupId: number, accountId: string): Promise<GroupRole> {
+    async getUserGroupRole(groupId: number, accountId: string): Promise<GroupRole | null> {
         const userGroup = await this.prisma.user_groups.findFirst({
-            where: { group_id: groupId, account_id: accountId, is_deleted: false },
+            where: {
+                group_id: groupId,
+                account_id: accountId,
+                is_deleted: false
+            },
+            select: {
+                role: true
+            }
         });
-        if (!userGroup || !userGroup.role) throwError(ErrorCodes.NOT_FOUND, 'User is not a member of this group');
 
-        return userGroup!.role as GroupRole;
+        return userGroup?.role as GroupRole || null;
+    }
+
+    async getGroupsByUserRole(accountId: string, roles: GroupRole[]): Promise<GroupWithRole[]> {
+        const userGroups = await this.prisma.user_groups.findMany({
+            where: {
+                account_id: accountId,
+                role: {
+                    in: roles
+                },
+                is_deleted: false
+            },
+            include: {
+                groups: true
+            }
+        });
+
+        return userGroups
+            .filter(ug => ug.groups && !ug.groups.is_deleted)
+            .map(ug => ({
+                group_id: ug.groups!.group_id,
+                group_name: ug.groups!.group_name,
+                group_description: ug.groups!.group_description,
+                icon_name: ug.groups!.icon_name,
+                icon_color: ug.groups!.icon_color,
+                created_at: ug.groups!.created_at,
+                updated_at: ug.groups!.updated_at,
+                is_deleted: ug.groups!.is_deleted,
+                role: ug.role as GroupRole
+            }));
+    }
+
+    async getUserRole(groupId: number, accountId: string): Promise<GroupRole | null> {
+        const userGroup = await this.prisma.user_groups.findFirst({
+            where: {
+                group_id: groupId,
+                account_id: accountId,
+                is_deleted: false
+            }
+        });
+        return userGroup?.role as GroupRole || null;
     }
 
     async getGroupsByUsername(username: string, userId: string): Promise<Group[]> {
