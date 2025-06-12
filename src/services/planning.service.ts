@@ -39,7 +39,7 @@ export class PlanningService {
         const maxAttempts = 5;
         do {
             planning_id = generatePlanningId();
-            const idExists = await this.prisma.planning.findFirst({ where: { planning_id:planning_id}});
+            const idExists = await this.prisma.planning.findFirst({ where: { planning_id: planning_id } });
             if (!idExists) break;
             attempts++;
             if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
@@ -285,10 +285,24 @@ export class PlanningService {
     // src/services/planning.service.ts
     async createPlanningWithBatches(planningData: PlanningCreateInput, batches: BatchCreateInput[], employeeId: string): Promise<any> {
         return this.prisma.$transaction(async (prisma) => {
+            // 1. Tạo planning với ID mới
+            let planning_id: string;
+            let attempts = 0;
+            const maxAttempts = 5;
+            do {
+                planning_id = generatePlanningId();
+                const idExists = await prisma.planning.findFirst({
+                    where: { planning_id: planning_id }
+                });
+                if (!idExists) break;
+                attempts++;
+                if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique planning ID');
+            } while (true);
+
             // Tạo planning
             const planning = await prisma.planning.create({
                 data: {
-                    planning_id: generatePlanningId(),
+                    planning_id: planning_id,
                     planning_note: planningData.planning_note,
                     created_by: employeeId,
                     status: 'pending',
@@ -303,7 +317,7 @@ export class PlanningService {
                 }
             });
 
-            // Tạo các batch
+            // 2. Tạo các batch
             for (const batchData of batches) {
                 // Kiểm tra template
                 const template = await prisma.device_templates.findFirst({
@@ -325,11 +339,24 @@ export class PlanningService {
                     throwError(ErrorCodes.BAD_REQUEST, 'Firmware not associated with this template');
                 }
 
+                // Gen batch ID mới
+                let batch_id: string;
+                attempts = 0;
+                do {
+                    batch_id = generateBatchId();
+                    const idExists = await prisma.production_batches.findFirst({
+                        where: { production_batch_id: batch_id }
+                    });
+                    if (!idExists) break;
+                    attempts++;
+                    if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique batch ID');
+                } while (true);
+                console.log
                 // Tạo batch
                 const batch = await prisma.production_batches.create({
                     data: {
                         planning_id: planning.planning_id,
-                        production_batch_id: generateBatchId(),
+                        production_batch_id: batch_id,
                         template_id: batchData.template_id,
                         firmware_id: batchData.firmware_id || null,
                         quantity: batchData.quantity,
@@ -349,14 +376,17 @@ export class PlanningService {
                     }
                 });
 
-                // Tạo production_tracking records
+                // 3. Tạo production_tracking records với ID mới
                 const trackingPromises = Array.from({ length: batchData.quantity }, async (_, index) => {
+                    // Tạo từ tắt từ template name
                     const templateName = template!.name;
                     const shortName = templateName
                         .split(' ')
                         .map(word => word[0])
                         .join('')
                         .toUpperCase();
+
+                    // Tạo device_serial theo format: {SHORT_NAME}{BATCH_ID}{SEQUENCE_NUMBER}
                     const sequenceNumber = (index + 1).toString().padStart(3, '0');
                     const deviceSerial = `${shortName}-${batch.production_batch_id}-${sequenceNumber}`;
 
@@ -367,7 +397,6 @@ export class PlanningService {
                             stage: 'pending',
                             status: 'pending',
                             state_logs: []
-
                         }
                     });
                 });
@@ -375,7 +404,7 @@ export class PlanningService {
                 await Promise.all(trackingPromises);
             }
 
-            // Lấy lại planning với tất cả thông tin
+            // 4. Lấy lại planning với tất cả thông tin
             return prisma.planning.findFirst({
                 where: {
                     planning_id: planning.planning_id,

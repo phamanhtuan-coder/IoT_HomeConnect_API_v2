@@ -12,6 +12,7 @@ import {Router, Request, Response, NextFunction} from 'express';
 import AuthController from '../controllers/auth.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
+import { rateLimiter, loginRateLimiter, afterSuccessfulLogin } from '../middleware/rate-limit.middleware';
 import {
     employeeRegisterSchema,
     loginSchema,
@@ -76,7 +77,12 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  *       500:
  *         description: Lỗi server
  */
-router.post('/login', validateMiddleware(loginSchema), asyncHandler(authController.loginUser));
+router.post('/login',
+    loginRateLimiter,
+    validateMiddleware(loginSchema),
+    asyncHandler(authController.loginUser),
+    afterSuccessfulLogin
+);
 
 /**
  * Đăng nhập nhân viên.
@@ -119,7 +125,12 @@ router.post('/login', validateMiddleware(loginSchema), asyncHandler(authControll
  *       500:
  *         description: Lỗi server
  */
-router.post('/employee/login', validateMiddleware(loginSchema), asyncHandler(authController.loginEmployee));
+router.post('/employee/login',
+    loginRateLimiter,
+    validateMiddleware(loginSchema),
+    asyncHandler(authController.loginEmployee),
+    afterSuccessfulLogin
+);
 
 /**
  * Đăng ký người dùng.
@@ -170,7 +181,11 @@ router.post('/employee/login', validateMiddleware(loginSchema), asyncHandler(aut
  *       500:
  *         description: Lỗi server
  */
-router.post('/register', validateMiddleware(userRegisterSchema), asyncHandler(authController.registerUser));
+router.post('/register',
+    rateLimiter('register', 5, 60),
+    validateMiddleware(userRegisterSchema),
+    asyncHandler(authController.registerUser)
+);
 
 /**
  * Đăng ký nhân viên.
@@ -242,6 +257,7 @@ router.post('/register', validateMiddleware(userRegisterSchema), asyncHandler(au
  */
 router.post(
     '/employee/register',
+    rateLimiter('employee-register', 5, 60),
     authMiddleware,
     validateMiddleware(employeeRegisterSchema),
     asyncHandler(authController.registerEmployee)
@@ -280,44 +296,17 @@ router.post(
  *       500:
  *         description: Lỗi server
  */
-router.post('/refresh', validateMiddleware(refreshTokenSchema), asyncHandler(authController.refreshToken));
+router.post('/refresh',
+    rateLimiter('refresh', 10, 60),
+    validateMiddleware(refreshTokenSchema),
+    asyncHandler(authController.refreshToken)
+);
 
-/**
- * Làm mới token cho nhân viên.
- * @swagger
- * /api/auth/employee/refresh:
- *   post:
- *     tags:
- *       - Auth
- *     summary: Làm mới access token cho nhân viên
- *     description: Sử dụng refresh token để lấy access token mới cho tài khoản nhân viên
- *     consumes:
- *       - application/json
- *     parameters:
- *       - in: body
- *         name: body
- *         description: Refresh token
- *         schema:
- *           type: object
- *           required:
- *             - refreshToken
- *           properties:
- *             refreshToken:
- *               type: string
- *               description: Refresh token đã được cấp khi đăng nhập
- *     responses:
- *       200:
- *         description: Làm mới token thành công, trả về access token mới
- *       400:
- *         description: Refresh token không hợp lệ
- *       401:
- *         description: Refresh token đã hết hạn
- *       403:
- *         description: Token không phải của tài khoản nhân viên
- *       500:
- *         description: Lỗi server
- */
-router.post('/employee/refresh', validateMiddleware(refreshTokenSchema), asyncHandler(authController.refreshEmployeeToken));
+router.post('/employee/refresh',
+    rateLimiter('employee-refresh', 10, 60),
+    validateMiddleware(refreshTokenSchema),
+    asyncHandler(authController.refreshEmployeeToken)
+);
 
 /**
  * Đăng xuất người dùng (1 thiết bị).
@@ -585,7 +574,11 @@ router.post('/verify-email', validateMiddleware(verifyEmailSchema), asyncHandler
  *       500:
  *         description: Lỗi server
  */
-router.post('/recovery-password', validateMiddleware(recoveryPasswordSchema), asyncHandler(authController.recoveryPassword));
+router.post('/recovery-password',
+    rateLimiter('recovery', 5, 60),
+    validateMiddleware(recoveryPasswordSchema),
+    asyncHandler(authController.recoveryPassword)
+);
 
 /**
  * Cập nhật thông tin người dùng.

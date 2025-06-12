@@ -1,4 +1,3 @@
-
 /**
  * Định nghĩa các route quản lý thiết bị của người dùng.
  * @swagger
@@ -64,7 +63,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  *               updated_at:
  *                 type: string
  *                 format: date-time
- *                 description: Thời điểm cập nhật gần nhất
+ *                 description: Thời điểm cập nhật gần nh��t
  *       401:
  *         description: Không có quyền truy cập
  *       500:
@@ -82,7 +81,7 @@ router.get(
  *   get:
  *     tags:
  *       - User Device
- *     summary: Lấy danh sách thiết bị của người dùng cụ thể
+ *     summary: Lấy danh sách thiết bị của người dùng cụ th��
  *     description: |
  *       Quản trị viên có thể xem danh sách thiết bị của một người dùng cụ thể.
  *       Yêu cầu quyền quản trị.
@@ -168,5 +167,43 @@ router.delete(
     validateMiddleware(deviceIdForRevokeSchema),
     asyncHandler(userDeviceController.revokeDevice)
 ); // Revoke device
+
+/**
+ * @swagger
+ * /api/user-devices/me/limit:
+ *   get:
+ *     tags:
+ *       - User Device
+ *     summary: Lấy thông tin giới hạn thiết bị của người dùng
+ *     security:
+ *       - Bearer: []
+ *     responses:
+ *       200:
+ *         description: Trả về thông tin giới hạn thiết bị
+ */
+router.get(
+    '/me/limit',
+    authMiddleware,
+    asyncHandler(userDeviceController.getDeviceLimitInfo)
+);
+
+/**
+ * @swagger
+ * /api/user-devices/me/current:
+ *   get:
+ *     tags:
+ *       - User Device
+ *     summary: Lấy thông tin thiết bị hiện tại
+ *     security:
+ *       - Bearer: []
+ *     responses:
+ *       200:
+ *         description: Trả về thông tin thiết bị hiện tại
+ */
+router.get(
+    '/me/current',
+    authMiddleware,
+    asyncHandler(userDeviceController.getCurrentDevice)
+);
 
 export default router;

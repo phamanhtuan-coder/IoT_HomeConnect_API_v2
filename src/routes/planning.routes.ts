@@ -32,7 +32,7 @@ router.get('/plannings-by-batch-production-status-is-completed',
 //tạo kế hoạch --
 router.post(
     '/',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     validateMiddleware(PlanningCreateSchema),
     planningController.createPlanningApi
@@ -49,14 +49,14 @@ router.get(
 //lấy tất cả kế hoạch  --
 router.get(
     '/',
-    // authMiddleware,
+    authMiddleware,
     planningController.getAllPlanningsApi
 );
 
 //phê duyệt kế hoạch-- thieu cap nhat is_deleted
 router.post(
     '/:planningId/approve',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     validateMiddleware(PlanningApprovalSchema),
     planningController.approvePlanningApi
@@ -65,7 +65,7 @@ router.post(
 //tạo lô sản xuất --
 router.post(
     '/:planningId/batches',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     validateMiddleware(PlanningBatchCreateSchema),
     planningController.createBatchApi
@@ -74,7 +74,7 @@ router.post(
 //lấy lô sản xuất theo id kế hoạch --
 router.get(
     '/:planningId/batches',
-    // authMiddleware,
+    authMiddleware,
     validateMiddleware(PlanningIdSchema),
     planningController.getBatchesByPlanningIdApi
 );
@@ -82,7 +82,7 @@ router.get(
 //cập nhật trạng thái lô sản xuất --
 router.put(
     '/batches/:batchId/status',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     validateMiddleware(PlanningBatchUpdateSchema),
     planningController.updateBatchStatusApi
@@ -91,7 +91,7 @@ router.put(
 // src/routes/planning.routes.ts
 router.post(
     '/with-batches',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     
     planningController.createPlanningWithBatchesApi

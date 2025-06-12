@@ -1,4 +1,3 @@
-// src/app.ts
 import express, {Application} from 'express';
 import {Server} from 'socket.io';
 import {createServer} from 'http';
@@ -10,12 +9,16 @@ import routes from './routes';
 import {appConfig} from './config/app';
 import {configureSwagger} from "./config/swagger";
 import cors from 'cors';
+import { initCronJobs } from './cron';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
 export const initApp = (): { app: Application; io: Server; httpServer: any } => {
     const app = express();
     const httpServer = createServer(app);
+
+    // Khởi tạo các cron jobs cho maintenance
+    initCronJobs();
 
     // Cấu hình middleware cơ bản
     app.use(express.json());
@@ -54,4 +57,3 @@ export const initApp = (): { app: Application; io: Server; httpServer: any } => 
 
     return {app, io, httpServer};
 };
-

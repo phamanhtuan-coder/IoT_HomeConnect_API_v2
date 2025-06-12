@@ -713,7 +713,7 @@ export class ProductionTrackingService {
                 `;
             } else if (type === 'batch' && planning_id) {
                 query = Prisma.sql`
-                        SELECT DISTINCT pb.production_batch_id, planning.planning_id, pb.template_id,pb.firmware_id
+                        SELECT DISTINCT pb.production_batch_id, planning.planning_id, pb.template_id, pb.firmware_id
                         FROM planning
                             LEFT JOIN production_batches pb ON pb.planning_id = planning.planning_id
                             LEFT JOIN production_tracking pt ON pt.production_batch_id = pb.production_batch_id
