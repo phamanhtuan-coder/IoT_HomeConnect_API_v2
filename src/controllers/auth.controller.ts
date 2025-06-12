@@ -247,8 +247,8 @@ class AuthController {
             if (!adminId) throwError(ErrorCodes.UNAUTHORIZED, 'Admin not authenticated');
 
             const data = req.body as EmployeeRegisterRequestBody;
-            const token = await this.authService.registerEmployee(data, adminId);
-            res.status(201).json({ token });
+            const result = await this.authService.registerEmployee(data, adminId);
+            res.status(201).json( result );
         } catch (error) {
             next(error);
         }
