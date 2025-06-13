@@ -26,7 +26,11 @@ export const spaceGroupMiddleware = async (req: Request, res: Response, next: Ne
                 return next(throwError(ErrorCodes.NOT_FOUND, 'House not found'));
             }
 
-            req.params.groupId = house!.group_id!.toString();
+            if (house.group_id == null) {
+                return next(throwError(ErrorCodes.NOT_FOUND, 'Group ID not found for the specified house'));
+            }
+
+            req.params.groupId = house.group_id.toString();
             return next();
         }
 
