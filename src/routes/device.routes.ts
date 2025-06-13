@@ -12,6 +12,7 @@ import DeviceController from '../controllers/device.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import groupRoleMiddleware from '../middleware/group.middleware';
+import spaceGroupMiddleware from '../middleware/space-group.middleware';
 import {
     deviceIdSchema,
     deviceSchema,
@@ -360,7 +361,7 @@ router.get(
  *       403:
  *         description: Không có quyền truy cập nhà
  *       404:
- *         description: Không tìm th���y nhà
+ *         description: Không tìm thấy nhà
  *       500:
  *         description: Lỗi server
  */
@@ -406,6 +407,7 @@ router.get(
 router.get(
     '/space/:spaceId',
     authMiddleware,
+    spaceGroupMiddleware, // Thêm middleware này trước groupRoleMiddleware
     groupRoleMiddleware,
     asyncHandler(deviceController.getDevicesBySpace)
 );
