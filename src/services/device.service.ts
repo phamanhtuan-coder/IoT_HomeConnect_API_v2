@@ -26,24 +26,45 @@ class DeviceService {
         templateId: string;
         serial_number: string;
         spaceId?: number;
+        groupId?: number;
         accountId: string;
         name: string;
         attribute?: Record<string, any>;
         wifi_ssid?: string;
         wifi_password?: string;
     }): Promise<Device> {
-        const { templateId, serial_number, spaceId, accountId, name, attribute, wifi_ssid, wifi_password } = input;
+        const { templateId, serial_number, spaceId, groupId, accountId, name, attribute, wifi_ssid, wifi_password } = input;
 
         const template = await this.prisma.device_templates.findFirst({
             where: { template_id: templateId, is_deleted: false },
         });
         if (!template) throwError(ErrorCodes.NOT_FOUND, "Device template not found");
 
+        // Kiểm tra space và lấy group từ house nếu có spaceId
+        let finalGroupId = groupId;
         if (spaceId) {
             const space = await this.prisma.spaces.findFirst({
                 where: { space_id: spaceId, is_deleted: false },
+                include: {
+                    houses: {
+                        select: {
+                            group_id: true
+                        }
+                    }
+                }
             });
             if (!space) throwError(ErrorCodes.NOT_FOUND, "Space not found");
+            if (!groupId && space?.houses?.group_id) {
+                finalGroupId = space?.houses.group_id;
+            }
+        }
+
+        // Kiểm tra group nếu có
+        if (finalGroupId) {
+            const group = await this.prisma.groups.findFirst({
+                where: { group_id: finalGroupId, is_deleted: false }
+            });
+            if (!group) throwError(ErrorCodes.NOT_FOUND, "Group not found");
         }
 
         const existingDevice = await this.prisma.devices.findFirst({
@@ -68,6 +89,7 @@ class DeviceService {
                 serial_number,
                 template_id: templateId,
                 space_id: spaceId,
+                group_id: finalGroupId,
                 account_id: accountId,
                 name,
                 power_status: false,
@@ -376,6 +398,7 @@ async getDeviceById(deviceId: string, serial_number: string, accountId: string):
             device_id: device!.device_id,
             serial_number: device!.serial_number,
             template_id: device!.template_id ?? null,
+            group_id: device!.group_id ?? null, // Include group_id
             space_id: device!.space_id ?? null,
             account_id: device!.account_id ?? null,
             hub_id: device!.hub_id ?? null,
