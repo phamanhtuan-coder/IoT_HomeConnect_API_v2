@@ -5,59 +5,44 @@ import { ErrorCodes, throwError } from '../utils/errors';
 const prisma = new PrismaClient();
 
 /**
- * Middleware để lấy groupId từ house cho các route của space
+ * Middleware để lấy groupId từ space thông qua house
  */
 export const spaceGroupMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        let houseId: number | undefined;
+        let spaceId: number | undefined;
 
-        // Lấy houseId từ các nguồn khác nhau tùy theo route
-        if (req.body.houseId) {
-            // Cho route create space
-            houseId = parseInt(req.body.houseId);
-        } else if (req.params.houseId) {
-            // Cho route get spaces by house
-            houseId = parseInt(req.params.houseId);
+        // Lấy spaceId từ các nguồn khác nhau tùy theo route
+        if (req.body.spaceId) {
+            spaceId = parseInt(req.body.spaceId);
         } else if (req.params.spaceId) {
-            // Cho các route thao tác với space cụ thể
-            const space = await prisma.spaces.findFirst({
-                where: {
-                    space_id: parseInt(req.params.spaceId),
-                    is_deleted: false
-                },
-                select: {
-                    house_id: true
-                }
-            });
-
-            if (!space || !space.house_id) {
-                return next(throwError(ErrorCodes.NOT_FOUND, 'Space not found or has no associated house'));
-            }
-
-            houseId = space.house_id;
+            spaceId = parseInt(req.params.spaceId);
         }
 
-        if (!houseId) {
-            return next(throwError(ErrorCodes.BAD_REQUEST, 'House ID is required'));
+        if (!spaceId) {
+            return next(throwError(ErrorCodes.BAD_REQUEST, 'Space ID is required'));
         }
 
-        // Lấy group_id từ house
-        const house = await prisma.houses.findFirst({
+        // Lấy house_id từ space và sau đó lấy group_id từ house
+        const space = await prisma.spaces.findFirst({
             where: {
-                house_id: houseId,
+                space_id: spaceId,
                 is_deleted: false
             },
-            select: {
-                group_id: true
+            include: {
+                houses: {
+                    select: {
+                        group_id: true
+                    }
+                }
             }
         });
 
-        if (!house || !house.group_id) {
-            return next(throwError(ErrorCodes.NOT_FOUND, 'House not found or has no associated group'));
+        if (!space || !space.houses?.group_id) {
+            return next(throwError(ErrorCodes.NOT_FOUND, 'Space not found or has no associated group'));
         }
 
         // Thêm groupId vào request để groupRoleMiddleware có thể sử dụng
-        req.params.groupId = house.group_id.toString();
+        req.params.groupId = space.houses.group_id.toString();
         next();
     } catch (error) {
         next(error);
