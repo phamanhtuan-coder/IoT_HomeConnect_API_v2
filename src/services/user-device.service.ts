@@ -277,15 +277,5 @@ export class UserDeviceService {
         //     where: { device_id: deviceId, is_deleted: false },
         //     data: { lock_status: 'locked' },
         // });
-
-        return this.prisma.devices.update({
-            where: {
-                device_id_serial_number: {
-                    device_id: deviceId,
-                    serial_number: serial_number
-                }
-            },
-            data: { lock_status: 'locked' },
-        });
     }
 }
