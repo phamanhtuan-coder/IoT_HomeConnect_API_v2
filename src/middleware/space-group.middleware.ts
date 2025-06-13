@@ -5,13 +5,33 @@ import { ErrorCodes, throwError } from '../utils/errors';
 const prisma = new PrismaClient();
 
 /**
- * Middleware để lấy groupId từ space thông qua house
+ * Middleware để lấy groupId từ space hoặc house
  */
 export const spaceGroupMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        let spaceId: number | undefined;
+        // Kiểm tra nếu có houseId trong params
+        if (req.params.houseId) {
+            const houseId = parseInt(req.params.houseId);
+            const house = await prisma.houses.findFirst({
+                where: {
+                    house_id: houseId,
+                    is_deleted: false
+                },
+                select: {
+                    group_id: true
+                }
+            });
 
-        // Lấy spaceId từ các nguồn khác nhau tùy theo route
+            if (!house) {
+                return next(throwError(ErrorCodes.NOT_FOUND, 'House not found'));
+            }
+
+            req.params.groupId = house!.group_id!.toString();
+            return next();
+        }
+
+        // Xử lý trường hợp có spaceId
+        let spaceId: number | undefined;
         if (req.body.spaceId) {
             spaceId = parseInt(req.body.spaceId);
         } else if (req.params.spaceId) {
@@ -22,7 +42,6 @@ export const spaceGroupMiddleware = async (req: Request, res: Response, next: Ne
             return next(throwError(ErrorCodes.BAD_REQUEST, 'Space ID is required'));
         }
 
-        // Lấy house_id từ space và sau đó lấy group_id từ house
         const space = await prisma.spaces.findFirst({
             where: {
                 space_id: spaceId,
@@ -41,7 +60,6 @@ export const spaceGroupMiddleware = async (req: Request, res: Response, next: Ne
             return next(throwError(ErrorCodes.NOT_FOUND, 'Space not found or has no associated group'));
         }
 
-        // Thêm groupId vào request để groupRoleMiddleware có thể sử dụng
         req.params.groupId = space.houses.group_id.toString();
         next();
     } catch (error) {
