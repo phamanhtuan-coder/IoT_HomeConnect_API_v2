@@ -3,206 +3,387 @@ import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
 import NotificationService from './notification.service';
 import { NotificationType } from '../types/notification';
-import {Ticket} from "../types/ticket";
-import {generateTicketId} from "../utils/helpers";
+import { generateTicketId } from "../utils/helpers";
+import { executeSelectData } from '../utils/sql_query';
+import { get_error_response } from '../utils/response.helper';
+import { ERROR_CODES } from '../contants/error';
+import { STATUS_CODE } from '../contants/status';
+import { ROLE, TICKET_TYPE } from '../contants/info';
+
+const TICKET_STATUS = {
+	PENDING: 'pending',
+	IN_PROGRESS: 'in_progress',
+	APPROVED: 'approved',
+	REJECTED: 'rejected',
+	RESOLVED: 'resolved',
+	CANCELLED: 'cancelled',
+} as const;
+
+interface TicketStatusUpdate {
+	status: typeof TICKET_STATUS.APPROVED | typeof TICKET_STATUS.REJECTED | typeof TICKET_STATUS.RESOLVED;
+	description: string;
+	evidence: any;
+}
 
 class TicketService {
-  private prisma: PrismaClient;
-  private notificationService: NotificationService;
+	private prisma: PrismaClient;
+	private notificationService: NotificationService;
 
-  constructor() {
-    this.prisma = new PrismaClient();
-    this.notificationService = new NotificationService();
-  }
+	constructor() {
+		this.prisma = new PrismaClient();
+		this.notificationService = new NotificationService();
+	}
 
-  async createTicket(input: {
-    user_id: string;
-    device_serial?: string;
-    ticket_type_id: number;
-    description?: string;
-    evidence?: any;
-  }): Promise<Ticket> {
-    const { user_id, device_serial, ticket_type_id, description, evidence } = input;
+	// Tạo vấn đề mới
+	async createTicket(input: {
+		user_id: string;
+		device_serial?: string;
+		ticket_type_id: number;
+		description?: string;
+		evidence?: any;
+		assigned_to?: string;
+	}): Promise<any> {
+		const { user_id, device_serial, ticket_type_id, description, evidence, assigned_to } = input;
+		let is_franchise = false;
 
-    const account = await this.prisma.account.findUnique({
-      where: { account_id: user_id, deleted_at: null },
-    });
-    if (!account) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
+		// 1. Kiểm tra tài khoản
+		const account = await this.prisma.account.findFirst({
+			where: { account_id: user_id, deleted_at: null },
+		});
+		if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
 
-    if (device_serial) {
-      const device = await this.prisma.devices.findUnique({
-        where: { serial_number: device_serial, is_deleted: false },
-      });
-      if (!device) throwError(ErrorCodes.NOT_FOUND, 'Device not found');
-    }
+		// 2. Kiểm tra thiết bị
+		if (device_serial) {
+			const device = await this.prisma.devices.findFirst({
+				where: { serial_number: device_serial, is_deleted: false },
+			});
+			if (!device) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy thiết bị');
+		}
 
-    const ticketType = await this.prisma.ticket_types.findUnique({
-      where: { ticket_type_id, is_deleted: false },
-    });
-    if (!ticketType) throwError(ErrorCodes.NOT_FOUND, 'Ticket type not found');
+		// 3. Kiểm tra loại vấn đề
+		const ticketType = await this.prisma.ticket_types.findFirst({
+			where: { ticket_type_id, is_deleted: false },
+		});
+		if (!ticketType) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy loại vấn đề');
 
-    let ticket_id: string;
-    let attempts = 0;
-    const maxAttempts = 5;
-    do {
-      ticket_id = generateTicketId();
-      const idExists = await this.prisma.tickets.findFirst({ where: { ticket_id:ticket_id}});
-      if (!idExists) break;
-      attempts++;
-      if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
-    } while (true);
+		// 4. Kiểm tra người nhận thiết bị
+		if(ticketType?.ticket_type_id === TICKET_TYPE.FRANCHISE) {			
+			if (!assigned_to) throwError(ErrorCodes.BAD_REQUEST, 'Không tìm thấy người nhận thiết bị được yêu cầu');
 
-    const ticket = await this.prisma.tickets.create({
-      data: {
-        ticket_id: ticket_id,
-        user_id,
-        device_serial,
-        ticket_type_id,
-        description,
-        evidence,
-        status: 'pending',
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-    });
+			// 4.1. Kiểm tra yêu cầu nhượng quyền thiết bị
+			const ticket_franchise = await this.prisma.tickets.findFirst({
+				where: {
+					ticket_type_id: TICKET_TYPE.FRANCHISE,
+					device_serial: device_serial,
+					is_deleted: false,
+					status: { not: [TICKET_STATUS.REJECTED, TICKET_STATUS.RESOLVED] }
+				},
+			});
+			// 4.1.1. Nếu có yêu cầu nhượng quyền của thiết bị thì không tạo mới
+			if(ticket_franchise) throwError(ErrorCodes.BAD_REQUEST, 'Đã có yêu cầu nhượng quyền thiết bị cho thiết bị này');
+			
+			// 4.2. Kiểm tra người nhận thiết bị
+			const to_user = await this.prisma.account.findFirst({
+				where: { account_id: assigned_to, deleted_at: null },
+			});
+			// 4.1.2. Kiểm tra người nhận thiết bị
+			if(!to_user) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy người nhận thiết bị được yêu cầu');
 
-    await this.notificationService.createNotification({
-      account_id: user_id,
-      text: `New ticket created: ${description || 'No description provided'}`,
-      type: NotificationType.TICKET,
-    });
+			// 4.1.3. Kiểm tra người nhận thiết bị không phải là người tạo vấn đề
+			if(to_user?.account_id === user_id) throwError(ErrorCodes.BAD_REQUEST, 'Bạn không thể nhượng quyền thiết bị cho chính mình');
+			
+			// Bật cờ - Đây là ticket nhượng quyền thiết bị
+			is_franchise = true;
+		}
 
-    return this.mapPrismaTicketToAuthTicket(ticket);
-  }
+		// 5. Tạo ID vấn đề
+		let ticket_id: string;
+		let attempts = 0;
+		const maxAttempts = 5;
+		do {
+			ticket_id = generateTicketId();
+			const idExists = await this.prisma.tickets.findFirst({ where: { ticket_id: ticket_id } });
+			if (!idExists) break;
+			attempts++;
+			if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Không thể tạo ID duy nhất');
+		} while (true);
 
-  async updateTicket(
-      ticketId: string,
-      data: {
-        description?: string;
-        evidence?: any;
-        status?: 'pending' | 'in_progress' | 'approved' | 'rejected' | 'resolved';
-        assigned_to?: string;
-        resolve_solution?: string;
-      }
-  ): Promise<Ticket> {
-    const ticket = await this.prisma.tickets.findUnique({
-      where: { ticket_id: ticketId, is_deleted: false },
-    });
-    if (!ticket) throwError(ErrorCodes.NOT_FOUND, 'Ticket not found');
+		// 6. Tạo vấn đề
+		const ticket = await this.prisma.tickets.create({
+			data: {
+				ticket_id: ticket_id,
+				user_id,
+				device_serial,
+				ticket_type_id,
+				description,
+				evidence,
+				status: TICKET_STATUS.PENDING,
+				created_at: new Date(),
+			},
+		});
 
-    const updatedTicket = await this.prisma.tickets.update({
-      where: { ticket_id: ticketId },
-      data: {
-        description: data.description,
-        evidence: data.evidence,
-        status: data.status,
-        assigned_to: data.assigned_to,
-        resolve_solution: data.resolve_solution,
-        updated_at: new Date(),
-        resolved_at: data.status === 'resolved' ? new Date() : undefined,
-      },
-    });
 
-    if (data.status) {
-      await this.notificationService.createNotification({
-        account_id: ticket!.user_id!,
-        text: `Ticket #${ticketId} status updated to ${data.status}.`,
-        type: NotificationType.TICKET,
-      });
-    }
+		// THDB: Xử lý nhượng quyền thiết bị 
+		// 7. Tạo yêu cầu nhượng quyền thiết bị
+		if (is_franchise) {
+			await this.prisma.ownership_history.create({
+				data: {
+					ticket_id: ticket_id,
+					device_serial: device_serial,
+					from_user_id: user_id,
+					to_user_id: assigned_to,
+					created_at: new Date(),
+				},
+			});
+		}
 
-    return this.mapPrismaTicketToAuthTicket(updatedTicket);
-  }
+		// 8. Gửi thông báo đến người tạo vấn đề
+		await this.notificationService.createNotification({
+			account_id: user_id,
+			text: `Tạo vấn đề mới: ${description || 'Không có mô tả'}`,
+			type: NotificationType.TICKET,
+		});
 
-  async deleteTicket(ticketId: string): Promise<void> {
-    const ticket = await this.prisma.tickets.findUnique({
-      where: { ticket_id: ticketId, is_deleted: false },
-    });
-    if (!ticket) throwError(ErrorCodes.NOT_FOUND, 'Ticket not found');
+		return get_error_response(
+			ERROR_CODES.SUCCESS,
+			STATUS_CODE.CREATED,
+			ticket
+		);
+	}
 
-    await this.prisma.tickets.update({
-      where: { ticket_id: ticketId },
-      data: { is_deleted: true, updated_at: new Date() },
-    });
+	// Nhân viên xác nhận xử lý vấn đề
+	async confirmTicket(ticketId: string, account_id: string): Promise<any> {
+		const account = await this.prisma.account.findFirst({
+			where: { account_id: account_id, deleted_at: null },
+		});
+		if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
+		
 
-    await this.notificationService.createNotification({
-      account_id: ticket!.user_id!,
-      text: `Ticket #${ticketId} has been deleted.`,
-      type: NotificationType.TICKET,
-    });
-  }
+		if(account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền xác nhận vấn đề');
 
-  async getTicketById(ticketId: string): Promise<Ticket> {
-    const ticket = await this.prisma.tickets.findUnique({
-      where: { ticket_id: ticketId, is_deleted: false },
-    });
-    if (!ticket) throwError(ErrorCodes.NOT_FOUND, 'Ticket not found');
+		const ticket = await this.prisma.tickets.findFirst({
+			where: { ticket_id: ticketId, is_deleted: false },
+		});
+		if (!ticket) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy vấn đề');
 
-    return this.mapPrismaTicketToAuthTicket(ticket);
-  }
 
-  async getTicketsByUser(userId: string): Promise<Ticket[]> {
-    const tickets = await this.prisma.tickets.findMany({
-      where: { user_id: userId, is_deleted: false },
-      orderBy: { created_at: 'desc' },
-    });
+		const updatedTicket = await this.prisma.tickets.update({
+			where: { ticket_id: ticketId },
+			data: { status: TICKET_STATUS.IN_PROGRESS, updated_at: new Date(), assigned_to: account_id },
+		});
 
-    return tickets.map(this.mapPrismaTicketToAuthTicket);
-  }
+		return get_error_response(
+			ERROR_CODES.SUCCESS,
+			STATUS_CODE.OK,
+			updatedTicket
+		);
+	}	
 
-  async getAllTickets(filters: {
-    user_id?: string;
-    ticket_type_id?: number;
-    status?: string;
-    created_at_start?: Date;
-    created_at_end?: Date;
-    resolved_at_start?: Date;
-    resolved_at_end?: Date;
-    page?: number;
-    limit?: number;
-  }): Promise<Ticket[]> {
-    const { user_id, ticket_type_id, status, created_at_start, created_at_end, resolved_at_start, resolved_at_end, page = 1, limit = 10 } = filters;
+	// Nhân viên cập nhật trạng thái vấn đề
+	async updateTicketStatus(ticketId: string, account_id: string, data: TicketStatusUpdate): Promise<any> {
+		const account = await this.prisma.account.findFirst({
+			where: { account_id: account_id, deleted_at: null },
+		});
+		if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
+		
+		if(account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền cập nhật trạng thái vấn đề');
 
-    const tickets = await this.prisma.tickets.findMany({
-      where: {
-        user_id,
-        ticket_type_id,
-        status,
-        created_at: {
-          gte: created_at_start,
-          lte: created_at_end,
-        },
-        resolved_at: {
-          gte: resolved_at_start,
-          lte: resolved_at_end,
-        },
-        is_deleted: false,
-      },
-      orderBy: { created_at: 'desc' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+		const ticket = await this.prisma.tickets.findFirst({
+			where: { ticket_id: ticketId, is_deleted: false },
+		});
+		if (!ticket) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy vấn đề');
 
-    return tickets.map(this.mapPrismaTicketToAuthTicket);
-  }
 
-  private mapPrismaTicketToAuthTicket(ticket: any): Ticket {
-    return {
-      ticket_id: ticket.ticket_id,
-      user_id: ticket.user_id,
-      device_serial: ticket.device_serial,
-      ticket_type_id: ticket.ticket_type_id,
-      description: ticket.description,
-      evidence: ticket.evidence,
-      status: ticket.status,
-      created_at: ticket.created_at,
-      updated_at: ticket.updated_at,
-      assigned_to: ticket.assigned_to,
-      resolved_at: ticket.resolved_at,
-      resolve_solution: ticket.resolve_solution,
-      is_deleted: ticket.is_deleted,
-    };
-  }
+		// 1. Kiểm tra trạng thái vấn đề
+		if (data.status !== TICKET_STATUS.RESOLVED && data.status !== TICKET_STATUS.REJECTED) {
+			return get_error_response(
+				ERROR_CODES.BAD_REQUEST,
+				STATUS_CODE.BAD_REQUEST,
+				'Trạng thái vấn đề không hợp lệ'
+			);
+		}
+
+		// 2. Cập nhật trạng thái vấn đề
+		const updatedTicket = await this.prisma.tickets.update({
+			where: { ticket_id: ticketId },
+			data: {
+				status: data.status,
+				resolve_solution: data.description,	
+				resolved_at: new Date(),
+				updated_at: new Date(),
+			},
+		});
+
+		// 3. Xử lý vấn đề
+		// 3.1. Xử lý vấn đề người dùng báo mất thiết bị
+		if(ticket?.ticket_type_id === TICKET_TYPE.LOST_DEVICE && ticket?.device_serial) {
+			await this.prisma.devices.update({
+				where: { serial_number: ticket?.device_serial },
+				data: {
+					lock_status: 'locked',
+					locked_at: new Date(),
+					updated_at: new Date(),
+				},
+			});
+		}
+
+		// 3.2. Xử lý vấn đề mất tài khoản
+		if(ticket?.ticket_type_id === TICKET_TYPE.LOST_ACCOUNT) {
+			await this.prisma.account.update({
+				where: { account_id: ticket?.user_id! },
+				data: {
+					is_locked: true,
+					locked_at: new Date(),
+					updated_at: new Date(),
+				},
+			});
+		}
+
+		return get_error_response(
+			ERROR_CODES.SUCCESS,
+			STATUS_CODE.OK,
+			updatedTicket
+		);
+	}
+
+	async deleteTicket(ticketId: string): Promise<any> {
+		const ticket = await this.prisma.tickets.findFirst({
+			where: { ticket_id: ticketId, is_deleted: false },
+		});
+		if (!ticket) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy vấn đề');
+
+		await this.prisma.tickets.update({
+			where: { ticket_id: ticketId },
+			data: { is_deleted: true, updated_at: new Date() },
+		});
+
+		await this.notificationService.createNotification({
+			account_id: ticket!.user_id!,
+			text: `Vấn đề #${ticketId} đã bị xóa.`,
+			type: NotificationType.TICKET,
+		});
+
+		return get_error_response(
+			ERROR_CODES.SUCCESS,
+			STATUS_CODE.NO_CONTENT,
+			null
+		);
+	}
+
+	async getTicketById(ticketId: string): Promise<any> {
+		const filters = {
+			field: 'ticket_id',
+			condition: '=',
+			value: ticketId,
+		}
+
+		const get_attr = `
+		tickets.ticket_id, tickets.device_serial, tickets.description, tickets.evidence,
+		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, tickets.is_deleted,
+		ticket_types.name as ticket_type_name, 
+		ticket_types.priority,
+		customer.surname + ' ' + customer.lastname as customer_name,
+		employee.surname + ' ' + employee.lastname as employee_name,
+		`
+
+		const get_table = "tickets"
+
+		const query_join = `
+			LEFT JOIN ticket_types ON tickets.ticket_type_id = ticket_types.ticket_type_id
+			LEFT JOIN account ON tickets.user_id = account.account_id
+			LEFT JOIN customer ON account.customer_id = customer.customer_id
+			LEFT JOIN employee ON tickets.assigned_to = employee.employee_id
+		`
+
+		const result = await executeSelectData({
+			table: get_table,
+			queryJoin: query_join,
+			strGetColumn: get_attr,
+			filter: filters,
+			sort: 'created_at',
+			order: 'desc',
+		});
+
+		return get_error_response(
+			ERROR_CODES.SUCCESS,
+			STATUS_CODE.OK,
+			{
+				data: result.data,
+				total_page: result.total_page,
+			}
+		);
+	}
+
+	async getTicketsByUser(userId: string): Promise<any> {
+		const filters = {
+			field: 'tickets.user_id',
+			condition: '=',
+			value: userId,
+		}
+
+		const result = await this.getAllTickets(filters, 1, 10);
+		return result;
+	}
+
+	async getAllTickets(filters: any, page: number = 1, limit: number = 10, sort: string = 'created_at', order: string = 'desc'): Promise<any> {
+		const get_attr = `
+		tickets.ticket_id, tickets.device_serial, tickets.description,
+		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, tickets.is_deleted,
+		ticket_types.name as ticket_type_name,
+		ticket_types.priority,
+		customer.surname + ' ' + customer.lastname as customer_name,
+		employee.surname + ' ' + employee.lastname as employee_name,
+		`
+
+		const get_table = "tickets"
+
+		const query_join = `
+			LEFT JOIN ticket_types ON tickets.ticket_type_id = ticket_types.ticket_type_id
+			LEFT JOIN account ON tickets.user_id = account.account_id
+			LEFT JOIN customer ON account.customer_id = customer.customer_id
+			LEFT JOIN employee ON tickets.assigned_to = employee.employee_id
+		`
+
+		const result = await executeSelectData({
+			table: get_table,
+			queryJoin: query_join,
+			strGetColumn: get_attr,
+			filter: filters,
+			page: page,
+			limit: limit,
+			sort: 'created_at',
+			order: 'desc',
+		});
+
+		return get_error_response(
+			ERROR_CODES.SUCCESS,
+			STATUS_CODE.OK,
+			{
+				data: result.data,
+				total_page: result.total_page,
+			}
+		);
+	}
+
+	async customerCancelTicket(ticketId: string, account_id: string): Promise<any> {
+		const ticket = await this.prisma.tickets.findFirst({
+			where: { ticket_id: ticketId, is_deleted: false },
+		});
+		if (!ticket) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy vấn đề');
+		
+		if(ticket!.user_id !== account_id) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền hủy vấn đề này');
+
+		await this.prisma.tickets.update({
+			where: { ticket_id: ticketId },
+			data: { status: TICKET_STATUS.CANCELLED, updated_at: new Date() },
+		});
+
+		return get_error_response(
+			ERROR_CODES.SUCCESS,
+			STATUS_CODE.OK,
+			null
+		);
+	}
 }
 
 export default TicketService;

@@ -1,5 +1,6 @@
 export const ERROR_CODES = {
-
+    SUCCESS: 0,
+    BAD_REQUEST: 1,
     // Common - 0xx
     COMMON_INVALID_PAGE: 601,
     COMMON_INVALID_LIMIT: 602,

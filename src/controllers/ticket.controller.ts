@@ -41,25 +41,25 @@ class TicketController {
    * @param res Response Express
    * @param next Middleware tiếp theo
    */
-  updateTicket = async (req: Request, res: Response, next: NextFunction) => {
-    const accountId = req.user?.userId || req.user?.employeeId;
-    if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+  // updateTicket = async (req: Request, res: Response, next: NextFunction) => {
+  //   const accountId = req.user?.userId || req.user?.employeeId;
+  //   if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
-    const { ticketId } = req.params;
-    const { description, evidence, status, assigned_to, resolve_solution } = req.body;
-    try {
-      const ticket = await this.ticketService.updateTicket(ticketId, {
-        description,
-        evidence,
-        status,
-        assigned_to,
-        resolve_solution,
-      });
-      res.json(ticket);
-    } catch (error) {
-      next(error);
-    }
-  };
+  //   const { ticketId } = req.params;
+  //   const { description, evidence, status, assigned_to, resolve_solution } = req.body;
+  //   try {
+  //     const ticket = await this.ticketService.updateTicketStatus(ticketId, accountId, {
+  //       description,
+  //       evidence,
+  //       status,
+  //       assigned_to,
+  //       resolve_solution,
+  //     });
+  //     res.json(ticket);
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // };
 
   /**
    * Xóa phiếu hỗ trợ

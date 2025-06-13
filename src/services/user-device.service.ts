@@ -246,4 +246,36 @@ export class UserDeviceService {
             return Promise.all(logoutPromises);
         });
     }
+
+    async lockDevice(deviceId: string, serial_number: string, accountId: string) {
+        const device = await this.prisma.devices.findFirst({
+            where: { device_id: deviceId, serial_number: serial_number },
+        });
+        if (!device) {
+            throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy thiết bị');
+        }
+
+        if (device?.lock_status === 'locked') {
+            throwError(ErrorCodes.NOT_FOUND, 'Thiết bị đã bị khóa');
+        }
+
+        if (device?.account_id !== accountId) {
+            throwError(ErrorCodes.FORBIDDEN, 'Bạn chỉ có thể khóa thiết bị của mình');
+        }
+
+        await this.prisma.devices.update({
+            where: {
+                device_id_serial_number: {
+                    device_id: deviceId,
+                    serial_number: serial_number
+                }
+            },
+            data: { lock_status: 'locked' },
+        });
+
+        // await this.prisma.sync_tracking.updateMany({
+        //     where: { device_id: deviceId, is_deleted: false },
+        //     data: { lock_status: 'locked' },
+        // });
+    }
 }
