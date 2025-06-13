@@ -21,7 +21,7 @@ const TICKET_STATUS = {
 
 interface TicketStatusUpdate {
 	status: typeof TICKET_STATUS.APPROVED | typeof TICKET_STATUS.REJECTED | typeof TICKET_STATUS.RESOLVED;
-	description: string;
+	resolve_solution: string;
 	evidence: any;
 }
 
@@ -208,7 +208,7 @@ class TicketService {
 			where: { ticket_id: ticketId },
 			data: {
 				status: data.status,
-				resolve_solution: data.description,	
+				resolve_solution: data.resolve_solution,	
 				resolved_at: new Date(),
 				updated_at: new Date(),
 			},

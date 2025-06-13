@@ -1,7 +1,9 @@
 import {PrismaClient} from '@prisma/client';
-import {ErrorCodes, throwError} from '../utils/errors';
+import {ErrorCodes, get_error_response, throwError} from '../utils/errors';
 import {generateUserDeviceId} from '../utils/helpers';
 import { DeviceCache } from '../utils/device-cache';
+import { STATUS_CODE } from '../contants/status';
+import { ERROR_CODES } from '../contants/error';
 
 export class UserDeviceService {
     private prisma: PrismaClient;
@@ -278,14 +280,10 @@ export class UserDeviceService {
         //     data: { lock_status: 'locked' },
         // });
 
-        return this.prisma.devices.update({
-            where: {
-                device_id_serial_number: {
-                    device_id: deviceId,
-                    serial_number: serial_number
-                }
-            },
-            data: { lock_status: 'locked' },
-        });
+        return get_error_response(
+            ERROR_CODES.SUCCESS,
+            STATUS_CODE.OK,
+            'Thiết bị đã được khóa thành công'
+        )
     }
 }
