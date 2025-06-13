@@ -1,7 +1,9 @@
 import {PrismaClient} from '@prisma/client';
-import {ErrorCodes, throwError} from '../utils/errors';
+import {ErrorCodes, get_error_response, throwError} from '../utils/errors';
 import {generateUserDeviceId} from '../utils/helpers';
 import { DeviceCache } from '../utils/device-cache';
+import { STATUS_CODE } from '../contants/status';
+import { ERROR_CODES } from '../contants/error';
 
 export class UserDeviceService {
     private prisma: PrismaClient;
@@ -277,5 +279,11 @@ export class UserDeviceService {
         //     where: { device_id: deviceId, is_deleted: false },
         //     data: { lock_status: 'locked' },
         // });
+
+        return get_error_response(
+            ERROR_CODES.SUCCESS,
+            STATUS_CODE.OK,
+            'Thiết bị đã được khóa thành công'
+        )
     }
 }
