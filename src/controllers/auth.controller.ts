@@ -94,7 +94,7 @@ class AuthController {
         const ipAddress = req.ip;
 
         if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
-        if (!userDeviceId || isNaN(userDeviceId)) {
+        if (!userDeviceId || !isNaN(userDeviceId)) {
             throwError(ErrorCodes.BAD_REQUEST, 'Valid UserDeviceID is required');
         }
 
@@ -350,6 +350,24 @@ class AuthController {
         try {
             const { email, newPassword } = req.body;
             const result = await this.authService.recoveryPassword(email, newPassword);
+            res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Lấy thông tin khách hàng đăng nhập
+     * @param req Request Express với email và mật khẩu mới trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    getMe = async (req: Request, res: Response, next: NextFunction) => {
+        const userId = req.user?.userId;
+        if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const result = await this.authService.getMe(userId);
             res.json(result);
         } catch (error) {
             next(error);

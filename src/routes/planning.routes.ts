@@ -27,7 +27,7 @@ router.post(
 //lấy kế hoạch theo id --
 router.get(
     '/:planningId',
-    // authMiddleware,
+    authMiddleware,
     validateMiddleware(PlanningIdSchema),
     planningController.getPlanningByIdApi
 );

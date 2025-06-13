@@ -515,6 +515,51 @@ class AuthService {
             message: 'Password updated successfully'
         };
     }
+
+    async getMe(userId: string) {
+
+        try {
+            const user = await this.prisma.account.findFirst({
+                where: {
+                    account_id: userId,
+                    deleted_at: null
+                },
+                include: {
+                    customer: {
+                        select: {
+                            customer_id: true,
+                            lastname: true,
+                            surname: true,
+                            phone: true,
+                            email: true,
+                            gender: true,
+                            image: true,
+                            birthdate: true,
+                        }
+                    }
+                }
+            })
+
+            const formatUser = {
+                account_id: user?.account_id,
+                customer_id: user?.customer_id,
+                username: user?.username,
+                fullname: user?.customer?.surname + " " + user?.customer?.lastname,
+                birthdate: user?.customer?.birthdate,
+                phone: user?.customer?.phone,
+                email: user?.customer?.email,
+                gender: user?.customer?.gender,
+                image: user?.customer?.image
+            }
+    
+            return {
+                success: true,
+                data: formatUser,
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
 }
 
 export default AuthService;
