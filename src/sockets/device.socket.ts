@@ -1,5 +1,4 @@
-// src/sockets/device.ts.socket.ts (updated handleSensorData function)
-
+// src/sockets/device.socket.ts
 import { Server, Socket, Namespace } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
 import redisClient from '../utils/redis';
@@ -10,6 +9,13 @@ import AlertService from '../services/alert.service';
 import NotificationService from '../services/notification.service';
 import { NotificationType } from '../types/notification';
 import HourlyValueService from '../services/hourly-value.service';
+import {
+    handleDeviceOnline,
+    handleDeviceCapabilities,
+    handleSensorData,
+    handleDeviceDisconnect,
+    validateDeviceAccess
+} from './handlers/device.handlers';
 
 const prisma = new PrismaClient();
 const alertService = new AlertService();
@@ -29,9 +35,10 @@ const ALERT_MESSAGES = {
 };
 
 export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClientEvents>) => {
-    const deviceNamespace = io.of('/device.ts');
+    const deviceNamespace = io.of('/device');
     const clientNamespace = io.of('/client');
 
+    // IoT Device connections
     deviceNamespace.on('connection', async (socket: DeviceSocket) => {
         const { deviceId, isIoTDevice = 'true' } = socket.handshake.query as {
             deviceId?: string;
@@ -39,6 +46,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
         };
 
         if (!deviceId) {
+            console.log('Device connection rejected: Missing deviceId');
             socket.disconnect();
             return;
         }
@@ -48,21 +56,31 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
         try {
             const device = await prisma.devices.findUnique({
                 where: { serial_number: deviceId, is_deleted: false },
-                include: { account: true, spaces: true },
+                include: {
+                    account: true,
+                    spaces: true,
+                    device_templates: true,
+                    firmware: true
+                },
             });
+
             if (!device) {
-                throwError(ErrorCodes.NOT_FOUND, 'Device not found');
+                console.log(`Device not found: ${deviceId}`);
+                socket.disconnect();
+                return;
             }
 
+            // Update device link status
             await prisma.devices.update({
                 where: { serial_number: deviceId },
                 data: { link_status: 'linked', updated_at: new Date() },
             });
 
-            if (device!.account_id) {
-                await redisClient.setex(`device:${deviceId}:account`, 3600, device!.account_id);
+            // Create notification for device owner
+            if (device.account_id) {
+                await redisClient.setex(`device:${deviceId}:account`, 3600, device.account_id);
                 await notificationService.createNotification({
-                    account_id: device!.account_id,
+                    account_id: device.account_id,
                     text: `Device ${deviceId} is now online.`,
                     type: NotificationType.SYSTEM,
                 });
@@ -70,19 +88,51 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
 
             socket.join(`device:${deviceId}`);
 
+            // Notify clients about device connection
             clientNamespace.emit('device_connect', { deviceId });
-            clientNamespace.emit('device_online', { deviceId });
+            clientNamespace.emit('device_online', { deviceId, timestamp: new Date().toISOString() });
 
-            socket.on('device_online', () => handleDeviceOnline(socket, clientNamespace));
-            socket.on('sensorData', (data) => handleSensorData(socket, data, clientNamespace));
-            socket.on('ping', () => {});
-            socket.on('disconnect', () => handleDeviceDisconnect(socket, clientNamespace));
+            console.log(`IoT Device connected: ${deviceId}`);
+
+            // Socket event handlers
+            socket.on('device_online', (data) =>
+                handleDeviceOnline(socket, clientNamespace, data, prisma)
+            );
+
+            socket.on('device_capabilities', (data) =>
+                handleDeviceCapabilities(socket, clientNamespace, data, prisma)
+            );
+
+            socket.on('sensorData', (data) =>
+                handleSensorData(socket, data, clientNamespace, prisma, alertService, notificationService, hourlyValueService)
+            );
+
+            socket.on('deviceStatus', (data) => {
+                console.log(`Device status from ${deviceId}:`, data);
+                clientNamespace.to(`device:${deviceId}`).emit('deviceStatus', data);
+            });
+
+            socket.on('alarmAlert', (data) => {
+                console.log(`Alarm alert from ${deviceId}:`, data);
+                clientNamespace.to(`device:${deviceId}`).emit('alarmAlert', data);
+            });
+
+            socket.on('ping', () => {
+                // Keep connection alive
+                socket.emit('pong');
+            });
+
+            socket.on('disconnect', () =>
+                handleDeviceDisconnect(socket, clientNamespace, prisma, notificationService)
+            );
+
         } catch (error) {
-            console.error('Socket error:', error);
+            console.error('IoT Device socket error:', error);
             socket.disconnect();
         }
     });
 
+    // Client App connections (Mobile/Web)
     clientNamespace.on('connection', async (socket: DeviceSocket) => {
         const { deviceId, accountId } = socket.handshake.query as {
             deviceId?: string;
@@ -90,6 +140,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
         };
 
         if (!deviceId || !accountId) {
+            console.log('Client connection rejected: Missing deviceId or accountId');
             socket.disconnect();
             return;
         }
@@ -97,52 +148,36 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
         socket.data = { deviceId, accountId, isIoTDevice: false };
 
         try {
-            const device = await prisma.devices.findUnique({
-                where: { serial_number: deviceId, is_deleted: false },
-                include: { account: true, spaces: { include: { houses: true } } },
-            });
-            if (!device) {
-                throwError(ErrorCodes.NOT_FOUND, 'Device not found');
-            }
-
-            const hasAccess =
-                device!.account_id === accountId ||
-                (await prisma.user_groups.findFirst({
-                    where: {
-                        group_id: device!.spaces?.houses?.group_id,
-                        account_id: accountId,
-                        is_deleted: false,
-                    },
-                })) ||
-                (await prisma.shared_permissions.findFirst({
-                    where: {
-                        device_serial: deviceId,
-                        shared_with_user_id: accountId,
-                        is_deleted: false,
-                    },
-                }));
-
+            // Validate device access
+            const hasAccess = await validateDeviceAccess(deviceId, accountId, prisma);
             if (!hasAccess) {
-                throwError(ErrorCodes.FORBIDDEN, 'No permission to access this device.ts');
+                console.log(`Access denied for user ${accountId} to device ${deviceId}`);
+                socket.disconnect();
+                return;
             }
 
             socket.join(`device:${deviceId}`);
+            console.log(`Client connected to device ${deviceId} by user ${accountId}`);
 
+            // Real-time device monitoring
             socket.on('start_real_time_device', ({ deviceId: targetDeviceId }) => {
                 if (targetDeviceId === deviceId) {
-                    socket.join(`device:${deviceId}`);
+                    socket.join(`device:${deviceId}:realtime`);
+                    console.log(`Started real-time monitoring for device ${deviceId}`);
                 }
             });
 
             socket.on('stop_real_time_device', ({ deviceId: targetDeviceId }) => {
                 if (targetDeviceId === deviceId) {
-                    socket.leave(`device:${deviceId}`);
+                    socket.leave(`device:${deviceId}:realtime`);
+                    console.log(`Stopped real-time monitoring for device ${deviceId}`);
                 }
             });
 
             socket.on('disconnect', () => {
-                console.log(`Mobile client ${socket.id} disconnected`);
+                console.log(`Client disconnected from device ${deviceId}`);
             });
+
         } catch (error) {
             console.error('Client socket error:', error);
             socket.disconnect();
@@ -150,147 +185,4 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
     });
 };
 
-async function handleDeviceOnline(socket: DeviceSocket, clientNamespace: Namespace) {
-    const { deviceId } = socket.data;
-    await prisma.devices.update({
-        where: { serial_number: deviceId },
-        data: { link_status: 'linked', updated_at: new Date() },
-    });
-    clientNamespace.emit('device_online', { deviceId });
-}
-
-async function handleSensorData(
-    socket: DeviceSocket,
-    data: { gas?: number; temperature?: number; humidity?: number; type?: string },
-    clientNamespace: Namespace
-) {
-    const { deviceId } = socket.data;
-
-    // Update device.ts current_value
-    await prisma.devices.update({
-        where: { serial_number: deviceId },
-        data: {
-            current_value: {
-                gas: data.gas,
-                temperature: data.temperature,
-                humidity: data.humidity,
-            },
-            updated_at: new Date(),
-        },
-    });
-
-    // Process sensor data for hourly aggregation
-    await hourlyValueService.processSensorData(deviceId, {
-        gas: data.gas,
-        temperature: data.temperature,
-        humidity: data.humidity,
-    });
-
-    const device = await prisma.devices.findUnique({
-        where: { serial_number: deviceId },
-        include: { account: true },
-    });
-    if (device) {
-        await prisma.alerts.create({
-            data: {
-                device_serial: deviceId,
-                space_id: device.space_id,
-                message: JSON.stringify(data),
-                alert_type_id: data.type === 'smokeSensor' ? 1 : 0,
-                status: 'unread',
-            },
-        });
-
-        if (device.account_id) {
-            await notificationService.createNotification({
-                account_id: device.account_id,
-                text: `New sensor data received from device ${deviceId}: ${JSON.stringify(data)}`,
-                type: NotificationType.ALERT,
-            });
-        }
-    }
-
-    let alertCreated = false;
-    if (typeof data.gas === 'number' && data.gas > 500) {
-        const message = `${ALERT_MESSAGES.GAS_HIGH} (gas = ${data.gas})`;
-        if (device) {
-            await alertService.createAlert(
-                // @ts-ignore
-                device,
-                ALERT_TYPES.GAS_HIGH,
-                message
-            );
-            await notificationService.createNotification({
-                // @ts-ignore
-                account_id: device.account_id,
-                text: message,
-                type: NotificationType.ALERT,
-            });
-            alertCreated = true;
-        }
-    }
-    if (typeof data.temperature === 'number' && data.temperature > 40) {
-        const message = `${ALERT_MESSAGES.TEMP_HIGH} (temp = ${data.temperature}°C)`;
-        if (device) {
-            await alertService.createAlert(
-                // @ts-ignore
-                device,
-                ALERT_TYPES.TEMP_HIGH,
-                message
-            );
-            await notificationService.createNotification({
-                // @ts-ignore
-                account_id: device.account_id,
-                text: message,
-                type: NotificationType.ALERT,
-            });
-            alertCreated = true;
-        }
-    }
-
-    if (alertCreated) {
-        console.log(`Alert and notification created for device ${deviceId}`);
-    }
-
-    clientNamespace.to(`device:${deviceId}`).emit('sensorData', {
-        deviceId,
-        ...data,
-    });
-    clientNamespace.to(`device:${deviceId}`).emit('realtime_device_value', {
-        serial: deviceId,
-        data: { val: data },
-    });
-}
-
-async function handleDeviceDisconnect(socket: DeviceSocket, clientNamespace: Namespace) {
-    const { deviceId } = socket.data;
-
-    await prisma.devices.update({
-        where: { serial_number: deviceId },
-        data: { link_status: 'unlinked', power_status: false, updated_at: new Date() },
-    });
-
-    const device = await prisma.devices.findUnique({
-        where: { serial_number: deviceId },
-        include: { account: true },
-    });
-
-    if (device?.account_id) {
-        await alertService.createAlert(
-            // @ts-ignore
-            device,
-            ALERT_TYPES.DEVICE_DISCONNECT,
-            ALERT_MESSAGES.DEVICE_DISCONNECT
-        );
-        await notificationService.createNotification({
-            account_id: device.account_id,
-            text: `Device ${deviceId} has been disconnected.`,
-            type: NotificationType.SECURITY,
-        });
-    }
-
-    clientNamespace.emit('device_disconnect', { deviceId });
-
-    await redisClient.del(`device:${deviceId}:account`);
-}
-
+export { ALERT_TYPES, ALERT_MESSAGES };
