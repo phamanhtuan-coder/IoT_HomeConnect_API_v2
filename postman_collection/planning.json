@@ -1,0 +1,460 @@
+[
+  {
+    "name": "Planning",
+    "item": [
+      {
+        "name": "Get All Plannings",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Plannings retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/plannings",
+            "host": ["{{baseUrl}}"],
+            "path": ["plannings"],
+            "query": [
+              {
+                "key": "status",
+                "value": "approved",
+                "description": "Optional filter by status (approved/rejected)",
+                "disabled": true
+              },
+              {
+                "key": "page",
+                "value": "1",
+                "description": "Page number (optional)",
+                "disabled": true
+              },
+              {
+                "key": "limit",
+                "value": "10",
+                "description": "Items per page (optional)",
+                "disabled": true
+              }
+            ]
+          },
+          "description": "Get list of all production plannings"
+        },
+        "response": []
+      },
+      {
+        "name": "Get Planning By ID",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Planning retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.planningId).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/plannings/detail/:planningId",
+            "host": ["{{baseUrl}}"],
+            "path": ["plannings", "detail", ":planningId"],
+            "variable": [
+              {
+                "key": "planningId",
+                "value": "1"
+              }
+            ]
+          },
+          "description": "Get detailed information about a specific planning"
+        },
+        "response": []
+      },
+      {
+        "name": "Create Planning",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Planning created successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(201);",
+                "  pm.expect(response.planningId).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"planning_note\": \"Q3 2025 Production Plan\",\n  \"batch_count\": 5\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/plannings",
+            "host": ["{{baseUrl}}"],
+            "path": ["plannings"]
+          },
+          "description": "Create a new production planning"
+        },
+        "response": []
+      },
+      {
+        "name": "Create Planning With Batches",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Planning with batches created successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(201);",
+                "  pm.expect(response.planningId).to.exist;",
+                "  pm.expect(response.batches).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"planning_note\": \"Q3 2025 Production Plan with Batches\",\n  \"batch_count\": 2,\n  \"batches\": [\n    {\n      \"template_id\": 1,\n      \"quantity\": 100,\n      \"batch_note\": \"First batch of LED controllers\"\n    },\n    {\n      \"template_id\": 2,\n      \"quantity\": 150,\n      \"batch_note\": \"Second batch of sensors\"\n    }\n  ]\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/plannings/with-batches",
+            "host": ["{{baseUrl}}"],
+            "path": ["plannings", "with-batches"]
+          },
+          "description": "Create a new planning with pre-defined production batches"
+        },
+        "response": []
+      },
+      {
+        "name": "Approve Planning",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Planning approved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.status).to.equal('approved');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"status\": \"approved\",\n  \"notes\": \"Plan approved after review. All requirements met.\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/plannings/:planningId/approve",
+            "host": ["{{baseUrl}}"],
+            "path": ["plannings", ":planningId", "approve"],
+            "variable": [
+              {
+                "key": "planningId",
+                "value": "1"
+              }
+            ]
+          },
+          "description": "Approve or reject a production planning"
+        },
+        "response": []
+      },
+      {
+        "name": "Create Batch in Planning",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Batch created successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(201);",
+                "  pm.expect(response.batchId).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"template_id\": 1,\n  \"quantity\": 100,\n  \"batch_note\": \"LED Controller production batch\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/plannings/:planningId/batches",
+            "host": ["{{baseUrl}}"],
+            "path": ["plannings", ":planningId", "batches"],
+            "variable": [
+              {
+                "key": "planningId",
+                "value": "1"
+              }
+            ]
+          },
+          "description": "Create a new production batch within a planning"
+        },
+        "response": []
+      },
+      {
+        "name": "Get Batches by Planning ID",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Batches retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/plannings/:planningId/batches",
+            "host": ["{{baseUrl}}"],
+            "path": ["plannings", ":planningId", "batches"],
+            "variable": [
+              {
+                "key": "planningId",
+                "value": "1"
+              }
+            ]
+          },
+          "description": "Get all production batches for a specific planning"
+        },
+        "response": []
+      },
+      {
+        "name": "Update Batch Status",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Batch status updated successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.status).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"status\": \"in_progress\",\n  \"batch_note\": \"Production started on schedule\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/plannings/batches/:batchId/status",
+            "host": ["{{baseUrl}}"],
+            "path": ["plannings", "batches", ":batchId", "status"],
+            "variable": [
+              {
+                "key": "batchId",
+                "value": "1"
+              }
+            ]
+          },
+          "description": "Update the status of a production batch"
+        },
+        "response": []
+      },
+      {
+        "name": "Get List of Completed Batches",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Completed batches retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/plannings/list-batches-completed/:planningId",
+            "host": ["{{baseUrl}}"],
+            "path": ["plannings", "list-batches-completed", ":planningId"],
+            "variable": [
+              {
+                "key": "planningId",
+                "value": "1"
+              }
+            ]
+          },
+          "description": "Get list of completed batches for a planning"
+        },
+        "response": []
+      },
+      {
+        "name": "Get Plannings with Completed Batches",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Plannings with completed batches retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/plannings/plannings-by-batch-production-status-is-completed",
+            "host": ["{{baseUrl}}"],
+            "path": ["plannings", "plannings-by-batch-production-status-is-completed"]
+          },
+          "description": "Get all plannings that have completed production batches"
+        },
+        "response": []
+      }
+    ]
+  }
+]
+
