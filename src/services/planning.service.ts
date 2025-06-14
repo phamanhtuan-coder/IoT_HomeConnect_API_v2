@@ -2,7 +2,7 @@
 import { PrismaClient } from '@prisma/client';
 import { PlanningCreateInput, PlanningApprovalInput, Planning, PlanningStatus, BatchCreateInput } from '../types/planning';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { generatePlanningId, calculatePlanningStatus, generateBatchId } from '../utils/helpers';
+import { generatePlanningId, calculatePlanningStatus, generateBatchId, generateDeviceSerialId } from '../utils/helpers';
 
 export class PlanningService {
     private prisma: PrismaClient;
@@ -427,17 +427,18 @@ export class PlanningService {
 
                 // 3. Tạo production_tracking records với ID mới
                 const trackingPromises = Array.from({ length: batchData.quantity }, async (_, index) => {
-                    // Tạo từ tắt từ template name
-                    const templateName = template!.name;
-                    const shortName = templateName
-                        .split(' ')
-                        .map(word => word[0])
-                        .join('')
-                        .toUpperCase();
-
-                    // Tạo device_serial theo format: {SHORT_NAME}{BATCH_ID}{SEQUENCE_NUMBER}
-                    const sequenceNumber = (index + 1).toString().padStart(3, '0');
-                    const deviceSerial = `${shortName}-${batch.production_batch_id}-${sequenceNumber}`;
+                    let deviceSerial: string;
+                    let attempts = 0;
+                    const maxAttempts = 5;
+                    do {
+                        deviceSerial = generateDeviceSerialId();
+                        const idExists = await prisma.production_tracking.findFirst({
+                            where: { device_serial: deviceSerial }
+                        });
+                        if (!idExists) break;
+                        attempts++;
+                        if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+                    } while (true);
 
                     return prisma.production_tracking.create({
                         data: {

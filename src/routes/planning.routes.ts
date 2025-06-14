@@ -10,6 +10,7 @@ import {
     PlanningIdSchema,
     PlanningBatchCreateSchema,
     PlanningBatchUpdateSchema,
+    batchUpdateSchema,
 } from '../utils/schemas/planning.schema';
 
 const router = Router();
@@ -41,7 +42,7 @@ router.post(
 //lấy kế hoạch theo id --
 router.get(
     '/detail/:planningId',
-    // authMiddleware,
+    authMiddleware,
     validateMiddleware(PlanningIdSchema),
     planningController.getPlanningByIdApi
 );
@@ -84,7 +85,8 @@ router.put(
     '/batches/:batchId/status',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(PlanningBatchUpdateSchema),
+    // validateMiddleware(PlanningBatchUpdateSchema),
+    validateMiddleware(batchUpdateSchema),
     planningController.updateBatchStatusApi
 );
 

@@ -11,15 +11,40 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
     };
 };
 
-// GET /api/customer-search
-// router.get('/', (req: Request, res: Response) => {
-//     customerSearchController.searchCustomer(req, res);
-// });
 
 router.get(
     '/',
     // authMiddleware,
     asyncHandler(customerSearchController.searchCustomer.bind(customerSearchController))
+);
+
+// Lock customer account
+router.put(
+    '/lock/:customerId', 
+
+    asyncHandler(customerSearchController.lockCustomer.bind(customerSearchController))
+    
+);
+// Unlock customer account
+router.put(
+    '/unlock/:customerId', 
+
+    asyncHandler(customerSearchController.unlockCustomer.bind(customerSearchController))
+);
+
+// Update customer information
+router.put(
+    '/update/:customerId', 
+   
+    asyncHandler(customerSearchController.updateCustomer.bind(customerSearchController))
+);
+
+
+// Delete customer account
+router.delete(
+    '/delete/:customerId', 
+
+    asyncHandler(customerSearchController.deleteCustomer.bind(customerSearchController))
 );
 
 export default router;
