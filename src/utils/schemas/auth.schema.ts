@@ -107,6 +107,13 @@ export const recoveryPasswordSchema = z.object({
     }),
 });
 
+export const changePasswordSchema = z.object({
+    body: z.object({
+        currentPassword: z.string().min(6, 'Password must be at least 6 characters'),
+        newPassword: z.string().min(6, 'Password must be at least 6 characters'),
+    }),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>['body'];
 export type UserRegisterInput = z.infer<typeof userRegisterSchema>['body'];
 export type EmployeeRegisterInput = z.infer<typeof employeeRegisterSchema>['body'];

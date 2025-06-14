@@ -16,20 +16,6 @@ import {
 const router = Router();
 const planningController = new PlanningController();
 
-router.get('/list-batches-completed/:planningId',
-    authMiddleware,
-    // roleMiddleware,
-    // validateMiddleware(PlanningListBatchesCompletedSchema),
-    planningController.getListBatchesCompleted
-);
-
-router.get('/plannings-by-batch-production-status-is-completed',
-    // authMiddleware,
-    // roleMiddleware,
-    planningController.getPlanningsByBatchProductionStatusIsCompleted
-);
-
-
 //tạo kế hoạch --
 router.post(
     '/',
@@ -95,7 +81,7 @@ router.post(
     '/with-batches',
     authMiddleware,
     // roleMiddleware,
-    
+   
     planningController.createPlanningWithBatchesApi
 );
 

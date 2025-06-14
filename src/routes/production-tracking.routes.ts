@@ -3,7 +3,7 @@ import { ProductionTrackingController } from '../controllers/production-tracking
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
 import validateMiddleware from '../middleware/validate.middleware';
-import { ApproveProductionSchema, UpdateProductionSchema, RejectProductionSchema, CancelProductionSchema, ApproveTestedSchema, GetSerialFirmwareSchema } from '../utils/schemas/production-tracking.schema';
+import { approveProductionSchema, updateProductionSchema, rejectProductionSchema, cancelProductionSchema, approveTestedSchema, getSerialFirmwareSchema } from '../utils/schemas/production-tracking.schema';
 
 const router = Router();
 const productionTrackingController = new ProductionTrackingController();
@@ -16,57 +16,56 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
 
 router.get(
     '/production-batch/:production_batch_id',
-    authMiddleware,
+    // authMiddleware,
     // roleMiddleware,
     productionTrackingController.getProductionTrackingByProductionBatchId
 );
 
-// Xác nhận sản phẩm đã được kiểm tra
 router.post(
     '/approve-production-serial',
-    authMiddleware,
+    // authMiddleware,
     // roleMiddleware,
-    validateMiddleware(ApproveProductionSchema),
+    // validateMiddleware(approveProductionSchema),
     productionTrackingController.ApproveProductionSerial
 );
 
 router.patch(
-    '/cancel-production-serial',
-    authMiddleware,
-    // roleMiddleware,
-    validateMiddleware(CancelProductionSchema),
-    productionTrackingController.CancelProductionSerial
-);
-
-router.patch(
     '/update-serial',
-    authMiddleware,
+    // authMiddleware,
     // roleMiddleware,
-    validateMiddleware(UpdateProductionSchema),
+    // validateMiddleware(updateProductionSchema),
     productionTrackingController.UpdateProductionSerial
 );
 
 router.patch(
     '/reject-qc',
-    authMiddleware,
+    // authMiddleware,
     // roleMiddleware,
-    validateMiddleware(RejectProductionSchema),
+    // validateMiddleware(rejectProductionSchema),
     productionTrackingController.RejectProductionSerial
 );
 
 router.patch(
-    '/approve-tested-serial',
-    authMiddleware,
+    '/cancel-production-serial',
+    // authMiddleware,
     // roleMiddleware,
-    validateMiddleware(ApproveTestedSchema),
+    // validateMiddleware(cancelProductionSchema),
+    productionTrackingController.CancelProductionSerial
+);
+
+router.patch(
+    '/approve-tested-serial',
+    // authMiddleware,
+    // roleMiddleware,
+    // validateMiddleware(approveTestedSchema),
     productionTrackingController.ApproveTestedSerial
 );
 
 router.get(
-    '/info-need-upload-firmware/:type/:planning_id?/:batch_id?',
-    authMiddleware,
+    '/info-need-upload-firmware/:type/:planning_id/:batch_id',
+    // authMiddleware,
     // roleMiddleware,
-    validateMiddleware(GetSerialFirmwareSchema),
+    // validateMiddleware(getSerialFirmwareSchema),
     productionTrackingController.getSerialWithNeedFirmwareInProgress
 );
 

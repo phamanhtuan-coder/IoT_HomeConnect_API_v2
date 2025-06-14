@@ -21,7 +21,8 @@ import {
     checkEmailVerificationSchema,
     verifyEmailSchema,
     updateUserSchema,
-    recoveryPasswordSchema
+    recoveryPasswordSchema,
+    changePasswordSchema
 } from "../utils/schemas/auth.schema";
 
 const router = Router();
@@ -580,6 +581,12 @@ router.post('/recovery-password',
     asyncHandler(authController.recoveryPassword)
 );
 
+router.post('/change-password',
+    validateMiddleware(changePasswordSchema),
+    authMiddleware,
+    asyncHandler(authController.changePassword)
+);
+
 /**
  * Cập nhật thông tin người dùng.
  * @swagger
@@ -632,5 +639,7 @@ router.post('/recovery-password',
  *         description: Lỗi server
  */
 router.patch('/update-profile', authMiddleware, validateMiddleware(updateUserSchema), asyncHandler(authController.updateUser));
+
+router.get('/getMe', authMiddleware, asyncHandler(authController.getMe));
 
 export default router;
