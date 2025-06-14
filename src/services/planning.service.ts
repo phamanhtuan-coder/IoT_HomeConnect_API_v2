@@ -11,24 +11,6 @@ export class PlanningService {
         this.prisma = new PrismaClient();
     }
 
-    async getPlanningsByBatchProductionStatusIsCompleted(): Promise<any> {
-        const plannings = await this.prisma.planning.findMany({
-            where: {
-                production_batches: {
-                    some: {
-                        status: 'completed'
-                    }
-                }
-            },
-            select: {
-                planning_id: true,
-                status: true,
-            }
-        });
-
-        return plannings;
-    }
-
     async createPlanning(data: PlanningCreateInput, employeeId: string): Promise<any> {
         if (data.batch_count < 1 || data.batch_count > 20) {
             throwError(ErrorCodes.BAD_REQUEST, 'Batch count must be between 1 and 20');

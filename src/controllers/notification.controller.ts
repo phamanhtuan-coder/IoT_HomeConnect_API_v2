@@ -151,7 +151,7 @@ class NotificationController {
         const { email } = req.body;
         try {
             await this.notificationService.generateAndStoreOtp(email);
-            res.json({ message: 'OTP generated and sent successfully' });
+            res.status(200).json({ message: 'OTP generated and sent successfully' });
         } catch (error) {
             next(error);
         }
@@ -167,7 +167,10 @@ class NotificationController {
         const { email, otp } = req.body;
         try {
             const isValid = await this.notificationService.verifyOtp(email, otp);
-            res.json({ message: isValid ? 'OTP verified successfully' : 'OTP verification failed' });
+            res.status(200).json({ 
+                success: isValid ? true : false,
+                message: isValid ? 'OTP verified successfully' : 'OTP verification failed' 
+            });
         } catch (error) {
             next(error);
         }
@@ -183,7 +186,10 @@ class NotificationController {
         const { email } = req.body;
         try {
             await this.notificationService.generateAndStoreOtp(email);
-            res.json({ message: 'OTP sent successfully' });
+            res.status(200).json({ 
+                success: true,
+                message: 'OTP sent successfully' 
+            });
         } catch (error) {
             next(error);
         }

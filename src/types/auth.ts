@@ -67,7 +67,6 @@ export interface UserJwtPayload extends JwtPayload {
  * @property role - Vai trò của nhân viên.
  */
 export interface EmployeeJwtPayload extends JwtPayload {
-    accountId: string;
     employeeId: string;
     username: string; // Thay email thành username
     role: string;

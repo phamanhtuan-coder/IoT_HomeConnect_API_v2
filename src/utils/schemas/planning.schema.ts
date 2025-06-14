@@ -142,8 +142,3 @@ export type PlanningIdParam = z.infer<typeof PlanningIdSchema>['params'];
 export type PlanningBatchCreateInput = z.infer<typeof PlanningBatchCreateSchema>['body'];
 export type PlanningBatchUpdateInput = z.infer<typeof PlanningBatchUpdateSchema>['body'];
 export type PlanningListQuery = z.infer<typeof PlanningListSchema>['query'];
-export type PlanningStatus = typeof PlanningStatus[keyof typeof PlanningStatus];
-export type BatchStatus = typeof BatchStatus[keyof typeof BatchStatus];
-
-// Export enums
-export { PlanningStatus, BatchStatus };

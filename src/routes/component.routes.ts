@@ -13,7 +13,7 @@ import ComponentController from '../controllers/component.controller';
 import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import roleMiddleware from '../middleware/role.middleware';
-import { ComponentCreateSchema, ComponentIdSchema, ComponentUpdateSchema } from '../utils/schemas/component.schema';
+import { componentSchema, componentIdSchema, updateComponentSchema } from '../utils/schemas/component.schema';
 
 const router = Router();
 const componentController = new ComponentController();
@@ -79,7 +79,7 @@ router.post(
     '/',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(ComponentCreateSchema),
+    validateMiddleware(componentSchema),
     asyncHandler(componentController.createComponent)
 );
 
@@ -115,7 +115,7 @@ router.get(
     '/:componentId',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(ComponentIdSchema),
+    validateMiddleware(componentIdSchema),
     asyncHandler(componentController.getComponentById)
 );
 
@@ -204,8 +204,8 @@ router.put(
     '/:componentId',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(ComponentIdSchema),
-    validateMiddleware(ComponentUpdateSchema),
+    validateMiddleware(componentIdSchema),
+    validateMiddleware(updateComponentSchema),
     asyncHandler(componentController.updateComponent)
 );
 
@@ -241,7 +241,7 @@ router.delete(
     '/:componentId',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(ComponentIdSchema),
+    validateMiddleware(componentIdSchema),
     asyncHandler(componentController.deleteComponent)
 );
 

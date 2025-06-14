@@ -3,6 +3,7 @@ import AuthService from '../services/auth.service';
 import { LoginRequestBody, UserRegisterRequestBody, EmployeeRegisterRequestBody } from '../types/auth';
 import {ErrorCodes, throwError} from "../utils/errors";
 import {UserDeviceService} from "../services/user-device.service";
+import NotificationService from '../services/notification.service';
 
 // Define interface for logout multiple devices request body
 interface LogoutMultipleDevicesRequest {
@@ -316,7 +317,7 @@ class AuthController {
         try {
             const { email } = req.body;
             const result = await this.authService.verifyEmail(email);
-            res.json(result);
+            res.status(200).json(result);
         } catch (error) {
             next(error);
         }
@@ -350,6 +351,37 @@ class AuthController {
         try {
             const { email, newPassword } = req.body;
             const result = await this.authService.recoveryPassword(email, newPassword);
+            res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    changePassword = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.userId;
+            if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+            const { currentPassword, newPassword } = req.body;
+            const result = await this.authService.changePassword(userId, currentPassword, newPassword);
+            res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Lấy thông tin khách hàng đăng nhập
+     * @param req Request Express với email và mật khẩu mới trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    getMe = async (req: Request, res: Response, next: NextFunction) => {
+        const userId = req.user?.userId;
+        if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const result = await this.authService.getMe(userId);
             res.json(result);
         } catch (error) {
             next(error);

@@ -16,9 +16,8 @@ import { AuthJwtPayload } from '../types/auth';
  * @param next Hàm next để chuyển sang middleware tiếp theo
  */
 const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-    console.log('authMiddleware');
-    console.log(req.headers);
     const authHeader = req.headers.authorization;
+    console.log('authMiddleware', authHeader);
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         throwError(ErrorCodes.UNAUTHORIZED, 'Invalid authorization format');
         return;
@@ -33,7 +32,6 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
     try {
         const decoded = jwt.verify(token, secretKey) as AuthJwtPayload;
         req.user = decoded;
-        console.log('decoded', decoded);
 
         next();
     } catch (error: unknown) {
