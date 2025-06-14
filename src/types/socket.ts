@@ -1,10 +1,8 @@
+// src/types/socket.ts
 import { Socket } from 'socket.io';
 
 /**
- * Dữ liệu socket cho thiết bị.
- * @property deviceId - ID của thiết bị.
- * @property accountId - ID tài khoản (tùy chọn).
- * @property isIoTDevice - Thiết bị có phải IoT không.
+ * Device socket data interface
  */
 export interface DeviceSocketData {
     deviceId: string;
@@ -13,82 +11,150 @@ export interface DeviceSocketData {
 }
 
 /**
- * Các sự kiện server gửi tới client.
+ * Device capabilities structure
  */
-export interface ServerToClientEvents {
-    /**
-     * Sự kiện khi thiết bị kết nối.
-     * @param data - Thông tin thiết bị.
-     */
-    device_connect: (data: { deviceId: string }) => void;
-    /**
-     * Sự kiện khi thiết bị ngắt kết nối.
-     * @param data - Thông tin thiết bị.
-     */
-    device_disconnect: (data: { deviceId: string }) => void;
-    /**
-     * Sự kiện khi thiết bị online.
-     * @param data - Thông tin thiết bị.
-     */
-    device_online: (data: { deviceId: string }) => void;
-    /**
-     * Sự kiện gửi dữ liệu cảm biến.
-     * @param data - Dữ liệu cảm biến.
-     */
-    sensorData: (data: { deviceId: string; gas?: number; temperature?: number; humidity?: number }) => void;
-    /**
-     * Sự kiện gửi lệnh tới thiết bị.
-     * @param data - Dữ liệu lệnh.
-     */
-    command: (data: { action: string; [key: string]: any }) => void;
-    /**
-     * Sự kiện gửi giá trị thiết bị theo thời gian thực.
-     * @param data - Dữ liệu giá trị thiết bị.
-     */
-    realtime_device_value: (data: { serial: string; data: { val: any } }) => void;
+export interface DeviceCapabilities {
+    deviceType?: string;
+    category?: string;
+    capabilities?: string[];
+    hardware_version?: string;
+    firmware_version?: string;
+    isInput?: boolean;
+    isOutput?: boolean;
+    isSensor?: boolean;
+    isActuator?: boolean;
+    controls?: {
+        [key: string]: string; // e.g., "power": "toggle", "brightness": "slider"
+    };
 }
 
 /**
- * Các sự kiện client gửi tới server.
+ * Sensor data structure
+ */
+export interface SensorData {
+    deviceId?: string;
+    gas?: number;
+    temperature?: number;
+    humidity?: number;
+    timestamp?: string;
+    type?: string;
+}
+
+/**
+ * Device status structure
+ */
+export interface DeviceStatus {
+    deviceId: string;
+    power?: boolean;
+    color?: string;
+    brightness?: number;
+    alarmActive?: boolean;
+    buzzerOverride?: boolean;
+    timestamp: string;
+    [key: string]: any; // For additional device-specific properties
+}
+
+/**
+ * Alert data structure
+ */
+export interface AlertData {
+    deviceId: string;
+    alertType: number;
+    message: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    sensorData?: SensorData;
+    timestamp: string;
+}
+
+/**
+ * Server to Client Events
+ */
+export interface ServerToClientEvents {
+    // Device connection events
+    device_connect: (data: { deviceId: string }) => void;
+    device_disconnect: (data: { deviceId: string; timestamp: string }) => void;
+    device_online: (data: {
+        deviceId: string;
+        capabilities?: DeviceCapabilities;
+        timestamp: string
+    }) => void;
+
+    // Device capabilities events
+    capabilities_updated: (data: {
+        deviceId: string;
+        capabilities: DeviceCapabilities;
+        timestamp: string
+    }) => void;
+
+    // Sensor and status events
+    sensorData: (data: SensorData) => void;
+    deviceStatus: (data: DeviceStatus) => void;
+    realtime_device_value: (data: {
+        serial: string;
+        data: { val: any }
+    }) => void;
+
+    // Alert events
+    device_alert: (data: AlertData) => void;
+    alarmAlert: (data: {
+        deviceId: string;
+        alarmActive: boolean;
+        temperature?: number;
+        gasValue?: number;
+        timestamp: string;
+    }) => void;
+
+    // Command events
+    command: (data: {
+        action: string;
+        [key: string]: any
+    }) => void;
+
+    // Buzzer events
+    buzzerStatus: (data: {
+        deviceId: string;
+        buzzerActive: boolean;
+        timestamp: string;
+    }) => void;
+
+    // Connection management
+    ping: () => void;
+    pong: () => void;
+}
+
+/**
+ * Client to Server Events
  */
 export interface ClientToServerEvents {
-    /**
-     * Thông báo thiết bị online.
-     */
-    device_online: () => void;
-    /**
-     * Gửi dữ liệu cảm biến lên server.
-     * @param data - Dữ liệu cảm biến.
-     */
-    sensorData: (data: { gas?: number; temperature?: number; humidity?: number; type?: string }) => void;
-    /**
-     * Gửi ping tới server.
-     */
+    // Device lifecycle events
+    device_online: (data?: DeviceCapabilities) => void;
+    device_capabilities: (data: DeviceCapabilities) => void;
+
+    // Data events
+    sensorData: (data: SensorData) => void;
+    deviceStatus: (data: DeviceStatus) => void;
+    alarmAlert: (data: any) => void;
+    buzzerStatus: (data: any) => void;
+
+    // Connection management
     ping: () => void;
-    /**
-     * Bắt đầu gửi dữ liệu thiết bị theo thời gian thực.
-     * @param data - Thông tin thiết bị.
-     */
+    pong: () => void;
+
+    // Real-time monitoring
     start_real_time_device: (data: { deviceId: string }) => void;
-    /**
-     * Dừng gửi dữ liệu thiết bị theo thời gian thực.
-     * @param data - Thông tin thiết bị.
-     */
     stop_real_time_device: (data: { deviceId: string }) => void;
 }
 
 /**
- * Các sự kiện giữa các server.
+ * Inter-server events
  */
 export interface InterServerEvents {
-    /**
-     * Gửi ping giữa các server.
-     */
     ping: () => void;
+    pong: () => void;
 }
 
 /**
- * Kiểu socket cho thiết bị, định nghĩa các sự kiện và dữ liệu liên quan.
+ * Device Socket type
  */
 export type DeviceSocket = Socket<
     ClientToServerEvents,
