@@ -3,6 +3,7 @@ import AuthService from '../services/auth.service';
 import { LoginRequestBody, UserRegisterRequestBody, EmployeeRegisterRequestBody } from '../types/auth';
 import {ErrorCodes, throwError} from "../utils/errors";
 import {UserDeviceService} from "../services/user-device.service";
+import NotificationService from '../services/notification.service';
 
 // Define interface for logout multiple devices request body
 interface LogoutMultipleDevicesRequest {
@@ -316,7 +317,7 @@ class AuthController {
         try {
             const { email } = req.body;
             const result = await this.authService.verifyEmail(email);
-            res.json(result);
+            res.status(200).json(result);
         } catch (error) {
             next(error);
         }
@@ -350,7 +351,7 @@ class AuthController {
         try {
             const { email, newPassword } = req.body;
             const result = await this.authService.recoveryPassword(email, newPassword);
-            res.json(result);
+            res.status(200).json(result);
         } catch (error) {
             next(error);
         }

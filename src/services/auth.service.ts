@@ -535,6 +535,7 @@ class AuthService {
                             gender: true,
                             image: true,
                             birthdate: true,
+                            email_verified: true,
                         }
                     }
                 }
@@ -549,7 +550,8 @@ class AuthService {
                 phone: user?.customer?.phone,
                 email: user?.customer?.email,
                 gender: user?.customer?.gender,
-                image: user?.customer?.image
+                image: user?.customer?.image,
+                email_verified: user?.customer?.email_verified,
             }
     
             return {
