@@ -17,6 +17,7 @@ import {
     notificationIdSchema, notificationSchema,
     updateNotificationSchema
 } from "../utils/schemas/notification.schema";
+import NotificationService from "../services/notification.service";
 
 
 const router = Router();
@@ -374,6 +375,30 @@ router.post(
     validateMiddleware(verifyOtpSchema),
     asyncHandler(notificationController.verifyOtp)
 );
+
+// Dùng để kiểm tra kết nối với Firebase Cloud Messaging (FCM)
+router.get('/fcm', async (req: Request, res: Response) => {
+    try {
+        const notificationService = new NotificationService();
+        const fcmHealthy = await notificationService.testFCMConnection();
+
+        res.json({
+            service: 'FCM',
+            status: fcmHealthy ? 'healthy' : 'degraded',
+            message: fcmHealthy
+                ? 'Firebase Cloud Messaging is available'
+                : 'FCM unavailable - push notifications disabled',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error: any) {
+        res.status(503).json({
+            service: 'FCM',
+            status: 'unhealthy',
+            message: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
 
 export default router;
 

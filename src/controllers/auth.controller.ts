@@ -3,6 +3,8 @@ import AuthService from '../services/auth.service';
 import { LoginRequestBody, UserRegisterRequestBody, EmployeeRegisterRequestBody } from '../types/auth';
 import {ErrorCodes, throwError} from "../utils/errors";
 import {UserDeviceService} from "../services/user-device.service";
+import NotificationService from "../services/notification.service";
+import { PrismaClient } from '@prisma/client';
 
 // Define interface for logout multiple devices request body
 interface LogoutMultipleDevicesRequest {
@@ -13,9 +15,12 @@ class AuthController {
     private authService: AuthService;
     private userDeviceService: UserDeviceService;
 
+    private prisma: PrismaClient;
+
     constructor() {
         this.authService = new AuthService();
         this.userDeviceService = new UserDeviceService();
+        this.prisma = new PrismaClient();
     }
 
     /**
@@ -76,7 +81,7 @@ class AuthController {
                 }))
             };
 
-            return res.status(200).json(response);
+            res.status(200).json(response);
         } catch (error) {
             next(error);
         }
@@ -193,7 +198,7 @@ class AuthController {
                 // req.ip || 'unknown', req.headers['user-agent'] || 'unknown'
             );
 
-            return res.status(200).json(result);
+            res.status(200).json(result);
         } catch (error) {
             next(error);
         }
@@ -276,19 +281,76 @@ class AuthController {
      * @param res Response Express
      * @param next Middleware tiếp theo
      */
-    updateDeviceToken = async (req: Request, res: Response, next: NextFunction) => {
-        const { deviceToken } = req.body;
-        const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
-        if (!deviceToken) throwError(ErrorCodes.BAD_REQUEST, 'Device token is required');
-
+    updateDeviceToken = async (req: Request, res: Response)=> {
         try {
-            const result = await this.authService.updateDeviceToken(accountId, deviceToken);
-            res.status(result.success ? 200 : 400).json(result);
-        } catch (error) {
-            next(error);
+            const { deviceToken, userDeviceId } = req.body;
+            const accountId = req?.user?.account_id;
+
+            if (!deviceToken) {
+                return res.status(400).json({
+                    error: 'Device token is required'
+                });
+            }
+
+            const notificationService = new NotificationService();
+
+            if (userDeviceId) {
+                // Update specific device
+                await notificationService.updateDeviceFCMToken(userDeviceId, deviceToken);
+            } else {
+                // Find and update latest device
+                const latestDevice = await this.prisma.user_devices.findFirst({
+                    where: {
+                        user_id: accountId,
+                        is_deleted: false
+                    },
+                    orderBy: { last_login: 'desc' }
+                });
+
+                if (latestDevice) {
+                    await notificationService.updateDeviceFCMToken(latestDevice.user_device_id, deviceToken);
+                } else {
+                    return res.status(404).json({ error: 'No device found for user' });
+                }
+            }
+
+            res.json({
+                message: 'FCM token updated successfully',
+                note: 'Push notifications are now enabled for this device'
+            });
+        } catch (error: any) {
+            console.error('Update FCM token error:', error);
+            res.status(500).json({
+                error: error.message || 'Failed to update FCM token'
+            });
         }
-    };
+    }
+
+// Thêm endpoint để test FCM connectivity
+    async testFCMStatus(req: Request, res: Response) {
+        try {
+            const accountId = req?.user?.account_id;
+            const notificationService = new NotificationService();
+
+            const fcmAvailable = await notificationService.testFCMConnection();
+            const userTokens = await notificationService.getUserFCMTokens(accountId);
+
+            res.json({
+                fcm_service_available: fcmAvailable,
+                user_devices_with_tokens: userTokens.length,
+                devices: userTokens.map(d => ({
+                    device_name: d.device_name,
+                    has_valid_token: !!d.device_token,
+                    last_login: d.last_login
+                }))
+            });
+        } catch (error: any) {
+            res.status(500).json({
+                error: 'Failed to check FCM status',
+                details: error.message
+            });
+        }
+    }
 
     /**
      * Kiểm tra trạng thái xác thực email
