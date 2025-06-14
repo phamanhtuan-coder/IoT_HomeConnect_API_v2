@@ -239,7 +239,7 @@ class AuthController {
     registerUser = async (req: Request, res: Response, next: NextFunction) => {
         const data = req.body as UserRegisterRequestBody;
         const token = await this.authService.registerUser(data);
-        res.status(201).json({ token });
+        res.status(201).json(token );
     };
 
     /**
