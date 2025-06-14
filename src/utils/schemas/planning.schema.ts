@@ -78,6 +78,20 @@ export const PlanningBatchCreateSchema = z.object({
     })
 });
 
+export const batchUpdateSchema = z.object({
+    body: z.object({
+    status: z.enum([
+        'pending',
+        'pendingimport',
+        'in_progress',
+        'completed',
+        'relabeling',
+        'fixproduction',
+        'rejected',    
+    ]),
+    batch_note: z.string().optional()
+    }),
+});
 // Schema cho việc cập nhật batch trong planning
 export const PlanningBatchUpdateSchema = z.object({
     body: z.object({

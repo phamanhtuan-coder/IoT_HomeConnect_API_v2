@@ -19,7 +19,6 @@ export class CustomerSearchController {
             const filters = {
                 email: req.query.email as string,
                 phone: req.query.phone as string,
-           
                 customerId: req.query.customerId as string,
                 username: req.query.username as string,
                 deviceType: req.query.deviceType as string | number,
@@ -34,6 +33,106 @@ export class CustomerSearchController {
             });
         } catch (error) {
             console.log('error', error);
+            if (error instanceof AppError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: error.code,
+                        message: error.message
+                    }
+                });
+            }
+            return res.status(500).json({
+                success: false,
+                error: {
+                    code: ErrorCodes.INTERNAL_SERVER_ERROR,
+                    message: 'Internal server error'
+                }
+            });
+        }
+    }
+
+    async lockCustomer(req: Request, res: Response) {
+        try {
+            const { customerId } = req.params;
+            const result = await this.customerSearchService.lockCustomer(customerId);
+            return res.json(result);
+        } catch (error) {
+            if (error instanceof AppError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: error.code,
+                        message: error.message
+                    }
+                });
+            }
+            return res.status(500).json({
+                success: false,
+                error: {
+                    code: ErrorCodes.INTERNAL_SERVER_ERROR,
+                    message: 'Internal server error'
+                }
+            });
+        }
+    }
+    async unlockCustomer(req: Request, res: Response) {
+        try {
+            const { customerId } = req.params;
+            const result = await this.customerSearchService.unlockCustomer(customerId);
+            return res.json(result);
+        } catch (error) {
+            if (error instanceof AppError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: error.code,
+                        message: error.message
+                    }
+                });
+            }
+            return res.status(500).json({
+                success: false,
+                error: {
+                    code: ErrorCodes.INTERNAL_SERVER_ERROR,
+                    message: 'Internal server error'
+                }
+            });
+        }
+    }
+
+    async updateCustomer(req: Request, res: Response) {
+        try {
+            const { customerId } = req.params;
+            const updateData = req.body;
+            const result = await this.customerSearchService.updateCustomer(customerId, updateData);
+            return res.json(result);
+        } catch (error) {
+            if (error instanceof AppError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: error.code,
+                        message: error.message
+                    }
+                });
+            }
+            return res.status(500).json({
+                success: false,
+                error: {
+                    code: ErrorCodes.INTERNAL_SERVER_ERROR,
+                    message: 'Internal server error'
+                }
+            });
+        }
+    }
+
+    async deleteCustomer(req: Request, res: Response) {
+        try {
+            const { customerId } = req.params;
+            const result = await this.customerSearchService.deleteCustomer(customerId);
+            return res.json(result);
+        } catch (error) {
             if (error instanceof AppError) {
                 return res.status(400).json({
                     success: false,

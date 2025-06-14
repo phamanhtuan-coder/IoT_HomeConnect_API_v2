@@ -13,7 +13,6 @@ export class CustomerSearchService {
     async searchCustomer(filters: {
         email?: string;
         phone?: string;
-        name?: string;
         customerId?: string;
         username?: string;
         deviceType?: string | number;
@@ -96,25 +95,6 @@ export class CustomerSearchService {
             if (filters.phone && account?.customer?.phone !== filters.phone) {
                 throwError(ErrorCodes.NOT_FOUND, 'Customer not found');
             }
-            if (filters.name) {
-                const searchName = filters.name.toLowerCase().trim();
-                const customerFullName = `${account?.customer?.surname} ${account?.customer?.lastname}`.toLowerCase().trim();
-
-                // Kiểm tra nhiều trường hợp
-                const isMatch =
-                    // Trường hợp 1: Tìm chính xác chuỗi
-                    customerFullName.includes(searchName) ||
-                    // Trường hợp 2: Tìm từng từ riêng lẻ
-                    searchName.split(' ').every(word => customerFullName.includes(word)) ||
-                    // Trường hợp 3: Tìm kết hợp họ và tên
-                    (searchName.split(' ').length > 1 &&
-                        customerFullName.includes(searchName.split(' ')[0]) &&
-                        customerFullName.includes(searchName.split(' ').slice(1).join(' ')));
-
-                if (!isMatch) {
-                    throwError(ErrorCodes.NOT_FOUND, 'Customer not found');
-                }
-            }
             if (filters.username && account?.username !== filters.username) {
                 throwError(ErrorCodes.NOT_FOUND, 'No account found');
             }
@@ -160,7 +140,8 @@ export class CustomerSearchService {
                     username: account?.username,
                     created_at: account?.created_at,
                     updated_at: account?.updated_at,
-                    is_deleted: account?.deleted_at !== null
+                    is_deleted: account?.deleted_at !== null,
+                    status: account?.status
                 } : null,
                 customer: account?.customer ? {
                     customer_id: account?.customer?.customer_id,
@@ -243,6 +224,204 @@ export class CustomerSearchService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Error searching customer');
+        }
+    }
+
+    // Khóa tài khoản khách hàng
+    async lockCustomer(customerId: string) {
+        try {
+            const customer = await this.prisma.customer.findUnique({
+                where: {
+                    customer_id: customerId
+                },
+                include: {
+                    account: true
+                }
+            });
+
+            if (!customer) {
+                throwError(ErrorCodes.NOT_FOUND, 'Customer not found');
+            }
+
+            if (customer?.account?.[0]?.is_locked) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Account is already locked');
+            }
+
+            const updatedAccount = await this.prisma.account.update({
+                where: {
+                    account_id: customer?.account[0].account_id
+                },
+                data: {
+                    is_locked: true,
+                    locked_at: new Date()
+                }
+            });
+
+            return {
+                success: true,
+                message: 'Account locked successfully',
+                data: updatedAccount
+            };
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Error locking account');
+        }
+    }
+
+    // Mở khóa tài khoản khách hàng
+    async unlockCustomer(customerId: string) {
+        try {
+            const customer = await this.prisma.customer.findUnique({
+                where: {
+                    customer_id: customerId
+                },
+                include: {
+                    account: true
+                }
+            });
+
+            if (!customer) {
+                throwError(ErrorCodes.NOT_FOUND, 'Customer not found');
+            }
+
+            if (!customer?.account?.[0].is_locked) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Account is not locked');
+            }
+
+            const updatedAccount = await this.prisma.account.update({
+                where: {
+                    account_id: customer?.account[0].account_id
+                },
+                data: {
+                    is_locked: false,
+                    locked_at: null
+                }
+            });
+
+            return {
+                success: true,
+                message: 'Account unlocked successfully',
+                data: updatedAccount
+            };
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Error unlocking account');
+        }
+    }
+
+    // Cập nhật thông tin khách hàng
+    async updateCustomer(customerId: string, updateData: {
+        surname?: string;
+        lastname?: string;
+        email?: string;
+        phone?: string;
+        gender?: boolean;
+        birthdate?: Date;
+
+    }) {
+        try {
+            const customer = await this.prisma.customer.findUnique({
+                where: {
+                    customer_id: customerId
+                }
+            });
+
+            if (!customer) {
+                throwError(ErrorCodes.NOT_FOUND, 'Customer not found');
+            }
+
+            const updatedCustomer = await this.prisma.customer.update({
+                where: {
+                    customer_id: customerId
+                },
+                data: {
+                    ...updateData,
+                    updated_at: new Date()
+                }
+            });
+
+            return {
+                success: true,
+                message: 'Customer updated successfully',
+                data: updatedCustomer
+            };
+        } catch (error) {
+            console.log('Looi', error)
+            if (error instanceof AppError) throw error;
+            throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Error updating customer');
+        }
+    }
+
+    // Xóa tài khoản khách hàng (soft delete)
+    async deleteCustomer(customerId: string) {
+        try {
+            const customer = await this.prisma.customer.findUnique({
+                where: {
+                    customer_id: customerId
+                },
+                include: {
+                    account: true
+                }
+            });
+
+            if (!customer) {
+                throwError(ErrorCodes.NOT_FOUND, 'Customer not found');
+            }
+
+            // Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu
+            await this.prisma.$transaction(async (prisma) => {
+                // Soft delete customer
+                await prisma.customer.update({
+                    where: {
+                        customer_id: customerId
+                    },
+                    data: {
+                        deleted_at: new Date()
+                    }
+                });
+
+                // Soft delete related account if exists
+                if (customer?.account) {
+                    await prisma.account.update({
+                        where: {
+                            account_id: customer.account[0].account_id
+                        },
+                        data: {
+                            deleted_at: new Date()
+                        }
+                    });
+                }
+
+                // Soft delete related user_devices
+                await prisma.user_devices.updateMany({
+                    where: {
+                        user_id: customer?.account[0].account_id
+                    },
+                    data: {
+                        is_deleted: true,
+                        updated_at: new Date()
+                    }
+                });
+
+                // Soft delete related user_groups
+                await prisma.user_groups.updateMany({
+                    where: {
+                        account_id: customer?.account[0].account_id
+                    },
+                    data: {
+                        is_deleted: true,
+                        updated_at: new Date()
+                    }
+                });
+            });
+
+            return {
+                success: true,
+                message: 'Customer deleted successfully'
+            };
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Error deleting customer');
         }
     }
 }
