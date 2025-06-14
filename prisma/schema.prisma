@@ -252,7 +252,6 @@ model contact {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model customer {
-  customer_id    String           @id @db.VarChar(32)
   surname        String?          @db.VarChar(500)
   lastname       String?          @db.VarChar(500)
   image          String?          @db.MediumText
@@ -264,6 +263,7 @@ model customer {
   created_at     DateTime?        @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at     DateTime?        @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at     DateTime?        @db.DateTime(0)
+  customer_id    String           @id @db.VarChar(32)
   account        account[]
   address_book   address_book[]
   cart           cart[]
@@ -329,6 +329,7 @@ model device_templates {
   device_template_note String?               @db.VarChar(500)
   status               String?               @default("pending") @db.VarChar(20)
   production_cost      Float?                @default(0)
+  base_capabilities    Json?
   categories           categories?           @relation(fields: [device_type_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction, map: "device_templates_ibfk_1")
   account              account?              @relation(fields: [created_by], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "device_templates_ibfk_2")
   devices              devices[]
@@ -364,6 +365,7 @@ model devices {
   updated_at              DateTime?                 @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted              Boolean?                  @default(false)
   production_tracking_id  Int?
+  runtime_capabilities    Json?
   alerts                  alerts[]
   device_templates        device_templates          @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_1")
   spaces                  spaces?                   @relation(fields: [space_id], references: [space_id], onDelete: NoAction, onUpdate: NoAction, map: "devices_ibfk_2")
@@ -391,7 +393,6 @@ model devices {
 }
 
 model employee {
-  employee_id                      String             @id @db.VarChar(32)
   surname                          String?            @db.VarChar(500)
   lastname                         String?            @db.VarChar(500)
   image                            String?            @db.MediumText
@@ -403,6 +404,7 @@ model employee {
   created_at                       DateTime?          @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at                       DateTime?          @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at                       DateTime?          @db.DateTime(0)
+  employee_id                      String             @id @db.VarChar(32)
   account                          account[]
   export_warehouse                 export_warehouse[]
   import_warehouse                 import_warehouse[]
@@ -932,15 +934,15 @@ model sync_tracking {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model template_components {
-  template_component_id Int              @id @default(autoincrement())
-  template_id           String?          @db.VarChar(32)
+  template_component_id Int               @id @default(autoincrement())
+  template_id           String?           @db.VarChar(32)
   component_id          String?           @db.VarChar(32)
-  quantity_required     Int?             @default(1)
-  created_at            DateTime?        @default(dbgenerated("(now())")) @db.DateTime(0)
-  updated_at            DateTime?        @default(dbgenerated("(now())")) @db.DateTime(0)
-  is_deleted            Boolean?         @default(false)
+  quantity_required     Int?              @default(1)
+  created_at            DateTime?         @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at            DateTime?         @default(dbgenerated("(now())")) @db.DateTime(0)
+  is_deleted            Boolean?          @default(false)
   device_templates      device_templates? @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "template_components_ibfk_1")
-  components            components?      @relation(fields: [component_id], references: [component_id], onDelete: NoAction, onUpdate: NoAction, map: "template_components_ibfk_2")
+  components            components?       @relation(fields: [component_id], references: [component_id], onDelete: NoAction, onUpdate: NoAction, map: "template_components_ibfk_2")
 
   @@index([component_id], map: "component_id")
   @@index([template_id], map: "template_id")
@@ -960,7 +962,7 @@ model ticket_types {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model tickets {
-  ticket_id                            String                 @id @db.VarChar(32)
+  ticket_id                            String              @id @db.VarChar(32)
   user_id                              String?             @db.VarChar(32)
   device_serial                        String?             @db.VarChar(50)
   ticket_type_id                       Int
