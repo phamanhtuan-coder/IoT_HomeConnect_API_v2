@@ -54,19 +54,12 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     deleteFirmware = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.accountId;
-        
-        if (!accountId) {
-            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
-        }
-        
-        const employeeId = accountId;
+        const employeeId = req.user?.employeeId;
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
         try {
             const { firmwareId } = req.params;
             const response = await this.firmwareService.deleteFirmware(firmwareId, employeeId);
-            
-            console.log('response', response)
             res.status(200).json(response);
         } catch (error) {
             next(error);
@@ -100,12 +93,6 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     getFirmwares = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.accountId;
-        
-        if (!accountId) {
-            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
-        }
-        
         try {
             const firmwares = await this.firmwareService.getFirmwares();
             res.json(firmwares);
@@ -121,12 +108,6 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     getFirmwaresByTemplateId = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.accountId;
-        
-        if (!accountId) {
-            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
-        }
-        
         try {
             const { templateId } = req.params;
             const firmwares = await this.firmwareService.getFirmwaresByTemplateId(templateId);
@@ -143,19 +124,15 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     confirmFirmwareByTester = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.accountId;
-        
-        if (!accountId) {
-            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
-        }
-        
-        const employeeId = accountId;
+        const employeeId = req.user?.employeeId;
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+
         try {
             const response = await this.firmwareService.confirmFirmwareByTester(req.body.firmwareId, employeeId, req.body.testResult);
-            
+            console.log("response",response)
             res.status(200).json(response);
         } catch (error) {
-            console.log(error)
+            console.log("err",error)
             next(error);
         }
     };
@@ -167,13 +144,9 @@ class FirmwareController {
      * @param next Middleware tiếp theo
      */
     confirmFirmwareByRD = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.accountId;
-        
-        if (!accountId) {
-            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
-        }
-        
-        const employeeId = accountId;
+        const employeeId = req.user?.employeeId;
+        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+
         try {
             const response = await this.firmwareService.confirmFirmwareByRD(req.body.firmwareId, employeeId, req.body.testResult);
             
@@ -184,11 +157,6 @@ class FirmwareController {
     };
 
     getLatestVersionFirmwaresByTemplate = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.accountId;
-
-        if (!accountId) {
-            return throwError(ErrorCodes.UNAUTHORIZED, 'Vui lòng đăng nhập để thực hiện hành động này');
-        }
         try {
             const latestVersionFirmwares = await this.firmwareService.getLatestVersionFirmwaresByTemplate();
             res.json(latestVersionFirmwares);

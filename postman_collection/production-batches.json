@@ -3,6 +3,61 @@
     "name": "Production Batches",
     "item": [
       {
+        "name": "Get All Production Batches",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Production batches retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/production-batches?status=pending&page=1&limit=10",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-batches"],
+            "query": [
+              {
+                "key": "status",
+                "value": "pending",
+                "description": "Filter by status (pending/approved/rejected/in_progress/completed)",
+                "disabled": true
+              },
+              {
+                "key": "page",
+                "value": "1",
+                "description": "Page number",
+                "disabled": true
+              },
+              {
+                "key": "limit",
+                "value": "10",
+                "description": "Items per page (max 100)",
+                "disabled": true
+              }
+            ]
+          },
+          "description": "Get list of all production batches with optional filters and pagination"
+        },
+        "response": []
+      },
+      {
         "name": "Create Production Batch",
         "event": [
           {
@@ -15,8 +70,7 @@
                 "  pm.expect(response.production_batch_id).to.exist;",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -31,7 +85,7 @@
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"template_id\": 1,\n  \"quantity\": 100,\n  \"start_date\": \"2025-05-21\",\n  \"target_completion_date\": \"2025-06-21\",\n  \"priority\": \"high\",\n  \"notes\": \"Regular production batch for smart lights\"\n}",
+            "raw": "{\n  \"template_id\": 1,\n  \"quantity\": 100\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -42,7 +96,8 @@
             "raw": "{{baseUrl}}/production-batches",
             "host": ["{{baseUrl}}"],
             "path": ["production-batches"]
-          }
+          },
+          "description": "Create a new production batch"
         },
         "response": []
       },
@@ -59,8 +114,7 @@
                 "  pm.expect(response.production_batch_id).to.exist;",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -80,45 +134,12 @@
             "variable": [
               {
                 "key": "batchId",
-                "value": "1"
+                "value": "1",
+                "description": "ID of the production batch"
               }
             ]
-          }
-        },
-        "response": []
-      },
-      {
-        "name": "Get All Production Batches",
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Production batches retrieved successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response).to.be.an('array');",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
-            }
-          }
-        ],
-        "request": {
-          "method": "GET",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{employeeAccessToken}}",
-              "type": "text"
-            }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/production-batches",
-            "host": ["{{baseUrl}}"],
-            "path": ["production-batches"]
-          }
+          },
+          "description": "Get details of a specific production batch by ID"
         },
         "response": []
       },
@@ -135,8 +156,7 @@
                 "  pm.expect(response.production_batch_id).to.exist;",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -151,7 +171,7 @@
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"quantity\": 120,\n  \"target_completion_date\": \"2025-06-30\",\n  \"priority\": \"urgent\",\n  \"notes\": \"Updated: Increased quantity and priority\"\n}",
+            "raw": "{\n  \"template_id\": 1,\n  \"quantity\": 150,\n  \"status\": \"in_progress\"\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -165,10 +185,12 @@
             "variable": [
               {
                 "key": "batchId",
-                "value": "1"
+                "value": "1",
+                "description": "ID of the production batch to update"
               }
             ]
-          }
+          },
+          "description": "Update details of an existing production batch"
         },
         "response": []
       },
@@ -183,8 +205,7 @@
                 "  pm.expect(pm.response.code).to.equal(204);",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -204,10 +225,12 @@
             "variable": [
               {
                 "key": "batchId",
-                "value": "1"
+                "value": "1",
+                "description": "ID of the production batch to delete"
               }
             ]
-          }
+          },
+          "description": "Delete a production batch from the system"
         },
         "response": []
       }

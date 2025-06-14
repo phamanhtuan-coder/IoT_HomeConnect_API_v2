@@ -46,6 +46,7 @@ export interface TokenResponse {
     refreshToken?: string;
     deviceUuid?: string;
     userId?: string; // Thêm userId vào response
+    employeeId?: string; // Thêm employeeId vào response
 }
 
 /**
@@ -67,7 +68,6 @@ export interface UserJwtPayload extends JwtPayload {
  * @property role - Vai trò của nhân viên.
  */
 export interface EmployeeJwtPayload extends JwtPayload {
-    accountId: string;
     employeeId: string;
     username: string; // Thay email thành username
     role: string;

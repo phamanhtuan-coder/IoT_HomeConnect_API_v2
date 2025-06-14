@@ -60,7 +60,11 @@ class AuthService {
             { expiresIn: '1h' }
         );
 
-        const response: TokenResponse = { accessToken };
+        const response: TokenResponse = {
+            accessToken,
+            userId: account!.account_id
+
+        };
 
         if (rememberMe) {
             const refreshToken = jwt.sign(
@@ -80,6 +84,8 @@ class AuthService {
             response.deviceUuid = device.device_uuid;
         }
 
+        console.log("res", response)
+
         return response;
     }
 
@@ -95,11 +101,7 @@ class AuthService {
         }
 
         const accessToken = jwt.sign(
-            {
-                employeeId: account!.account_id,
-                username: account!.username,
-                role: account!.role_id || 'employee'
-            } as EmployeeJwtPayload,
+            { employeeId: account!.account_id, username: account!.username, role: account!.role_id || 'employee' } as EmployeeJwtPayload,
             appConfig.jwtSecret,
             { expiresIn: '8h' }
         );
@@ -122,7 +124,11 @@ class AuthService {
         await redisClient.setex(`employee:token:${account!.account_id}`, 8 * 60 * 60, accessToken);
         await redisClient.setex(`employee:refresh:${account!.account_id}`, 8 * 60 * 60, refreshToken);
 
-        return { accessToken, refreshToken };
+        return {
+            accessToken,
+            refreshToken,
+            employeeId: account!.account_id
+        };
     }
 
     async refreshEmployeeToken(refreshToken: string): Promise<string> {
@@ -513,6 +519,86 @@ class AuthService {
             success: true,
             message: 'Password updated successfully'
         };
+    }
+
+    async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+
+        const account = await this.prisma.account.findFirst({
+            where: {
+                account_id: userId,
+            }
+        })
+
+        if (!account) {
+            throwError(ErrorCodes.NOT_FOUND, 'Account not found');
+        }
+
+        const isMatch = await bcrypt.compare(currentPassword, account!.password!);
+
+        if(!isMatch) {
+            throwError(ErrorCodes.BAD_REQUEST, 'Incorrect password');
+        }
+
+        const passwordHash = await bcrypt.hash(newPassword, 12);
+        await this.prisma.account.update({
+            where: { account_id: userId },
+            data: {
+                password: passwordHash,
+                updated_at: new Date()
+            }
+        });
+
+        return {
+            success: true,
+            message: 'Password updated successfully'
+        };
+    }
+
+    async getMe(userId: string) {
+
+        try {
+            const user = await this.prisma.account.findFirst({
+                where: {
+                    account_id: userId,
+                    deleted_at: null
+                },
+                include: {
+                    customer: {
+                        select: {
+                            customer_id: true,
+                            lastname: true,
+                            surname: true,
+                            phone: true,
+                            email: true,
+                            gender: true,
+                            image: true,
+                            birthdate: true,
+                            email_verified: true,
+                        }
+                    }
+                }
+            })
+
+            const formatUser = {
+                account_id: user?.account_id,
+                customer_id: user?.customer_id,
+                username: user?.username,
+                fullname: user?.customer?.surname + " " + user?.customer?.lastname,
+                birthdate: user?.customer?.birthdate,
+                phone: user?.customer?.phone,
+                email: user?.customer?.email,
+                gender: user?.customer?.gender,
+                image: user?.customer?.image,
+                email_verified: user?.customer?.email_verified,
+            }
+    
+            return {
+                success: true,
+                data: formatUser,
+            }
+        } catch (error) {
+            console.error(error);
+        }
     }
 }
 

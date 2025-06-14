@@ -42,7 +42,7 @@ export const initApp = (): { app: Application; io: Server; httpServer: any } => 
     app.use(cors({
         origin: appConfig.corsOrigins, // Use the same origins as defined in appConfig
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        // allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
         credentials: true
     }));
     

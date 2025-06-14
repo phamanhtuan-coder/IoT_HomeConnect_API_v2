@@ -15,8 +15,7 @@
                 "  pm.expect(response.ticket_type_id).to.exist;",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -31,7 +30,7 @@
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"type_name\": \"Hardware Issue\",\n  \"priority\": 2,\n  \"is_active\": true\n}",
+            "raw": "{\n  \"ticket_type_name\": \"Hardware Malfunction\",\n  \"priority\": 3,\n  \"is_active\": true\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -42,7 +41,8 @@
             "raw": "{{baseUrl}}/ticket-types",
             "host": ["{{baseUrl}}"],
             "path": ["ticket-types"]
-          }
+          },
+          "description": "Create a new ticket type. Requires employee authentication and admin role."
         },
         "response": []
       },
@@ -59,8 +59,7 @@
                 "  pm.expect(response.ticket_type_id).to.exist;",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -75,7 +74,7 @@
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"type_name\": \"Updated Hardware Issue\",\n  \"priority\": 3,\n  \"is_active\": false\n}",
+            "raw": "{\n  \"ticket_type_name\": \"Updated Hardware Issue Type\",\n  \"is_active\": true\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -89,10 +88,12 @@
             "variable": [
               {
                 "key": "ticketTypeId",
-                "value": "1"
+                "value": "1",
+                "description": "ID of the ticket type to update"
               }
             ]
-          }
+          },
+          "description": "Update an existing ticket type. Requires employee authentication and admin role."
         },
         "response": []
       },
@@ -109,8 +110,7 @@
                 "  pm.expect(response.ticket_type_id).to.exist;",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -139,10 +139,12 @@
             "variable": [
               {
                 "key": "ticketTypeId",
-                "value": "1"
+                "value": "1",
+                "description": "ID of the ticket type to update priority"
               }
             ]
-          }
+          },
+          "description": "Update priority of a ticket type. Requires employee authentication and admin role."
         },
         "response": []
       },
@@ -157,8 +159,7 @@
                 "  pm.expect(pm.response.code).to.equal(204);",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -178,10 +179,12 @@
             "variable": [
               {
                 "key": "ticketTypeId",
-                "value": "1"
+                "value": "1",
+                "description": "ID of the ticket type to delete"
               }
             ]
-          }
+          },
+          "description": "Delete a ticket type. Requires employee authentication and admin role."
         },
         "response": []
       },
@@ -198,8 +201,7 @@
                 "  pm.expect(response.ticket_type_id).to.exist;",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -219,10 +221,12 @@
             "variable": [
               {
                 "key": "ticketTypeId",
-                "value": "1"
+                "value": "1",
+                "description": "ID of the ticket type to retrieve"
               }
             ]
-          }
+          },
+          "description": "Get details of a specific ticket type. Requires authentication."
         },
         "response": []
       },
@@ -239,8 +243,7 @@
                 "  pm.expect(response).to.be.an('array');",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -257,10 +260,12 @@
             "raw": "{{baseUrl}}/ticket-types",
             "host": ["{{baseUrl}}"],
             "path": ["ticket-types"]
-          }
+          },
+          "description": "Get all ticket types. Requires authentication."
         },
         "response": []
       }
     ]
   }
 ]
+

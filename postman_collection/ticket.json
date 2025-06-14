@@ -15,8 +15,7 @@
                 "  pm.expect(response.ticket_id).to.exist;",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -31,7 +30,7 @@
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"ticket_type_id\": 1,\n  \"description\": \"Device not responding\",\n  \"evidence\": {\"image\": \"error.jpg\"}\n}",
+            "raw": "{\n  \"title\": \"Device not responding\",\n  \"description\": \"LED controller not responding after firmware update\",\n  \"ticket_type_id\": 1,\n  \"device_serial\": \"LED24_001\",\n  \"evidence\": {\n    \"images\": [\"error_screenshot.jpg\"],\n    \"logs\": [\"device_log.txt\"]\n  }\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -42,7 +41,8 @@
             "raw": "{{baseUrl}}/tickets",
             "host": ["{{baseUrl}}"],
             "path": ["tickets"]
-          }
+          },
+          "description": "Create a new support ticket. Requires user authentication."
         },
         "response": []
       },
@@ -59,8 +59,7 @@
                 "  pm.expect(response.ticket_id).to.exist;",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -69,13 +68,13 @@
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
+              "value": "Bearer {{employeeAccessToken}}",
               "type": "text"
             }
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"description\": \"Updated issue description\",\n  \"evidence\": {\"image\": \"updated_error.jpg\"},\n  \"status\": \"in_progress\",\n  \"assigned_to\": \"employee123\",\n  \"resolve_solution\": \"Restart device\"\n}",
+            "raw": "{\n  \"title\": \"Updated: Device not responding\",\n  \"description\": \"Updated description of the issue\",\n  \"status\": \"in_progress\",\n  \"assigned_to\": \"employee_id_123\",\n  \"resolve_solution\": \"Checked device logs and identified firmware incompatibility\",\n  \"evidence\": {\n    \"images\": [\"updated_screenshot.jpg\"],\n    \"logs\": [\"updated_log.txt\"]\n  }\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -89,10 +88,12 @@
             "variable": [
               {
                 "key": "ticketId",
-                "value": "1"
+                "value": "1",
+                "description": "ID of the ticket to update"
               }
             ]
-          }
+          },
+          "description": "Update an existing ticket. Requires employee authentication."
         },
         "response": []
       },
@@ -107,8 +108,7 @@
                 "  pm.expect(pm.response.code).to.equal(204);",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -128,10 +128,12 @@
             "variable": [
               {
                 "key": "ticketId",
-                "value": "1"
+                "value": "1",
+                "description": "ID of the ticket to delete"
               }
             ]
-          }
+          },
+          "description": "Delete a ticket. Requires employee authentication and admin role."
         },
         "response": []
       },
@@ -148,8 +150,7 @@
                 "  pm.expect(response.ticket_id).to.exist;",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -169,10 +170,12 @@
             "variable": [
               {
                 "key": "ticketId",
-                "value": "1"
+                "value": "1",
+                "description": "ID of the ticket to retrieve"
               }
             ]
-          }
+          },
+          "description": "Get details of a specific ticket. Requires authentication."
         },
         "response": []
       },
@@ -184,13 +187,12 @@
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Tickets retrieved successfully', () => {",
+                "pm.test('User tickets retrieved successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
                 "  pm.expect(response).to.be.an('array');",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -207,7 +209,8 @@
             "raw": "{{baseUrl}}/tickets/user",
             "host": ["{{baseUrl}}"],
             "path": ["tickets", "user"]
-          }
+          },
+          "description": "Get all tickets created by the current user. Requires user authentication."
         },
         "response": []
       },
@@ -219,13 +222,12 @@
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Tickets retrieved successfully', () => {",
+                "pm.test('All tickets retrieved successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
                 "  pm.expect(response).to.be.an('array');",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -239,43 +241,59 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/tickets?user_id=user123&ticket_type_id=1&status=pending&created_at_start=2025-01-01T00:00:00Z&created_at_end=2025-12-31T23:59:59Z&page=1&limit=10",
+            "raw": "{{baseUrl}}/tickets",
             "host": ["{{baseUrl}}"],
             "path": ["tickets"],
             "query": [
               {
                 "key": "user_id",
-                "value": "user123"
+                "value": "user123",
+                "description": "Filter by user ID",
+                "disabled": true
               },
               {
                 "key": "ticket_type_id",
-                "value": "1"
+                "value": "1",
+                "description": "Filter by ticket type",
+                "disabled": true
               },
               {
                 "key": "status",
-                "value": "pending"
+                "value": "pending",
+                "description": "Filter by status",
+                "disabled": true
               },
               {
                 "key": "created_at_start",
-                "value": "2025-01-01T00:00:00Z"
+                "value": "2025-01-01T00:00:00Z",
+                "description": "Filter by creation date start",
+                "disabled": true
               },
               {
                 "key": "created_at_end",
-                "value": "2025-12-31T23:59:59Z"
+                "value": "2025-12-31T23:59:59Z",
+                "description": "Filter by creation date end",
+                "disabled": true
               },
               {
                 "key": "page",
-                "value": "1"
+                "value": "1",
+                "description": "Page number",
+                "disabled": true
               },
               {
                 "key": "limit",
-                "value": "10"
+                "value": "10",
+                "description": "Items per page",
+                "disabled": true
               }
             ]
-          }
+          },
+          "description": "Get all tickets with optional filters. Requires employee authentication and admin role."
         },
         "response": []
       }
     ]
   }
 ]
+
