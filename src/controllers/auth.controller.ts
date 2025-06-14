@@ -357,6 +357,19 @@ class AuthController {
         }
     };
 
+    changePassword = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.userId;
+            if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+            const { currentPassword, newPassword } = req.body;
+            const result = await this.authService.changePassword(userId, currentPassword, newPassword);
+            res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
+
     /**
      * Lấy thông tin khách hàng đăng nhập
      * @param req Request Express với email và mật khẩu mới trong body

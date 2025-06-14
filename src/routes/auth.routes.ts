@@ -21,7 +21,8 @@ import {
     checkEmailVerificationSchema,
     verifyEmailSchema,
     updateUserSchema,
-    recoveryPasswordSchema
+    recoveryPasswordSchema,
+    changePasswordSchema
 } from "../utils/schemas/auth.schema";
 
 const router = Router();
@@ -578,6 +579,12 @@ router.post('/recovery-password',
     rateLimiter('recovery', 5, 60),
     validateMiddleware(recoveryPasswordSchema),
     asyncHandler(authController.recoveryPassword)
+);
+
+router.post('/change-password',
+    validateMiddleware(changePasswordSchema),
+    authMiddleware,
+    asyncHandler(authController.changePassword)
 );
 
 /**

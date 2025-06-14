@@ -106,7 +106,7 @@ function buildWhereQuery(filter: Filter | Filter[] | null, table: string): strin
     return whereClause;
 }
 
-async function executeSelectData(params: SelectDataParams): Promise<SelectDataResult> {
+export async function executeSelectData(params: SelectDataParams): Promise<SelectDataResult> {
     const {
         table,
         strGetColumn,

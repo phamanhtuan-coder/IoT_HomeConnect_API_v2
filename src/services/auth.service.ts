@@ -516,6 +516,39 @@ class AuthService {
         };
     }
 
+    async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+
+        const account = await this.prisma.account.findFirst({
+            where: {
+                account_id: userId,
+            }
+        })
+
+        if (!account) {
+            throwError(ErrorCodes.NOT_FOUND, 'Account not found');
+        }
+
+        const isMatch = await bcrypt.compare(currentPassword, account!.password!);
+
+        if(!isMatch) {
+            throwError(ErrorCodes.BAD_REQUEST, 'Incorrect password');
+        }
+
+        const passwordHash = await bcrypt.hash(newPassword, 12);
+        await this.prisma.account.update({
+            where: { account_id: userId },
+            data: {
+                password: passwordHash,
+                updated_at: new Date()
+            }
+        });
+
+        return {
+            success: true,
+            message: 'Password updated successfully'
+        };
+    }
+
     async getMe(userId: string) {
 
         try {
