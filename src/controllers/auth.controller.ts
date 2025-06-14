@@ -189,7 +189,9 @@ class AuthController {
             const result = await this.authService.loginEmployee({
                 username,
                 password
-            }, req.ip || 'unknown', req.headers['user-agent'] || 'unknown');
+            },
+                // req.ip || 'unknown', req.headers['user-agent'] || 'unknown'
+            );
 
             return res.status(200).json(result);
         } catch (error) {
@@ -247,8 +249,8 @@ class AuthController {
             if (!adminId) throwError(ErrorCodes.UNAUTHORIZED, 'Admin not authenticated');
 
             const data = req.body as EmployeeRegisterRequestBody;
-            const token = await this.authService.registerEmployee(data, adminId);
-            res.status(201).json({ token });
+            const result = await this.authService.registerEmployee(data, adminId);
+            res.status(201).json( result );
         } catch (error) {
             next(error);
         }
@@ -298,7 +300,7 @@ class AuthController {
         try {
             const { email } = req.body;
             const result = await this.authService.checkEmailVerification(email);
-            res.json(result);
+            res.status(200).json(result);
         } catch (error) {
             next(error);
         }

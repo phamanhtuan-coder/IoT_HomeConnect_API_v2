@@ -14,11 +14,28 @@ export class PlanningController {
         this.batchService = new BatchService();
     }
 
+    getListBatchesCompleted = async (req: Request, res: Response, next: NextFunction) => {
+
+        const planningId = req.params.planningId;
+        console.log('planningId', planningId);
+        const result = await this.batchService.getListBatchesCompleted(planningId);
+
+        res.status(200).json(result);
+    }
+
+    getPlanningsByBatchProductionStatusIsCompleted = async (req: Request, res: Response, next: NextFunction) => {
+        console.log('getPlanningsByBatchProductionStatusIsCompleted');
+        const result = await this.planningService.getPlanningsByBatchProductionStatusIsCompleted();
+
+        res.status(200).json(result);
+    }
+
     createPlanningApi = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            // const employeeId = req.user?.employeeId;
-            const employeeId = 'admin123';
+            const employeeId = req.user?.employeeId;
+            // const employeeId = 'admin123';
             if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+           
 
             const data = req.body as PlanningCreateInput;
             const planning = await this.planningService.createPlanning(data, employeeId);
@@ -37,8 +54,8 @@ export class PlanningController {
 
     getPlanningByIdApi = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            // const employeeId = req.user?.employeeId;
-            const employeeId = 'idemploytest';
+            const employeeId = req.user?.employeeId;
+            // const employeeId = 'idemploytest';
             if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
             const planningId = req.params.planningId;
@@ -57,8 +74,8 @@ export class PlanningController {
 
     getAllPlanningsApi = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            // const employeeId = req.user?.employeeId;
-            const employeeId = 'idemploytest';
+            const employeeId = req.user?.employeeId;
+            // const employeeId = 'idemploytest';
             if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
             const plannings = await this.planningService.getAllPlannings();
@@ -77,8 +94,8 @@ export class PlanningController {
 
     approvePlanningApi = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            // const employeeId = req.user?.employeeId;
-            const employeeId = 'idemploytest';
+            const employeeId = req.user?.employeeId;
+            // const employeeId = 'idemploytest';
             if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
             const planningId = req.params.planningId;
@@ -99,8 +116,8 @@ export class PlanningController {
 
     createBatchApi = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            // const employeeId = req.user?.employeeId;
-            const employeeId = 'idemploytest';
+            const employeeId = req.user?.employeeId;
+            // const employeeId = 'idemploytest';
             if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
             const planningId = req.params.planningId;
@@ -121,8 +138,8 @@ export class PlanningController {
 
     updateBatchStatusApi = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            // const employeeId = req.user?.employeeId;
-            const employeeId = 'idemploytest';
+            const employeeId = req.user?.employeeId;
+            // const employeeId = 'idemploytest';
             if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
             const batchId = req.params.batchId;
@@ -144,8 +161,8 @@ export class PlanningController {
 
     getBatchesByPlanningIdApi = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            // const employeeId = req.user?.employeeId;
-            const employeeId = 'idemploytest';
+            const employeeId = req.user?.employeeId;
+            // const employeeId = 'idemploytest';
             if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
             const planningId = req.params.planningId;
@@ -165,9 +182,10 @@ export class PlanningController {
     // src/controllers/planning.controller.ts
 createPlanningWithBatchesApi = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const employeeId = 'admin123'; // Sẽ thay bằng user thực tế sau
-        if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
-
+        const employeeId = req.user?.employeeId;
+            // const employeeId = 'admin123';
+            if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+           
         const { planning, batches } = req.body;
         
         // Gọi service để tạo planning và batches trong transaction

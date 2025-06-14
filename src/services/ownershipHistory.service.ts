@@ -1,10 +1,13 @@
 import { PrismaClient } from '@prisma/client';
-import { ErrorCodes, throwError } from '../utils/errors';
+import { ErrorCodes, get_error_response, throwError } from '../utils/errors';
 import TicketTypeService from './ticket-type.service';
 import NotificationService from './notification.service';
 import { NotificationType } from '../types/notification';
 import {OwnershipHistory, OwnershipTransferStatus} from "../types/ownership-history";
 import {generateTicketId} from "../utils/helpers";
+import { STATUS_CODE } from '../contants/status';
+import { ERROR_CODES } from '../contants/error';
+import { executeSelectData } from '../utils/sql_query';
 
 class OwnershipHistoryService {
     private prisma: PrismaClient;
@@ -105,27 +108,36 @@ class OwnershipHistoryService {
         });
     }
 
-    async approveOwnershipTransfer(ticketId: string, accept: boolean, approverId: string): Promise<void> {
+    // Phản hồi nhượng quyền thiết bị
+    async approveOwnershipTransfer(ticketId: string, accept: boolean, approverId: string): Promise<any> {
+        // 1. Lấy thông tin yêu cầu nhượng quyền thiết bị
         const ownershipHistory = await this.prisma.ownership_history.findFirst({
             where: { ticket_id: ticketId, is_deleted: false },
             include: { devices: true, tickets: true },
         });
-        if (!ownershipHistory || !ownershipHistory!.devices || !ownershipHistory!.tickets) {
-            throwError(ErrorCodes.NOT_FOUND, 'Ownership transfer request or device.ts not found');
+    
+        // 2. Kiểm tra thông tin yêu cầu nhượng quyền thiết bị
+        if (!ownershipHistory) {
+            throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy yêu cầu nhượng quyền');
+        }
+        if (!ownershipHistory!.devices) {
+            throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy thiết bị');
+        }
+        if (!ownershipHistory!.tickets) {
+            throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy ticket');
         }
 
-        // Verify approver is the recipient
+        // 3. Kiểm tra quyền xác nhận nhượng quyền thiết bị
         if (ownershipHistory!.to_user_id !== approverId) {
-            throwError(ErrorCodes.FORBIDDEN, 'Only the recipient can approve the transfer');
+            throwError(ErrorCodes.FORBIDDEN, 'Chỉ người nhận mới có quyền xác nhận nhượng quyền thiết bị');
         }
 
-        const ticket = await this.prisma.tickets.findUnique({
-            where: { ticket_id: ticketId },
-        });
-        if (!ticket || ticket.status !== OwnershipTransferStatus.PENDING) {
-            throwError(ErrorCodes.CONFLICT, 'Invalid or already processed ticket');
+        // 4. Kiểm tra trạng thái yêu cầu nhượng quyền thiết bị
+        if (ownershipHistory!.tickets.status !== OwnershipTransferStatus.PENDING) {
+            throwError(ErrorCodes.CONFLICT, 'Yêu cầu nhượng quyền thiết bị không hợp lệ hoặc đã được xử lý');
         }
 
+        // 5. Từ chối nhượng quyền thiết bị
         if (!accept) {
             // Reject transfer
             await this.prisma.tickets.update({
@@ -146,13 +158,18 @@ class OwnershipHistoryService {
             await this.notificationService.createNotification({
                 // @ts-ignore
                 account_id: ownershipHistory!.from_user_id,
-                text: `Ownership transfer request for device ${ownershipHistory!.device_serial} was rejected`,
+                text: `Yêu cầu nhượng quyền thiết bị cho thiết bị ${ownershipHistory!.device_serial} đã bị từ chối`,
                 type: NotificationType.SECURITY,
             });
-            return;
+
+            return get_error_response(
+                ERROR_CODES.SUCCESS,
+                STATUS_CODE.OK,
+                'Yêu cầu nhượng quyền thiết bị đã bị từ chối'
+            );
         }
 
-        // Approve transfer
+        // 6. Xác nhận nhượng quyền thiết bị
         await this.prisma.$transaction(async (prisma) => {
             // Update ticket
             await prisma.tickets.update({
@@ -160,7 +177,22 @@ class OwnershipHistoryService {
                 data: { status: OwnershipTransferStatus.APPROVED, updated_at: new Date() },
             });
 
-            // Update ownership history
+            /**
+             * Sau khi xác nhận nhượng quyền thiết bị, thì sẽ có 2 bản ghi ownership_history
+             * 1. Bản ghi cũ là của người chuyển (from_user_id)
+             * 2. Bản ghi mới là của người nhận (to_user_id)
+             * 
+             * ==> Cần xóa quyền chia sẻ thiết bị của bản ghi cũ (from_user_id)
+             * 
+             * Và cập nhật thông tin thiết bị cho bản ghi mới (to_user_id)
+             * 
+             */
+
+            // 7. Tính ngày hết hạn
+            const legal_expired_date = new Date();
+            legal_expired_date.setMonth(legal_expired_date.getMonth() + 3);
+
+            // 7.1. Cập nhật thông tin thiết bị cho bản ghi mới (to_user_id)
             await prisma.ownership_history.update({
                 where: {
                     history_id_ticket_id: {
@@ -170,11 +202,27 @@ class OwnershipHistoryService {
                 },
                 data: {
                     transferred_at: new Date(),
+                    legal_expired_date: legal_expired_date,
                     updated_at: new Date(),
                 },
             });
 
-            // Update device.ts ownership
+            // 7.2. Xóa quyền sở hữu thiết bị của chủ sở hữu cũ (from_user_id)
+            await prisma.ownership_history.updateMany({
+                where: {
+                    device_serial: ownershipHistory!.device_serial,
+                    history_id: { not: ownershipHistory!.history_id },
+                    to_user_id: ownershipHistory!.from_user_id,
+                    is_deleted: false,
+                },
+                data: {
+                    legal_expired_date: null,
+                    transferred_at: null,
+                    updated_at: new Date(),
+                },
+            });
+
+            // 7.3. Cập nhật thông tin thiết bị
             await prisma.devices.update({
                 where: {
                     // @ts-ignore
@@ -185,28 +233,29 @@ class OwnershipHistoryService {
                     updated_at: new Date(),
                 },
             });
-
-            // Remove any shared permissions
-            await prisma.shared_permissions.updateMany({
-                where: { device_serial: ownershipHistory!.device_serial, is_deleted: false },
-                data: { is_deleted: true, updated_at: new Date() },
-            });
         });
 
-        // Send notifications to both users using NotificationService
+        // 9. Gửi thông báo đến người nhượng quyền thiết bị
         await this.notificationService.createNotification({
             // @ts-ignore
             account_id: ownershipHistory!.from_user_id,
-            text: `Ownership of device ${ownershipHistory!.device_serial} successfully transferred to ${ownershipHistory!.to_user_id}`,
+            text: `Nhượng quyền thiết bị cho thiết bị ${ownershipHistory!.device_serial} thành công`,
             type: NotificationType.SECURITY,
         });
 
+        // 10. Gửi thông báo đến người nhận thiết bị
         await this.notificationService.createNotification({
             // @ts-ignore
             account_id: ownershipHistory!.to_user_id,
-            text: `You are now the owner of device ${ownershipHistory!.device_serial}`,
+            text: `Bạn đã trở thành chủ sở hữu thiết bị ${ownershipHistory!.device_serial}`,
             type: NotificationType.SECURITY,
         });
+
+        return get_error_response(
+            ERROR_CODES.SUCCESS,
+            STATUS_CODE.OK,
+            'Yêu cầu nhượng quyền thiết bị đã được xác nhận'
+        );
     }
 
     async getOwnershipHistoryById(historyId: number): Promise<OwnershipHistory> {
@@ -222,13 +271,57 @@ class OwnershipHistoryService {
         return this.mapPrismaOwnershipHistoryToAuthOwnershipHistory(history);
     }
 
-    async getOwnershipHistoryByDevice(device_serial: string): Promise<OwnershipHistory[]> {
-        const histories = await this.prisma.ownership_history.findMany({
-            where: { device_serial, is_deleted: false },
-            include: { tickets: true, devices: true },
+    async getOwnershipHistoryByDevice(device_serial: string): Promise<any> {
+
+        const filters = {
+            field: "oh.device_serial",
+            condition: "=",
+            value: device_serial,
+
+        }
+
+        const get_attr = `
+            oh.history_id, oh.ticket_id, oh.device_serial,oh.transferred_at, 
+            oh.legal_expired_date,
+
+            t.status as ticket_status,
+            d.name as device_name,
+            
+            from_acc.account_id as from_user_id,
+            from_cus.surname as from_surname,
+            from_cus.lastname as from_lastname,
+            
+            to_acc.account_id as to_user_id,
+            to_cus.surname as to_surname,
+            to_cus.lastname as to_lastname
+        `;
+
+        const get_table = "ownership_history oh";
+
+        const query_join = `
+            LEFT JOIN tickets t ON oh.ticket_id = t.ticket_id
+            LEFT JOIN devices d ON oh.device_serial = d.serial_number
+
+            LEFT JOIN accounts from_acc ON oh.from_user_id = from_acc.account_id
+            LEFT JOIN customers from_cus ON from_acc.account_id = from_cus.account_id
+
+            LEFT JOIN accounts to_acc ON oh.to_user_id = to_acc.account_id
+            LEFT JOIN customers to_cus ON to_acc.account_id = to_cus.account_id
+        `;
+        
+        const result = await executeSelectData({
+            table: get_table,
+            strGetColumn: get_attr,
+            queryJoin: query_join,
+            filter: filters,
         });
 
-        return histories.map((history) => this.mapPrismaOwnershipHistoryToAuthOwnershipHistory(history));
+        return get_error_response(
+            ERROR_CODES.SUCCESS,
+            STATUS_CODE.OK,
+            'Lấy dữ liệu thành công',
+            result.data
+        );
     }
 
     async getOwnershipHistoryByUser(userId: string): Promise<OwnershipHistory[]> {

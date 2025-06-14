@@ -139,7 +139,7 @@ router.put(
   authMiddleware,
   validateMiddleware(ticketIdSchema),
   validateMiddleware(updateTicketSchema),
-  asyncHandler(ticketController.updateTicket)
+  // asyncHandler(ticketController.updateTicket)
 );
 
 /**
@@ -269,7 +269,6 @@ router.get(
   '/',
   authMiddleware,
   roleMiddleware,
-  validateMiddleware(ticketFilterSchema),
   asyncHandler(ticketController.getAllTickets)
 );
 

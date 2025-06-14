@@ -248,7 +248,7 @@ class DeviceService {
         return devices.map((device) => this.mapPrismaDeviceToAuthDevice(device));
     }
 
-async getDeviceById(deviceId: string, serial_number: string, accountId: string): Promise<Device> {
+    async getDeviceById(deviceId: string, serial_number: string, accountId: string): Promise<Device> {
                 const device = await this.prisma.devices.findFirst({
                     where: { device_id: deviceId, serial_number: serial_number, is_deleted: false },
                     include: { device_templates: true, spaces: true },
@@ -260,7 +260,7 @@ async getDeviceById(deviceId: string, serial_number: string, accountId: string):
         return this.mapPrismaDeviceToAuthDevice(device);
     }
 
-  async unlinkDevice(deviceId: string, serial_number: string, accountId: string): Promise<void> {
+    async unlinkDevice(deviceId: string, serial_number: string, accountId: string): Promise<void> {
       const device = await this.prisma.devices.findFirst({
           where: { device_id: deviceId, serial_number: serial_number, account_id: accountId, is_deleted: false },
       });

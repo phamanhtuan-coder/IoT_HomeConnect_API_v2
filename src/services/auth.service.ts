@@ -60,10 +60,7 @@ class AuthService {
             { expiresIn: '1h' }
         );
 
-        const response: TokenResponse = {
-            accessToken,
-            userId: account!.account_id // Thêm userId vào response
-        };
+        const response: TokenResponse = { accessToken };
 
         if (rememberMe) {
             const refreshToken = jwt.sign(
@@ -86,10 +83,9 @@ class AuthService {
         return response;
     }
 
-    async loginEmployee(loginData: LoginRequestBody, ip?: string, userAgent?: string): Promise<TokenResponse> {
-        const { username, password } = loginData;
-        const account = await this.prisma.account.findFirst({ where: { username } });
-        if (!account) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Account not found');
+    async loginEmployee({ username, password }: LoginRequestBody): Promise<TokenResponse> {
+        const account = await this.prisma.account!.findFirst({ where: { username: username } });
+        if (!account!) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Account not found');
 
         if (!account!.password) {
             throwError(ErrorCodes.INVALID_CREDENTIALS, 'Account password not set');
@@ -99,7 +95,11 @@ class AuthService {
         }
 
         const accessToken = jwt.sign(
-            { employeeId: account!.account_id, username: account!.username, role: account!.role_id || 'employee' } as EmployeeJwtPayload,
+            {
+                employeeId: account!.account_id,
+                username: account!.username,
+                role: account!.role_id || 'employee'
+            } as EmployeeJwtPayload,
             appConfig.jwtSecret,
             { expiresIn: '8h' }
         );
@@ -109,14 +109,6 @@ class AuthService {
             appConfig.jwtSecret,
             { expiresIn: '8h' }
         );
-
-        // Lưu thông tin session vào Redis
-        const sessionInfo = {
-            ip: ip || 'unknown',
-            userAgent: userAgent || 'unknown',
-            loginTime: new Date().toISOString(),
-            lastActiveTime: new Date().toISOString()
-        };
 
         // Redis logic - có thể comment để disable
         const previousAccessToken = await redisClient.get(`employee:token:${account!.account_id}`);
@@ -129,13 +121,8 @@ class AuthService {
         }
         await redisClient.setex(`employee:token:${account!.account_id}`, 8 * 60 * 60, accessToken);
         await redisClient.setex(`employee:refresh:${account!.account_id}`, 8 * 60 * 60, refreshToken);
-        await redisClient.setex(`employee:session:${account!.account_id}`, 8 * 60 * 60, JSON.stringify(sessionInfo));
 
-        return {
-            accessToken,
-            refreshToken,
-            userId: account!.account_id // Thêm userId cho consistency với loginUser
-        };
+        return { accessToken, refreshToken };
     }
 
     async refreshEmployeeToken(refreshToken: string): Promise<string> {
@@ -171,7 +158,7 @@ class AuthService {
 
     async refreshToken(refreshToken: string): Promise<string> {
         const decoded = jwt.verify(refreshToken, appConfig.jwtSecret) as RefreshTokenPayload;
-        if (decoded.type !== 'refresh' ) throwError(ErrorCodes.UNAUTHORIZED, 'Invalid refresh token');
+        if (decoded.type !== 'refresh') throwError(ErrorCodes.UNAUTHORIZED, 'Invalid refresh token');
 
         const accountId = decoded.userId || decoded.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Invalid refresh token payload');
@@ -228,7 +215,7 @@ class AuthService {
                 username,
                 password: passwordHash,
                 customer: {
-                    create: {
+                    create: {   
                         customer_id: customerId,
                         surname,
                         lastname: lastname || null,

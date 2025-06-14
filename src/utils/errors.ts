@@ -33,6 +33,7 @@ export interface ErrorResponse {
     code: string;
     message: string;
     status_code: number;
+    data?: any;
 }
 
 // Object chứa chi tiết các error response
@@ -99,15 +100,19 @@ export const ERROR_RESPONSES: { [key: string]: ErrorResponse } = {
     }
 };
 
-export function get_error_response(error_code: string, status_code?: number): ErrorResponse {
+export function get_error_response(error_code: string | number, status_code?: number, message?: string, data?: any): ErrorResponse {
     const response = ERROR_RESPONSES[error_code] || {
         code: error_code,
-        message: 'Unknown error',
+        message: message || 'Unknown error',
         status_code: status_code || 500
     };
 
     if (status_code) {
         response.status_code = status_code;
+    }
+
+    if (data) {
+        response.data = data;
     }
 
     return response;
