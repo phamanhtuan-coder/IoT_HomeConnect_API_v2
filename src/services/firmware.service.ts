@@ -105,10 +105,7 @@ class FirmwareService {
         is_mandatory?: boolean;
         note?: string;
     }, employeeId: string): Promise<any> {
-        console.log("Test")
         const { version, name, file_path, template_id, is_mandatory, note } = input;
-
-        console.log("input",input)
 
         const account = await this.prisma.account.findFirst({
             where: { 
@@ -426,10 +423,6 @@ class FirmwareService {
     }
 
     async confirmFirmwareByTester(firmwareId: string, employeeId: string, testResult: boolean): Promise<any> {
-        console.log("Test")
-        console.log(firmwareId)
-        console.log(employeeId)
-        console.log(testResult)
         const account = await this.prisma.account.findFirst({
             where: { account_id: employeeId, deleted_at: null },
             include: {
