@@ -95,7 +95,7 @@ class AuthController {
         const ipAddress = req.ip;
 
         if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
-        if (!userDeviceId || !isNaN(userDeviceId)) {
+        if (!userDeviceId || isNaN(userDeviceId)) {
             throwError(ErrorCodes.BAD_REQUEST, 'Valid UserDeviceID is required');
         }
 
