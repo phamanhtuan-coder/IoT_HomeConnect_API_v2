@@ -46,6 +46,7 @@ export interface TokenResponse {
     refreshToken?: string;
     deviceUuid?: string;
     userId?: string; // Thêm userId vào response
+    employeeId?: string; // Thêm employeeId vào response
 }
 
 /**

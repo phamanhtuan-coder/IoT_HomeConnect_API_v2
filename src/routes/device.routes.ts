@@ -14,11 +14,13 @@ import authMiddleware from '../middleware/auth.middleware';
 import groupRoleMiddleware from '../middleware/group.middleware';
 import spaceGroupMiddleware from '../middleware/space-group.middleware';
 import {
+    DeviceBulkStateSchema,
+    DeviceCapabilitiesSchema,
     deviceIdSchema,
-    deviceSchema,
-    linkDeviceSchema,
+    deviceSchema, DeviceStateQuerySchema, DeviceStateUpdateSchema,
+    linkDeviceSchema, QuickToggleSchema,
     toggleDeviceSchema,
-    updateAttributesSchema, updateWifiSchema
+    updateAttributesSchema, UpdateDeviceCapabilitiesSchema, updateWifiSchema
 } from "../utils/schemas/device.schema";
 
 const router = Router();
@@ -159,113 +161,6 @@ router.post(
     groupRoleMiddleware,
     validateMiddleware(linkDeviceSchema),
     asyncHandler(deviceController.linkDevice)
-);
-
-/**
- * Bật/tắt thiết bị.
- * @swagger
- * /api/devices/{deviceId}/toggle:
- *   put:
- *     tags:
- *       - Device
- *     summary: Bật/tắt thiết bị
- *     description: Thay đổi trạng thái bật/tắt của thiết bị
- *     security:
- *       - UserBearer: []
- *       - EmployeeBearer: []
- *     parameters:
- *       - in: path
- *         name: deviceId
- *         required: true
- *         type: string
- *         description: ID của thiết bị cần thao tác
- *       - in: body
- *         name: body
- *         description: Trạng thái mới của thiết bị
- *         schema:
- *           type: object
- *           required:
- *             - state
- *           properties:
- *             state:
- *               type: boolean
- *               description: true để bật, false để tắt
- *               example: true
- *     responses:
- *       200:
- *         description: Thay đổi trạng thái thiết bị thành công
- *       400:
- *         description: Dữ liệu đầu vào không hợp lệ
- *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
- *       403:
- *         description: Không có quyền thao tác thiết bị
- *       404:
- *         description: Không tìm thấy thiết bị
- *       500:
- *         description: Lỗi server
- */
-router.put(
-    '/:deviceId/toggle',
-    authMiddleware,
-    validateMiddleware(deviceIdSchema),
-    validateMiddleware(toggleDeviceSchema),
-    asyncHandler(deviceController.toggleDevice)
-);
-
-/**
- * Cập nhật thuộc tính của thiết bị.
- * @swagger
- * /api/devices/{deviceId}/attributes:
- *   put:
- *     tags:
- *       - Device
- *     summary: Cập nhật thuộc tính thiết bị
- *     description: Cập nhật các thuộc tính của thiết bị (nhiệt độ, độ ẩm, v.v.)
- *     security:
- *       - UserBearer: []
- *       - EmployeeBearer: []
- *     parameters:
- *       - in: path
- *         name: deviceId
- *         required: true
- *         type: string
- *         description: ID của thiết bị cần cập nhật
- *       - in: body
- *         name: body
- *         description: Các thuộc tính cần cập nhật
- *         schema:
- *           type: object
- *           required:
- *             - attributes
- *           properties:
- *             attributes:
- *               type: object
- *               description: Đối tượng chứa các thuộc tính cần cập nhật
- *               example: {
- *                 "temperature": 25,
- *                 "humidity": 60
- *               }
- *     responses:
- *       200:
- *         description: Cập nhật thuộc tính thành công
- *       400:
- *         description: Dữ liệu đầu vào không hợp lệ
- *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
- *       403:
- *         description: Không có quyền thao tác thiết bị
- *       404:
- *         description: Không tìm thấy thiết bị
- *       500:
- *         description: Lỗi server
- */
-router.put(
-    '/:deviceId/attributes',
-    authMiddleware,
-    validateMiddleware(deviceIdSchema),
-    validateMiddleware(updateAttributesSchema),
-    asyncHandler(deviceController.updateDeviceAttributes)
 );
 
 /**
@@ -543,17 +438,20 @@ router.put(
     asyncHandler(deviceController.updateDeviceSpace)
 );
 
+
+
 /**
- * Cập nhật thông tin wifi cho thiết bị.
+ * Update device state (unified)
  * @swagger
- * /api/devices/{deviceId}/wifi:
- *   put:
+ * /api/devices/{deviceId}/state:
+ *   patch:
  *     tags:
  *       - Device
- *     summary: Cập nhật thông tin Wifi của thiết bị
+ *     summary: Update device state (unified)
  *     description: |
- *       Cập nhật thông tin kết nối Wifi cho thiết bị.
- *       Yêu cầu quyền trong nhóm chứa thiết bị.
+ *       Universal endpoint to update any device state properties.
+ *       Supports power, brightness, color, alarm, WiFi settings, etc.
+ *       Validates against device capabilities automatically.
  *     security:
  *       - UserBearer: []
  *       - EmployeeBearer: []
@@ -562,37 +460,383 @@ router.put(
  *         name: deviceId
  *         required: true
  *         type: string
- *         description: ID của thiết bị cần cập nhật
+ *         description: ID of the device to update
  *       - in: body
  *         name: body
- *         description: Thông tin Wifi mới
+ *         description: State properties to update
  *         schema:
  *           type: object
  *           required:
- *             - ssid
- *             - password
+ *             - serial_number
  *           properties:
- *             ssid:
+ *             serial_number:
  *               type: string
- *               description: Tên mạng Wifi
- *               example: "MyWifi"
- *             password:
+ *               example: "DEV001"
+ *             power_status:
+ *               type: boolean
+ *               example: true
+ *             brightness:
+ *               type: number
+ *               minimum: 0
+ *               maximum: 100
+ *               example: 80
+ *             color:
  *               type: string
- *               description: Mật khẩu Wifi
- *               example: "wifi123456"
+ *               pattern: "^#[0-9A-Fa-f]{6}$"
+ *               example: "#FF0000"
+ *             alarmActive:
+ *               type: boolean
+ *               example: false
+ *             buzzerOverride:
+ *               type: boolean
+ *               example: true
+ *             wifi_ssid:
+ *               type: string
+ *               example: "MyNetwork"
+ *             wifi_password:
+ *               type: string
+ *               example: "mypassword123"
  *     responses:
  *       200:
- *         description: Cập nhật thông tin Wifi thành công
+ *         description: Device state updated successfully
  *       400:
- *         description: Dữ liệu đầu vào không hợp lệ
+ *         description: Invalid input data or capabilities validation failed
  *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
+ *         description: Authentication required
  *       403:
- *         description: Không có quyền cập nhật thiết bị
+ *         description: Device does not support requested capability
  *       404:
- *         description: Không tìm thấy thiết bị
- *       500:
- *         description: Lỗi server
+ *         description: Device not found
+ */
+router.patch(
+    '/:deviceId/state',
+    authMiddleware,
+    validateMiddleware(deviceIdSchema),
+    validateMiddleware(DeviceStateUpdateSchema),
+    asyncHandler(deviceController.updateDeviceState)
+);
+
+/**
+ * Get current device state
+ * @swagger
+ * /api/devices/{deviceId}/state:
+ *   get:
+ *     tags:
+ *       - Device
+ *     summary: Get current device state
+ *     description: Retrieve the current state of all device properties
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: deviceId
+ *         required: true
+ *         type: string
+ *         description: ID of the device
+ *       - in: query
+ *         name: serial_number
+ *         required: true
+ *         type: string
+ *         description: Serial number of the device
+ *     responses:
+ *       200:
+ *         description: Current device state
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: No permission to access device
+ *       404:
+ *         description: Device not found
+ */
+router.get(
+    '/:deviceId/state',
+    authMiddleware,
+    validateMiddleware(DeviceStateQuerySchema),
+    asyncHandler(deviceController.getDeviceState)
+);
+
+/**
+ * Bulk state update
+ * @swagger
+ * /api/devices/{deviceId}/state/bulk:
+ *   post:
+ *     tags:
+ *       - Device
+ *     summary: Update multiple device properties at once
+ *     description: Apply multiple state changes in a single request
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: deviceId
+ *         required: true
+ *         type: string
+ *         description: ID of the device
+ *       - in: body
+ *         name: body
+ *         description: Array of state updates to apply
+ *         schema:
+ *           type: object
+ *           required:
+ *             - serial_number
+ *             - updates
+ *           properties:
+ *             serial_number:
+ *               type: string
+ *               example: "DEV001"
+ *             updates:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   power_status:
+ *                     type: boolean
+ *                   brightness:
+ *                     type: number
+ *                   color:
+ *                     type: string
+ *               example: [
+ *                 {"power_status": true},
+ *                 {"brightness": 75},
+ *                 {"color": "#00FF00"}
+ *               ]
+ *     responses:
+ *       200:
+ *         description: Bulk state update successful
+ *       400:
+ *         description: Invalid updates array
+ */
+router.post(
+    '/:deviceId/state/bulk',
+    authMiddleware,
+    validateMiddleware(deviceIdSchema),
+    validateMiddleware(DeviceBulkStateSchema),
+    asyncHandler(deviceController.updateDeviceBulkState)
+);
+
+/**
+ * Quick toggle device power
+ * @swagger
+ * /api/devices/{deviceId}/toggle:
+ *   post:
+ *     tags:
+ *       - Device
+ *     summary: Quick toggle device power
+ *     description: Convenience endpoint to quickly turn device on/off
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: deviceId
+ *         required: true
+ *         type: string
+ *         description: ID of the device
+ *       - in: body
+ *         name: body
+ *         schema:
+ *           type: object
+ *           required:
+ *             - serial_number
+ *           properties:
+ *             serial_number:
+ *               type: string
+ *               example: "DEV001"
+ *             power_status:
+ *               type: boolean
+ *               description: If not provided, defaults to true
+ *               example: true
+ *     responses:
+ *       200:
+ *         description: Device toggled successfully
+ */
+router.post(
+    '/:deviceId/toggle',
+    authMiddleware,
+    validateMiddleware(deviceIdSchema),
+    validateMiddleware(QuickToggleSchema),
+    asyncHandler(deviceController.quickToggleDevice)
+);
+
+/**
+ * Get device capabilities
+ * @swagger
+ * /api/devices/{deviceId}/capabilities:
+ *   post:
+ *     tags:
+ *       - Device
+ *     summary: Get device capabilities
+ *     description: |
+ *       Retrieve device capabilities merged from template and runtime.
+ *       Shows what features the device supports.
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: deviceId
+ *         required: true
+ *         type: string
+ *         description: ID of the device
+ *       - in: body
+ *         name: body
+ *         schema:
+ *           type: object
+ *           required:
+ *             - serial_number
+ *           properties:
+ *             serial_number:
+ *               type: string
+ *               example: "DEV001"
+ *     responses:
+ *       200:
+ *         description: Device capabilities retrieved
+ *         schema:
+ *           type: object
+ *           properties:
+ *             base:
+ *               type: object
+ *               description: Base capabilities from template
+ *             runtime:
+ *               type: object
+ *               description: Runtime capabilities from device
+ *             merged_capabilities:
+ *               type: object
+ *               description: Merged capabilities
+ *               properties:
+ *                 capabilities:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["OUTPUT", "RGB_CONTROL", "BRIGHTNESS_CONTROL"]
+ *                 deviceType:
+ *                   type: string
+ *                   example: "LED_CONTROLLER_24"
+ *                 category:
+ *                   type: string
+ *                   example: "LIGHTING"
+ */
+router.post(
+    '/:deviceId/capabilities',
+    authMiddleware,
+    validateMiddleware(DeviceCapabilitiesSchema),
+    asyncHandler(deviceController.getDeviceCapabilities)
+);
+
+/**
+ * Update device runtime capabilities
+ * @swagger
+ * /api/devices/{deviceId}/capabilities:
+ *   put:
+ *     tags:
+ *       - Device
+ *     summary: Update device runtime capabilities
+ *     description: |
+ *       Update the runtime capabilities of a device.
+ *       Typically called by IoT devices to report their actual capabilities.
+ *       Requires device owner or admin permissions.
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: deviceId
+ *         required: true
+ *         type: string
+ *         description: ID of the device
+ *       - in: body
+ *         name: body
+ *         description: Runtime capabilities to update
+ *         schema:
+ *           type: object
+ *           required:
+ *             - serial_number
+ *             - capabilities
+ *           properties:
+ *             serial_number:
+ *               type: string
+ *               example: "DEV001"
+ *             capabilities:
+ *               type: object
+ *               properties:
+ *                 deviceType:
+ *                   type: string
+ *                   example: "LED_CONTROLLER_24"
+ *                 category:
+ *                   type: string
+ *                   example: "LIGHTING"
+ *                 capabilities:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["OUTPUT", "RGB_CONTROL", "BRIGHTNESS_CONTROL"]
+ *                 firmware_version:
+ *                   type: string
+ *                   example: "8.24"
+ *                 isInput:
+ *                   type: boolean
+ *                   example: false
+ *                 isOutput:
+ *                   type: boolean
+ *                   example: true
+ *                 controls:
+ *                   type: object
+ *                   example: {
+ *                     "power_status": "toggle",
+ *                     "brightness": "slider",
+ *                     "color": "color_picker"
+ *                   }
+ *     responses:
+ *       200:
+ *         description: Capabilities updated successfully
+ *       400:
+ *         description: Invalid capabilities data
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: No permission to update device capabilities
+ *       404:
+ *         description: Device not found
+ */
+router.put(
+    '/:deviceId/capabilities',
+    authMiddleware,
+    // Note: This endpoint might need special permissions
+    // Add groupRoleMiddleware if only group owners should update capabilities
+    validateMiddleware(deviceIdSchema),
+    validateMiddleware(UpdateDeviceCapabilitiesSchema),
+    asyncHandler(deviceController.updateDeviceCapabilities)
+);
+
+// ===== BACKWARD COMPATIBILITY ROUTES (DEPRECATED) =====
+// These routes are maintained for backward compatibility but should be migrated to unified endpoints
+
+/**
+ * @deprecated Use PATCH /devices/:deviceId/state instead
+ */
+router.put(
+    '/:deviceId/toggle',
+    authMiddleware,
+    validateMiddleware(deviceIdSchema),
+    validateMiddleware(toggleDeviceSchema),
+    asyncHandler(deviceController.toggleDevice)
+);
+
+/**
+ * @deprecated Use PATCH /devices/:deviceId/state instead
+ */
+router.put(
+    '/:deviceId/attributes',
+    authMiddleware,
+    validateMiddleware(deviceIdSchema),
+    validateMiddleware(updateAttributesSchema),
+    asyncHandler(deviceController.updateDeviceAttributes)
+);
+
+/**
+ * @deprecated Use PATCH /devices/:deviceId/state instead
  */
 router.put(
     '/:deviceId/wifi',

@@ -448,7 +448,7 @@ router.post('/logout/all', authMiddleware, authController.logoutAllDevices);
  *       500:
  *         description: Lỗi server
  */
-router.post('/update-device-token', authMiddleware, authController.updateDeviceToken);
+router.post('/update-device-token', authMiddleware, asyncHandler(authController.updateDeviceToken));
 
 /**
  * Kiểm tra trạng thái verify email.

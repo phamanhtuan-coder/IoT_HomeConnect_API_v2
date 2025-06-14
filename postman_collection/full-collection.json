@@ -1395,116 +1395,6 @@
           "response": []
         },
         {
-          "name": "Toggle Device",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Device toggled successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.deviceId).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"power_status\": true,\n  \"serial_number\": \"ABC123\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/devices/:deviceId/toggle",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "devices",
-                ":deviceId",
-                "toggle"
-              ],
-              "variable": [
-                {
-                  "key": "deviceId",
-                  "value": "1"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update Device Attributes",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Device attributes updated successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.deviceId).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"brightness\": 50,\n  \"color\": \"white\",\n  \"serial_number\": \"ABC123\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/devices/:deviceId/attributes",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "devices",
-                ":deviceId",
-                "attributes"
-              ],
-              "variable": [
-                {
-                  "key": "deviceId",
-                  "value": "1"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
           "name": "Get Devices by Account",
           "event": [
             {
@@ -1707,15 +1597,6 @@
                 "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"serial_number\": \"ABC123\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{baseUrl}}/devices/:deviceId",
               "host": [
@@ -1759,15 +1640,6 @@
                 "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"serial_number\": \"ABC123\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{baseUrl}}/devices/:deviceId",
               "host": [
@@ -1843,7 +1715,445 @@
           "response": []
         },
         {
-          "name": "Update Device WiFi",
+          "name": "[New] Update Device State",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Device state updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial_number\": \"ABC123\",\n  \"power_status\": true,\n  \"brightness\": 75,\n  \"color\": \"#FF5500\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/:deviceId/state",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                ":deviceId",
+                "state"
+              ],
+              "variable": [
+                {
+                  "key": "deviceId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[New] Get Device State",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Device state retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.state).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/devices/:deviceId/state?serial_number=ABC123",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                ":deviceId",
+                "state"
+              ],
+              "query": [
+                {
+                  "key": "serial_number",
+                  "value": "ABC123"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "deviceId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[New] Bulk Update Device State",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Bulk state update successful', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial_number\": \"ABC123\",\n  \"updates\": [\n    {\"power_status\": true},\n    {\"brightness\": 75},\n    {\"color\": \"#00FF00\"}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/:deviceId/state/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                ":deviceId",
+                "state",
+                "bulk"
+              ],
+              "variable": [
+                {
+                  "key": "deviceId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[New] Quick Toggle Device",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Device toggled successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial_number\": \"ABC123\",\n  \"power_status\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/:deviceId/toggle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                ":deviceId",
+                "toggle"
+              ],
+              "variable": [
+                {
+                  "key": "deviceId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[New] Get Device Capabilities",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Device capabilities retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.merged_capabilities).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial_number\": \"ABC123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/:deviceId/capabilities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                ":deviceId",
+                "capabilities"
+              ],
+              "variable": [
+                {
+                  "key": "deviceId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[New] Update Device Capabilities",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Device capabilities updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial_number\": \"ABC123\",\n  \"capabilities\": {\n    \"deviceType\": \"LED_CONTROLLER_24\",\n    \"category\": \"LIGHTING\",\n    \"capabilities\": [\"OUTPUT\", \"RGB_CONTROL\", \"BRIGHTNESS_CONTROL\"],\n    \"firmware_version\": \"8.24\",\n    \"isInput\": false,\n    \"isOutput\": true,\n    \"controls\": {\n      \"power_status\": \"toggle\",\n      \"brightness\": \"slider\",\n      \"color\": \"color_picker\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/:deviceId/capabilities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                ":deviceId",
+                "capabilities"
+              ],
+              "variable": [
+                {
+                  "key": "deviceId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Deprecated] Toggle Device",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Device toggled successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.deviceId).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"power_status\": true,\n  \"serial_number\": \"ABC123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/:deviceId/toggle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                ":deviceId",
+                "toggle"
+              ],
+              "variable": [
+                {
+                  "key": "deviceId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Deprecated] Update Device Attributes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Device attributes updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.deviceId).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"brightness\": 50,\n  \"color\": \"white\",\n  \"serial_number\": \"ABC123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/:deviceId/attributes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                ":deviceId",
+                "attributes"
+              ],
+              "variable": [
+                {
+                  "key": "deviceId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Deprecated] Update Device WiFi",
           "event": [
             {
               "listen": "test",
@@ -4043,12 +4353,28 @@
       "item": [
         {
           "name": "Get Firmware by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Firmware retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.firmware_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}"
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -4060,19 +4386,42 @@
                 "firmwares",
                 "detail",
                 ":firmwareId"
+              ],
+              "variable": [
+                {
+                  "key": "firmwareId",
+                  "value": "1"
+                }
               ]
             },
             "description": "Get firmware details by ID"
-          }
+          },
+          "response": []
         },
         {
           "name": "Get All Firmwares",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Firmware list retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}"
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -4085,16 +4434,33 @@
               ]
             },
             "description": "Get list of all firmwares"
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Latest Firmware Versions by Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Latest firmware versions retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('object');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}"
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -4108,16 +4474,33 @@
               ]
             },
             "description": "Get latest firmware versions for each device template"
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Firmwares by Template ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Firmwares for template retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}"
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -4129,24 +4512,47 @@
                 "firmwares",
                 "by-template",
                 ":templateId"
+              ],
+              "variable": [
+                {
+                  "key": "templateId",
+                  "value": "1"
+                }
               ]
             },
             "description": "Get all firmwares for a specific device template"
-          }
+          },
+          "response": []
         },
         {
           "name": "Create Firmware",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Firmware created successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "  pm.expect(response.firmware_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}"
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Firmware v1.0\",\n  \"version\": \"1.0.0\",\n  \"file_path\": \"/firmware/v1.0.0.bin\",\n  \"template_id\": \"TEMPLATE001\",\n  \"is_mandatory\": true,\n  \"note\": \"Initial firmware release\"\n}",
+              "raw": "{\n  \"name\": \"Firmware v1.0\",\n  \"version\": \"1.0.0\",\n  \"file_path\": \"/firmware/v1.0.0.bin\",\n  \"template_id\": 1,\n  \"is_mandatory\": true,\n  \"note\": \"Initial firmware release\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4161,22 +4567,40 @@
               "path": [
                 "firmwares"
               ]
-            }
-          }
+            },
+            "description": "Tạo phiên bản firmware mới trong hệ thống. Yêu cầu xác thực bằng Employee Token."
+          },
+          "response": []
         },
         {
           "name": "Update Firmware",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Firmware updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.firmware_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "PUT",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}"
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Firmware\",\n  \"version\": \"1.0.1\",\n  \"file_path\": \"/firmware/v1.0.1.bin\",\n  \"is_mandatory\": false,\n  \"note\": \"Updated firmware release\"\n}",
+              "raw": "{\n  \"name\": \"Updated Firmware\",\n  \"version\": \"1.0.1\",\n  \"file_path\": \"/firmware/v1.0.1.bin\",\n  \"template_id\": 1,\n  \"is_mandatory\": false,\n  \"note\": \"Updated firmware release\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4192,18 +4616,42 @@
                 "firmwares",
                 "edit",
                 ":firmwareId"
+              ],
+              "variable": [
+                {
+                  "key": "firmwareId",
+                  "value": "1"
+                }
               ]
-            }
-          }
+            },
+            "description": "Cập nhật thông tin cho phiên bản firmware đã tồn tại"
+          },
+          "response": []
         },
         {
           "name": "Confirm Firmware By Tester",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Firmware confirmed by tester successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "PATCH",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}"
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -4218,23 +4666,41 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firmwareId\": \"FIRMWARE001\"\n}",
+              "raw": "{\n  \"firmwareId\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
-          }
+            },
+            "description": "Xác nhận firmware bởi nhân viên kiểm thử"
+          },
+          "response": []
         },
         {
           "name": "Confirm Firmware By RD",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Firmware confirmed by R&D successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "PATCH",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}"
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -4249,23 +4715,39 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firmwareId\": \"FIRMWARE001\"\n}",
+              "raw": "{\n  \"firmwareId\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
-          }
+            },
+            "description": "Xác nhận firmware bởi bộ phận R&D"
+          },
+          "response": []
         },
         {
           "name": "Delete Firmware",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Firmware deleted successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "DELETE",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}"
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -4276,9 +4758,17 @@
               "path": [
                 "firmwares",
                 ":firmwareId"
+              ],
+              "variable": [
+                {
+                  "key": "firmwareId",
+                  "value": "1"
+                }
               ]
-            }
-          }
+            },
+            "description": "Xóa một phiên bản firmware khỏi hệ thống. Yêu cầu xác thực bằng Employee Token."
+          },
+          "response": []
         }
       ]
     },
@@ -4839,8 +5329,7 @@
                   "  pm.expect(response.ticket_type_id).to.exist;",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -4855,7 +5344,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type_name\": \"Hardware Issue\",\n  \"priority\": 2,\n  \"is_active\": true\n}",
+              "raw": "{\n  \"ticket_type_name\": \"Hardware Malfunction\",\n  \"priority\": 3,\n  \"is_active\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4870,7 +5359,8 @@
               "path": [
                 "ticket-types"
               ]
-            }
+            },
+            "description": "Create a new ticket type. Requires employee authentication and admin role."
           },
           "response": []
         },
@@ -4887,8 +5377,7 @@
                   "  pm.expect(response.ticket_type_id).to.exist;",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -4903,7 +5392,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type_name\": \"Updated Hardware Issue\",\n  \"priority\": 3,\n  \"is_active\": false\n}",
+              "raw": "{\n  \"ticket_type_name\": \"Updated Hardware Issue Type\",\n  \"is_active\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4922,10 +5411,12 @@
               "variable": [
                 {
                   "key": "ticketTypeId",
-                  "value": "1"
+                  "value": "1",
+                  "description": "ID of the ticket type to update"
                 }
               ]
-            }
+            },
+            "description": "Update an existing ticket type. Requires employee authentication and admin role."
           },
           "response": []
         },
@@ -4942,8 +5433,7 @@
                   "  pm.expect(response.ticket_type_id).to.exist;",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -4978,10 +5468,12 @@
               "variable": [
                 {
                   "key": "ticketTypeId",
-                  "value": "1"
+                  "value": "1",
+                  "description": "ID of the ticket type to update priority"
                 }
               ]
-            }
+            },
+            "description": "Update priority of a ticket type. Requires employee authentication and admin role."
           },
           "response": []
         },
@@ -4996,8 +5488,7 @@
                   "  pm.expect(pm.response.code).to.equal(204);",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -5022,10 +5513,12 @@
               "variable": [
                 {
                   "key": "ticketTypeId",
-                  "value": "1"
+                  "value": "1",
+                  "description": "ID of the ticket type to delete"
                 }
               ]
-            }
+            },
+            "description": "Delete a ticket type. Requires employee authentication and admin role."
           },
           "response": []
         },
@@ -5042,8 +5535,7 @@
                   "  pm.expect(response.ticket_type_id).to.exist;",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -5068,10 +5560,12 @@
               "variable": [
                 {
                   "key": "ticketTypeId",
-                  "value": "1"
+                  "value": "1",
+                  "description": "ID of the ticket type to retrieve"
                 }
               ]
-            }
+            },
+            "description": "Get details of a specific ticket type. Requires authentication."
           },
           "response": []
         },
@@ -5088,8 +5582,7 @@
                   "  pm.expect(response).to.be.an('array');",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -5110,7 +5603,8 @@
               "path": [
                 "ticket-types"
               ]
-            }
+            },
+            "description": "Get all ticket types. Requires authentication."
           },
           "response": []
         }
@@ -5132,8 +5626,7 @@
                   "  pm.expect(response.ticket_id).to.exist;",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -5148,7 +5641,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"ticket_type_id\": 1,\n  \"description\": \"Device not responding\",\n  \"evidence\": {\"image\": \"error.jpg\"}\n}",
+              "raw": "{\n  \"title\": \"Device not responding\",\n  \"description\": \"LED controller not responding after firmware update\",\n  \"ticket_type_id\": 1,\n  \"device_serial\": \"LED24_001\",\n  \"evidence\": {\n    \"images\": [\"error_screenshot.jpg\"],\n    \"logs\": [\"device_log.txt\"]\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5163,7 +5656,8 @@
               "path": [
                 "tickets"
               ]
-            }
+            },
+            "description": "Create a new support ticket. Requires user authentication."
           },
           "response": []
         },
@@ -5180,8 +5674,7 @@
                   "  pm.expect(response.ticket_id).to.exist;",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -5190,13 +5683,13 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
+                "value": "Bearer {{employeeAccessToken}}",
                 "type": "text"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"description\": \"Updated issue description\",\n  \"evidence\": {\"image\": \"updated_error.jpg\"},\n  \"status\": \"in_progress\",\n  \"assigned_to\": \"employee123\",\n  \"resolve_solution\": \"Restart device\"\n}",
+              "raw": "{\n  \"title\": \"Updated: Device not responding\",\n  \"description\": \"Updated description of the issue\",\n  \"status\": \"in_progress\",\n  \"assigned_to\": \"employee_id_123\",\n  \"resolve_solution\": \"Checked device logs and identified firmware incompatibility\",\n  \"evidence\": {\n    \"images\": [\"updated_screenshot.jpg\"],\n    \"logs\": [\"updated_log.txt\"]\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5215,10 +5708,12 @@
               "variable": [
                 {
                   "key": "ticketId",
-                  "value": "1"
+                  "value": "1",
+                  "description": "ID of the ticket to update"
                 }
               ]
-            }
+            },
+            "description": "Update an existing ticket. Requires employee authentication."
           },
           "response": []
         },
@@ -5233,8 +5728,7 @@
                   "  pm.expect(pm.response.code).to.equal(204);",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -5259,10 +5753,12 @@
               "variable": [
                 {
                   "key": "ticketId",
-                  "value": "1"
+                  "value": "1",
+                  "description": "ID of the ticket to delete"
                 }
               ]
-            }
+            },
+            "description": "Delete a ticket. Requires employee authentication and admin role."
           },
           "response": []
         },
@@ -5279,8 +5775,7 @@
                   "  pm.expect(response.ticket_id).to.exist;",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -5305,10 +5800,12 @@
               "variable": [
                 {
                   "key": "ticketId",
-                  "value": "1"
+                  "value": "1",
+                  "description": "ID of the ticket to retrieve"
                 }
               ]
-            }
+            },
+            "description": "Get details of a specific ticket. Requires authentication."
           },
           "response": []
         },
@@ -5320,13 +5817,12 @@
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.test('Tickets retrieved successfully', () => {",
+                  "pm.test('User tickets retrieved successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
                   "  pm.expect(response).to.be.an('array');",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -5348,7 +5844,8 @@
                 "tickets",
                 "user"
               ]
-            }
+            },
+            "description": "Get all tickets created by the current user. Requires user authentication."
           },
           "response": []
         },
@@ -5360,13 +5857,12 @@
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.test('Tickets retrieved successfully', () => {",
+                  "pm.test('All tickets retrieved successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
                   "  pm.expect(response).to.be.an('array');",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -5380,7 +5876,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/tickets?user_id=user123&ticket_type_id=1&status=pending&created_at_start=2025-01-01T00:00:00Z&created_at_end=2025-12-31T23:59:59Z&page=1&limit=10",
+              "raw": "{{baseUrl}}/tickets",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -5390,34 +5886,49 @@
               "query": [
                 {
                   "key": "user_id",
-                  "value": "user123"
+                  "value": "user123",
+                  "description": "Filter by user ID",
+                  "disabled": true
                 },
                 {
                   "key": "ticket_type_id",
-                  "value": "1"
+                  "value": "1",
+                  "description": "Filter by ticket type",
+                  "disabled": true
                 },
                 {
                   "key": "status",
-                  "value": "pending"
+                  "value": "pending",
+                  "description": "Filter by status",
+                  "disabled": true
                 },
                 {
                   "key": "created_at_start",
-                  "value": "2025-01-01T00:00:00Z"
+                  "value": "2025-01-01T00:00:00Z",
+                  "description": "Filter by creation date start",
+                  "disabled": true
                 },
                 {
                   "key": "created_at_end",
-                  "value": "2025-12-31T23:59:59Z"
+                  "value": "2025-12-31T23:59:59Z",
+                  "description": "Filter by creation date end",
+                  "disabled": true
                 },
                 {
                   "key": "page",
-                  "value": "1"
+                  "value": "1",
+                  "description": "Page number",
+                  "disabled": true
                 },
                 {
                   "key": "limit",
-                  "value": "10"
+                  "value": "10",
+                  "description": "Items per page",
+                  "disabled": true
                 }
               ]
-            }
+            },
+            "description": "Get all tickets with optional filters. Requires employee authentication and admin role."
           },
           "response": []
         }
@@ -6541,6 +7052,65 @@
       "name": "Production Batches",
       "item": [
         {
+          "name": "Get All Production Batches",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production batches retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/production-batches?status=pending&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-batches"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "description": "Filter by status (pending/approved/rejected/in_progress/completed)",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (max 100)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get list of all production batches with optional filters and pagination"
+          },
+          "response": []
+        },
+        {
           "name": "Create Production Batch",
           "event": [
             {
@@ -6553,8 +7123,7 @@
                   "  pm.expect(response.production_batch_id).to.exist;",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -6569,7 +7138,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"template_id\": 1,\n  \"quantity\": 100,\n  \"start_date\": \"2025-05-21\",\n  \"target_completion_date\": \"2025-06-21\",\n  \"priority\": \"high\",\n  \"notes\": \"Regular production batch for smart lights\"\n}",
+              "raw": "{\n  \"template_id\": 1,\n  \"quantity\": 100\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6584,7 +7153,8 @@
               "path": [
                 "production-batches"
               ]
-            }
+            },
+            "description": "Create a new production batch"
           },
           "response": []
         },
@@ -6601,8 +7171,7 @@
                   "  pm.expect(response.production_batch_id).to.exist;",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -6627,49 +7196,12 @@
               "variable": [
                 {
                   "key": "batchId",
-                  "value": "1"
+                  "value": "1",
+                  "description": "ID of the production batch"
                 }
               ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get All Production Batches",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Production batches retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/production-batches",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "production-batches"
-              ]
-            }
+            },
+            "description": "Get details of a specific production batch by ID"
           },
           "response": []
         },
@@ -6686,8 +7218,7 @@
                   "  pm.expect(response.production_batch_id).to.exist;",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -6702,7 +7233,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"quantity\": 120,\n  \"target_completion_date\": \"2025-06-30\",\n  \"priority\": \"urgent\",\n  \"notes\": \"Updated: Increased quantity and priority\"\n}",
+              "raw": "{\n  \"template_id\": 1,\n  \"quantity\": 150,\n  \"status\": \"in_progress\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6721,10 +7252,12 @@
               "variable": [
                 {
                   "key": "batchId",
-                  "value": "1"
+                  "value": "1",
+                  "description": "ID of the production batch to update"
                 }
               ]
-            }
+            },
+            "description": "Update details of an existing production batch"
           },
           "response": []
         },
@@ -6739,8 +7272,7 @@
                   "  pm.expect(pm.response.code).to.equal(204);",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -6765,10 +7297,12 @@
               "variable": [
                 {
                   "key": "batchId",
-                  "value": "1"
+                  "value": "1",
+                  "description": "ID of the production batch to delete"
                 }
               ]
-            }
+            },
+            "description": "Delete a production batch from the system"
           },
           "response": []
         }
@@ -7023,20 +7557,116 @@
       "name": "Production Tracking",
       "item": [
         {
-          "name": "Create Production Tracking",
+          "name": "Get Production Tracking by Batch ID",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.test('Production tracking created successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.production_tracking_id).to.exist;",
+                  "pm.test('Production tracking data retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data).to.have.all.keys('pending', 'assembly', 'qc', 'completed');",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/production-tracking/by-batch/:batchId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-tracking",
+                "by-batch",
+                ":batchId"
+              ],
+              "variable": [
+                {
+                  "key": "batchId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Get production tracking details grouped by stages for a specific batch"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Production Tracking by Stage",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production tracking by stage retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data).to.be.an('object');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/production-tracking/by-stage/:stage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-tracking",
+                "by-stage",
+                ":stage"
+              ],
+              "variable": [
+                {
+                  "key": "stage",
+                  "value": "assembly",
+                  "description": "Stage can be: pending, assembly, qc, completed"
+                }
+              ]
+            },
+            "description": "Get production tracking details for a specific stage"
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Production Serial",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production serial approved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -7051,7 +7681,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"production_batch_id\": \"BATCH123\",\n  \"device_serial\": \"DEV001\",\n  \"stage\": \"assembly\",\n  \"status\": \"in_progress\",\n  \"cost\": 150.50\n}",
+              "raw": "{\n  \"device_serials\": [\"SERIAL001\", \"SERIAL002\"]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -7059,37 +7689,38 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/production-tracking",
+              "raw": "{{baseUrl}}/production-tracking/approve",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "production-tracking"
+                "production-tracking",
+                "approve"
               ]
-            }
+            },
+            "description": "Approve production serials to move to assembly stage"
           },
           "response": []
         },
         {
-          "name": "Get Production Tracking by ID",
+          "name": "Reject Production Serial",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.test('Production tracking retrieved successfully', () => {",
+                  "pm.test('Production serial rejected successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.production_tracking_id).to.exist;",
+                  "  pm.expect(response.success).to.be.true;",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [
               {
                 "key": "Authorization",
@@ -7097,87 +7728,43 @@
                 "type": "text"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_serials\": [\"SERIAL001\", \"SERIAL002\"],\n  \"reason\": \"product_error\",\n  \"note\": \"Product defects found during QC\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": "{{baseUrl}}/production-tracking/:productionId",
+              "raw": "{{baseUrl}}/production-tracking/reject",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "production-tracking",
-                ":productionId"
-              ],
-              "variable": [
-                {
-                  "key": "productionId",
-                  "value": "1"
-                }
+                "reject"
               ]
-            }
+            },
+            "description": "Reject production serials with reason (blur_error, product_error, all_error)"
           },
           "response": []
         },
         {
-          "name": "Get Production Tracking by Batch ID",
+          "name": "Update Production Serial Status",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.test('Production tracking records retrieved successfully', () => {",
+                  "pm.test('Production serial status updated successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response).to.be.an('array');",
+                  "  pm.expect(response.success).to.be.true;",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/production-tracking/batch/:batchId",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "production-tracking",
-                "batch",
-                ":batchId"
-              ],
-              "variable": [
-                {
-                  "key": "batchId",
-                  "value": "1"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update Production Tracking",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Production tracking updated successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.production_tracking_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
@@ -7192,7 +7779,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"stage\": \"qc\",\n  \"status\": \"completed\",\n  \"cost\": 180.75\n}",
+              "raw": "{\n  \"device_serial\": \"SERIAL001\",\n  \"stage\": \"assembly\",\n  \"status\": \"in_progress\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -7200,42 +7787,137 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/production-tracking/:productionId",
+              "raw": "{{baseUrl}}/production-tracking/update",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "production-tracking",
-                ":productionId"
-              ],
-              "variable": [
-                {
-                  "key": "productionId",
-                  "value": "1"
-                }
+                "update"
               ]
-            }
+            },
+            "description": "Update production serial stage and status"
           },
           "response": []
         },
         {
-          "name": "Delete Production Tracking",
+          "name": "Cancel Production Serial",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Production tracking deleted successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(204);",
+                  "const response = pm.response.json();",
+                  "pm.test('Production serial cancelled successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
                   "});"
                 ],
-                "type": "text/javascript",
-                "packages": {}
+                "type": "text/javascript"
               }
             }
           ],
           "request": {
-            "method": "DELETE",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_serials\": [\"SERIAL001\", \"SERIAL002\"],\n  \"note\": \"Cancelled due to quality issues\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/production-tracking/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-tracking",
+                "cancel"
+              ]
+            },
+            "description": "Cancel production serials in pending stage"
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Tested Serial",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Production serial tested and approved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_serials\": [\"SERIAL001\", \"SERIAL002\"],\n  \"note\": \"All tests passed successfully\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/production-tracking/approve-tested",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "production-tracking",
+                "approve-tested"
+              ]
+            },
+            "description": "Approve tested serials to move to completed stage"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Serial Firmware Installation Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Serial firmware status retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
             "header": [
               {
                 "key": "Authorization",
@@ -7244,21 +7926,546 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/production-tracking/:productionId",
+              "raw": "{{baseUrl}}/production-tracking/firmware-status?type=planning&planning_id=1",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "production-tracking",
-                ":productionId"
+                "firmware-status"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "planning",
+                  "description": "Type can be: planning, batch, tracking"
+                },
+                {
+                  "key": "planning_id",
+                  "value": "1",
+                  "description": "Required for batch type"
+                },
+                {
+                  "key": "batch_id",
+                  "value": "1",
+                  "description": "Required for tracking type",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get firmware installation status for serials"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Planning",
+      "item": [
+        {
+          "name": "Get All Plannings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Plannings retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plannings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plannings"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "approved",
+                  "description": "Optional filter by status (approved/rejected)",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (optional)",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (optional)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get list of all production plannings"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Planning By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Planning retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.planningId).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plannings/detail/:planningId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plannings",
+                "detail",
+                ":planningId"
               ],
               "variable": [
                 {
-                  "key": "productionId",
+                  "key": "planningId",
                   "value": "1"
                 }
               ]
+            },
+            "description": "Get detailed information about a specific planning"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Planning",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Planning created successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "  pm.expect(response.planningId).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planning_note\": \"Q3 2025 Production Plan\",\n  \"batch_count\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/plannings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plannings"
+              ]
+            },
+            "description": "Create a new production planning"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Planning With Batches",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Planning with batches created successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "  pm.expect(response.planningId).to.exist;",
+                  "  pm.expect(response.batches).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planning_note\": \"Q3 2025 Production Plan with Batches\",\n  \"batch_count\": 2,\n  \"batches\": [\n    {\n      \"template_id\": 1,\n      \"quantity\": 100,\n      \"batch_note\": \"First batch of LED controllers\"\n    },\n    {\n      \"template_id\": 2,\n      \"quantity\": 150,\n      \"batch_note\": \"Second batch of sensors\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/plannings/with-batches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plannings",
+                "with-batches"
+              ]
+            },
+            "description": "Create a new planning with pre-defined production batches"
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Planning",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Planning approved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.status).to.equal('approved');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\",\n  \"notes\": \"Plan approved after review. All requirements met.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/plannings/:planningId/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plannings",
+                ":planningId",
+                "approve"
+              ],
+              "variable": [
+                {
+                  "key": "planningId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Approve or reject a production planning"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Batch in Planning",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Batch created successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "  pm.expect(response.batchId).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"template_id\": 1,\n  \"quantity\": 100,\n  \"batch_note\": \"LED Controller production batch\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/plannings/:planningId/batches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plannings",
+                ":planningId",
+                "batches"
+              ],
+              "variable": [
+                {
+                  "key": "planningId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Create a new production batch within a planning"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Batches by Planning ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Batches retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plannings/:planningId/batches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plannings",
+                ":planningId",
+                "batches"
+              ],
+              "variable": [
+                {
+                  "key": "planningId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Get all production batches for a specific planning"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Batch Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Batch status updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.status).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\",\n  \"batch_note\": \"Production started on schedule\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/plannings/batches/:batchId/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plannings",
+                "batches",
+                ":batchId",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "batchId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Update the status of a production batch"
+          },
+          "response": []
+        },
+        {
+          "name": "Get List of Completed Batches",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Completed batches retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plannings/list-batches-completed/:planningId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plannings",
+                "list-batches-completed",
+                ":planningId"
+              ],
+              "variable": [
+                {
+                  "key": "planningId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Get list of completed batches for a planning"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Plannings with Completed Batches",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Plannings with completed batches retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plannings/plannings-by-batch-production-status-is-completed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plannings",
+                "plannings-by-batch-production-status-is-completed"
+              ]
+            },
+            "description": "Get all plannings that have completed production batches"
           },
           "response": []
         }

@@ -60,9 +60,10 @@ class AuthService {
             { expiresIn: '1h' }
         );
 
-        const response: TokenResponse = { 
+        const response: TokenResponse = {
             accessToken,
-            userId: account!.account_id 
+            userId: account!.account_id
+
         };
 
         if (rememberMe) {
@@ -123,7 +124,11 @@ class AuthService {
         await redisClient.setex(`employee:token:${account!.account_id}`, 8 * 60 * 60, accessToken);
         await redisClient.setex(`employee:refresh:${account!.account_id}`, 8 * 60 * 60, refreshToken);
 
-        return { accessToken, refreshToken };
+        return {
+            accessToken,
+            refreshToken,
+            employeeId: account!.account_id
+        };
     }
 
     async refreshEmployeeToken(refreshToken: string): Promise<string> {
