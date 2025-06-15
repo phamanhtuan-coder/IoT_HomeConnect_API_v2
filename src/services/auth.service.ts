@@ -16,6 +16,7 @@ import type {
 import { UserDeviceService } from './user-device.service';
 import { SyncTrackingService } from './sync-tracking.service';
 import redisClient, { blacklistToken, isTokenBlacklisted } from '../utils/redis';
+import NotificationService from "./notification.service";
 
 class AuthService {
     private prisma: PrismaClient;
@@ -246,6 +247,7 @@ class AuthService {
             accessToken: accessToken,
         }
     }
+
     async registerEmployee(data: EmployeeRegisterRequestBody, adminId: string): Promise<any> {
         const { surname, lastname, image, email, password, birthdate, gender, phone, status, role, username } = data; // Thêm username
 
@@ -335,29 +337,48 @@ class AuthService {
         }
     }
 
-    async updateDeviceToken(accountId: string, deviceToken: string): Promise<{ success: boolean; message: string }> {
-        const userDeviceService = new UserDeviceService();
 
+    async updateDeviceToken(accountId: string, deviceToken: string, userDeviceId?: string): Promise<{ success: boolean; message: string; deviceId?: string }> {
         const account = await this.prisma.account.findFirst({ where: { account_id: accountId } });
         if (!account) {
             return { success: false, message: 'Account not found' };
         }
 
-        // Tìm thiết bị gần đây nhất của account để cập nhật token
-        const latestDevice = await userDeviceService.getUserDevices(accountId);
-        if (!latestDevice || latestDevice.length === 0) {
-            return { success: false, message: 'No active devices found for this account' };
+        const notificationService = new NotificationService();
+
+        if (userDeviceId) {
+            // Update specific device
+            await notificationService.updateDeviceFCMToken(userDeviceId, deviceToken);
+            return {
+                success: true,
+                message: 'FCM token updated successfully for specific device',
+                deviceId: userDeviceId
+            };
+        } else {
+            // Find and update latest device
+            const latestDevice = await this.prisma.user_devices.findFirst({
+                where: {
+                    user_id: accountId,
+                    is_deleted: false
+                },
+                orderBy: { last_login: 'desc' }
+            });
+
+            if (latestDevice) {
+                await notificationService.updateDeviceFCMToken(latestDevice.user_device_id, deviceToken);
+                return {
+                    success: true,
+                    message: 'FCM token updated successfully for latest device',
+                    deviceId: latestDevice.user_device_id
+                };
+            } else {
+                return {
+                    success: false,
+                    message: 'No device found for user'
+                };
+            }
         }
-
-        // Cập nhật token cho thiết bị gần đây nhất
-        await this.prisma.user_devices.update({
-            where: { user_device_id: latestDevice[0].user_device_id },
-            data: { device_token: deviceToken, updated_at: new Date() },
-        });
-
-        return { success: true, message: 'Device token updated successfully' };
     }
-
     async checkEmailVerification(email: string): Promise<{
         exists: boolean;
         isVerified: boolean;
@@ -603,3 +624,4 @@ class AuthService {
 }
 
 export default AuthService;
+
