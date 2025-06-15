@@ -382,7 +382,7 @@ class AuthController {
 
         try {
             const result = await this.authService.getMe(userId);
-            res.json(result);
+            res.status(200).json(result);
         } catch (error) {
             next(error);
         }
