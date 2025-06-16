@@ -15,7 +15,7 @@ export const deviceSchema = z.object({
 
 export const deviceIdSchema = z.object({
     params: z.object({
-        deviceId: z.string().transform((val) => parseInt(val)).refine((val) => val > 0, 'Device ID must be a positive number'),
+        deviceId: z.string().min(1, 'Device ID is required')
     }),
 });
 
