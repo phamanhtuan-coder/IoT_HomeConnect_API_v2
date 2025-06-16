@@ -17,6 +17,16 @@ class SpaceService {
         space_description?: string;
     }): Promise<Space> {
         const { houseId, space_name, icon_name, icon_color, space_description } = input;
+
+        // Check if house exists
+        const house = await this.prisma.houses.findFirst({
+            where: { house_id: houseId, is_deleted: false }
+        });
+
+        if (!house) {
+            throwError(ErrorCodes.NOT_FOUND, 'House not found');
+        }
+
         const now = new Date();
 
         const space = await this.prisma.spaces.create({
@@ -33,7 +43,7 @@ class SpaceService {
 
         return {
             ...space,
-            house_id: space.house_id || null,
+            house_id: space.house_id,
             space_name: space.space_name,
             icon_name: space.icon_name || null,
             icon_color: space.icon_color || null,
