@@ -78,6 +78,20 @@ export const PlanningBatchCreateSchema = z.object({
     })
 });
 
+export const batchUpdateSchema = z.object({
+    body: z.object({
+    status: z.enum([
+        'pending',
+        'pendingimport',
+        'in_progress',
+        'completed',
+        'relabeling',
+        'fixproduction',
+        'rejected',    
+    ]),
+    batch_note: z.string().optional()
+    }),
+});
 // Schema cho việc cập nhật batch trong planning
 export const PlanningBatchUpdateSchema = z.object({
     body: z.object({
@@ -128,8 +142,3 @@ export type PlanningIdParam = z.infer<typeof PlanningIdSchema>['params'];
 export type PlanningBatchCreateInput = z.infer<typeof PlanningBatchCreateSchema>['body'];
 export type PlanningBatchUpdateInput = z.infer<typeof PlanningBatchUpdateSchema>['body'];
 export type PlanningListQuery = z.infer<typeof PlanningListSchema>['query'];
-export type PlanningStatus = typeof PlanningStatus[keyof typeof PlanningStatus];
-export type BatchStatus = typeof BatchStatus[keyof typeof BatchStatus];
-
-// Export enums
-export { PlanningStatus, BatchStatus };

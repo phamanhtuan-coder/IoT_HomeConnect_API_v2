@@ -89,104 +89,6 @@
         "response": []
       },
       {
-        "name": "Toggle Device",
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Device toggled successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.deviceId).to.exist;",
-                "});"
-              ],
-              "type": "text/javascript"
-            }
-          }
-        ],
-        "request": {
-          "method": "PUT",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
-          ],
-          "body": {
-            "mode": "raw",
-            "raw": "{\n  \"power_status\": true,\n  \"serial_number\": \"ABC123\"\n}",
-            "options": {
-              "raw": {
-                "language": "json"
-              }
-            }
-          },
-          "url": {
-            "raw": "{{baseUrl}}/devices/:deviceId/toggle",
-            "host": ["{{baseUrl}}"],
-            "path": ["devices", ":deviceId", "toggle"],
-            "variable": [
-              {
-                "key": "deviceId",
-                "value": "1"
-              }
-            ]
-          }
-        },
-        "response": []
-      },
-      {
-        "name": "Update Device Attributes",
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Device attributes updated successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.deviceId).to.exist;",
-                "});"
-              ],
-              "type": "text/javascript"
-            }
-          }
-        ],
-        "request": {
-          "method": "PUT",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
-          ],
-          "body": {
-            "mode": "raw",
-            "raw": "{\n  \"brightness\": 50,\n  \"color\": \"white\",\n  \"serial_number\": \"ABC123\"\n}",
-            "options": {
-              "raw": {
-                "language": "json"
-              }
-            }
-          },
-          "url": {
-            "raw": "{{baseUrl}}/devices/:deviceId/attributes",
-            "host": ["{{baseUrl}}"],
-            "path": ["devices", ":deviceId", "attributes"],
-            "variable": [
-              {
-                "key": "deviceId",
-                "value": "1"
-              }
-            ]
-          }
-        },
-        "response": []
-      },
-      {
         "name": "Get Devices by Account",
         "event": [
           {
@@ -366,15 +268,6 @@
               "type": "text"
             }
           ],
-          "body": {
-            "mode": "raw",
-            "raw": "{\n  \"serial_number\": \"ABC123\"\n}",
-            "options": {
-              "raw": {
-                "language": "json"
-              }
-            }
-          },
           "url": {
             "raw": "{{baseUrl}}/devices/:deviceId",
             "host": ["{{baseUrl}}"],
@@ -413,15 +306,6 @@
               "type": "text"
             }
           ],
-          "body": {
-            "mode": "raw",
-            "raw": "{\n  \"serial_number\": \"ABC123\"\n}",
-            "options": {
-              "raw": {
-                "language": "json"
-              }
-            }
-          },
           "url": {
             "raw": "{{baseUrl}}/devices/:deviceId",
             "host": ["{{baseUrl}}"],
@@ -486,7 +370,396 @@
         "response": []
       },
       {
-        "name": "Update Device WiFi",
+        "name": "[New] Update Device State",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Device state updated successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.success).to.be.true;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "PATCH",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"serial_number\": \"ABC123\",\n  \"power_status\": true,\n  \"brightness\": 75,\n  \"color\": \"#FF5500\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/devices/:deviceId/state",
+            "host": ["{{baseUrl}}"],
+            "path": ["devices", ":deviceId", "state"],
+            "variable": [
+              {
+                "key": "deviceId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "[New] Get Device State",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Device state retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.state).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/devices/:deviceId/state?serial_number=ABC123",
+            "host": ["{{baseUrl}}"],
+            "path": ["devices", ":deviceId", "state"],
+            "query": [
+              {
+                "key": "serial_number",
+                "value": "ABC123"
+              }
+            ],
+            "variable": [
+              {
+                "key": "deviceId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "[New] Bulk Update Device State",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Bulk state update successful', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.success).to.be.true;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"serial_number\": \"ABC123\",\n  \"updates\": [\n    {\"power_status\": true},\n    {\"brightness\": 75},\n    {\"color\": \"#00FF00\"}\n  ]\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/devices/:deviceId/state/bulk",
+            "host": ["{{baseUrl}}"],
+            "path": ["devices", ":deviceId", "state", "bulk"],
+            "variable": [
+              {
+                "key": "deviceId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "[New] Quick Toggle Device",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Device toggled successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.success).to.be.true;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"serial_number\": \"ABC123\",\n  \"power_status\": true\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/devices/:deviceId/toggle",
+            "host": ["{{baseUrl}}"],
+            "path": ["devices", ":deviceId", "toggle"],
+            "variable": [
+              {
+                "key": "deviceId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "[New] Get Device Capabilities",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Device capabilities retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.merged_capabilities).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"serial_number\": \"ABC123\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/devices/:deviceId/capabilities",
+            "host": ["{{baseUrl}}"],
+            "path": ["devices", ":deviceId", "capabilities"],
+            "variable": [
+              {
+                "key": "deviceId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "[New] Update Device Capabilities",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Device capabilities updated successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.success).to.be.true;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"serial_number\": \"ABC123\",\n  \"capabilities\": {\n    \"deviceType\": \"LED_CONTROLLER_24\",\n    \"category\": \"LIGHTING\",\n    \"capabilities\": [\"OUTPUT\", \"RGB_CONTROL\", \"BRIGHTNESS_CONTROL\"],\n    \"firmware_version\": \"8.24\",\n    \"isInput\": false,\n    \"isOutput\": true,\n    \"controls\": {\n      \"power_status\": \"toggle\",\n      \"brightness\": \"slider\",\n      \"color\": \"color_picker\"\n    }\n  }\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/devices/:deviceId/capabilities",
+            "host": ["{{baseUrl}}"],
+            "path": ["devices", ":deviceId", "capabilities"],
+            "variable": [
+              {
+                "key": "deviceId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "[Deprecated] Toggle Device",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Device toggled successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.deviceId).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"power_status\": true,\n  \"serial_number\": \"ABC123\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/devices/:deviceId/toggle",
+            "host": ["{{baseUrl}}"],
+            "path": ["devices", ":deviceId", "toggle"],
+            "variable": [
+              {
+                "key": "deviceId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "[Deprecated] Update Device Attributes",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Device attributes updated successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.deviceId).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"brightness\": 50,\n  \"color\": \"white\",\n  \"serial_number\": \"ABC123\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/devices/:deviceId/attributes",
+            "host": ["{{baseUrl}}"],
+            "path": ["devices", ":deviceId", "attributes"],
+            "variable": [
+              {
+                "key": "deviceId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "[Deprecated] Update Device WiFi",
         "event": [
           {
             "listen": "test",
@@ -537,3 +810,4 @@
     ]
   }
 ]
+

@@ -10,24 +10,11 @@ import {
     PlanningIdSchema,
     PlanningBatchCreateSchema,
     PlanningBatchUpdateSchema,
+    batchUpdateSchema,
 } from '../utils/schemas/planning.schema';
 
 const router = Router();
 const planningController = new PlanningController();
-
-router.get('/list-batches-completed/:planningId',
-    authMiddleware,
-    // roleMiddleware,
-    // validateMiddleware(PlanningListBatchesCompletedSchema),
-    planningController.getListBatchesCompleted
-);
-
-router.get('/plannings-by-batch-production-status-is-completed',
-    // authMiddleware,
-    // roleMiddleware,
-    planningController.getPlanningsByBatchProductionStatusIsCompleted
-);
-
 
 //tạo kế hoạch --
 router.post(
@@ -41,7 +28,7 @@ router.post(
 //lấy kế hoạch theo id --
 router.get(
     '/detail/:planningId',
-    // authMiddleware,
+    authMiddleware,
     validateMiddleware(PlanningIdSchema),
     planningController.getPlanningByIdApi
 );
@@ -84,7 +71,8 @@ router.put(
     '/batches/:batchId/status',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(PlanningBatchUpdateSchema),
+    // validateMiddleware(PlanningBatchUpdateSchema),
+    validateMiddleware(batchUpdateSchema),
     planningController.updateBatchStatusApi
 );
 
@@ -93,7 +81,7 @@ router.post(
     '/with-batches',
     authMiddleware,
     // roleMiddleware,
-    
+   
     planningController.createPlanningWithBatchesApi
 );
 

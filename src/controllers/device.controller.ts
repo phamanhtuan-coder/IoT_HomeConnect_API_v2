@@ -277,6 +277,199 @@ class DeviceController {
         }
     };
 
+    /**
+     * Unified device state update endpoint
+     * PATCH /devices/:deviceId/state
+     */
+    updateDeviceState = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { deviceId } = req.params;
+            const { serial_number, ...stateUpdate } = req.body;
+
+            if (!serial_number) {
+                throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
+            }
+
+            const device = await this.deviceService.updateDeviceState(
+                deviceId,
+                serial_number,
+                stateUpdate,
+                accountId
+            );
+
+            res.json({
+                success: true,
+                device,
+                message: 'Device state updated successfully'
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Get current device state
+     * GET /devices/:deviceId/state
+     */
+    getDeviceState = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { deviceId } = req.params;
+            const { serial_number } = req.query;
+
+            if (!serial_number) {
+                throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
+            }
+
+            const state = await this.deviceService.getDeviceState(
+                deviceId,
+                serial_number as string,
+                accountId
+            );
+
+            res.json({
+                success: true,
+                state,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Bulk state update for multiple properties
+     * POST /devices/:deviceId/state/bulk
+     */
+    updateDeviceBulkState = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { deviceId } = req.params;
+            const { serial_number, updates } = req.body;
+
+            if (!serial_number || !Array.isArray(updates)) {
+                throwError(ErrorCodes.BAD_REQUEST, 'serial_number and updates array are required');
+            }
+
+            const device = await this.deviceService.updateDeviceBulkState(
+                deviceId,
+                serial_number,
+                updates,
+                accountId
+            );
+
+            res.json({
+                success: true,
+                device,
+                message: 'Device bulk state updated successfully'
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Quick toggle device power (convenience endpoint)
+     * POST /devices/:deviceId/toggle
+     */
+    quickToggleDevice = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { deviceId } = req.params;
+            const { serial_number, power_status } = req.body;
+
+            const device = await this.deviceService.updateDeviceState(
+                deviceId,
+                serial_number,
+                { power_status: power_status !== undefined ? power_status : true },
+                accountId
+            );
+
+            res.json({
+                success: true,
+                device,
+                message: `Device ${power_status ? 'turned on' : 'turned off'} successfully`
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Get device capabilities
+     * GET /devices/:deviceId/capabilities
+     */
+    getDeviceCapabilities = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { deviceId } = req.params;
+            const { serial_number } = req.body;
+
+            if (!serial_number) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Số seri thiết bị không hợp lệ');
+            }
+
+            const capabilities = await this.deviceService.getDeviceCapabilities(
+                deviceId,
+                serial_number,
+            );
+
+            res.json({
+                success: true,
+                capabilities,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Update device runtime capabilities
+     * PUT /devices/:deviceId/capabilities
+     */
+    updateDeviceCapabilities = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { deviceId } = req.params;
+            const { serial_number, capabilities } = req.body;
+
+            if (!serial_number) {
+                throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
+            }
+
+            if (!capabilities || typeof capabilities !== 'object') {
+                throwError(ErrorCodes.BAD_REQUEST, 'capabilities object is required');
+            }
+
+            await this.deviceService.updateDeviceCapabilities(
+                deviceId,
+                serial_number,
+                capabilities
+            );
+
+            res.json({
+                success: true,
+                message: 'Device capabilities updated successfully',
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
 
 }
 

@@ -3,7 +3,6 @@ export enum StatusSerialStage {
     IN_PROGRESS = 'in_progress',
     COMPLETED = 'completed',
     PENDING_PACKAGING = 'pending_packaging',
-    COMPLETED_MANUFACTURE = 'completed_manufacture',
     FIRMWARE_UPLOADED = 'firmware_uploaded', // Firmwware được tải lên
     FIRMWARE_UPLOADING = 'firmware_uploading', // Firmwware đang được tải lên
     FIRMWARE_UPLOAD = 'firmware_upload', // Serial Vừa được chuyển sang giai đoạn filmware

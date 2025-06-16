@@ -170,24 +170,6 @@ export class AppError extends Error {
                 return new AppError({ status: 401, code, message: message || 'Invalid email or password' });
             case ErrorCodes.DEVICE_ALREADY_LINKED:
                 return new AppError({ status: 409, code, message: message || 'Device already linked to another user' });
-            case ErrorCodes.INSUFFICIENT_COMPONENTS:
-                return new AppError({ status: 400, code, message: message || 'Insufficient components for production' });
-            case ErrorCodes.TICKET_NOT_RESOLVABLE:
-                return new AppError({ status: 400, code, message: message || 'Ticket cannot be resolved yet' });
-            case ErrorCodes.TEMPLATE_COMPONENT_NOT_FOUND:
-                return new AppError({status: 404, code, message: message || 'Template component not found'});
-            case ErrorCodes.TEMPLATE_COMPONENT_ALREADY_EXISTS:
-                return new AppError({status: 409, code, message: message || 'Template component already exists'});
-            case ErrorCodes.TEMPLATE_NOT_FOUND:
-                return new AppError({ status: 404, code, message: message || 'Device template not found' });
-            case ErrorCodes.TEMPLATE_ALREADY_EXISTS:
-                return new AppError({ status: 409, code, message: message || 'Device template already exists' });
-            case ErrorCodes.PRODUCTION_NOT_FOUND:
-                return new AppError({ status: 404, code, message: message || 'Production record not found' });
-            case ErrorCodes.COMPONENT_NOT_FOUND:
-                return new AppError({ status: 404, code, message: message || 'Component not found' });
-            case ErrorCodes.INSUFFICIENT_QUANTITY:
-                return new AppError({ status: 400, code, message: message || 'Insufficient component quantity available' });
 
             default:
                 return new AppError({ status: 500, code: ErrorCodes.INTERNAL_SERVER_ERROR, message: 'Unknown error' });

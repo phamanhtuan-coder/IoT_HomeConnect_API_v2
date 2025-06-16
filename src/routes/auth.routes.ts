@@ -21,7 +21,8 @@ import {
     checkEmailVerificationSchema,
     verifyEmailSchema,
     updateUserSchema,
-    recoveryPasswordSchema
+    recoveryPasswordSchema,
+    changePasswordSchema
 } from "../utils/schemas/auth.schema";
 
 const router = Router();
@@ -78,7 +79,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  *         description: Lỗi server
  */
 router.post('/login',
-    loginRateLimiter,
+    // loginRateLimiter,
     validateMiddleware(loginSchema),
     asyncHandler(authController.loginUser),
     afterSuccessfulLogin
@@ -126,7 +127,7 @@ router.post('/login',
  *         description: Lỗi server
  */
 router.post('/employee/login',
-    loginRateLimiter,
+    // loginRateLimiter,
     validateMiddleware(loginSchema),
     asyncHandler(authController.loginEmployee),
     afterSuccessfulLogin
@@ -182,7 +183,7 @@ router.post('/employee/login',
  *         description: Lỗi server
  */
 router.post('/register',
-    rateLimiter('register', 5, 60),
+    // rateLimiter('register', 5, 60),
     validateMiddleware(userRegisterSchema),
     asyncHandler(authController.registerUser)
 );
@@ -257,7 +258,7 @@ router.post('/register',
  */
 router.post(
     '/employee/register',
-    rateLimiter('employee-register', 5, 60),
+    // rateLimiter('employee-register', 5, 60),
     authMiddleware,
     validateMiddleware(employeeRegisterSchema),
     asyncHandler(authController.registerEmployee)
@@ -297,13 +298,13 @@ router.post(
  *         description: Lỗi server
  */
 router.post('/refresh',
-    rateLimiter('refresh', 10, 60),
+    // rateLimiter('refresh', 10, 60),
     validateMiddleware(refreshTokenSchema),
     asyncHandler(authController.refreshToken)
 );
 
 router.post('/employee/refresh',
-    rateLimiter('employee-refresh', 10, 60),
+    // rateLimiter('employee-refresh', 10, 60),
     validateMiddleware(refreshTokenSchema),
     asyncHandler(authController.refreshEmployeeToken)
 );
@@ -447,7 +448,7 @@ router.post('/logout/all', authMiddleware, authController.logoutAllDevices);
  *       500:
  *         description: Lỗi server
  */
-router.post('/update-device-token', authMiddleware, authController.updateDeviceToken);
+router.post('/update-device-token', authMiddleware, asyncHandler(authController.updateDeviceToken));
 
 /**
  * Kiểm tra trạng thái verify email.
@@ -580,6 +581,12 @@ router.post('/recovery-password',
     asyncHandler(authController.recoveryPassword)
 );
 
+router.post('/change-password',
+    validateMiddleware(changePasswordSchema),
+    authMiddleware,
+    asyncHandler(authController.changePassword)
+);
+
 /**
  * Cập nhật thông tin người dùng.
  * @swagger
@@ -633,9 +640,8 @@ router.post('/recovery-password',
  */
 router.patch('/update-profile', authMiddleware, validateMiddleware(updateUserSchema), asyncHandler(authController.updateUser));
 
-router.get('/employee/get-me',
-    authMiddleware,
-    authController.getMeEmployee
-);
+router.get('/employee/get-me', authMiddleware, asyncHandler(authController.getMeEmployee));
+
+router.get('/getMe', authMiddleware, asyncHandler(authController.getMe));
 
 export default router;

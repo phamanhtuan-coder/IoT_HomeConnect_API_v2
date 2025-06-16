@@ -2,31 +2,13 @@
 import { PrismaClient } from '@prisma/client';
 import { PlanningCreateInput, PlanningApprovalInput, Planning, PlanningStatus, BatchCreateInput } from '../types/planning';
 import { ErrorCodes, throwError } from '../utils/errors';
-import { generatePlanningId, calculatePlanningStatus, generateBatchId } from '../utils/helpers';
+import { generatePlanningId, calculatePlanningStatus, generateBatchId, generateDeviceSerialId } from '../utils/helpers';
 
 export class PlanningService {
     private prisma: PrismaClient;
 
     constructor() {
         this.prisma = new PrismaClient();
-    }
-
-    async getPlanningsByBatchProductionStatusIsCompleted(): Promise<any> {
-        const plannings = await this.prisma.planning.findMany({
-            where: {
-                production_batches: {
-                    some: {
-                        status: 'completed'
-                    }
-                }
-            },
-            select: {
-                planning_id: true,
-                status: true,
-            }
-        });
-
-        return plannings;
     }
 
     async createPlanning(data: PlanningCreateInput, employeeId: string): Promise<any> {
@@ -76,9 +58,15 @@ export class PlanningService {
         const planning = await this.prisma.planning.findFirst({
             where: {
                 planning_id: planningId,
-                // is_deleted: false
             },
             include: {
+                account: {
+                    include: {
+                        employee: {
+                            select: { surname: true, lastname: true }
+                        }
+                    }
+                },
                 production_batches: {
                     where: {},
                     include: {
@@ -89,11 +77,9 @@ export class PlanningService {
                                         firmware_id: true,
                                         name: true,
                                         version: true
-
                                     }
                                 }
                             }
-
                         },
                         production_tracking: true
                     }
@@ -105,16 +91,29 @@ export class PlanningService {
             throwError(ErrorCodes.NOT_FOUND, 'Planning not found');
         }
 
-        return planning as Planning;
+        const creatorName = planning?.account?.employee
+            ? `${planning.account.employee.surname} ${planning.account.employee.lastname}`.trim()
+            : planning?.account?.username || '';
+
+        return {
+            ...planning,
+            created_by: creatorName
+        } as Planning;
     }
 
     async getAllPlannings(): Promise<Planning[]> {
         const plannings = await this.prisma.planning.findMany({
             where: {
                 // is_deleted: false,
-
             },
             include: {
+                account: {
+                    include: {
+                        employee: {
+                            select: { surname: true, lastname: true }
+                        }
+                    }
+                },
                 production_batches: {
                     where: {},
                     include: {
@@ -125,7 +124,6 @@ export class PlanningService {
                                         firmware_id: true,
                                         name: true,
                                         version: true
-
                                     }
                                 }
                             }
@@ -135,10 +133,27 @@ export class PlanningService {
             },
             orderBy: { created_at: 'desc' }
         });
-        return plannings;
+
+        // Map lại để trả về created_by là tên người tạo
+        return plannings.map(planning => {
+            const creatorName = planning.account?.employee
+                ? `${planning.account.employee.surname} ${planning.account.employee.lastname}`.trim()
+                : planning.account?.username || '';
+            return {
+                ...planning,
+                created_by: creatorName
+            } as Planning;
+        });
     }
 
     async approvePlanning(planningId: string, data: PlanningApprovalInput, employeeId: string): Promise<Planning> {
+        const account = await this.prisma.account.findFirst({
+            where: { account_id: employeeId },
+            include: { employee: { select: { surname: true, lastname: true } } }
+        });
+        const approverName = account?.employee
+            ? `${account.employee.surname} ${account.employee.lastname}`.trim()
+            : account?.username || '';
         const planning = await this.prisma.planning.findFirst({
             where: {
                 planning_id: planningId,
@@ -169,6 +184,7 @@ export class PlanningService {
                     [data.status]: {
                         timestamp: new Date(),
                         employee_id: employeeId,
+                        creator_name: approverName,
                         action: data.status,
                         notes: data.notes
                     }
@@ -189,6 +205,7 @@ export class PlanningService {
                         approved: {
                             timestamp: new Date(),
                             employee_id: employeeId,
+                            creator_name: approverName,
                             action: 'approved',
                             notes: data.notes
                         }
@@ -211,6 +228,7 @@ export class PlanningService {
                             rejected: {
                                 timestamp: new Date(),
                                 employee_id: employeeId,
+                                creator_name: approverName,
                                 action: 'rejected',
                                 notes: data.notes
                             }
@@ -230,6 +248,7 @@ export class PlanningService {
                             rejected: {
                                 timestamp: new Date(),
                                 employee_id: employeeId,
+                                creator_name: approverName,
                                 action: 'rejected',
                                 notes: data.notes
                             }
@@ -285,6 +304,16 @@ export class PlanningService {
     // src/services/planning.service.ts
     async createPlanningWithBatches(planningData: PlanningCreateInput, batches: BatchCreateInput[], employeeId: string): Promise<any> {
         return this.prisma.$transaction(async (prisma) => {
+
+            const account = await prisma.account.findFirst({
+                where: { account_id: employeeId },
+                include: {
+                    employee: { select: { surname: true, lastname: true } }
+                }
+            });
+            const approverName = account?.employee
+                ? `${account.employee.surname} ${account.employee.lastname}`.trim()
+                : account?.username || '';
             // 1. Tạo planning với ID mới
             let planning_id: string;
             let attempts = 0;
@@ -310,6 +339,7 @@ export class PlanningService {
                         created: {
                             timestamp: new Date().toISOString(),
                             employee_id: employeeId,
+                            creator_name: approverName,
                             action: 'created',
                             details: JSON.parse(JSON.stringify(planningData))
                         }
@@ -366,6 +396,7 @@ export class PlanningService {
                             created: {
                                 timestamp: new Date().toISOString(),
                                 employee_id: employeeId,
+                                creator_name: approverName,
                                 action: 'created',
                                 details: {
                                     ...JSON.parse(JSON.stringify(batchData)),
@@ -378,17 +409,18 @@ export class PlanningService {
 
                 // 3. Tạo production_tracking records với ID mới
                 const trackingPromises = Array.from({ length: batchData.quantity }, async (_, index) => {
-                    // Tạo từ tắt từ template name
-                    const templateName = template!.name;
-                    const shortName = templateName
-                        .split(' ')
-                        .map(word => word[0])
-                        .join('')
-                        .toUpperCase();
-
-                    // Tạo device_serial theo format: {SHORT_NAME}{BATCH_ID}{SEQUENCE_NUMBER}
-                    const sequenceNumber = (index + 1).toString().padStart(3, '0');
-                    const deviceSerial = `${shortName}-${batch.production_batch_id}-${sequenceNumber}`;
+                    let deviceSerial: string;
+                    let attempts = 0;
+                    const maxAttempts = 5;
+                    do {
+                        deviceSerial = generateDeviceSerialId();
+                        const idExists = await prisma.production_tracking.findFirst({
+                            where: { device_serial: deviceSerial }
+                        });
+                        if (!idExists) break;
+                        attempts++;
+                        if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
+                    } while (true);
 
                     return prisma.production_tracking.create({
                         data: {

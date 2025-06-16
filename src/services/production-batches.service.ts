@@ -5,86 +5,12 @@ import { ErrorCodes, throwError } from '../utils/errors';
 import {generateBatchId, generateDeviceId, generateDeviceSerialId, generateFirmwareId} from '../utils/helpers';
 import { PlanningService } from './planning.service';
 import { calculatePlanningStatus } from '../utils/helpers';
-import { executeSelectData } from '../utils/sql_query';
-
-function configDataListBatchesCompleted(data: any): any {
-    let result: any[] = [];
-
-    let map = new Map();
-
-    data.forEach((row: any) => {
-        const batchId = row.production_batch_id;
-        if (!map.has(batchId)) {    
-            const batchData = {
-                ...row,
-                production_tracking: []
-            }
-            map.set(batchId, batchData);
-            result.push(batchData);
-        } else {
-            map.get(batchId).production_tracking.push(row);
-        }
-    });
-
-    return result;
-}
 
 export class BatchService {
     private prisma: PrismaClient;
 
     constructor() {
         this.prisma = new PrismaClient();
-    }
-
-    async getListBatchesCompleted(planningId: string): Promise<any> {
-        let filter = [
-            {
-                field: 'production_batches.planning_id',
-                condition: '=',
-                value: planningId
-            },
-            {
-                field: 'production_batches.status',
-                condition: '=',
-                value: 'completed'
-            }
-        ];
-
-        let get_attribute = `
-            production_batches.planning_id,
-            production_batches.production_batch_id, 
-            production_batches.template_id,
-            production_batches.quantity,
-            production_batches.status as batch_status,
-            production_batches.batch_note,
-            product.name as product_name,
-            product.image as product_image,
-            product.id as product_id
-        `;
-
-        let get_table = "production_batches";
-
-        let query_join = `
-		    LEFT JOIN product ON product.id = production_batches.template_id
-            LEFT JOIN production_tracking ON production_batches.production_batch_id = production_tracking.production_batch_id
-        `;
-
-        let result = await executeSelectData({
-            table: get_table,
-            strGetColumn: get_attribute,
-            filter: filter,
-            // logic: 'AND',
-            // limit: 100,
-            // sort: 'created_at',
-            // order: 'desc',
-            queryJoin: query_join,
-            configData: configDataListBatchesCompleted
-        });
-
-        return {
-            success: true,
-            data: result
-        }
     }
 
     async createBatch(planningId: string, data: BatchCreateInput, employeeId: string): Promise<ProductionBatch> {

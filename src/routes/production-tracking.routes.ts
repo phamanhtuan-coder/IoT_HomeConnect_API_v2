@@ -21,21 +21,12 @@ router.get(
     productionTrackingController.getProductionTrackingByProductionBatchId
 );
 
-// Xác nhận sản phẩm đã được kiểm tra
 router.post(
     '/approve-production-serial',
     authMiddleware,
     // roleMiddleware,
     validateMiddleware(ApproveProductionSchema),
     productionTrackingController.ApproveProductionSerial
-);
-
-router.patch(
-    '/cancel-production-serial',
-    authMiddleware,
-    // roleMiddleware,
-    validateMiddleware(CancelProductionSchema),
-    productionTrackingController.CancelProductionSerial
 );
 
 router.patch(
@@ -55,6 +46,14 @@ router.patch(
 );
 
 router.patch(
+    '/cancel-production-serial',
+    authMiddleware,
+    // roleMiddleware,
+    validateMiddleware(CancelProductionSchema),
+    productionTrackingController.CancelProductionSerial
+);
+
+router.patch(
     '/approve-tested-serial',
     authMiddleware,
     // roleMiddleware,
@@ -63,7 +62,7 @@ router.patch(
 );
 
 router.get(
-    '/info-need-upload-firmware/:type/:planning_id?/:batch_id?',
+    '/info-need-upload-firmware/:type/:planning_id/:batch_id',
     authMiddleware,
     // roleMiddleware,
     validateMiddleware(GetSerialFirmwareSchema),

@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { ErrorCodes, throwError } from '../utils/errors';
+import {Request, Response, NextFunction} from 'express';
+import {ErrorCodes, throwError} from '../utils/errors';
 import redisClient from '../utils/redis';
 
 /**
@@ -87,10 +87,12 @@ export const loginRateLimiter = async (req: Request, res: Response, next: NextFu
 
         // Block IP nếu vượt quá 10 lần thất bại
         if (ipAttempts > 10) {
-            await redisClient.setex(blockIpKey, 7200, '1'); // Block 2 giờ
+            let blockTime = 60;
+            await redisClient.setex(blockIpKey, blockTime, '1'); // Block 2 giờ
             throwError(
                 ErrorCodes.TOO_MANY_REQUESTS,
-                'IP is blocked for 2 hours due to too many failed attempts'
+                // 'IP của bạn đã bị khóa do quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau 2 giờ.'
+                `IP của bạn đã bị khóa do quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau ${blockTime / 60} phút`
             );
         }
 
@@ -99,7 +101,8 @@ export const loginRateLimiter = async (req: Request, res: Response, next: NextFu
             await redisClient.setex(blockUserKey, 3600, '1'); // Block 1 giờ
             throwError(
                 ErrorCodes.TOO_MANY_REQUESTS,
-                'Account is locked for 1 hour due to too many failed attempts'
+                'Tài khoản của bạn đã bị khóa do quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau 1 giờ.'
+
             );
         }
 
@@ -124,7 +127,7 @@ export const loginRateLimiter = async (req: Request, res: Response, next: NextFu
  */
 export const afterSuccessfulLogin = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { ip, username, ipKey, usernameKey, blockIpKey, blockUserKey } = res.locals.loginAttempt;
+        const {ip, username, ipKey, usernameKey, blockIpKey, blockUserKey} = res.locals.loginAttempt;
 
         // Xóa các key rate limit và block
         await Promise.all([

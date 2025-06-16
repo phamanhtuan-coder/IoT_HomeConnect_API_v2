@@ -4,30 +4,69 @@
     "item": [
       {
         "name": "Get Firmware by ID",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Firmware retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.firmware_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
         "request": {
           "method": "GET",
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{employeeAccessToken}}"
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
             }
           ],
           "url": {
             "raw": "{{baseUrl}}/firmwares/detail/:firmwareId",
             "host": ["{{baseUrl}}"],
-            "path": ["firmwares", "detail", ":firmwareId"]
+            "path": ["firmwares", "detail", ":firmwareId"],
+            "variable": [
+              {
+                "key": "firmwareId",
+                "value": "1"
+              }
+            ]
           },
           "description": "Get firmware details by ID"
-        }
+        },
+        "response": []
       },
       {
         "name": "Get All Firmwares",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Firmware list retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
         "request": {
           "method": "GET",
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{employeeAccessToken}}"
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
             }
           ],
           "url": {
@@ -36,16 +75,33 @@
             "path": ["firmwares"]
           },
           "description": "Get list of all firmwares"
-        }
+        },
+        "response": []
       },
       {
         "name": "Get Latest Firmware Versions by Template",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Latest firmware versions retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('object');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
         "request": {
           "method": "GET",
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{employeeAccessToken}}"
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
             }
           ],
           "url": {
@@ -54,39 +110,79 @@
             "path": ["firmwares", "latest-version-by-template"]
           },
           "description": "Get latest firmware versions for each device template"
-        }
+        },
+        "response": []
       },
       {
         "name": "Get Firmwares by Template ID",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Firmwares for template retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
         "request": {
           "method": "GET",
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{employeeAccessToken}}"
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
             }
           ],
           "url": {
             "raw": "{{baseUrl}}/firmwares/by-template/:templateId",
             "host": ["{{baseUrl}}"],
-            "path": ["firmwares", "by-template", ":templateId"]
+            "path": ["firmwares", "by-template", ":templateId"],
+            "variable": [
+              {
+                "key": "templateId",
+                "value": "1"
+              }
+            ]
           },
           "description": "Get all firmwares for a specific device template"
-        }
+        },
+        "response": []
       },
       {
         "name": "Create Firmware",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Firmware created successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(201);",
+                "  pm.expect(response.firmware_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
         "request": {
           "method": "POST",
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{employeeAccessToken}}"
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
             }
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"name\": \"Firmware v1.0\",\n  \"version\": \"1.0.0\",\n  \"file_path\": \"/firmware/v1.0.0.bin\",\n  \"template_id\": \"TEMPLATE001\",\n  \"is_mandatory\": true,\n  \"note\": \"Initial firmware release\"\n}",
+            "raw": "{\n  \"name\": \"Firmware v1.0\",\n  \"version\": \"1.0.0\",\n  \"file_path\": \"/firmware/v1.0.0.bin\",\n  \"template_id\": 1,\n  \"is_mandatory\": true,\n  \"note\": \"Initial firmware release\"\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -97,22 +193,40 @@
             "raw": "{{baseUrl}}/firmwares",
             "host": ["{{baseUrl}}"],
             "path": ["firmwares"]
-          }
-        }
+          },
+          "description": "Tạo phiên bản firmware mới trong hệ thống. Yêu cầu xác thực bằng Employee Token."
+        },
+        "response": []
       },
       {
         "name": "Update Firmware",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Firmware updated successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.firmware_id).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
         "request": {
           "method": "PUT",
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{employeeAccessToken}}"
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
             }
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"name\": \"Updated Firmware\",\n  \"version\": \"1.0.1\",\n  \"file_path\": \"/firmware/v1.0.1.bin\",\n  \"is_mandatory\": false,\n  \"note\": \"Updated firmware release\"\n}",
+            "raw": "{\n  \"name\": \"Updated Firmware\",\n  \"version\": \"1.0.1\",\n  \"file_path\": \"/firmware/v1.0.1.bin\",\n  \"template_id\": 1,\n  \"is_mandatory\": false,\n  \"note\": \"Updated firmware release\"\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -122,18 +236,42 @@
           "url": {
             "raw": "{{baseUrl}}/firmwares/edit/:firmwareId",
             "host": ["{{baseUrl}}"],
-            "path": ["firmwares", "edit", ":firmwareId"]
-          }
-        }
+            "path": ["firmwares", "edit", ":firmwareId"],
+            "variable": [
+              {
+                "key": "firmwareId",
+                "value": "1"
+              }
+            ]
+          },
+          "description": "Cập nhật thông tin cho phiên bản firmware đã tồn tại"
+        },
+        "response": []
       },
       {
         "name": "Confirm Firmware By Tester",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Firmware confirmed by tester successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.success).to.be.true;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
         "request": {
           "method": "PATCH",
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{employeeAccessToken}}"
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
             }
           ],
           "url": {
@@ -143,23 +281,41 @@
           },
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"firmwareId\": \"FIRMWARE001\"\n}",
+            "raw": "{\n  \"firmwareId\": 1\n}",
             "options": {
               "raw": {
                 "language": "json"
               }
             }
-          }
-        }
+          },
+          "description": "Xác nhận firmware bởi nhân viên kiểm thử"
+        },
+        "response": []
       },
       {
         "name": "Confirm Firmware By RD",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Firmware confirmed by R&D successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.success).to.be.true;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
         "request": {
           "method": "PATCH",
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{employeeAccessToken}}"
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
             }
           ],
           "url": {
@@ -169,32 +325,57 @@
           },
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"firmwareId\": \"FIRMWARE001\"\n}",
+            "raw": "{\n  \"firmwareId\": 1\n}",
             "options": {
               "raw": {
                 "language": "json"
               }
             }
-          }
-        }
+          },
+          "description": "Xác nhận firmware bởi bộ phận R&D"
+        },
+        "response": []
       },
       {
         "name": "Delete Firmware",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Firmware deleted successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
         "request": {
           "method": "DELETE",
           "header": [
             {
               "key": "Authorization",
-              "value": "Bearer {{employeeAccessToken}}"
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
             }
           ],
           "url": {
             "raw": "{{baseUrl}}/firmwares/:firmwareId",
             "host": ["{{baseUrl}}"],
-            "path": ["firmwares", ":firmwareId"]
-          }
-        }
+            "path": ["firmwares", ":firmwareId"],
+            "variable": [
+              {
+                "key": "firmwareId",
+                "value": "1"
+              }
+            ]
+          },
+          "description": "Xóa một phiên bản firmware khỏi hệ thống. Yêu cầu xác thực bằng Employee Token."
+        },
+        "response": []
       }
     ]
   }
 ]
+

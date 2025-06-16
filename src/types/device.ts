@@ -39,6 +39,7 @@ export interface Device {
     template_id: string | null;
     space_id: number | null;
     account_id: string | null;
+    group_id: number | null; // Thêm group_id
     hub_id: string | null;
     firmware_id: string | null;
     name: string;

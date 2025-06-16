@@ -35,43 +35,275 @@ class NotificationService {
             if (!role) throwError(ErrorCodes.NOT_FOUND, 'Role not found');
         }
 
+        // Tạo notification trong database trước (business logic chính)
         const notification = await this.prisma.notification.create({
-            // @ts-ignore
             data: {
-                account_id,
-                role_id,
-                text,
-                type,
-                is_read,
+                account_id: input.account_id || null,
+                role_id: input.role_id || null,
+                text: input.text,
+                type: input.type,
+                is_read: false,
                 created_at: new Date(),
                 updated_at: new Date(),
-            },
+            }
         });
 
-        // Send email if applicable
-        await this.sendNotificationEmail({ account_id, text, type });
-
-        // Send FCM notification if applicable
-        if (account_id) {
-            const account = await this.prisma.account!.findUnique({
-                where: { account_id },
-                include: { customer: true },
-            });
-            if (account?.customer?.email) {
-                const fcmMessage = {
-                    token: account!.customer.email, // Adjust based on actual FCM token field
-                    notification: {
-                        title: `New ${type} Notification`,
-                        body: text,
-                    },
-                    data: { type },
-                };
-                await admin.messaging().send(fcmMessage);
-            }
-        }
+        // Gửi các thông báo bổ sung (non-blocking, optional)
+        this.sendOptionalNotifications(account_id, text, type);
 
         return this.mapPrismaNotificationToAuthNotification(notification);
     }
+
+    /**
+     * Gửi các thông báo bổ sung một cách async và non-blocking
+     * Không throw error nếu fail
+     */
+    private sendOptionalNotifications(
+        accountId: string | undefined,
+        text: string,
+        type: NotificationType
+    ): void {
+        // Fire and forget - không await để không block
+        if (accountId) {
+            // Email notification
+            this.sendNotificationEmail({ account_id: accountId, text, type })
+                .catch(error => {
+                    console.warn('Email notification failed (non-critical):', error.message);
+                });
+
+            // FCM push notification
+            this.sendFCMNotificationToUser(accountId, `New ${type} Notification`, text, { type })
+                .catch(error => {
+                    console.warn('FCM notification failed (non-critical):', error.message);
+                });
+        }
+    }
+
+    /**
+     * Send FCM notification to all user devices (completely optional)
+     * Never throws errors - always returns gracefully
+     */
+    async sendFCMNotificationToUser(
+        accountId: string,
+        title: string,
+        body: string,
+        data?: Record<string, string>
+    ): Promise<{ success: boolean; details?: any }> {
+        try {
+            // Lấy tất cả device tokens của user
+            const userDevices = await this.prisma.user_devices.findMany({
+                where: {
+                    user_id: accountId,
+                    is_deleted: false,
+                    device_token: { not: null }
+                },
+                select: {
+                    user_device_id: true,
+                    device_name: true,
+                    device_token: true,
+                    last_login: true
+                }
+            });
+
+            if (userDevices.length === 0) {
+                console.log(`No FCM tokens available for user ${accountId} - skipping push notification`);
+                return { success: true, details: 'No tokens available' };
+            }
+
+            console.log(`Attempting to send FCM to ${userDevices.length} devices for user ${accountId}`);
+
+            // Gửi đến từng device (best effort)
+            const results = await Promise.allSettled(
+                userDevices.map(device => this.sendFCMToDevice(device, title, body, data))
+            );
+
+            const successCount = results.filter(r => r.status === 'fulfilled').length;
+            const failCount = results.filter(r => r.status === 'rejected').length;
+
+            console.log(`FCM results for user ${accountId}: ${successCount} success, ${failCount} failed`);
+
+            return {
+                success: true,
+                details: {
+                    total: userDevices.length,
+                    success: successCount,
+                    failed: failCount
+                }
+            };
+
+        } catch (error: any) {
+            console.warn('FCM notification completely failed for user', accountId, ':', error.message);
+            return { success: false, details: error.message };
+        }
+    }
+
+    /**
+     * Send FCM to specific device (best effort)
+     * Never throws - always resolves
+     */
+    private async sendFCMToDevice(
+        device: { user_device_id: string; device_name: string; device_token: string | null; last_login: Date | null },
+        title: string,
+        body: string,
+        data?: Record<string, string>
+    ): Promise<void> {
+        if (!device.device_token || !this.isValidFCMToken(device.device_token)) {
+            console.log(`Skipping FCM for device ${device.device_name}: invalid token`);
+            return Promise.resolve();
+        }
+
+        try {
+            const message = {
+                token: device.device_token,
+                notification: { title, body },
+                data: this.sanitizeDataForFCM(data || {}),
+                android: {
+                    notification: {
+                        sound: 'default',
+                        priority: 'high' as const,
+                        channelId: 'homeconnect_warning',
+                    },
+                },
+                apns: {
+                    payload: {
+                        aps: {
+                            sound: 'default',
+                            badge: 1,
+                        },
+                    },
+                },
+            };
+
+            const response = await admin.messaging().send(message);
+            console.log(`✓ FCM sent to ${device.device_name}: ${response}`);
+
+        } catch (error: any) {
+            console.log(`✗ FCM failed for ${device.device_name}:`, error.message);
+
+            // Clean up invalid tokens silently
+            if (this.isInvalidTokenError(error)) {
+                this.removeDeviceFCMToken(device.user_device_id)
+                    .catch(e => console.log('Failed to cleanup invalid token:', e.message));
+            }
+        }
+    }
+
+    /**
+     * Sanitize data for FCM (all values must be strings)
+     */
+    private sanitizeDataForFCM(data: Record<string, any>): Record<string, string> {
+        const sanitized: Record<string, string> = {};
+        for (const [key, value] of Object.entries(data)) {
+            sanitized[key] = String(value);
+        }
+        return sanitized;
+    }
+
+    /**
+     * Validate FCM token format
+     */
+    private isValidFCMToken(token: string): boolean {
+        if (!token || typeof token !== 'string') return false;
+        return token.length > 100 && !token.includes('@') && !token.includes(' ');
+    }
+
+    /**
+     * Check if error is related to invalid FCM token
+     */
+    private isInvalidTokenError(error: any): boolean {
+        const invalidTokenCodes = [
+            'messaging/invalid-argument',
+            'messaging/registration-token-not-registered',
+            'messaging/invalid-registration-token'
+        ];
+        return error?.code && invalidTokenCodes.includes(error.code);
+    }
+
+    /**
+     * Remove invalid FCM token (silent operation)
+     */
+    private async removeDeviceFCMToken(userDeviceId: string): Promise<void> {
+        try {
+            await this.prisma.user_devices.update({
+                where: { user_device_id: userDeviceId },
+                data: {
+                    device_token: null,
+                    updated_at: new Date()
+                }
+            });
+            console.log(`Cleaned up invalid token for device ${userDeviceId}`);
+        } catch (error: any) {
+            console.log('Error cleaning up FCM token:', error.message);
+        }
+    }
+
+    /**
+     * Update FCM token for specific device
+     * This is the only FCM operation that can throw (for API endpoints)
+     */
+    async updateDeviceFCMToken(userDeviceId: string, fcmToken: string): Promise<void> {
+        if (!this.isValidFCMToken(fcmToken)) {
+            throwError(ErrorCodes.BAD_REQUEST, 'Invalid FCM token format');
+        }
+
+        const device = await this.prisma.user_devices.findUnique({
+            where: { user_device_id: userDeviceId, is_deleted: false }
+        });
+
+        if (!device) {
+            throwError(ErrorCodes.NOT_FOUND, 'Device not found');
+        }
+
+        await this.prisma.user_devices.update({
+            where: { user_device_id: userDeviceId },
+            data: {
+                device_token: fcmToken,
+                updated_at: new Date()
+            }
+        });
+
+        console.log(`FCM token updated for device ${userDeviceId}`);
+    }
+
+    /**
+     * Get FCM tokens for user (for debugging)
+     */
+    async getUserFCMTokens(accountId: string): Promise<any[]> {
+        try {
+            return await this.prisma.user_devices.findMany({
+                where: {
+                    user_id: accountId,
+                    is_deleted: false,
+                    device_token: { not: null }
+                },
+                select: {
+                    user_device_id: true,
+                    device_name: true,
+                    device_token: true,
+                    last_login: true
+                }
+            });
+        } catch (error) {
+            console.warn('Failed to get user FCM tokens:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Test FCM connectivity (for health checks)
+     */
+    async testFCMConnection(): Promise<boolean> {
+        try {
+            // Simple test - just check if Firebase is initialized
+            const app = admin.app();
+            return !!app;
+        } catch (error) {
+            console.warn('FCM connection test failed:', error);
+            return false;
+        }
+    }
+
+    // === Existing methods (unchanged) ===
 
     async updateNotification(id: number, data: { is_read?: boolean }): Promise<Notification> {
         const notification = await this.prisma.notification.findUnique({
@@ -169,11 +401,9 @@ class NotificationService {
         } as any);
     }
 
-    // Add to src/services/notification.service.ts
-
     async generateAndStoreOtp(email: string): Promise<string> {
-        const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
-        const expiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiry = new Date(Date.now() + 5 * 60 * 1000);
 
         const account = await this.prisma.account!.findFirst({
             where: { customer: { email }, deleted_at: null },
@@ -211,7 +441,6 @@ class NotificationService {
             throwError(ErrorCodes.BAD_REQUEST, 'OTP has expired');
         }
 
-        // Clear OTP after successful verification
         await this.prisma.account!.update({
             where: { account_id: account!.account_id },
             data: {

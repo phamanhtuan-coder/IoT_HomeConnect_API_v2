@@ -87,7 +87,6 @@ export const ERROR_CODES = {
     COMPONENT_ID_INVALID: 1411,
 
     // Device Template - 15xx
-    // Device Template - 15xx
     DEVICE_TEMPLATE_NAME_REQUIRED: 1501,
     DEVICE_TEMPLATE_NAME_INVALID: 1502,
     DEVICE_TEMPLATE_NAME_DUPLICATE: 1503,
@@ -104,6 +103,28 @@ export const ERROR_CODES = {
     DEVICE_TEMPLATE_ID_REQUIRED: 1514,
     DEVICE_TEMPLATE_ID_INVALID: 1515,
     DEVICE_TEMPLATE_NOTE_INVALID: 1516,
+
+    // Device - 16xx
+    DEVICE_ID_REQUIRED: 1601,
+    DEVICE_ID_INVALID: 1602,
+    DEVICE_SERIAL_REQUIRED: 1603,
+    DEVICE_SERIAL_INVALID: 1604,
+    DEVICE_BRIGHTNESS_INVALID: 1605,
+    DEVICE_COLOR_INVALID: 1606,
+    DEVICE_WIFI_SSID_INVALID: 1607,
+    DEVICE_WIFI_PASSWORD_INVALID: 1608,
+    DEVICE_UPDATES_REQUIRED: 1609,
+    DEVICE_CAPABILITIES_INVALID: 1610,
+    DEVICE_STATE_INVALID: 1611,
+    DEVICE_PERMISSION_REQUIRED: 1612,
+    DEVICE_NOT_FOUND: 1613,
+    DEVICE_ALREADY_EXISTS: 1614,
+    DEVICE_ALREADY_LINKED: 1615,
+    DEVICE_NOT_LINKED: 1616,
+    DEVICE_OFFLINE: 1617,
+    DEVICE_CAPABILITY_NOT_SUPPORTED: 1618,
+    DEVICE_ATTRIBUTE_INVALID: 1619,
+    DEVICE_POWER_STATUS_INVALID: 1620,
 
 
 } as const;
@@ -213,5 +234,26 @@ export const ERROR_MESSAGES = {
     [ERROR_CODES.DEVICE_TEMPLATE_ID_INVALID]: 'ID mẫu thiết bị không hợp lệ',
     [ERROR_CODES.DEVICE_TEMPLATE_NOTE_INVALID]: 'Ghi chú không hợp lệ',
 
+    // Device - 16xx
+    [ERROR_CODES.DEVICE_ID_REQUIRED]: 'ID thiết bị là bắt buộc',
+    [ERROR_CODES.DEVICE_ID_INVALID]: 'ID thiết bị không hợp lệ',
+    [ERROR_CODES.DEVICE_SERIAL_REQUIRED]: 'Số serial thiết bị là bắt buộc',
+    [ERROR_CODES.DEVICE_SERIAL_INVALID]: 'Số serial thiết bị không hợp lệ',
+    [ERROR_CODES.DEVICE_BRIGHTNESS_INVALID]: 'Độ sáng phải từ 0 đến 100',
+    [ERROR_CODES.DEVICE_COLOR_INVALID]: 'Màu sắc phải có định dạng hex (#RRGGBB)',
+    [ERROR_CODES.DEVICE_WIFI_SSID_INVALID]: 'Tên WiFi không hợp lệ',
+    [ERROR_CODES.DEVICE_WIFI_PASSWORD_INVALID]: 'Mật khẩu WiFi không hợp lệ (tối thiểu 8 ký tự)',
+    [ERROR_CODES.DEVICE_UPDATES_REQUIRED]: 'Danh sách cập nhật không được để trống',
+    [ERROR_CODES.DEVICE_CAPABILITIES_INVALID]: 'Thông tin khả năng thiết bị không hợp lệ',
+    [ERROR_CODES.DEVICE_STATE_INVALID]: 'Trạng thái thiết bị không hợp lệ',
+    [ERROR_CODES.DEVICE_PERMISSION_REQUIRED]: 'Không có quyền truy cập thiết bị',
+    [ERROR_CODES.DEVICE_NOT_FOUND]: 'Không tìm thấy thiết bị',
+    [ERROR_CODES.DEVICE_ALREADY_EXISTS]: 'Thiết bị đã tồn tại',
+    [ERROR_CODES.DEVICE_ALREADY_LINKED]: 'Thiết bị đã được liên kết',
+    [ERROR_CODES.DEVICE_NOT_LINKED]: 'Thiết bị chưa được liên kết',
+    [ERROR_CODES.DEVICE_OFFLINE]: 'Thiết bị đang offline',
+    [ERROR_CODES.DEVICE_CAPABILITY_NOT_SUPPORTED]: 'Thiết bị không hỗ trợ tính năng này',
+    [ERROR_CODES.DEVICE_ATTRIBUTE_INVALID]: 'Thuộc tính thiết bị không hợp lệ',
+    [ERROR_CODES.DEVICE_POWER_STATUS_INVALID]: 'Trạng thái nguồn không hợp lệ',
     
 } as const;

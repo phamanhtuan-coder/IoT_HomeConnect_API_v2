@@ -8,10 +8,10 @@ const VersionSchema = z.string({
 }).regex(/^\d+\.\d+\.\d+$/, `[${ERROR_CODES.FIRMWARE_VERSION_INVALID}]${ERROR_MESSAGES[ERROR_CODES.FIRMWARE_VERSION_INVALID]}`);
 
 // Schema cơ bản cho template_id
-const TemplateIdSchema = z.number({
+const TemplateIdSchema = z.string({
     required_error: `[${ERROR_CODES.FIRMWARE_TEMPLATE_ID_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.FIRMWARE_TEMPLATE_ID_REQUIRED]}`,
     invalid_type_error: `[${ERROR_CODES.FIRMWARE_TEMPLATE_ID_INVALID}]${ERROR_MESSAGES[ERROR_CODES.FIRMWARE_TEMPLATE_ID_INVALID]}`
-}).positive(`[${ERROR_CODES.FIRMWARE_TEMPLATE_ID_INVALID}]${ERROR_MESSAGES[ERROR_CODES.FIRMWARE_TEMPLATE_ID_INVALID]}`);
+})
 
 // Schema cho việc tạo mới firmware
 export const FirmwareCreateSchema = z.object({
@@ -57,9 +57,7 @@ export const FirmwareUpdateSchema = z.object({
 // Schema cho việc xóa firmware
 export const FirmwareDeleteSchema = z.object({
     params: z.object({
-        firmwareId: z.string()
-            .transform((val) => parseInt(val))
-            .refine((val) => val > 0, `[${ERROR_CODES.FIRMWARE_NOT_FOUND}]${ERROR_MESSAGES[ERROR_CODES.FIRMWARE_NOT_FOUND]}`)
+        firmwareId: z.string().optional()
     })
 });
 

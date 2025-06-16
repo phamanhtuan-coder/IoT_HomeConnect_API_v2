@@ -3,20 +3,104 @@
     "name": "Production Tracking",
     "item": [
       {
-        "name": "Create Production Tracking",
+        "name": "Get Production Tracking by Batch ID",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Production tracking created successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(201);",
-                "  pm.expect(response.production_tracking_id).to.exist;",
+                "pm.test('Production tracking data retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.success).to.be.true;",
+                "  pm.expect(response.data).to.have.all.keys('pending', 'assembly', 'qc', 'completed');",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/production-tracking/by-batch/:batchId",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-tracking", "by-batch", ":batchId"],
+            "variable": [
+              {
+                "key": "batchId",
+                "value": "1"
+              }
+            ]
+          },
+          "description": "Get production tracking details grouped by stages for a specific batch"
+        },
+        "response": []
+      },
+      {
+        "name": "Get Production Tracking by Stage",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Production tracking by stage retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.success).to.be.true;",
+                "  pm.expect(response.data).to.be.an('object');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/production-tracking/by-stage/:stage",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-tracking", "by-stage", ":stage"],
+            "variable": [
+              {
+                "key": "stage",
+                "value": "assembly",
+                "description": "Stage can be: pending, assembly, qc, completed"
+              }
+            ]
+          },
+          "description": "Get production tracking details for a specific stage"
+        },
+        "response": []
+      },
+      {
+        "name": "Approve Production Serial",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Production serial approved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.success).to.be.true;",
+                "});"
+              ],
+              "type": "text/javascript"
             }
           }
         ],
@@ -31,7 +115,7 @@
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"production_batch_id\": \"BATCH123\",\n  \"device_serial\": \"DEV001\",\n  \"stage\": \"assembly\",\n  \"status\": \"in_progress\",\n  \"cost\": 150.50\n}",
+            "raw": "{\n  \"device_serials\": [\"SERIAL001\", \"SERIAL002\"]\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -39,33 +123,33 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/production-tracking",
+            "raw": "{{baseUrl}}/production-tracking/approve",
             "host": ["{{baseUrl}}"],
-            "path": ["production-tracking"]
-          }
+            "path": ["production-tracking", "approve"]
+          },
+          "description": "Approve production serials to move to assembly stage"
         },
         "response": []
       },
       {
-        "name": "Get Production Tracking by ID",
+        "name": "Reject Production Serial",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Production tracking retrieved successfully', () => {",
+                "pm.test('Production serial rejected successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.production_tracking_id).to.exist;",
+                "  pm.expect(response.success).to.be.true;",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
         "request": {
-          "method": "GET",
+          "method": "POST",
           "header": [
             {
               "key": "Authorization",
@@ -73,76 +157,38 @@
               "type": "text"
             }
           ],
-          "url": {
-            "raw": "{{baseUrl}}/production-tracking/:productionId",
-            "host": ["{{baseUrl}}"],
-            "path": ["production-tracking", ":productionId"],
-            "variable": [
-              {
-                "key": "productionId",
-                "value": "1"
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"device_serials\": [\"SERIAL001\", \"SERIAL002\"],\n  \"reason\": \"product_error\",\n  \"note\": \"Product defects found during QC\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
               }
-            ]
-          }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/production-tracking/reject",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-tracking", "reject"]
+          },
+          "description": "Reject production serials with reason (blur_error, product_error, all_error)"
         },
         "response": []
       },
       {
-        "name": "Get Production Tracking by Batch ID",
+        "name": "Update Production Serial Status",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
                 "const response = pm.response.json();",
-                "pm.test('Production tracking records retrieved successfully', () => {",
+                "pm.test('Production serial status updated successfully', () => {",
                 "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response).to.be.an('array');",
+                "  pm.expect(response.success).to.be.true;",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
-            }
-          }
-        ],
-        "request": {
-          "method": "GET",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{employeeAccessToken}}",
-              "type": "text"
-            }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/production-tracking/batch/:batchId",
-            "host": ["{{baseUrl}}"],
-            "path": ["production-tracking", "batch", ":batchId"],
-            "variable": [
-              {
-                "key": "batchId",
-                "value": "1"
-              }
-            ]
-          }
-        },
-        "response": []
-      },
-      {
-        "name": "Update Production Tracking",
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Production tracking updated successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.production_tracking_id).to.exist;",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
@@ -157,7 +203,7 @@
           ],
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"stage\": \"qc\",\n  \"status\": \"completed\",\n  \"cost\": 180.75\n}",
+            "raw": "{\n  \"device_serial\": \"SERIAL001\",\n  \"stage\": \"assembly\",\n  \"status\": \"in_progress\"\n}",
             "options": {
               "raw": {
                 "language": "json"
@@ -165,37 +211,122 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/production-tracking/:productionId",
+            "raw": "{{baseUrl}}/production-tracking/update",
             "host": ["{{baseUrl}}"],
-            "path": ["production-tracking", ":productionId"],
-            "variable": [
-              {
-                "key": "productionId",
-                "value": "1"
-              }
-            ]
-          }
+            "path": ["production-tracking", "update"]
+          },
+          "description": "Update production serial stage and status"
         },
         "response": []
       },
       {
-        "name": "Delete Production Tracking",
+        "name": "Cancel Production Serial",
         "event": [
           {
             "listen": "test",
             "script": {
               "exec": [
-                "pm.test('Production tracking deleted successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(204);",
+                "const response = pm.response.json();",
+                "pm.test('Production serial cancelled successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.success).to.be.true;",
                 "});"
               ],
-              "type": "text/javascript",
-              "packages": {}
+              "type": "text/javascript"
             }
           }
         ],
         "request": {
-          "method": "DELETE",
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"device_serials\": [\"SERIAL001\", \"SERIAL002\"],\n  \"note\": \"Cancelled due to quality issues\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/production-tracking/cancel",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-tracking", "cancel"]
+          },
+          "description": "Cancel production serials in pending stage"
+        },
+        "response": []
+      },
+      {
+        "name": "Approve Tested Serial",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Production serial tested and approved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.success).to.be.true;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{employeeAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"device_serials\": [\"SERIAL001\", \"SERIAL002\"],\n  \"note\": \"All tests passed successfully\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/production-tracking/approve-tested",
+            "host": ["{{baseUrl}}"],
+            "path": ["production-tracking", "approve-tested"]
+          },
+          "description": "Approve tested serials to move to completed stage"
+        },
+        "response": []
+      },
+      {
+        "name": "Get Serial Firmware Installation Status",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('Serial firmware status retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.success).to.be.true;",
+                "  pm.expect(response.data).to.exist;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
           "header": [
             {
               "key": "Authorization",
@@ -204,16 +335,29 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/production-tracking/:productionId",
+            "raw": "{{baseUrl}}/production-tracking/firmware-status?type=planning&planning_id=1",
             "host": ["{{baseUrl}}"],
-            "path": ["production-tracking", ":productionId"],
-            "variable": [
+            "path": ["production-tracking", "firmware-status"],
+            "query": [
               {
-                "key": "productionId",
-                "value": "1"
+                "key": "type",
+                "value": "planning",
+                "description": "Type can be: planning, batch, tracking"
+              },
+              {
+                "key": "planning_id",
+                "value": "1",
+                "description": "Required for batch type"
+              },
+              {
+                "key": "batch_id",
+                "value": "1",
+                "description": "Required for tracking type",
+                "disabled": true
               }
             ]
-          }
+          },
+          "description": "Get firmware installation status for serials"
         },
         "response": []
       }
