@@ -9,6 +9,8 @@ import { get_error_response } from '../utils/response.helper';
 import { ERROR_CODES } from '../contants/error';
 import { STATUS_CODE } from '../contants/status';
 import { ROLE, TICKET_TYPE } from '../contants/info';
+import { PermissionType } from '../types/share-request';
+import { sendEmergencyAlertEmail } from './email.service';
 
 const TICKET_STATUS = {
 	PENDING: 'pending',
@@ -42,9 +44,11 @@ class TicketService {
 		description?: string;
 		evidence?: any;
 		assigned_to?: string;
+		permission_type?: PermissionType;
 	}): Promise<any> {
-		const { user_id, device_serial, ticket_type_id, description, evidence, assigned_to } = input;
+		const { user_id, device_serial, ticket_type_id, description, evidence, assigned_to, permission_type } = input;
 		let is_franchise = false;
+		let is_share_permission = false;
 
 		// 1. Kiểm tra tài khoản
 		const account = await this.prisma.account.findFirst({
@@ -66,6 +70,7 @@ class TicketService {
 		});
 		if (!ticketType) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy loại vấn đề');
 
+		let to_user: any = null;
 		// 4. Kiểm tra người nhận thiết bị
 		if(ticketType?.ticket_type_id === TICKET_TYPE.FRANCHISE) {			
 			if (!assigned_to) throwError(ErrorCodes.BAD_REQUEST, 'Không tìm thấy người nhận thiết bị được yêu cầu');
@@ -94,6 +99,34 @@ class TicketService {
 			
 			// Bật cờ - Đây là ticket nhượng quyền thiết bị
 			is_franchise = true;
+		} else if (ticketType?.ticket_type_id === TICKET_TYPE.SHARE_PERMISSION) {
+			if (!assigned_to) throwError(ErrorCodes.BAD_REQUEST, 'Không tìm thấy người nhận thiết bị được yêu cầu');
+
+			// 4.2. Kiểm tra mô tả vấn đề
+			if (description !== PermissionType.CONTROL && description !== PermissionType.VIEW) throwError(ErrorCodes.BAD_REQUEST, 'Quyền chia sẻ không hợp lệ')
+			
+			// 4.3. Kiểm tra người nhận thiết bị
+			to_user = await this.prisma.account.findFirst({
+				where: { account_id: assigned_to, deleted_at: null },
+			});
+
+			if(!to_user) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy người nhận thiết bị được yêu cầu');
+			
+			if(to_user?.is_locked) throwError(ErrorCodes.BAD_REQUEST, 'Tài khoản đã bị khóa');
+			
+			if(to_user?.employee_id) {
+				// 4.4. Kiểm tra người nhận thiết bị là nhân viên
+				const employee = await this.prisma.employee.findFirst({
+					where: { employee_id: to_user!.employee_id, deleted_at: null },
+				});
+				if(!employee) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy nhân viên');
+			}else if(to_user?.customer_id) {
+				// 4.4. Kiểm tra người nhận thiết bị là khách hàng
+				const customer = await this.prisma.customer.findFirst({
+					where: { customer_id: to_user!.customer_id, deleted_at: null },
+				});
+				if(!customer) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy khách hàng');
+			}
 		}
 
 		// 5. Tạo ID vấn đề
@@ -122,7 +155,6 @@ class TicketService {
 			},
 		});
 
-
 		// THDB: Xử lý nhượng quyền thiết bị 
 		// 7. Tạo yêu cầu nhượng quyền thiết bị
 		if (is_franchise) {
@@ -135,6 +167,12 @@ class TicketService {
 					created_at: new Date(),
 				},
 			});
+		} else if (is_share_permission) {
+			// HỎI LẠI VỀ VẤN ĐỀ CÓ CHO PHÉP SHARE QUYỀN CHO TÀI KHOẢN NHÂN VIÊN HAY KHÔNG
+			await sendEmergencyAlertEmail(
+				to_user!.email,
+				`Bạn được chia sẻ quyền ${description === PermissionType.CONTROL ? 'kiểm soát' : 'xem'} thiết bị ${device_serial} từ ${to_user!.surname} ${to_user!.lastname}`
+			);
 		}
 
 		// 8. Gửi thông báo đến người tạo vấn đề

@@ -514,6 +514,49 @@ class AuthService {
             message: 'Password updated successfully'
         };
     }
+
+    async getMeEmployee(userId: string) {
+        try {
+            const user_employee = await this.prisma.account.findFirst({
+                where: {
+                    account_id: userId,
+                    deleted_at: null
+                },
+                select: {
+                    account_id: true,
+                    username: true,
+                    employee: {
+                        select: {
+                            employee_id: true,
+                            lastname: true,
+                            surname: true,
+                            phone: true,
+                            email: true,
+                            image: true,
+                        }
+                    },
+                    role: {
+                        select: {
+                            id: true,
+                            name: true
+                        }
+                    }
+                }
+            })
+    
+            if (!user_employee?.employee) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Account invalid');
+            }
+    
+            return {
+                success: true,
+                data: user_employee
+            };
+        } catch (error) {
+            console.error(error);
+            throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Internal server error');
+        }
+    }
 }
 
 export default AuthService;

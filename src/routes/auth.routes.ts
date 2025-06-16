@@ -633,4 +633,9 @@ router.post('/recovery-password',
  */
 router.patch('/update-profile', authMiddleware, validateMiddleware(updateUserSchema), asyncHandler(authController.updateUser));
 
+router.get('/employee/get-me',
+    authMiddleware,
+    authController.getMeEmployee
+);
+
 export default router;

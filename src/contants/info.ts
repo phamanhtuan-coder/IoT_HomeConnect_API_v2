@@ -11,6 +11,7 @@ export const TICKET_TYPE = {
     LOST_ACCOUNT: -2,
     FRANCHISE: 0,
     SUPPORT: 2,
+    SHARE_PERMISSION: 3,
 } as const;
 
 
