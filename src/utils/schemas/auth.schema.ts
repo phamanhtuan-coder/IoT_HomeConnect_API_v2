@@ -96,7 +96,15 @@ export const updateUserSchema = z.object({
         email: z.string().email('Invalid email format').optional(),
         birthdate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date of birth must be in YYYY-MM-DD format').optional(),
         gender: z.boolean().optional(),
-        image: z.string().optional(),
+        image: z.string()
+            .regex(/^data:image\/(jpeg|jpg|png|gif);base64,/, 'Invalid image format')
+            .refine((val) => {
+                if (!val) return true;
+                const base64Data = val.split(',')[1];
+                const sizeInBytes = (base64Data.length * 3) / 4;
+                return sizeInBytes <= 10 * 1024 * 1024; // 10MB
+            }, 'Image size must be less than 10MB')
+            .optional(),
     }),
 });
 

@@ -4,7 +4,6 @@ import { LoginRequestBody, UserRegisterRequestBody, EmployeeRegisterRequestBody 
 import {ErrorCodes, throwError} from "../utils/errors";
 import {UserDeviceService} from "../services/user-device.service";
 import NotificationService from "../services/notification.service";
-import { PrismaClient } from '@prisma/client';
 
 
 // Define interface for logout multiple devices request body
@@ -16,12 +15,10 @@ class AuthController {
     private authService: AuthService;
     private userDeviceService: UserDeviceService;
 
-    private prisma: PrismaClient;
 
     constructor() {
         this.authService = new AuthService();
         this.userDeviceService = new UserDeviceService();
-        this.prisma = new PrismaClient();
     }
 
     /**
@@ -100,7 +97,7 @@ class AuthController {
         const ipAddress = req.ip;
 
         if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
-        if (!userDeviceId || isNaN(userDeviceId)) {
+        if (!userDeviceId || !isNaN(userDeviceId)) {
             throwError(ErrorCodes.BAD_REQUEST, 'Valid UserDeviceID is required');
         }
 
@@ -282,7 +279,12 @@ class AuthController {
      * @param res Response Express
      * @param next Middleware tiếp theo
      */
-    updateDeviceToken = async (req: Request, res: Response)=> {
+    /**
+     * Cập nhật token thiết bị
+     * @param req Request Express với token thiết bị trong body
+     * @param res Response Express
+     */
+    updateDeviceToken = async (req: Request, res: Response) => {
         try {
             const { deviceToken, userDeviceId } = req.body;
             const accountId = req?.user?.account_id;
@@ -293,32 +295,26 @@ class AuthController {
                 });
             }
 
-            const notificationService = new NotificationService();
-
-            if (userDeviceId) {
-                // Update specific device
-                await notificationService.updateDeviceFCMToken(userDeviceId, deviceToken);
-            } else {
-                // Find and update latest device
-                const latestDevice = await this.prisma.user_devices.findFirst({
-                    where: {
-                        user_id: accountId,
-                        is_deleted: false
-                    },
-                    orderBy: { last_login: 'desc' }
+            if (!accountId) {
+                return res.status(401).json({
+                    error: 'User not authenticated'
                 });
-
-                if (latestDevice) {
-                    await notificationService.updateDeviceFCMToken(latestDevice.user_device_id, deviceToken);
-                } else {
-                    return res.status(404).json({ error: 'No device found for user' });
-                }
             }
 
-            res.json({
-                message: 'FCM token updated successfully',
-                note: 'Push notifications are now enabled for this device'
-            });
+            // Call service method instead of direct Prisma queries
+            const result = await this.authService.updateDeviceToken(accountId, deviceToken, userDeviceId);
+
+            if (result.success) {
+                return res.json({
+                    message: result.message,
+                    deviceId: result.deviceId,
+                    note: 'Push notifications are now enabled for this device'
+                });
+            } else {
+                return res.status(404).json({
+                    error: result.message
+                });
+            }
         } catch (error: any) {
             console.error('Update FCM token error:', error);
             res.status(500).json({
@@ -327,7 +323,7 @@ class AuthController {
         }
     }
 
-// Thêm endpoint để test FCM connectivity
+
     async testFCMStatus(req: Request, res: Response) {
         try {
             const accountId = req?.user?.account_id;
@@ -395,6 +391,11 @@ class AuthController {
         try {
             const userId = req.user?.userId;
             if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+            console.log('Request body size:', JSON.stringify(req.body).length);
+            if (req.body.image) {
+                console.log('Base64 image size:', req.body.image.length);
+            }
 
             const result = await this.authService.updateUser(userId, req.body);
             res.json(result);
