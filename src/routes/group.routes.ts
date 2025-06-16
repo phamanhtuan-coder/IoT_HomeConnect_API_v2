@@ -80,61 +80,6 @@ router.post(
 );
 
 /**
- * Lấy thông tin chi tiết của một nhóm.
- * @swagger
- * /api/groups/{groupId}:
- *   get:
- *     tags: [Group]
- *     summary: Lấy thông tin nhóm theo ID
- *     security:
- *       - UserBearer: []
- */
-router.get(
-    '/:groupId',
-    authMiddleware,
-    validateMiddleware(groupIdSchema),
-    groupRoleMiddleware,
-    asyncHandler(groupController.getGroup)
-);
-
-/**
- * Cập nhật thông tin nhóm.
- * @swagger
- * /api/groups/{groupId}:
- *   put:
- *     tags: [Group]
- *     summary: Cập nhật thông tin nhóm
- *     security:
- *       - UserBearer: []
- */
-router.put(
-    '/:groupId',
-    authMiddleware,
-    validateMiddleware(groupIdSchema),
-    groupRoleMiddleware,
-    validateMiddleware(groupSchema),
-    asyncHandler(groupController.updateGroup)
-);
-
-/**
- * Xóa nhóm.
- * @swagger
- * /api/groups/{groupId}:
- *   delete:
- *     tags: [Group]
- *     summary: Xóa nhóm
- *     security:
- *       - UserBearer: []
- */
-router.delete(
-    '/:groupId',
-    authMiddleware,
-    validateMiddleware(groupIdSchema),
-    groupRoleMiddleware,
-    asyncHandler(groupController.deleteGroup)
-);
-
-/**
  * Thêm người dùng vào nhóm.
  * @swagger
  * /api/groups/members:
@@ -237,6 +182,61 @@ router.get(
     groupController.getMemberGroups
 );
 
+
+/**
+ * Lấy thông tin chi tiết của một nhóm.
+ * @swagger
+ * /api/groups/{groupId}:
+ *   get:
+ *     tags: [Group]
+ *     summary: Lấy thông tin nhóm theo ID
+ *     security:
+ *       - UserBearer: []
+ */
+router.get(
+    '/:groupId',
+    authMiddleware,
+    validateMiddleware(groupIdSchema),
+    groupRoleMiddleware,
+    asyncHandler(groupController.getGroup)
+);
+
+/**
+ * Cập nhật thông tin nhóm.
+ * @swagger
+ * /api/groups/{groupId}:
+ *   put:
+ *     tags: [Group]
+ *     summary: Cập nhật thông tin nhóm
+ *     security:
+ *       - UserBearer: []
+ */
+router.put(
+    '/:groupId',
+    authMiddleware,
+    validateMiddleware(groupIdSchema),
+    groupRoleMiddleware,
+    validateMiddleware(groupSchema),
+    asyncHandler(groupController.updateGroup)
+);
+
+/**
+ * Xóa nhóm.
+ * @swagger
+ * /api/groups/{groupId}:
+ *   delete:
+ *     tags: [Group]
+ *     summary: Xóa nhóm
+ *     security:
+ *       - UserBearer: []
+ */
+router.delete(
+    '/:groupId',
+    authMiddleware,
+    validateMiddleware(groupIdSchema),
+    groupRoleMiddleware,
+    asyncHandler(groupController.deleteGroup)
+);
 
 /**
  * Cập nhật vai trò của người dùng trong nhóm.
