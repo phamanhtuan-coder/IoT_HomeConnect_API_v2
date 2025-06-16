@@ -448,6 +448,7 @@ class AuthService {
         };
     }
 
+    // Trong auth.service.ts, cập nhật updateUser method:
     async updateUser(userId: string, data: {
         surname?: string;
         lastname?: string;
@@ -457,6 +458,26 @@ class AuthService {
         gender?: boolean;
         image?: string;
     }): Promise<any> {
+        // Validate base64 image
+        if (data.image) {
+            // Check if it's valid base64
+            if (!data.image.match(/^data:image\/(jpeg|jpg|png|gif);base64,/)) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Invalid image format. Only JPEG, PNG, GIF are allowed.');
+            }
+
+            // Calculate actual size from base64
+            const base64Data = data.image.split(',')[1];
+            const sizeInBytes = (base64Data.length * 3) / 4;
+            const maxSizeInMB = 10;
+            const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
+
+            if (sizeInBytes > maxSizeInBytes) {
+                throwError(ErrorCodes.BAD_REQUEST, `Image too large. Maximum size: ${maxSizeInMB}MB`);
+            }
+
+            console.log(`Image size: ${(sizeInBytes / 1024 / 1024).toFixed(2)}MB`);
+        }
+
         const account = await this.prisma.account.findFirst({
             where: { account_id: userId },
             include: { customer: true }
@@ -468,13 +489,12 @@ class AuthService {
 
         const updateData: any = { ...data };
 
-        // Nếu email thay đổi, cập nhật trạng thái verified
-        if (data.email && data.email !== account!.customer!.email) {
-            // Kiểm tra email mới có tồn tại chưa
+        // Email change logic...
+        if (data.email && data.email !== account?.customer?.email) {
             const existingEmail = await this.prisma.customer.findFirst({
                 where: {
                     email: data.email,
-                    customer_id: { not: account!.customer!.customer_id }
+                    customer_id: { not: account?.customer?.customer_id }
                 }
             });
 
@@ -489,18 +509,25 @@ class AuthService {
             updateData.birthdate = new Date(data.birthdate);
         }
 
-        const customer = await this.prisma.customer.update({
-            where: { customer_id: account!.customer!.customer_id },
-            data: {
-                ...updateData,
-                updated_at: new Date()
-            }
-        });
+        try {
+            const customer = await this.prisma.customer.update({
+                where: { customer_id: account?.customer?.customer_id },
+                data: {
+                    ...updateData,
+                    updated_at: new Date()
+                }
+            });
 
-        return {
-            success: true,
-            data: customer
-        };
+            return {
+                success: true,
+                data: customer
+            };
+        } catch (error: any) {
+            if (error.code === 'P2002') {
+                throwError(ErrorCodes.CONFLICT, 'Data conflict occurred');
+            }
+            throw error;
+        }
     }
 
     async recoveryPassword(email: string, newPassword: string): Promise<{ success: boolean; message: string }> {

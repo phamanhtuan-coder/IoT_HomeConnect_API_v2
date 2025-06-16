@@ -392,6 +392,11 @@ class AuthController {
             const userId = req.user?.userId;
             if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
+            console.log('Request body size:', JSON.stringify(req.body).length);
+            if (req.body.image) {
+                console.log('Base64 image size:', req.body.image.length);
+            }
+
             const result = await this.authService.updateUser(userId, req.body);
             res.json(result);
         } catch (error) {
