@@ -2,16 +2,19 @@
 import { Socket } from 'socket.io';
 
 /**
- * Device socket data interface
+ * Device socket data interface - Enhanced for ESP8266
  */
 export interface DeviceSocketData {
     deviceId: string;
     accountId?: string;
     isIoTDevice: boolean;
+    isESP8266?: boolean;              // ESP8266 detection flag
+    firmware_version?: string;        // ESP8266 firmware version
+    hardware_info?: string;           // ESP8266 hardware information
 }
 
 /**
- * Device capabilities structure
+ * Device capabilities structure - Enhanced for ESP8266
  */
 export interface DeviceCapabilities {
     deviceType?: string;
@@ -26,10 +29,18 @@ export interface DeviceCapabilities {
     controls?: {
         [key: string]: string; // e.g., "power_status": "toggle", "brightness": "slider"
     };
+    // ESP8266 specific capabilities
+    esp8266_info?: {
+        chip_id?: string;
+        flash_size?: number;
+        free_heap?: number;
+        wifi_rssi?: number;
+        sdk_version?: string;
+    };
 }
 
 /**
- * Sensor data structure
+ * Sensor data structure - Enhanced for ESP8266 Fire Alarm
  */
 export interface SensorData {
     deviceId?: string;
@@ -38,6 +49,70 @@ export interface SensorData {
     humidity?: number;
     timestamp?: string;
     type?: string;
+    // ESP8266 Fire Alarm specific sensors
+    smoke_level?: number;             // Smoke concentration (0-1023)
+    flame_detected?: boolean;         // Flame sensor state
+    co_level?: number;               // Carbon monoxide level
+    air_quality?: number;            // Air quality index
+    // ESP8266 system status
+    battery_level?: number;          // Battery percentage (0-100)
+    wifi_rssi?: number;              // WiFi signal strength (dBm)
+    uptime?: number;                 // Device uptime in seconds
+    free_memory?: number;            // Available RAM in bytes
+}
+
+/**
+ * ESP8266 Fire Alarm specific data structure
+ */
+export interface ESP8266FireAlarmData {
+    device_id: string;
+    alarm_type: 'smoke' | 'fire' | 'gas' | 'co' | 'test';
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    smoke_level?: number;
+    flame_detected?: boolean;
+    temperature?: number;
+    gas_level?: number;
+    co_level?: number;
+    location?: string;
+    battery_level?: number;
+    wifi_rssi?: number;
+    timestamp: string;
+}
+
+/**
+ * ESP8266 Status structure
+ */
+export interface ESP8266Status {
+    deviceId: string;
+    online: boolean;
+    wifi_connected: boolean;
+    wifi_rssi: number;
+    ip_address?: string;
+    free_heap: number;
+    uptime: number;
+    firmware_version: string;
+    last_restart_reason?: string;
+    sensor_status: {
+        smoke_sensor: boolean;
+        flame_sensor: boolean;
+        temp_sensor: boolean;
+        gas_sensor?: boolean;
+    };
+    timestamp: string;
+}
+
+/**
+ * ESP8266 Configuration structure
+ */
+export interface ESP8266Config {
+    smoke_threshold: number;          // Smoke detection threshold
+    temp_threshold: number;           // Temperature alert threshold
+    gas_threshold?: number;           // Gas detection threshold
+    alarm_duration: number;           // Alarm duration in seconds
+    wifi_check_interval: number;     // WiFi connection check interval
+    sensor_read_interval: number;    // Sensor reading interval
+    heartbeat_interval: number;      // Heartbeat interval
+    auto_test_interval?: number;     // Auto test interval in hours
 }
 
 /**
@@ -55,7 +130,7 @@ export interface DeviceStatus {
 }
 
 /**
- * Alert data structure
+ * Alert data structure - Enhanced for ESP8266
  */
 export interface AlertData {
     deviceId: string;
@@ -64,10 +139,14 @@ export interface AlertData {
     severity: 'low' | 'medium' | 'high' | 'critical';
     sensorData?: SensorData;
     timestamp: string;
+    // ESP8266 specific alert data
+    alarm_source?: 'smoke' | 'flame' | 'temperature' | 'gas' | 'co' | 'system';
+    location?: string;
+    auto_resolved?: boolean;
 }
 
 /**
- * Command data structure
+ * Command data structure - Enhanced for ESP8266
  */
 export interface CommandData {
     action: string;
@@ -80,6 +159,12 @@ export interface CommandData {
     deviceId?: string;
     fromClient?: string;
     timestamp?: string;
+    // ESP8266 specific commands
+    esp8266_command?: {
+        type: 'reset_alarm' | 'test_alarm' | 'update_config' | 'restart' | 'calibrate';
+        config?: ESP8266Config;
+        test_duration?: number;
+    };
     [key: string]: any;
 }
 
@@ -118,14 +203,24 @@ export interface RealtimeDeviceValue {
 }
 
 /**
- * Server to Client Events
+ * ESP8266 Acknowledgment structure
+ */
+export interface ESP8266Acknowledgment {
+    status: 'success' | 'error' | 'received';
+    message?: string;
+    timestamp: string;
+    data?: any;
+}
+
+/**
+ * Server to Client Events - Enhanced for ESP8266
  */
 export interface ServerToClientEvents {
     // ================== DEVICE CONNECTION EVENTS ==================
     /**
      * Emitted when a device connects
      */
-    device_connect: (data: { deviceId: string; timestamp?: string }) => void;
+    device_connect: (data: { deviceId: string; deviceType?: string; timestamp?: string }) => void;
 
     /**
      * Emitted when a device disconnects
@@ -138,6 +233,9 @@ export interface ServerToClientEvents {
     device_online: (data: {
         deviceId: string;
         capabilities?: DeviceCapabilities;
+        deviceType?: string;
+        firmware_version?: string;
+        hardware_info?: string;
         timestamp: string;
     }) => void;
 
@@ -167,6 +265,33 @@ export interface ServerToClientEvents {
      */
     realtime_device_value: (data: RealtimeDeviceValue) => void;
 
+    // ================== ESP8266 SPECIFIC EVENTS ==================
+    /**
+     * Emitted when ESP8266 status is updated
+     */
+    esp8266_status: (data: ESP8266Status) => void;
+
+    /**
+     * Emitted when fire alarm is triggered
+     */
+    fire_alert: (data: ESP8266FireAlarmData) => void;
+
+    /**
+     * Emitted when smoke is detected
+     */
+    smoke_alert: (data: ESP8266FireAlarmData) => void;
+
+    /**
+     * Emitted for emergency alerts from ESP8266
+     */
+    emergency_alert: (data: {
+        deviceId: string;
+        type: 'fire_alarm' | 'smoke' | 'gas' | 'co' | 'system_error';
+        severity: 'critical' | 'high' | 'medium' | 'low';
+        data: ESP8266FireAlarmData;
+        timestamp: string;
+    }) => void;
+
     // ================== ALERT EVENTS ==================
     /**
      * Emitted when a device alert is triggered
@@ -174,7 +299,7 @@ export interface ServerToClientEvents {
     device_alert: (data: AlertData) => void;
 
     /**
-     * Emitted when an alarm alert occurs
+     * Emitted when an alarm alert occurs - Enhanced for ESP8266
      */
     alarmAlert: (data: {
         deviceId: string;
@@ -182,6 +307,12 @@ export interface ServerToClientEvents {
         temperature?: number;
         gasValue?: number;
         timestamp: string;
+        // ESP8266 specific fields
+        severity?: 'low' | 'medium' | 'high' | 'critical';
+        alarm_type?: 'smoke' | 'fire' | 'gas' | 'co' | 'test';
+        location?: string;
+        smoke_level?: number;
+        flame_detected?: boolean;
         [key: string]: any;
     }) => void;
 
@@ -210,6 +341,42 @@ export interface ServerToClientEvents {
         command: CommandData;
         timestamp: string;
     }) => void;
+
+    // ================== ESP8266 COMMAND EVENTS ==================
+    /**
+     * Emitted to reset ESP8266 alarm
+     */
+    reset_alarm: (data: { deviceId: string; fromClient: string; timestamp: string }) => void;
+
+    /**
+     * Emitted to test ESP8266 alarm
+     */
+    test_alarm: (data: { deviceId: string; fromClient: string; timestamp: string }) => void;
+
+    /**
+     * Emitted to update ESP8266 configuration
+     */
+    update_config: (data: { config: ESP8266Config; fromClient: string; timestamp: string }) => void;
+
+    /**
+     * Emitted to confirm ESP8266 reset alarm sent
+     */
+    reset_alarm_sent: (data: { success: boolean; deviceId: string; timestamp: string }) => void;
+
+    /**
+     * Emitted to confirm ESP8266 test alarm sent
+     */
+    test_alarm_sent: (data: { success: boolean; deviceId: string; timestamp: string }) => void;
+
+    /**
+     * Emitted to confirm ESP8266 config update sent
+     */
+    config_update_sent: (data: { success: boolean; deviceId: string; configSize: number; timestamp: string }) => void;
+
+    /**
+     * Emitted when ESP8266 config error occurs
+     */
+    config_error: (data: { error: string; maxSize: number; currentSize: number }) => void;
 
     // ================== REAL-TIME MONITORING EVENTS ==================
     /**
@@ -240,6 +407,27 @@ export interface ServerToClientEvents {
         timestamp: string;
     }) => void;
 
+    // ================== ESP8266 ACKNOWLEDGMENT EVENTS ==================
+    /**
+     * Emitted to acknowledge sensor data receipt
+     */
+    sensor_ack: (data: ESP8266Acknowledgment) => void;
+
+    /**
+     * Emitted to acknowledge capabilities update
+     */
+    capabilities_ack: (data: ESP8266Acknowledgment) => void;
+
+    /**
+     * Emitted to acknowledge heartbeat
+     */
+    heartbeat_ack: (data: { received: boolean; timestamp: string }) => void;
+
+    /**
+     * Emitted for ESP8266 connection test
+     */
+    connection_test: (data: { test: boolean }) => void;
+
     // ================== CONNECTION MANAGEMENT ==================
     /**
      * Ping event for keep-alive
@@ -249,11 +437,16 @@ export interface ServerToClientEvents {
     /**
      * Pong response to ping
      */
-    pong: () => void;
+    pong: (data?: { timestamp: string }) => void;
+
+    /**
+     * Error events
+     */
+    error: (data: { code: string; message: string }) => void;
 }
 
 /**
- * Client to Server Events
+ * Client to Server Events - Enhanced for ESP8266
  */
 export interface ClientToServerEvents {
     // ================== DEVICE LIFECYCLE EVENTS ==================
@@ -300,6 +493,32 @@ export interface ClientToServerEvents {
         timestamp: string;
     }) => void;
 
+    // ================== ESP8266 SPECIFIC EVENTS ==================
+    /**
+     * Sent when ESP8266 fire alarm is triggered
+     */
+    alarm_trigger: (data: ESP8266FireAlarmData) => void;
+
+    /**
+     * Sent when ESP8266 detects fire
+     */
+    fire_detected: (data: ESP8266FireAlarmData) => void;
+
+    /**
+     * Sent when ESP8266 detects smoke
+     */
+    smoke_detected: (data: ESP8266FireAlarmData) => void;
+
+    /**
+     * Sent for ESP8266 status updates
+     */
+    esp8266_status: (data: ESP8266Status) => void;
+
+    /**
+     * Sent for ESP8266 heartbeat
+     */
+    heartbeat: (data: { deviceId: string; uptime: number; free_heap: number; timestamp: string }) => void;
+
     // ================== COMMAND EVENTS ==================
     /**
      * Sent to execute a command on device
@@ -315,6 +534,22 @@ export interface ClientToServerEvents {
      * Sent to update command execution status
      */
     command_status: (data: CommandStatus) => void;
+
+    // ================== ESP8266 CLIENT COMMANDS ==================
+    /**
+     * Sent to reset ESP8266 alarm
+     */
+    reset_alarm: (data: { deviceId: string }) => void;
+
+    /**
+     * Sent to test ESP8266 alarm
+     */
+    test_alarm: (data: { deviceId: string }) => void;
+
+    /**
+     * Sent to update ESP8266 configuration
+     */
+    update_config: (data: ESP8266Config) => void;
 
     // ================== REAL-TIME MONITORING ==================
     /**
@@ -337,6 +572,12 @@ export interface ClientToServerEvents {
      * Pong response
      */
     pong: () => void;
+
+    /**
+     * Connection errors
+     */
+    error: (error: any) => void;
+    connect_error: (error: any) => void;
 }
 
 /**
@@ -382,7 +623,8 @@ export enum SocketRooms {
     DEVICE = 'device',
     DEVICE_REALTIME = 'device:realtime',
     USER = 'user',
-    ADMIN = 'admin'
+    ADMIN = 'admin',
+    ESP8266 = 'esp8266'
 }
 
 /**
@@ -403,6 +645,19 @@ export enum AlertSeverity {
     MEDIUM = 'medium',
     HIGH = 'high',
     CRITICAL = 'critical'
+}
+
+/**
+ * ESP8266 Alarm Types
+ */
+export enum ESP8266AlarmType {
+    SMOKE = 'smoke',
+    FIRE = 'fire',
+    GAS = 'gas',
+    CO = 'co',
+    TEMPERATURE = 'temperature',
+    SYSTEM_ERROR = 'system_error',
+    TEST = 'test'
 }
 
 /**
@@ -436,10 +691,38 @@ export function isSensorData(data: any): data is SensorData {
 }
 
 /**
+ * Type guard for checking if data is ESP8266 sensor data
+ */
+export function isESP8266SensorData(data: any): data is SensorData {
+    return isSensorData(data) &&
+        (data.smoke_level !== undefined || data.flame_detected !== undefined || data.battery_level !== undefined);
+}
+
+/**
+ * Type guard for checking if data is ESP8266 Fire Alarm data
+ */
+export function isESP8266FireAlarmData(data: any): data is ESP8266FireAlarmData {
+    return data &&
+        typeof data === 'object' &&
+        typeof data.device_id === 'string' &&
+        typeof data.alarm_type === 'string' &&
+        ['smoke', 'fire', 'gas', 'co', 'test'].includes(data.alarm_type);
+}
+
+/**
  * Type guard for checking if data is CommandData
  */
 export function isCommandData(data: any): data is CommandData {
     return data &&
         typeof data === 'object' &&
         typeof data.action === 'string';
+}
+
+/**
+ * Type guard for checking if data is ESP8266 command
+ */
+export function isESP8266Command(data: any): data is CommandData {
+    return isCommandData(data) &&
+        data.esp8266_command !== undefined &&
+        typeof data.esp8266_command === 'object';
 }

@@ -34,29 +34,74 @@ const ALERT_MESSAGES = {
     DEVICE_DISCONNECT: 'Device has been disconnected!',
 };
 
+/**
+ * Detect if client is ESP8266 based on connection parameters
+ */
+const detectESP8266Client = (socket: Socket): boolean => {
+    const userAgent = socket.handshake.headers['user-agent'] || '';
+    const query = socket.handshake.query;
+
+    // ESP8266 detection criteria
+    const isESP8266 = userAgent.includes('ESP8266') ||
+        userAgent.includes('ArduinoWebSockets') ||
+        query.client_type === 'esp8266' ||
+        query.device_type === 'esp8266';
+
+    return isESP8266;
+};
+
 export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClientEvents>) => {
     // Giữ nguyên namespace /device như trong Postman
     const deviceNamespace = io.of('/device');
     const clientNamespace = io.of('/client');
 
-    // IoT Device connections
-    deviceNamespace.on('connection', async (socket: DeviceSocket) => {
-        console.log(`🔌 New connection attempt to /device - Socket ID: ${socket.id}`);
+    // ============= ESP8266 CONNECTION LOGGING =============
+    console.log("🔧 Device Socket setup with ESP8266 compatibility:");
+    console.log("   - Engine.IO v3 support: ENABLED");
+    console.log("   - Namespaces: /device (IoT), /client (Apps)");
+    console.log("   - ESP8266 optimizations: ACTIVE");
 
-        const { deviceId, isIoTDevice = 'true' } = socket.handshake.query as {
+    // IoT Device connections (including ESP8266)
+    deviceNamespace.on('connection', async (socket: DeviceSocket) => {
+        const isESP8266 = detectESP8266Client(socket);
+        const clientType = isESP8266 ? 'ESP8266' : 'IoT Device';
+
+        console.log(`🔌 New ${clientType} connection attempt to /device - Socket ID: ${socket.id}`);
+
+        if (isESP8266) {
+            console.log(`📡 ESP8266 client detected:`, {
+                userAgent: socket.handshake.headers['user-agent'],
+                transport: socket.conn.transport.name,
+                engineIOVersion: socket.conn.protocol
+            });
+        }
+
+        const { deviceId, isIoTDevice = 'true', client_type, firmware_version } = socket.handshake.query as {
             deviceId?: string;
             isIoTDevice?: string;
+            client_type?: string;
+            firmware_version?: string;
         };
 
-        console.log(`📋 Connection params - deviceId: ${deviceId}, isIoTDevice: ${isIoTDevice}`);
+        console.log(`📋 ${clientType} connection params:`, {
+            deviceId,
+            isIoTDevice,
+            client_type,
+            firmware_version: firmware_version || 'unknown'
+        });
 
         if (!deviceId) {
-            console.log('❌ Device connection rejected: Missing deviceId');
+            console.log(`❌ ${clientType} connection rejected: Missing deviceId`);
             socket.disconnect();
             return;
         }
 
-        socket.data = { deviceId, isIoTDevice: isIoTDevice === 'true' };
+        socket.data = {
+            deviceId,
+            isIoTDevice: isIoTDevice === 'true',
+            isESP8266,
+            firmware_version
+        };
 
         try {
             const device = await prisma.devices.findUnique({
@@ -75,12 +120,23 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 return;
             }
 
-            console.log(`📱 Device found in database: ${deviceId} - Owner: ${device.account_id}`);
+            console.log(`📱 Device found in database: ${deviceId} - Owner: ${device.account_id} (${clientType})`);
 
-            // Update device link status
+            // Update device link status with ESP8266 info
+            const updateData: any = {
+                link_status: 'linked',
+                updated_at: new Date()
+            };
+
+            // ESP8266 specific updates
+            if (isESP8266 && firmware_version) {
+                updateData.firmware_version = firmware_version;
+                console.log(`📡 Updated ESP8266 firmware version: ${firmware_version}`);
+            }
+
             await prisma.devices.update({
                 where: { serial_number: deviceId },
-                data: { link_status: 'linked', updated_at: new Date() },
+                data: updateData,
             });
 
             // Create notification for device owner
@@ -88,7 +144,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 await redisClient.setex(`device:${deviceId}:account`, 3600, device.account_id);
                 await notificationService.createNotification({
                     account_id: device.account_id,
-                    text: `Device ${deviceId} is now online.`,
+                    text: `${clientType} ${deviceId} is now online.`,
                     type: NotificationType.SYSTEM,
                 });
             }
@@ -96,40 +152,105 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
             socket.join(`device:${deviceId}`);
 
             // Notify clients about device connection
-            clientNamespace.emit('device_connect', { deviceId });
-            clientNamespace.emit('device_online', { deviceId, timestamp: new Date().toISOString() });
+            clientNamespace.emit('device_connect', {
+                deviceId,
+                deviceType: clientType,
+                timestamp: new Date().toISOString()
+            });
+            clientNamespace.emit('device_online', {
+                deviceId,
+                deviceType: clientType,
+                firmware_version,
+                timestamp: new Date().toISOString()
+            });
 
-            console.log(`✅ IoT Device connected successfully: ${deviceId}`);
+            console.log(`✅ ${clientType} connected successfully: ${deviceId}`);
 
-            // Socket event handlers
+            // ============= SOCKET EVENT HANDLERS =============
+
             socket.on('device_online', (data) => {
-                console.log(`📡 Device online event from ${deviceId}:`, data);
+                console.log(`📡 Device online event from ${deviceId} (${clientType}):`, data);
                 handleDeviceOnline(socket, clientNamespace, data, prisma);
             });
 
             socket.on('device_capabilities', (data) => {
-                console.log(`⚙️  Device capabilities from ${deviceId}:`, data);
+                console.log(`⚙️  Device capabilities from ${deviceId} (${clientType}):`, data);
                 handleDeviceCapabilities(socket, clientNamespace, data, prisma);
             });
 
             socket.on('sensorData', (data) => {
-                console.log(`🌡️  Sensor data from ${deviceId}:`, data);
+                console.log(`🌡️  Sensor data from ${deviceId} (${clientType}):`, data);
                 handleSensorData(socket, data, clientNamespace, prisma, alertService, notificationService, hourlyValueService);
             });
 
+            // ESP8266 Fire Alarm specific events
+            socket.on('alarm_trigger', (data) => {
+                console.log(`🚨 FIRE ALARM TRIGGERED from ${deviceId} (${clientType}):`, data);
+
+                // Broadcast emergency alert to all clients
+                clientNamespace.emit('emergency_alert', {
+                    deviceId,
+                    type: 'fire_alarm',
+                    severity: 'critical',
+                    data,
+                    timestamp: new Date().toISOString()
+                });
+
+                // Also emit to device-specific room with correct alarmAlert format
+                clientNamespace.to(`device:${deviceId}`).emit('alarmAlert', {
+                    deviceId,
+                    alarmActive: true,
+                    temperature: data.temperature,
+                    gasValue: data.gas_level || data.smoke_level,
+                    severity: data.severity,
+                    alarm_type: data.alarm_type,
+                    location: data.location,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            socket.on('fire_detected', (data) => {
+                console.log(`🔥 Fire detection from ${deviceId} (${clientType}):`, data);
+
+                clientNamespace.emit('fire_alert', {
+                    ...data,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            socket.on('smoke_detected', (data) => {
+                console.log(`💨 Smoke detection from ${deviceId} (${clientType}):`, data);
+
+                clientNamespace.emit('smoke_alert', {
+                    ...data,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            // ESP8266 Status events
+            socket.on('esp8266_status', (data) => {
+                console.log(`📊 ESP8266 status from ${deviceId}:`, data);
+
+                clientNamespace.to(`device:${deviceId}`).emit('esp8266_status', {
+                    ...data,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            // Existing device events (maintained for compatibility)
             socket.on('deviceStatus', (data) => {
-                console.log(`📊 Device status from ${deviceId}:`, data);
+                console.log(`📊 Device status from ${deviceId} (${clientType}):`, data);
                 clientNamespace.to(`device:${deviceId}`).emit('deviceStatus', data);
             });
 
             socket.on('alarmAlert', (data) => {
-                console.log(`🚨 Alarm alert from ${deviceId}:`, data);
+                console.log(`🚨 Alarm alert from ${deviceId} (${clientType}):`, data);
                 clientNamespace.to(`device:${deviceId}`).emit('alarmAlert', data);
             });
 
             // Command response from IoT device back to client
             socket.on('command_response', (responseData) => {
-                console.log(`📥 Command response from device ${deviceId}:`, responseData);
+                console.log(`📥 Command response from device ${deviceId} (${clientType}):`, responseData);
                 clientNamespace.to(`device:${deviceId}`).emit('command_response', {
                     ...responseData,
                     deviceId,
@@ -139,7 +260,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
 
             // Command execution status
             socket.on('command_status', (statusData) => {
-                console.log(`⚡ Command status from device ${deviceId}:`, statusData);
+                console.log(`⚡ Command status from device ${deviceId} (${clientType}):`, statusData);
                 clientNamespace.to(`device:${deviceId}`).emit('command_status', {
                     ...statusData,
                     deviceId,
@@ -147,18 +268,37 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 });
             });
 
+            // ============= ESP8266 SPECIFIC PING/PONG =============
             socket.on('ping', () => {
-                console.log(`🏓 Ping from device ${deviceId}`);
-                socket.emit('pong');
+                console.log(`🏓 Ping from ${clientType} ${deviceId}`);
+                socket.emit('pong', { timestamp: new Date().toISOString() });
             });
 
-            socket.on('disconnect', () => {
-                console.log(`🔌 Device ${deviceId} disconnecting...`);
+            // ESP8266 keep-alive (alternative to ping)
+            socket.on('heartbeat', (data) => {
+                console.log(`💓 Heartbeat from ${clientType} ${deviceId}:`, data);
+                socket.emit('heartbeat_ack', {
+                    received: true,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            // ============= ERROR HANDLING FOR ESP8266 =============
+            socket.on('error', (error) => {
+                console.error(`❌ Socket error from ${clientType} ${deviceId}:`, error);
+            });
+
+            socket.on('connect_error', (error) => {
+                console.error(`❌ Connection error from ${clientType} ${deviceId}:`, error);
+            });
+
+            socket.on('disconnect', (reason) => {
+                console.log(`🔌 ${clientType} ${deviceId} disconnecting... Reason: ${reason}`);
                 handleDeviceDisconnect(socket, clientNamespace, prisma, notificationService);
             });
 
         } catch (error) {
-            console.error(`❌ IoT Device socket error for ${deviceId}:`, error);
+            console.error(`❌ ${clientType} socket error for ${deviceId}:`, error);
             socket.disconnect();
         }
     });
@@ -227,26 +367,96 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 }
             });
 
-            // Command handling - Forward commands to IoT device
+            // ============= COMMAND HANDLING FOR ESP8266 =============
+            // Forward commands to IoT device (including ESP8266)
             socket.on('command', (commandData) => {
                 console.log(`🎮 Command from client for device ${deviceId}:`, commandData);
 
+                // ESP8266 specific: Simplify command structure for memory constraints
+                const simplifiedCommand = {
+                    action: commandData.action,
+                    state: commandData.state,
+                    timestamp: new Date().toISOString()
+                };
+
                 // Forward command to IoT device in device namespace
                 deviceNamespace.to(`device:${deviceId}`).emit('command', {
-                    ...commandData,
-                    fromClient: accountId,
-                    timestamp: new Date().toISOString()
+                    ...simplifiedCommand,
+                    fromClient: accountId
                 });
 
                 // Send acknowledgment back to client
                 socket.emit('command_sent', {
                     success: true,
                     deviceId,
-                    command: commandData,
+                    command: simplifiedCommand,
                     timestamp: new Date().toISOString()
                 });
 
-                console.log(`📤 Command forwarded to device ${deviceId}:`, commandData);
+                console.log(`📤 Command forwarded to device ${deviceId} (ESP8266 compatible):`, simplifiedCommand);
+            });
+
+            // ESP8266 specific: Reset alarm command
+            socket.on('reset_alarm', (data) => {
+                console.log(`🔄 Reset alarm command for device ${deviceId}:`, data);
+
+                deviceNamespace.to(`device:${deviceId}`).emit('reset_alarm', {
+                    deviceId,
+                    fromClient: accountId,
+                    timestamp: new Date().toISOString()
+                });
+
+                socket.emit('reset_alarm_sent', {
+                    success: true,
+                    deviceId,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            // ESP8266 specific: Test alarm command
+            socket.on('test_alarm', (data) => {
+                console.log(`🧪 Test alarm command for device ${deviceId}:`, data);
+
+                deviceNamespace.to(`device:${deviceId}`).emit('test_alarm', {
+                    deviceId,
+                    fromClient: accountId,
+                    timestamp: new Date().toISOString()
+                });
+
+                socket.emit('test_alarm_sent', {
+                    success: true,
+                    deviceId,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            // ESP8266 specific: Configuration update
+            socket.on('update_config', (configData) => {
+                console.log(`⚙️ Config update for ESP8266 device ${deviceId}:`, configData);
+
+                // Validate config size for ESP8266 memory constraints
+                const configSize = JSON.stringify(configData).length;
+                if (configSize > 1024) { // 1KB limit
+                    socket.emit('config_error', {
+                        error: 'Configuration too large for ESP8266',
+                        maxSize: 1024,
+                        currentSize: configSize
+                    });
+                    return;
+                }
+
+                deviceNamespace.to(`device:${deviceId}`).emit('update_config', {
+                    config: configData,
+                    fromClient: accountId,
+                    timestamp: new Date().toISOString()
+                });
+
+                socket.emit('config_update_sent', {
+                    success: true,
+                    deviceId,
+                    configSize,
+                    timestamp: new Date().toISOString()
+                });
             });
 
             socket.on('disconnect', () => {
@@ -258,6 +468,38 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
             socket.disconnect();
         }
     });
+
+    // ============= ESP8266 COMPATIBILITY MIDDLEWARE =============
+
+    // Add middleware to handle ESP8266 specific connection issues
+    deviceNamespace.use((socket, next) => {
+        const isESP8266 = detectESP8266Client(socket);
+
+        if (isESP8266) {
+            console.log(`🔧 ESP8266 middleware: Processing connection for ${socket.id}`);
+
+            // Set ESP8266 specific timeout handling (no callback for ESP8266 compatibility)
+            socket.emit('connection_test', { test: true });
+
+            // Log connection test without waiting for response
+            setTimeout(() => {
+                console.log(`✅ ESP8266 connection test sent for ${socket.id}`);
+            }, 1000);
+        }
+
+        next();
+    });
+
+    // Global error handler for ESP8266 issues
+    deviceNamespace.on('connect_error', (err) => {
+        console.error('🔧 Device namespace connection error (possibly ESP8266):', {
+            code: err.code,
+            message: err.message,
+            type: err.type
+        });
+    });
+
+    console.log('✅ Device socket setup completed with ESP8266 compatibility');
 };
 
 export { ALERT_TYPES, ALERT_MESSAGES };

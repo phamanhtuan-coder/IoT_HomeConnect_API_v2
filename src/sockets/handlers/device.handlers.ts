@@ -20,6 +20,7 @@ const ALERT_TYPES = {
 
 /**
  * Handle device online event with capabilities update
+ * Enhanced for ESP8266 compatibility
  */
 export const handleDeviceOnline = async (
     socket: DeviceSocket,
@@ -38,7 +39,19 @@ export const handleDeviceOnline = async (
         // Update runtime capabilities if provided
         if (data?.capabilities) {
             updateData.runtime_capabilities = data.capabilities;
-            console.log(`Updated capabilities for device ${deviceId}:`, data.capabilities);
+            console.log(`🔧 Updated capabilities for device ${deviceId}:`, data.capabilities);
+        }
+
+        // ESP8266 specific: Handle firmware version if provided
+        if (data?.firmware_version) {
+            updateData.firmware_version = data.firmware_version;
+            console.log(`📡 ESP8266 firmware version ${deviceId}: ${data.firmware_version}`);
+        }
+
+        // ESP8266 specific: Handle hardware info
+        if (data?.hardware_info) {
+            updateData.hardware_info = data.hardware_info;
+            console.log(`🔌 ESP8266 hardware info ${deviceId}:`, data.hardware_info);
         }
 
         await prisma.devices.update({
@@ -50,18 +63,31 @@ export const handleDeviceOnline = async (
         clientNamespace.emit('device_online', {
             deviceId,
             capabilities: data?.capabilities,
+            firmware_version: data?.firmware_version,
+            hardware_info: data?.hardware_info,
             timestamp: new Date().toISOString()
         });
 
-        console.log(`Device ${deviceId} is online with capabilities`);
+        console.log(`✅ Device ${deviceId} is online with capabilities (ESP8266 compatible)`);
 
     } catch (error) {
-        console.error(`Error handling device online for ${deviceId}:`, error);
+        console.error(`❌ Error handling device online for ${deviceId}:`, error);
+
+        // ESP8266 specific: Send simple error response for memory-constrained devices
+        try {
+            socket.emit('error', {
+                code: 'ONLINE_ERROR',
+                message: 'Failed to update device status'
+            });
+        } catch (emitError) {
+            console.error(`Failed to send error to ESP8266 device ${deviceId}:`, emitError);
+        }
     }
 };
 
 /**
  * Handle device capabilities update (separate event)
+ * Optimized for ESP8266 memory constraints
  */
 export const handleDeviceCapabilities = async (
     socket: DeviceSocket,
@@ -72,6 +98,12 @@ export const handleDeviceCapabilities = async (
     const { deviceId } = socket.data;
 
     try {
+        // ESP8266 optimization: Validate data size before processing
+        const dataSize = JSON.stringify(data).length;
+        if (dataSize > 10000) { // 10KB limit for ESP8266
+            console.warn(`⚠️  Large capabilities data from ESP8266 ${deviceId}: ${dataSize} bytes`);
+        }
+
         await prisma.devices.update({
             where: { serial_number: deviceId },
             data: {
@@ -87,19 +119,42 @@ export const handleDeviceCapabilities = async (
             timestamp: new Date().toISOString()
         });
 
-        console.log(`Capabilities updated for device ${deviceId}:`, data);
+        // ESP8266 specific: Send acknowledgment to confirm receipt
+        socket.emit('capabilities_ack', {
+            status: 'success',
+            timestamp: new Date().toISOString()
+        });
+
+        console.log(`🔧 Capabilities updated for device ${deviceId} (ESP8266 compatible)`);
 
     } catch (error) {
-        console.error(`Error updating capabilities for ${deviceId}:`, error);
+        console.error(`❌ Error updating capabilities for ${deviceId}:`, error);
+
+        // ESP8266 specific: Send error acknowledgment
+        socket.emit('capabilities_ack', {
+            status: 'error',
+            message: 'Failed to update capabilities',
+            timestamp: new Date().toISOString()
+        });
     }
 };
 
 /**
  * Handle sensor data from IoT devices
+ * Enhanced for ESP8266 fire alarm systems
  */
 export const handleSensorData = async (
     socket: DeviceSocket,
-    data: { gas?: number; temperature?: number; humidity?: number; type?: string },
+    data: {
+        gas?: number;
+        temperature?: number;
+        humidity?: number;
+        smoke_level?: number;  // ESP8266 fire alarm specific
+        flame_detected?: boolean;  // ESP8266 fire alarm specific
+        type?: string;
+        battery_level?: number;  // ESP8266 specific
+        rssi?: number;  // ESP8266 WiFi signal strength
+    },
     clientNamespace: Namespace,
     prisma: PrismaClient,
     alertService: AlertService,
@@ -109,8 +164,23 @@ export const handleSensorData = async (
     const { deviceId } = socket.data;
 
     try {
-        // Process hourly values for analytics
-        if (data.gas !== undefined || data.temperature !== undefined || data.humidity !== undefined) {
+        // ESP8266 optimization: Process data efficiently
+        const sensorData = {
+            gas: data.gas,
+            temperature: data.temperature,
+            humidity: data.humidity,
+            smoke_level: data.smoke_level,
+            flame_detected: data.flame_detected,
+            battery_level: data.battery_level,
+            rssi: data.rssi
+        };
+
+        // Process hourly values for analytics (only if values exist)
+        const hasAnalyticsData = data.gas !== undefined ||
+            data.temperature !== undefined ||
+            data.humidity !== undefined;
+
+        if (hasAnalyticsData) {
             await hourlyValueService.processSensorData(deviceId, {
                 gas: data.gas,
                 temperature: data.temperature,
@@ -118,21 +188,42 @@ export const handleSensorData = async (
             });
         }
 
-        // Check alert conditions
+        // Enhanced alert checking for ESP8266 fire alarm systems
         let alertTriggered = false;
         let alertType: number | null = null;
         let alertMessage = '';
 
+        // Gas level alert
         if (data.gas && data.gas > ALERT_THRESHOLDS.GAS_HIGH) {
             alertTriggered = true;
             alertType = ALERT_TYPES.GAS_HIGH;
             alertMessage = 'KHẨN CẤP! Nồng độ khí quá cao!';
         }
 
+        // Temperature alert
         if (data.temperature && data.temperature > ALERT_THRESHOLDS.TEMP_HIGH) {
             alertTriggered = true;
             alertType = ALERT_TYPES.TEMP_HIGH;
             alertMessage = 'KHẨN CẤP! Nhiệt độ quá cao!';
+        }
+
+        // ESP8266 fire alarm specific alerts
+        if (data.smoke_level && data.smoke_level > 500) { // Configurable threshold
+            alertTriggered = true;
+            alertType = ALERT_TYPES.GAS_HIGH; // Reuse gas alert type for smoke
+            alertMessage = 'KHẨN CẤP! Phát hiện khói!';
+        }
+
+        if (data.flame_detected === true) {
+            alertTriggered = true;
+            alertType = ALERT_TYPES.TEMP_HIGH; // Reuse temp alert type for flame
+            alertMessage = 'KHẨN CẤP! Phát hiện lửa!';
+        }
+
+        // ESP8266 specific: Low battery warning
+        if (data.battery_level && data.battery_level < 20) {
+            console.warn(`🔋 Low battery warning for ESP8266 ${deviceId}: ${data.battery_level}%`);
+            // Create low battery notification (non-critical)
         }
 
         // Create alert if conditions met
@@ -143,7 +234,7 @@ export const handleSensorData = async (
             });
 
             if (device?.account_id) {
-                // Create alert in database - AlertService expects (device, alertTypeId, message)
+                // Create alert in database
                 const deviceForAlert = {
                     serial_number: device.serial_number,
                     space_id: device.space_id,
@@ -151,9 +242,9 @@ export const handleSensorData = async (
                 };
 
                 await alertService.createAlert(
-                    deviceForAlert as any, // Cast to match Device interface
-                    alertType, // alert_type_id
-                    alertMessage // message
+                    deviceForAlert as any,
+                    alertType,
+                    alertMessage
                 );
 
                 // Send push notification
@@ -171,31 +262,51 @@ export const handleSensorData = async (
                     sensorData: data,
                     timestamp: new Date().toISOString()
                 });
+
+                console.log(`🚨 ALERT triggered for ESP8266 device ${deviceId}: ${alertMessage}`);
             }
         }
 
         // Broadcast sensor data to clients monitoring this device
         clientNamespace.to(`device:${deviceId}`).emit('sensorData', {
             deviceId,
-            ...data,
+            ...sensorData,
             timestamp: new Date().toISOString()
         });
 
         // Broadcast to real-time monitoring clients
         clientNamespace.to(`device:${deviceId}:realtime`).emit('realtime_device_value', {
             serial: deviceId,
-            data: { val: data }
+            data: { val: sensorData }
         });
 
-        console.log(`Sensor data processed for device ${deviceId}:`, data);
+        // ESP8266 specific: Send acknowledgment to confirm data receipt
+        socket.emit('sensor_ack', {
+            status: 'received',
+            timestamp: new Date().toISOString()
+        });
+
+        console.log(`📊 Sensor data processed for ESP8266 device ${deviceId}`);
 
     } catch (error) {
-        console.error(`Error handling sensor data for ${deviceId}:`, error);
+        console.error(`❌ Error handling sensor data for ${deviceId}:`, error);
+
+        // ESP8266 specific: Send error acknowledgment
+        try {
+            socket.emit('sensor_ack', {
+                status: 'error',
+                message: 'Failed to process sensor data',
+                timestamp: new Date().toISOString()
+            });
+        } catch (emitError) {
+            console.error(`Failed to send sensor_ack to ESP8266 ${deviceId}:`, emitError);
+        }
     }
 };
 
 /**
  * Handle device disconnect
+ * Enhanced for ESP8266 connection management
  */
 export const handleDeviceDisconnect = async (
     socket: DeviceSocket,
@@ -236,15 +347,16 @@ export const handleDeviceDisconnect = async (
             timestamp: new Date().toISOString()
         });
 
-        console.log(`Device ${deviceId} disconnected`);
+        console.log(`🔌 ESP8266 device ${deviceId} disconnected`);
 
     } catch (error) {
-        console.error(`Error handling device disconnect for ${deviceId}:`, error);
+        console.error(`❌ Error handling ESP8266 disconnect for ${deviceId}:`, error);
     }
 };
 
 /**
  * Validate if user has access to device
+ * Same logic maintained for compatibility
  */
 export const validateDeviceAccess = async (
     deviceId: string,
@@ -293,7 +405,7 @@ export const validateDeviceAccess = async (
         return !!sharedPermission;
 
     } catch (error) {
-        console.error('Error validating device access:', error);
+        console.error('❌ Error validating device access:', error);
         return false;
     }
 };
