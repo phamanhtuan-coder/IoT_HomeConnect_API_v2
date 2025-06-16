@@ -207,7 +207,7 @@ router.delete(
  *         description: Lỗi server
  */
 router.get(
-  '/:ticketId',
+  'details/:ticketId',
   authMiddleware,
   validateMiddleware(ticketIdSchema),
   asyncHandler(ticketController.getTicketById)
