@@ -640,6 +640,8 @@ router.post('/change-password',
  */
 router.patch('/update-profile', authMiddleware, validateMiddleware(updateUserSchema), asyncHandler(authController.updateUser));
 
+router.get('/employee/get-me', authMiddleware, asyncHandler(authController.getMeEmployee));
+
 router.get('/getMe', authMiddleware, asyncHandler(authController.getMe));
 
 export default router;

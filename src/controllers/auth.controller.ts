@@ -449,6 +449,14 @@ class AuthController {
             next(error);
         }
     };
+
+    getMeEmployee = async (req: Request, res: Response, next: NextFunction) => {
+        const userId = req.user?.userId;
+        if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        const result = await this.authService.getMeEmployee(userId);
+        res.json(result);
+    };  
 }
 
 export default AuthController;
