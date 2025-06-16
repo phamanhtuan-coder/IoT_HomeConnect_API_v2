@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const spaceSchema = z.object({
     body: z.object({
-        house_id: z.number().positive('House ID must be a positive number').optional(),
+        houseId: z.number().positive('House ID must be a positive number').optional(),
         space_name: z.string().min(1, 'Space name is required').max(100, 'Space name must be 100 characters or less'),
         icon_name: z.string().max(100, 'Icon name must be 100 characters or less').optional(),
         icon_color: z.string().max(100, 'Icon color must be 100 characters or less').optional(),
