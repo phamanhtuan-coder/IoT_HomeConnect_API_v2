@@ -656,7 +656,6 @@ class AuthService {
                 include: {
                     customer: {
                         select: {
-                            customer_id: true,
                             lastname: true,
                             surname: true,
                             phone: true,
@@ -671,9 +670,9 @@ class AuthService {
             })
 
             const formatUser = {
-                account_id: user?.account_id,
-                customer_id: user?.customer_id,
                 username: user?.username,
+                surname: user?.customer?.surname,
+                lastname: user?.customer?.lastname,
                 fullname: user?.customer?.surname + " " + user?.customer?.lastname,
                 birthdate: user?.customer?.birthdate,
                 phone: user?.customer?.phone,
