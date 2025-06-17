@@ -20,7 +20,7 @@ import validateMiddleware from '../middleware/validate.middleware';
 import authMiddleware from '../middleware/auth.middleware';
 import groupRoleMiddleware from '../middleware/group.middleware';
 import spaceGroupMiddleware from '../middleware/space-group.middleware';
-import {spaceIdSchema, spaceSchema} from "../utils/schemas/space.schema";
+import {spaceIdSchema,  createSpaceSchema, updateSpaceSchema} from "../utils/schemas/space.schema";
 
 const router = Router();
 const spaceController = new SpaceController();
@@ -86,7 +86,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
 router.post(
     '/',
     authMiddleware,
-    validateMiddleware(spaceSchema),
+    validateMiddleware(createSpaceSchema),
     spaceGroupMiddleware,
     groupRoleMiddleware,
     asyncHandler(spaceController.createSpace)
@@ -299,7 +299,7 @@ router.get(
 router.put(
     '/:spaceId',
     authMiddleware,
-    validateMiddleware(spaceSchema),
+    validateMiddleware(updateSpaceSchema),
     spaceGroupMiddleware,
     groupRoleMiddleware,
     asyncHandler(spaceController.updateSpace)

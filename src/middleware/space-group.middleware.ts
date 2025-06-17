@@ -11,7 +11,7 @@ export const spaceGroupMiddleware = async (req: Request, res: Response, next: Ne
     try {
         // POST request - creating new space
         if (req.method === 'POST') {
-            const houseId = req.params.houseId ? parseInt(req.params.houseId) : req.body.house_id;
+            const houseId = req.body.houseId;
 
             if (!houseId) {
                 return next(throwError(ErrorCodes.BAD_REQUEST, 'House ID is required when creating a space'));

@@ -35,7 +35,10 @@ class HouseService {
                 space_name: 'Phòng Mặc Định',
                 icon_name: 'home',
                 icon_color: '#4A90E2',
-                space_description: 'Không gian mặc định của ngôi nhà'
+                space_description: 'Không gian mặc định của ngôi nhà',
+                created_at: new Date(),
+                updated_at: new Date(),
+                is_deleted: false,
             },
         });
 
