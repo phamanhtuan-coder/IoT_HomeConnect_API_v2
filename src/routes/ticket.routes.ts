@@ -51,27 +51,31 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  *         schema:
  *           type: object
  *           required:
- *             - title
- *             - description
  *             - ticket_type_id
- *             - device_id
  *           properties:
- *             title:
+ *             device_serial:
  *               type: string
- *               description: Tiêu đề của vé hỗ trợ
- *               example: Thiết bị không hoạt động
+ *               description: Serial number của thiết bị
+ *               example: "DEVICE001"
+ *             ticket_type_id:
+ *               type: number
+ *               description: ID của loại vé hỗ trợ
+ *               example: 1
  *             description:
  *               type: string
  *               description: Mô tả chi tiết vấn đề
- *               example: Thiết bị không phản hồi sau khi khởi động lại
- *             ticket_type_id:
+ *               example: "Thiết bị không phản hồi sau khi khởi động lại"
+ *             evidence:
+ *               type: object
+ *               description: Bằng chứng vấn đề
+ *             assigned_to:
  *               type: string
- *               description: ID của loại vé hỗ trợ
- *             device_id:
+ *               description: ID người được gán
+ *             permission_type:
  *               type: string
- *               description: ID của thiết bị gặp vấn đề
+ *               description: Loại quyền chia sẻ
  *     responses:
- *       200:
+ *       201:
  *         description: Tạo vé hỗ trợ thành công
  *       400:
  *         description: Dữ liệu đầu vào không hợp lệ
@@ -91,14 +95,52 @@ router.post(
 
 /**
  * @swagger
- * /api/tickets/{ticketId}:
+ * /api/tickets/{ticketId}/confirm:
  *   put:
  *     tags:
  *       - Ticket
- *     summary: Cập nhật ticket theo ID
+ *     summary: Nhân viên xác nhận xử lý vấn đề
  *     description: |
- *       Cập nhật thông tin của một vé hỗ trợ theo ID.
- *       Yêu cầu xác thực và quyền thích hợp.
+ *       Nhân viên xác nhận sẽ xử lý vấn đề.
+ *       Yêu cầu xác thực và quyền nhân viên.
+ *     security:
+ *       - Bearer: []
+ *     parameters:
+ *       - in: path
+ *         name: ticketId
+ *         required: true
+ *         type: string
+ *         description: ID của vé hỗ trợ cần xác nhận
+ *     responses:
+ *       200:
+ *         description: Xác nhận xử lý vấn đề thành công
+ *       401:
+ *         description: Không có quyền truy cập
+ *       403:
+ *         description: Không có quyền xác nhận vấn đề
+ *       404:
+ *         description: Không tìm thấy vé hỗ trợ
+ *       500:
+ *         description: Lỗi server
+ */
+router.put(
+  '/:ticketId/confirm',
+  authMiddleware,
+  roleMiddleware,
+  validateMiddleware(ticketIdSchema),
+  asyncHandler(ticketController.confirmTicket)
+);
+
+/**
+ * @swagger
+ * /api/tickets/{ticketId}/status:
+ *   put:
+ *     tags:
+ *       - Ticket
+ *     summary: Nhân viên cập nhật trạng thái vấn đề
+ *     description: |
+ *       Nhân viên cập nhật trạng thái và giải pháp cho vấn đề.
+ *       Yêu cầu xác thực và quyền nhân viên.
  *     security:
  *       - Bearer: []
  *     parameters:
@@ -113,33 +155,77 @@ router.post(
  *         schema:
  *           type: object
  *           required:
- *             - title
- *             - description
+ *             - status
+ *             - resolve_solution
  *           properties:
- *             title:
+ *             status:
  *               type: string
- *               description: Tiêu đề của vé hỗ trợ
- *             description:
+ *               enum: [resolved, rejected]
+ *               description: Trạng thái mới của vấn đề
+ *             resolve_solution:
  *               type: string
- *               description: Mô tả chi tiết vấn đề
+ *               description: Giải pháp xử lý vấn đề
+ *             evidence:
+ *               type: object
+ *               description: Bằng chứng xử lý
  *     responses:
  *       200:
- *         description: Cập nhật vé hỗ trợ thành công
+ *         description: Cập nhật trạng thái vấn đề thành công
  *       400:
  *         description: Dữ liệu đầu vào không hợp lệ
  *       401:
  *         description: Không có quyền truy cập
+ *       403:
+ *         description: Không có quyền cập nhật vấn đề
  *       404:
  *         description: Không tìm thấy vé hỗ trợ
  *       500:
  *         description: Lỗi server
  */
 router.put(
-  '/:ticketId',
+  '/:ticketId/status',
   authMiddleware,
+  roleMiddleware,
   validateMiddleware(ticketIdSchema),
   validateMiddleware(updateTicketSchema),
-  // asyncHandler(ticketController.updateTicket)
+  asyncHandler(ticketController.updateTicketStatus)
+);
+
+/**
+ * @swagger
+ * /api/tickets/{ticketId}/cancel:
+ *   put:
+ *     tags:
+ *       - Ticket
+ *     summary: Khách hàng hủy vấn đề
+ *     description: |
+ *       Khách hàng hủy vấn đề của mình.
+ *       Yêu cầu xác thực.
+ *     security:
+ *       - Bearer: []
+ *     parameters:
+ *       - in: path
+ *         name: ticketId
+ *         required: true
+ *         type: string
+ *         description: ID của vé hỗ trợ cần hủy
+ *     responses:
+ *       200:
+ *         description: Hủy vấn đề thành công
+ *       401:
+ *         description: Không có quyền truy cập
+ *       403:
+ *         description: Không có quyền hủy vấn đề này
+ *       404:
+ *         description: Không tìm thấy vé hỗ trợ
+ *       500:
+ *         description: Lỗi server
+ */
+router.put(
+  '/:ticketId/cancel',
+  authMiddleware,
+  validateMiddleware(ticketIdSchema),
+  asyncHandler(ticketController.customerCancelTicket)
 );
 
 /**
@@ -161,7 +247,7 @@ router.put(
  *         type: string
  *         description: ID của vé hỗ trợ cần xóa
  *     responses:
- *       200:
+ *       204:
  *         description: Xóa vé hỗ trợ thành công
  *       401:
  *         description: Không có quyền truy cập
@@ -207,7 +293,7 @@ router.delete(
  *         description: Lỗi server
  */
 router.get(
-  '/:ticketId',
+  '/detail/:ticketId',
   authMiddleware,
   validateMiddleware(ticketIdSchema),
   asyncHandler(ticketController.getTicketById)
@@ -253,10 +339,55 @@ router.get(
  *       - Bearer: []
  *     parameters:
  *       - in: query
- *         name: filter
+ *         name: user_id
  *         required: false
  *         type: string
- *         description: Bộ lọc cho danh sách vé hỗ trợ
+ *         description: ID người dùng
+ *       - in: query
+ *         name: ticket_type_id
+ *         required: false
+ *         type: number
+ *         description: ID loại vé hỗ trợ
+ *       - in: query
+ *         name: status
+ *         required: false
+ *         type: string
+ *         enum: [pending, in_progress, approved, rejected, resolved]
+ *         description: Trạng thái vé hỗ trợ
+ *       - in: query
+ *         name: created_at_start
+ *         required: false
+ *         type: string
+ *         format: date-time
+ *         description: Thời gian bắt đầu tạo
+ *       - in: query
+ *         name: created_at_end
+ *         required: false
+ *         type: string
+ *         format: date-time
+ *         description: Thời gian kết thúc tạo
+ *       - in: query
+ *         name: resolved_at_start
+ *         required: false
+ *         type: string
+ *         format: date-time
+ *         description: Thời gian bắt đầu giải quyết
+ *       - in: query
+ *         name: resolved_at_end
+ *         required: false
+ *         type: string
+ *         format: date-time
+ *         description: Thời gian kết thúc giải quyết
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         type: number
+ *         description: Trang hiện tại
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         type: number
+ *         description: Số lượng item trên mỗi trang
  *     responses:
  *       200:
  *         description: Lấy danh sách vé hỗ trợ thành công
@@ -267,8 +398,9 @@ router.get(
  */
 router.get(
   '/',
-  authMiddleware,
-  roleMiddleware,
+  // authMiddleware,
+  // roleMiddleware,
+  validateMiddleware(ticketFilterSchema),
   asyncHandler(ticketController.getAllTickets)
 );
 
