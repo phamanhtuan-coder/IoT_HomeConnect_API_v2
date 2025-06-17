@@ -106,15 +106,15 @@ class TicketController {
    * @param next Middleware tiếp theo
    */
   getTicketById = async (req: Request, res: Response, next: NextFunction) => {
-    // const accountId = req.user?.userId || req.user?.employeeId;
-    // if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+    const accountId = req.user?.userId || req.user?.employeeId;
+    if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
     const { ticketId } = req.params;
     try {
       const ticket = await this.ticketService.getTicketById(ticketId);
-      // if (ticket.user_id !== accountId && !req.user?.employeeId) {
-      //   throwError(ErrorCodes.FORBIDDEN, 'No permission to access this ticket');
-      // }
+      if (ticket.user_id !== accountId && !req.user?.employeeId) {
+        throwError(ErrorCodes.FORBIDDEN, 'No permission to access this ticket');
+      }
       res.json(ticket);
     } catch (error) {
       next(error);
