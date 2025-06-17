@@ -26,6 +26,8 @@ interface SelectDataParams {
     order?: string | null;
     queryJoin?: string | null;
     configData?: ((data: any[]) => any[]) | null;
+    idSpecial?: string,
+    isDeleteBoolean?: boolean
 }
 
 interface SelectDataResult {
@@ -33,9 +35,9 @@ interface SelectDataResult {
     total_page: number;
 }
 
-function buildWhereQuery(filter: Filter | Filter[] | null, table: string): string {
+function buildWhereQuery(filter: Filter | Filter[] | null, table: string, isDeleteBoolean: boolean): string {
     if (!filter) {
-        return `WHERE ${table}.deleted_at IS NULL`;
+        return `WHERE ${table}.${isDeleteBoolean ? "is_deleted" : "deleted_at"} IS NULL`;
     }
 
     function parseFilter(obj: Filter): string {
@@ -94,13 +96,13 @@ function buildWhereQuery(filter: Filter | Filter[] | null, table: string): strin
     if (Array.isArray(filter)) {
         const conditions = filter.map(parseFilter).filter(Boolean);
         whereClause = conditions.length > 0
-            ? `WHERE ${conditions.join(' AND ')} AND ${table}.deleted_at IS NULL`
-            : `WHERE ${table}.deleted_at IS NULL`;
+            ? `WHERE ${conditions.join(' AND ')} AND ${table}.${isDeleteBoolean ? "is_deleted" : "deleted_at"} IS NULL`
+            : `WHERE ${table}.${isDeleteBoolean ? "is_deleted" : "deleted_at"} IS NULL`;
     } else {
         const condition = parseFilter(filter);
         whereClause = condition
-            ? `WHERE ${condition} AND ${table}.deleted_at IS NULL`
-            : `WHERE ${table}.deleted_at IS NULL`;
+            ? `WHERE ${condition} AND ${table}.${isDeleteBoolean ? "is_deleted" : "deleted_at"} IS NULL`
+            : `WHERE ${table}.${isDeleteBoolean ? "is_deleted" : "deleted_at"} IS NULL`;
     }
 
     return whereClause;
@@ -118,9 +120,11 @@ export async function executeSelectData(params: SelectDataParams): Promise<Selec
         order = null,
         queryJoin = null,
         configData = null,
+        idSpecial = null,
+        isDeleteBoolean = false
     } = params;
 
-    const buildWhere = buildWhereQuery(filter, table);
+    const buildWhere = buildWhereQuery(filter, table, isDeleteBoolean);
 
     const parsedLimit = limit ? parseInt(String(limit)) : null;
     const parsedPage = page ? parseInt(String(page)) : null;
@@ -132,8 +136,10 @@ export async function executeSelectData(params: SelectDataParams): Promise<Selec
     const buildLimit = parsedLimit ? `LIMIT ${parsedLimit}` : '';
     const buildOffset = skip ? `OFFSET ${skip}` : '';
 
-    const idColumn = table === 'categories' ? 'category_id' : 'id';
-
+    let idColumn = table === 'categories' ? 'category_id' : 'id';
+    if (idSpecial) {
+        idColumn = idSpecial
+    }
     const queryGetIdTable = `
         SELECT DISTINCT ${idColumn}
         FROM (
@@ -155,8 +161,7 @@ export async function executeSelectData(params: SelectDataParams): Promise<Selec
     const whereCondition = resultIds.length
         ? `${table}.${idColumn} IN (${resultIds.map(id => typeof id === 'string' ? `'${id}'` : id).join(',')})`
         : '1=0';
-
-    const queryGetTime = `${table}.created_at, ${table}.updated_at, ${table}.deleted_at`;
+    const queryGetTime = `${table}.created_at, ${table}.updated_at, ${table}.${isDeleteBoolean ? "is_deleted" : "deleted_at"}`;
 
     const queryPrimary = `
         SELECT DISTINCT ${queryJoin ? `${table}.` : ''}${idColumn}, ${strGetColumn}, ${queryGetTime}
@@ -165,6 +170,7 @@ export async function executeSelectData(params: SelectDataParams): Promise<Selec
         WHERE ${whereCondition}
         ${buildSort}
     `;
+    console.log('queryPrimary', queryPrimary)
 
     let data = await QueryHelper.queryRaw(queryPrimary);
     if (configData && typeof configData === 'function') {

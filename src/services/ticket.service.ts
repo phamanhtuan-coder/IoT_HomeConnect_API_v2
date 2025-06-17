@@ -72,7 +72,7 @@ class TicketService {
 
 		let to_user: any = null;
 		// 4. Kiểm tra người nhận thiết bị
-		if(ticketType?.ticket_type_id === TICKET_TYPE.FRANCHISE) {			
+		if (ticketType?.ticket_type_id === TICKET_TYPE.FRANCHISE) {
 			if (!assigned_to) throwError(ErrorCodes.BAD_REQUEST, 'Không tìm thấy người nhận thiết bị được yêu cầu');
 
 			// 4.1. Kiểm tra yêu cầu nhượng quyền thiết bị
@@ -85,18 +85,18 @@ class TicketService {
 				},
 			});
 			// 4.1.1. Nếu có yêu cầu nhượng quyền của thiết bị thì không tạo mới
-			if(ticket_franchise) throwError(ErrorCodes.BAD_REQUEST, 'Đã có yêu cầu nhượng quyền thiết bị cho thiết bị này');
-			
+			if (ticket_franchise) throwError(ErrorCodes.BAD_REQUEST, 'Đã có yêu cầu nhượng quyền thiết bị cho thiết bị này');
+
 			// 4.2. Kiểm tra người nhận thiết bị
 			const to_user = await this.prisma.account.findFirst({
 				where: { account_id: assigned_to, deleted_at: null },
 			});
 			// 4.1.2. Kiểm tra người nhận thiết bị
-			if(!to_user) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy người nhận thiết bị được yêu cầu');
+			if (!to_user) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy người nhận thiết bị được yêu cầu');
 
 			// 4.1.3. Kiểm tra người nhận thiết bị không phải là người tạo vấn đề
-			if(to_user?.account_id === user_id) throwError(ErrorCodes.BAD_REQUEST, 'Bạn không thể nhượng quyền thiết bị cho chính mình');
-			
+			if (to_user?.account_id === user_id) throwError(ErrorCodes.BAD_REQUEST, 'Bạn không thể nhượng quyền thiết bị cho chính mình');
+
 			// Bật cờ - Đây là ticket nhượng quyền thiết bị
 			is_franchise = true;
 		} else if (ticketType?.ticket_type_id === TICKET_TYPE.SHARE_PERMISSION) {
@@ -104,28 +104,28 @@ class TicketService {
 
 			// 4.2. Kiểm tra mô tả vấn đề
 			if (description !== PermissionType.CONTROL && description !== PermissionType.VIEW) throwError(ErrorCodes.BAD_REQUEST, 'Quyền chia sẻ không hợp lệ')
-			
+
 			// 4.3. Kiểm tra người nhận thiết bị
 			to_user = await this.prisma.account.findFirst({
 				where: { account_id: assigned_to, deleted_at: null },
 			});
 
-			if(!to_user) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy người nhận thiết bị được yêu cầu');
-			
-			if(to_user?.is_locked) throwError(ErrorCodes.BAD_REQUEST, 'Tài khoản đã bị khóa');
-			
-			if(to_user?.employee_id) {
+			if (!to_user) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy người nhận thiết bị được yêu cầu');
+
+			if (to_user?.is_locked) throwError(ErrorCodes.BAD_REQUEST, 'Tài khoản đã bị khóa');
+
+			if (to_user?.employee_id) {
 				// 4.4. Kiểm tra người nhận thiết bị là nhân viên
 				const employee = await this.prisma.employee.findFirst({
 					where: { employee_id: to_user!.employee_id, deleted_at: null },
 				});
-				if(!employee) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy nhân viên');
-			}else if(to_user?.customer_id) {
+				if (!employee) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy nhân viên');
+			} else if (to_user?.customer_id) {
 				// 4.4. Kiểm tra người nhận thiết bị là khách hàng
 				const customer = await this.prisma.customer.findFirst({
 					where: { customer_id: to_user!.customer_id, deleted_at: null },
 				});
-				if(!customer) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy khách hàng');
+				if (!customer) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy khách hàng');
 			}
 		}
 
@@ -195,9 +195,9 @@ class TicketService {
 			where: { account_id: account_id, deleted_at: null },
 		});
 		if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
-		
 
-		if(account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền xác nhận vấn đề');
+
+		if (account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền xác nhận vấn đề');
 
 		const ticket = await this.prisma.tickets.findFirst({
 			where: { ticket_id: ticketId, is_deleted: false },
@@ -215,7 +215,7 @@ class TicketService {
 			STATUS_CODE.OK,
 			updatedTicket
 		);
-	}	
+	}
 
 	// Nhân viên cập nhật trạng thái vấn đề
 	async updateTicketStatus(ticketId: string, account_id: string, data: TicketStatusUpdate): Promise<any> {
@@ -223,8 +223,8 @@ class TicketService {
 			where: { account_id: account_id, deleted_at: null },
 		});
 		if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
-		
-		if(account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền cập nhật trạng thái vấn đề');
+
+		if (account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền cập nhật trạng thái vấn đề');
 
 		const ticket = await this.prisma.tickets.findFirst({
 			where: { ticket_id: ticketId, is_deleted: false },
@@ -246,7 +246,7 @@ class TicketService {
 			where: { ticket_id: ticketId },
 			data: {
 				status: data.status,
-				resolve_solution: data.resolve_solution,	
+				resolve_solution: data.resolve_solution,
 				resolved_at: new Date(),
 				updated_at: new Date(),
 			},
@@ -254,7 +254,7 @@ class TicketService {
 
 		// 3. Xử lý vấn đề
 		// 3.1. Xử lý vấn đề người dùng báo mất thiết bị
-		if(ticket?.ticket_type_id === TICKET_TYPE.LOST_DEVICE && ticket?.device_serial) {
+		if (ticket?.ticket_type_id === TICKET_TYPE.LOST_DEVICE && ticket?.device_serial) {
 			await this.prisma.devices.update({
 				where: { serial_number: ticket?.device_serial },
 				data: {
@@ -266,7 +266,7 @@ class TicketService {
 		}
 
 		// 3.2. Xử lý vấn đề mất tài khoản
-		if(ticket?.ticket_type_id === TICKET_TYPE.LOST_ACCOUNT) {
+		if (ticket?.ticket_type_id === TICKET_TYPE.LOST_ACCOUNT) {
 			await this.prisma.account.update({
 				where: { account_id: ticket?.user_id! },
 				data: {
@@ -316,12 +316,11 @@ class TicketService {
 		}
 
 		const get_attr = `
-		tickets.ticket_id, tickets.device_serial, tickets.description, tickets.evidence,
-		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, tickets.is_deleted,
-		ticket_types.name as ticket_type_name, 
+		tickets.device_serial, tickets.description, tickets.evidence,
+		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, ticket_types.type_name as ticket_type_name, 
 		ticket_types.priority,
 		customer.surname + ' ' + customer.lastname as customer_name,
-		employee.surname + ' ' + employee.lastname as employee_name,
+		employee.surname + ' ' + employee.lastname as employee_name
 		`
 
 		const get_table = "tickets"
@@ -338,8 +337,10 @@ class TicketService {
 			queryJoin: query_join,
 			strGetColumn: get_attr,
 			filter: filters,
-			sort: 'created_at',
+			sort: 'tickets.created_at',
 			order: 'desc',
+			idSpecial: 'ticket_id',
+			isDeleteBoolean: true
 		});
 
 		return get_error_response(
@@ -365,12 +366,12 @@ class TicketService {
 
 	async getAllTickets(filters: any, page: number = 1, limit: number = 10, sort: string = 'created_at', order: string = 'desc'): Promise<any> {
 		const get_attr = `
-		tickets.ticket_id, tickets.device_serial, tickets.description,
-		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, tickets.is_deleted,
-		ticket_types.name as ticket_type_name,
+		tickets.device_serial, tickets.description,
+		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution,
+		ticket_types.type_name as ticket_type_name,
 		ticket_types.priority,
 		customer.surname + ' ' + customer.lastname as customer_name,
-		employee.surname + ' ' + employee.lastname as employee_name,
+		employee.surname + ' ' + employee.lastname as employee_name
 		`
 
 		const get_table = "tickets"
@@ -389,8 +390,10 @@ class TicketService {
 			filter: filters,
 			page: page,
 			limit: limit,
-			sort: 'created_at',
+			sort: 'tickets.created_at',
 			order: 'desc',
+			idSpecial: 'ticket_id',
+			isDeleteBoolean: true
 		});
 
 		return get_error_response(
@@ -408,8 +411,8 @@ class TicketService {
 			where: { ticket_id: ticketId, is_deleted: false },
 		});
 		if (!ticket) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy vấn đề');
-		
-		if(ticket!.user_id !== account_id) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền hủy vấn đề này');
+
+		if (ticket!.user_id !== account_id) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền hủy vấn đề này');
 
 		await this.prisma.tickets.update({
 			where: { ticket_id: ticketId },

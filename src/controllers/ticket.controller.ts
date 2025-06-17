@@ -20,7 +20,7 @@ class TicketController {
     const accountId = req.user?.userId || req.user?.employeeId;
     if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
-    const { device_serial, ticket_type_id, description, evidence } = req.body;
+    const { device_serial, ticket_type_id, description, evidence, assigned_to, permission_type } = req.body;
     try {
       const ticket = await this.ticketService.createTicket({
         user_id: accountId,
@@ -28,6 +28,8 @@ class TicketController {
         ticket_type_id,
         description,
         evidence,
+        assigned_to,
+        permission_type,
       });
       res.status(201).json(ticket);
     } catch (error) {
@@ -36,30 +38,47 @@ class TicketController {
   };
 
   /**
-   * Cập nhật thông tin phiếu hỗ trợ
+   * Nhân viên xác nhận xử lý vấn đề
+   * @param req Request Express với ID phiếu trong params
+   * @param res Response Express
+   * @param next Middleware tiếp theo
+   */
+  confirmTicket = async (req: Request, res: Response, next: NextFunction) => {
+    const employeeId = req.user?.employeeId;
+    if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+
+    const { ticketId } = req.params;
+    try {
+      const ticket = await this.ticketService.confirmTicket(ticketId, employeeId);
+      res.json(ticket);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Nhân viên cập nhật trạng thái vấn đề
    * @param req Request Express với ID phiếu trong params và thông tin cập nhật trong body
    * @param res Response Express
    * @param next Middleware tiếp theo
    */
-  // updateTicket = async (req: Request, res: Response, next: NextFunction) => {
-  //   const accountId = req.user?.userId || req.user?.employeeId;
-  //   if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+  updateTicketStatus = async (req: Request, res: Response, next: NextFunction) => {
+    const employeeId = req.user?.employeeId;
+    if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
-  //   const { ticketId } = req.params;
-  //   const { description, evidence, status, assigned_to, resolve_solution } = req.body;
-  //   try {
-  //     const ticket = await this.ticketService.updateTicketStatus(ticketId, accountId, {
-  //       description,
-  //       evidence,
-  //       status,
-  //       assigned_to,
-  //       resolve_solution,
-  //     });
-  //     res.json(ticket);
-  //   } catch (error) {
-  //     next(error);
-  //   }
-  // };
+    const { ticketId } = req.params;
+    const { status, resolve_solution, evidence } = req.body;
+    try {
+      const ticket = await this.ticketService.updateTicketStatus(ticketId, employeeId, {
+        status,
+        resolve_solution,
+        evidence,
+      });
+      res.json(ticket);
+    } catch (error) {
+      next(error);
+    }
+  };
 
   /**
    * Xóa phiếu hỗ trợ
@@ -127,23 +146,37 @@ class TicketController {
    * @param next Middleware tiếp theo
    */
   getAllTickets = async (req: Request, res: Response, next: NextFunction) => {
-    const employeeId = req.user?.employeeId;
-    if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
+    // const employeeId = req.user?.employeeId;
+    // if (!employeeId) throwError(ErrorCodes.UNAUTHORIZED, 'Employee not authenticated');
 
-    const { user_id, ticket_type_id, status, created_at_start, created_at_end, resolved_at_start, resolved_at_end, page, limit } = req.query;
+    const { filters, page, limit } = req.query;
     try {
-      const tickets = await this.ticketService.getAllTickets({
-        user_id: user_id as string,
-        ticket_type_id: ticket_type_id ? parseInt(ticket_type_id as string) : undefined,
-        status: status as string,
-        created_at_start: created_at_start ? new Date(created_at_start as string) : undefined,
-        created_at_end: created_at_end ? new Date(created_at_end as string) : undefined,
-        resolved_at_start: resolved_at_start ? new Date(resolved_at_start as string) : undefined,
-        resolved_at_end: resolved_at_end ? new Date(resolved_at_end as string) : undefined,
-        page: page ? parseInt(page as string) : 1,
-        limit: limit ? parseInt(limit as string) : 10,
-      });
+      console.log('============')
+      const tickets = await this.ticketService.getAllTickets(
+        filters,
+        page ? parseInt(page as string) : 1,
+        limit ? parseInt(limit as string) : 10
+      );
       res.json(tickets);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Khách hàng hủy vấn đề
+   * @param req Request Express với ID phiếu trong params
+   * @param res Response Express
+   * @param next Middleware tiếp theo
+   */
+  customerCancelTicket = async (req: Request, res: Response, next: NextFunction) => {
+    const accountId = req.user?.userId;
+    if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+    const { ticketId } = req.params;
+    try {
+      const result = await this.ticketService.customerCancelTicket(ticketId, accountId);
+      res.json(result);
     } catch (error) {
       next(error);
     }
