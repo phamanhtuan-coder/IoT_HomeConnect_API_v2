@@ -319,17 +319,18 @@ class TicketService {
 		tickets.device_serial, tickets.description, tickets.evidence,
 		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, ticket_types.type_name as ticket_type_name, 
 		ticket_types.priority,
-		customer.surname + ' ' + customer.lastname as customer_name,
-		employee.surname + ' ' + employee.lastname as employee_name
+		COALESCE(CONCAT_WS(' ', customer.surname, customer.lastname), 'N/A') as user_name,
+		COALESCE(CONCAT_WS(' ', employee.surname, employee.lastname), 'N/A') as assigned_name
 		`
 
 		const get_table = "tickets"
 
 		const query_join = `
 			LEFT JOIN ticket_types ON tickets.ticket_type_id = ticket_types.ticket_type_id
-			LEFT JOIN account ON tickets.user_id = account.account_id
-			LEFT JOIN customer ON account.customer_id = customer.customer_id
-			LEFT JOIN employee ON tickets.assigned_to = employee.employee_id
+		  LEFT JOIN account ON tickets.user_id = account.account_id
+		  LEFT JOIN customer ON account.customer_id = customer.customer_id
+		  LEFT JOIN account assigned_account ON tickets.assigned_to = assigned_account.account_id
+		  LEFT JOIN employee ON assigned_account.employee_id = employee.employee_id
 		`
 
 		const result = await executeSelectData({
@@ -366,21 +367,23 @@ class TicketService {
 
 	async getAllTickets(filters: any, page: number = 1, limit: number = 10, sort: string = 'created_at', order: string = 'desc'): Promise<any> {
 		const get_attr = `
-		tickets.device_serial, tickets.description,
-		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution,
+		tickets.ticket_id, tickets.device_serial, tickets.description,
+		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, tickets.is_deleted,
 		ticket_types.type_name as ticket_type_name,
 		ticket_types.priority,
-		customer.surname + ' ' + customer.lastname as customer_name,
-		employee.surname + ' ' + employee.lastname as employee_name
+		COALESCE(CONCAT_WS(' ', customer.surname, customer.lastname), 'N/A') as user_name,
+		COALESCE(CONCAT_WS(' ', employee.surname, employee.lastname), 'N/A') as assigned_name,
+		tickets.created_at, tickets.updated_at, tickets.is_deleted
 		`
 
 		const get_table = "tickets"
 
 		const query_join = `
-			LEFT JOIN ticket_types ON tickets.ticket_type_id = ticket_types.ticket_type_id
-			LEFT JOIN account ON tickets.user_id = account.account_id
-			LEFT JOIN customer ON account.customer_id = customer.customer_id
-			LEFT JOIN employee ON tickets.assigned_to = employee.employee_id
+		  LEFT JOIN ticket_types ON tickets.ticket_type_id = ticket_types.ticket_type_id
+		  LEFT JOIN account ON tickets.user_id = account.account_id
+		  LEFT JOIN customer ON account.customer_id = customer.customer_id
+		  LEFT JOIN account assigned_account ON tickets.assigned_to = assigned_account.account_id
+		  LEFT JOIN employee ON assigned_account.employee_id = employee.employee_id
 		`
 
 		const result = await executeSelectData({

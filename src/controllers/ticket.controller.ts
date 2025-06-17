@@ -157,8 +157,9 @@ class TicketController {
         page ? parseInt(page as string) : 1,
         limit ? parseInt(limit as string) : 10
       );
-      res.json(tickets);
+      res.status(200).json(tickets);
     } catch (error) {
+      console.log(error)
       next(error);
     }
   };

@@ -398,7 +398,7 @@ router.get(
  */
 router.get(
   '/',
-  authMiddleware,
+  // authMiddleware,
   // roleMiddleware,
   validateMiddleware(ticketFilterSchema),
   asyncHandler(ticketController.getAllTickets)
