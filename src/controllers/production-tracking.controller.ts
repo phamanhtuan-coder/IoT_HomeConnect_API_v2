@@ -42,7 +42,7 @@ export class ProductionTrackingController {
 
     ApproveTestedSerial = async (req: Request, res: Response, next: NextFunction) => {
         const result = await this.productionTrackingService.ApproveTestedSerial(req.body as ProductionTrackingApproveTestedInput, req.body.employeeId);
-
+        console.log('approve tested serial', result);
         res.status(200).json(result);
     }
 

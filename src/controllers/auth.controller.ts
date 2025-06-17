@@ -452,12 +452,37 @@ class AuthController {
     };
 
     getMeEmployee = async (req: Request, res: Response, next: NextFunction) => {
-        const userId = req.user?.userId;
+        const userId = req.user?.employeeId || req.user?.userId;
         if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         const result = await this.authService.getMeEmployee(userId);
         res.json(result);
     };  
+
+    updateProfileEmployee = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.employeeId || req.user?.userId;
+            if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+            const result = await this.authService.updateProfileEmployee(userId, req.body);
+            res.json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    changePasswordEmployee = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.employeeId || req.user?.userId;
+            if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+            const { currentPassword, newPassword, confirmPassword } = req.body;
+            const result = await this.authService.changePasswordEmployee(userId, currentPassword, newPassword, confirmPassword);
+            res.status(result.status_code).json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 
 export default AuthController;

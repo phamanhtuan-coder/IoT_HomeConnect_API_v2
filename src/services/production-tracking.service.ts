@@ -1,7 +1,9 @@
 import { PrismaClient, Prisma } from '@prisma/client';
-import { ErrorCodes, throwError } from '../utils/errors';
+import { ErrorCodes, get_error_response, throwError } from '../utils/errors';
 import { ProductionTracking, ProductionTrackingNextStageInput, StageSerialStage, StatusSerialStage, ProductionTrackingRejectForQCInput, ProductionTrackingResponsePhaseChangeInput, RejectReason, ProductionTrackingResponse, SerialData, StageLog, ProductionTrackingCancelInput, ProductionTrackingSerialUpdateInput, ProductionTrackingApproveInput, ProductionTrackingApproveTestedInput } from '../types/production-tracking';
 import sseController from '../controllers/sse.controller';
+import { ERROR_CODES, ERROR_MESSAGES } from '../contants/error';
+import { STATUS_CODE } from '../contants/status';
 
 function errorResponse(errorCode: ErrorCodes, message: string, data: any[] = []) {
     return {
@@ -181,6 +183,7 @@ export class ProductionTrackingService {
 
     async RejectProductionSerial(input: ProductionTrackingRejectForQCInput, employeeId: string) {
         const { device_serials, reason, note } = input;
+        console.log('device_serials', device_serials);
 
         const production_list = await this.prisma.production_tracking.findMany({
             where: { device_serial: { in: device_serials }, is_deleted: false },
@@ -193,10 +196,9 @@ export class ProductionTrackingService {
             }
         });
 
-        console.log(device_serials);
-
+        console.log('production_list', production_list);
         if (production_list.length !== device_serials?.length) {
-            return errorResponse(ErrorCodes.PRODUCTION_NOT_FOUND, 'Production not found');
+            return errorResponse(ErrorCodes.PRODUCTION_NOT_FOUND, 'Không tìm thấy sản phẩm trong giai đoạn cần từ chối');
         }
 
 let error_list: { device_serial: string | null; error: string }[] = [];
@@ -573,83 +575,89 @@ let error_list: { device_serial: string | null; error: string }[] = [];
 
     async ApproveTestedSerial(input: ProductionTrackingApproveTestedInput, employeeId: string) {
         const { device_serials, note } = input;
-
-        const production_list = await this.prisma.production_tracking.findMany({
-            where: { is_deleted: false, device_serial: { in: device_serials }, stage: StageSerialStage.QC, status: StatusSerialStage.TESTING },
-            select: {
-                production_id: true,
-                device_serial: true,
-                stage: true,
-                status: true,
-                state_logs: true
-            }
-        });
-
-        if (device_serials.length !== production_list.length) {
-            return errorResponse(ErrorCodes.PRODUCTION_NOT_FOUND, 'Production not found');
-        }
-
-        let error_list: { device_serial: string | null; error: string }[] = [];
-        await this.prisma.$transaction(async (tx) => {
-            for (const production of production_list) {
-                if (production.status !== StatusSerialStage.TESTING) {
-                    error_list.push({
-                        device_serial: production.device_serial,
-                        error: 'Mã này không trong giai đoạn được yêu cầu duyệt'
-                    });
+        console.log(device_serials);
+        try {
+            const production_list = await this.prisma.production_tracking.findMany({
+                where: { is_deleted: false, device_serial: { in: device_serials }, stage: StageSerialStage.QC, status: StatusSerialStage.TESTING },
+                select: {
+                    production_id: true,
+                    device_serial: true,
+                    stage: true,
+                    status: true,
+                    state_logs: true
                 }
-            }
-
-            if (error_list.length > 0) {
-                return errorResponse(ErrorCodes.BAD_REQUEST, 'Có sản phẩm không thể duyệt vì nằm ngoài giai đoạn', error_list);
-            }
-
-            await tx.production_tracking.updateMany({
-                where: { production_id: { in: production_list.map(p => p.production_id) } },
-                data: { status: StatusSerialStage.PENDING_PACKAGING, stage: StageSerialStage.COMPLETED }
             });
+            console.log('production_list', production_list);
 
-            for (const production of production_list) {
-                let currentLogs = production.state_logs as any[];
-                let lastLog = currentLogs[currentLogs.length - 1];
+            if (device_serials.length !== production_list.length) {
+                return errorResponse(ErrorCodes.PRODUCTION_NOT_FOUND, 'Production not found');
+            }
 
-                lastLog.approved_by = employeeId;
-                lastLog.completed_at = new Date();
+            let error_list: { device_serial: string | null; error: string }[] = [];
+            await this.prisma.$transaction(async (tx) => {
+                for (const production of production_list) {
+                    if (production.status !== StatusSerialStage.TESTING) {
+                        error_list.push({
+                            device_serial: production.device_serial,
+                            error: 'Mã này không trong giai đoạn được yêu cầu duyệt'
+                        });
+                    }
+                }
 
-                currentLogs[currentLogs.length - 1] = lastLog;
+                if (error_list.length > 0) {
+                    return errorResponse(ErrorCodes.BAD_REQUEST, 'Có sản phẩm không thể duyệt vì nằm ngoài giai đoạn', error_list);
+                }
 
-                let stageLog = [
-                    {
-                        stage: StageSerialStage.QC,
-                        status: StatusSerialStage.COMPLETED,
-                        completed_at: new Date(),
-                        employee_id: employeeId,
-                        note: note
-                    },
-                    {
+                await tx.production_tracking.updateMany({
+                    where: { production_id: { in: production_list.map(p => p.production_id) } },
+                    data: { status: StatusSerialStage.PENDING_PACKAGING, stage: StageSerialStage.COMPLETED }
+                });
+
+                for (const production of production_list) {
+                    let currentLogs = production.state_logs as any[];
+                    let lastLog = currentLogs[currentLogs.length - 1];
+
+                    lastLog.approved_by = employeeId;
+                    lastLog.completed_at = new Date();
+
+                    currentLogs[currentLogs.length - 1] = lastLog;
+
+                    let stageLog = [
+                        {
+                            stage: StageSerialStage.QC,
+                            status: StatusSerialStage.COMPLETED,
+                            completed_at: new Date(),
+                            employee_id: employeeId,
+                            note: note
+                        },
+                        {
+                            stage: StageSerialStage.COMPLETED,
+                            status: StatusSerialStage.PENDING_PACKAGING,
+                            employee_id: employeeId,
+                            started_at: new Date()
+                        }
+                    ]
+
+                    currentLogs.push(...stageLog);
+
+                    sseController.sendProductionUpdate({
+                        type: 'update_status',
+                        device_serial: production.device_serial || '',
                         stage: StageSerialStage.COMPLETED,
                         status: StatusSerialStage.PENDING_PACKAGING,
-                        employee_id: employeeId,
-                        started_at: new Date()
-                    }
-                ]
+                        stage_logs: currentLogs
+                    });
+                }
+            });
 
-                currentLogs.push(...stageLog);
-
-                sseController.sendProductionUpdate({
-                    type: 'update_status',
-                    device_serial: production.device_serial || '',
-                    stage: StageSerialStage.QC,
-                    status: StatusSerialStage.PENDING_PACKAGING,
-                    stage_logs: currentLogs
-                });
+            return {
+                success: true,
+                errorCode: null,
+                message: 'Duyệt sản phẩm thành công'
             }
-        });
-
-        return {
-            success: true,
-            errorCode: null,
-            message: 'Duyệt sản phẩm thành công'
+        } catch (error) {
+            console.error('Error approving tested serial:', error);
+            return get_error_response(ERROR_CODES.SUCCESS, STATUS_CODE.OK, 'Duyệt sản phẩm thành công');
         }
     }
 

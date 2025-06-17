@@ -644,4 +644,8 @@ router.get('/employee/get-me', authMiddleware, asyncHandler(authController.getMe
 
 router.get('/getMe', authMiddleware, asyncHandler(authController.getMe));
 
+router.patch('/employee/update-profile', authMiddleware, asyncHandler(authController.updateProfileEmployee));
+
+router.patch('/employee/change-password', authMiddleware, asyncHandler(authController.changePasswordEmployee));
+
 export default router;

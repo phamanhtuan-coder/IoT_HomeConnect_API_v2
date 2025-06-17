@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import * as jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcrypt';
 import { appConfig } from '../config/app';
-import { ErrorCodes, throwError } from '../utils/errors'
+import { ErrorCodes, get_error_response, throwError } from '../utils/errors'
 import {generateAccountId, generateCustomerId, generateEmployeeId} from '../utils/helpers'
 import type {
     EmployeeJwtPayload,
@@ -16,6 +16,8 @@ import type {
 import { UserDeviceService } from './user-device.service';
 import { SyncTrackingService } from './sync-tracking.service';
 import redisClient, { blacklistToken, isTokenBlacklisted } from '../utils/redis';
+import { ERROR_CODES } from '../contants/error';
+import { STATUS_CODE } from '../contants/status';
 import NotificationService from "./notification.service";
 
 class AuthService {
@@ -688,6 +690,176 @@ class AuthService {
             }
         } catch (error) {
             console.error(error);
+        }
+    }
+
+    async updateProfileEmployee(userId: string, data: {
+        surname?: string;
+        lastname?: string;
+        phone?: string;
+        email?: string;
+        birthdate?: string;
+        gender?: boolean;
+        image?: string;
+    }): Promise<any> {
+
+        const {surname, lastname, image, birthdate, gender, email, phone} = data;
+
+        try {
+            // Kiểm tra email đã tồn tại (trừ chính nó)
+            const account = await this.prisma.account.findFirst({
+                where: {
+                    account_id: userId,
+                    deleted_at: null
+                }
+            })
+
+            if (!account) {
+                return get_error_response(
+                    ERROR_CODES.EMPLOYEE_NOT_FOUND,
+                    STATUS_CODE.BAD_REQUEST
+                )
+            }
+
+            const emailExists = await this.prisma.employee.findFirst({
+                where: {
+                    employee_id: {
+                        not: account.employee_id!
+                    },
+                    deleted_at: null,
+                    email: email,
+                }
+            })
+
+            if (emailExists) {
+                return get_error_response(
+                    ERROR_CODES.EMPLOYEE_EMAIL_EXISTED,
+                    STATUS_CODE.BAD_REQUEST
+                )
+            }
+    
+            // Kiểm tra số điện thoại có tồn tại hay không
+            const phoneExists = await this.prisma.employee.findFirst({
+                where: {
+                    phone: phone,
+                    employee_id: {
+                        not: account.employee_id!
+                    }
+                }
+            });
+            if (phoneExists) {
+                return get_error_response(
+                    ERROR_CODES.EMPLOYEE_PHONE_EXISTED,
+                    STATUS_CODE.BAD_REQUEST,
+                );
+            }
+            const employee = await this.prisma.employee.findFirst({
+                where: { employee_id: account.employee_id! }
+            });
+            if (!employee) {
+                return get_error_response(
+                    ERROR_CODES.EMPLOYEE_NOT_FOUND,
+                    STATUS_CODE.BAD_REQUEST,
+                );
+            }
+            const updatedEmployee = await this.prisma.employee.update({
+                where: { employee_id: account.employee_id! },
+                data: {
+                    surname,
+                    lastname,
+                    image,
+                    birthdate: birthdate ? new Date(birthdate) : undefined,
+                    email, // email riêng
+                    gender, // 1 là nam, 0 là nữ
+                    phone,
+                    // status, // 1 là hoạt động, 0 là không hoạt động
+                }
+            });
+            return get_error_response(
+                ERROR_CODES.SUCCESS,
+                STATUS_CODE.OK,
+                updatedEmployee.employee_id
+            );
+        } catch (error) {
+            console.error('Error in updateEmployeeService:', error);
+            return get_error_response(
+                ERROR_CODES.BAD_REQUEST,
+                STATUS_CODE.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    async changePasswordEmployee(userId: string, currentPassword: string, newPassword: string, confirmPassword: string): Promise<any> {
+        try {
+            if (newPassword !== confirmPassword) {
+                return get_error_response(
+                    ERROR_CODES.BAD_REQUEST,
+                    STATUS_CODE.BAD_REQUEST,
+                    "Mật khẩu mới và mật khẩu xác nhận không khớp"
+                )
+            }
+
+            const account = await this.prisma.account.findFirst({
+                where: {
+                    account_id: userId,
+                    deleted_at: null
+                },
+                include: {
+                    employee: {
+                        where: {
+                            deleted_at: null
+                        }
+                    }
+                }
+            })
+
+            if (!account) {
+                return get_error_response(
+                    ERROR_CODES.EMPLOYEE_NOT_FOUND,
+                    STATUS_CODE.BAD_REQUEST,
+                    "Nhân viên không tồn tại"
+                )
+            }
+
+            if (!account.employee) {
+                return get_error_response(  
+                    ERROR_CODES.EMPLOYEE_NOT_FOUND,
+                    STATUS_CODE.BAD_REQUEST,
+                    "Nhân viên không tồn tại"
+                )
+            }
+
+            const isMatch = await bcrypt.compare(currentPassword, account.password!);
+
+            if (!isMatch) {
+                return get_error_response(
+                    ERROR_CODES.BAD_REQUEST,
+                    STATUS_CODE.BAD_REQUEST,
+                    "Mật khẩu hiện tại không chính xác!"
+                )
+            }   
+
+            const passwordHash = await bcrypt.hash(newPassword, 12);
+            await this.prisma.account.update({
+                where: { account_id: userId },
+                data: {
+                    password: passwordHash,
+                    updated_at: new Date()
+                }
+            });
+
+            return get_error_response(
+                ERROR_CODES.SUCCESS,
+                STATUS_CODE.OK,
+                "Mật khẩu đã được cập nhật thành công"
+            )
+        } catch (error) {
+            console.error('Error in changePasswordEmployee:', error);
+            return get_error_response(
+                ERROR_CODES.BAD_REQUEST,
+                STATUS_CODE.INTERNAL_SERVER_ERROR,
+                "Có lỗi xảy ra khi đổi mật khẩu"
+            );
         }
     }
 }
