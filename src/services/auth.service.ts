@@ -18,6 +18,7 @@ import { SyncTrackingService } from './sync-tracking.service';
 import redisClient, { blacklistToken, isTokenBlacklisted } from '../utils/redis';
 import { ERROR_CODES } from '../contants/error';
 import { STATUS_CODE } from '../contants/status';
+import NotificationService from "./notification.service";
 
 class AuthService {
     private prisma: PrismaClient;
@@ -248,6 +249,7 @@ class AuthService {
             accessToken: accessToken,
         }
     }
+
     async registerEmployee(data: EmployeeRegisterRequestBody, adminId: string): Promise<any> {
         const { surname, lastname, image, email, password, birthdate, gender, phone, status, role, username } = data; // Thêm username
 
@@ -337,29 +339,48 @@ class AuthService {
         }
     }
 
-    async updateDeviceToken(accountId: string, deviceToken: string): Promise<{ success: boolean; message: string }> {
-        const userDeviceService = new UserDeviceService();
 
+    async updateDeviceToken(accountId: string, deviceToken: string, userDeviceId?: string): Promise<{ success: boolean; message: string; deviceId?: string }> {
         const account = await this.prisma.account.findFirst({ where: { account_id: accountId } });
         if (!account) {
             return { success: false, message: 'Account not found' };
         }
 
-        // Tìm thiết bị gần đây nhất của account để cập nhật token
-        const latestDevice = await userDeviceService.getUserDevices(accountId);
-        if (!latestDevice || latestDevice.length === 0) {
-            return { success: false, message: 'No active devices found for this account' };
+        const notificationService = new NotificationService();
+
+        if (userDeviceId) {
+            // Update specific device
+            await notificationService.updateDeviceFCMToken(userDeviceId, deviceToken);
+            return {
+                success: true,
+                message: 'FCM token updated successfully for specific device',
+                deviceId: userDeviceId
+            };
+        } else {
+            // Find and update latest device
+            const latestDevice = await this.prisma.user_devices.findFirst({
+                where: {
+                    user_id: accountId,
+                    is_deleted: false
+                },
+                orderBy: { last_login: 'desc' }
+            });
+
+            if (latestDevice) {
+                await notificationService.updateDeviceFCMToken(latestDevice.user_device_id, deviceToken);
+                return {
+                    success: true,
+                    message: 'FCM token updated successfully for latest device',
+                    deviceId: latestDevice.user_device_id
+                };
+            } else {
+                return {
+                    success: false,
+                    message: 'No device found for user'
+                };
+            }
         }
-
-        // Cập nhật token cho thiết bị gần đây nhất
-        await this.prisma.user_devices.update({
-            where: { user_device_id: latestDevice[0].user_device_id },
-            data: { device_token: deviceToken, updated_at: new Date() },
-        });
-
-        return { success: true, message: 'Device token updated successfully' };
     }
-
     async checkEmailVerification(email: string): Promise<{
         exists: boolean;
         isVerified: boolean;
@@ -429,6 +450,7 @@ class AuthService {
         };
     }
 
+    // Trong auth.service.ts, cập nhật updateUser method:
     async updateUser(userId: string, data: {
         surname?: string;
         lastname?: string;
@@ -438,6 +460,26 @@ class AuthService {
         gender?: boolean;
         image?: string;
     }): Promise<any> {
+        // Validate base64 image
+        if (data.image) {
+            // Check if it's valid base64
+            if (!data.image.match(/^data:image\/(jpeg|jpg|png|gif);base64,/)) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Invalid image format. Only JPEG, PNG, GIF are allowed.');
+            }
+
+            // Calculate actual size from base64
+            const base64Data = data.image.split(',')[1];
+            const sizeInBytes = (base64Data.length * 3) / 4;
+            const maxSizeInMB = 10;
+            const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
+
+            if (sizeInBytes > maxSizeInBytes) {
+                throwError(ErrorCodes.BAD_REQUEST, `Image too large. Maximum size: ${maxSizeInMB}MB`);
+            }
+
+            console.log(`Image size: ${(sizeInBytes / 1024 / 1024).toFixed(2)}MB`);
+        }
+
         const account = await this.prisma.account.findFirst({
             where: { account_id: userId },
             include: { customer: true }
@@ -449,13 +491,12 @@ class AuthService {
 
         const updateData: any = { ...data };
 
-        // Nếu email thay đổi, cập nhật trạng thái verified
-        if (data.email && data.email !== account!.customer!.email) {
-            // Kiểm tra email mới có tồn tại chưa
+        // Email change logic...
+        if (data.email && data.email !== account?.customer?.email) {
             const existingEmail = await this.prisma.customer.findFirst({
                 where: {
                     email: data.email,
-                    customer_id: { not: account!.customer!.customer_id }
+                    customer_id: { not: account?.customer?.customer_id }
                 }
             });
 
@@ -470,18 +511,25 @@ class AuthService {
             updateData.birthdate = new Date(data.birthdate);
         }
 
-        const customer = await this.prisma.customer.update({
-            where: { customer_id: account!.customer!.customer_id },
-            data: {
-                ...updateData,
-                updated_at: new Date()
-            }
-        });
+        try {
+            const customer = await this.prisma.customer.update({
+                where: { customer_id: account?.customer?.customer_id },
+                data: {
+                    ...updateData,
+                    updated_at: new Date()
+                }
+            });
 
-        return {
-            success: true,
-            data: customer
-        };
+            return {
+                success: true,
+                data: customer
+            };
+        } catch (error: any) {
+            if (error.code === 'P2002') {
+                throwError(ErrorCodes.CONFLICT, 'Data conflict occurred');
+            }
+            throw error;
+        }
     }
 
     async recoveryPassword(email: string, newPassword: string): Promise<{ success: boolean; message: string }> {
@@ -610,7 +658,6 @@ class AuthService {
                 include: {
                     customer: {
                         select: {
-                            customer_id: true,
                             lastname: true,
                             surname: true,
                             phone: true,
@@ -625,9 +672,9 @@ class AuthService {
             })
 
             const formatUser = {
-                account_id: user?.account_id,
-                customer_id: user?.customer_id,
                 username: user?.username,
+                surname: user?.customer?.surname,
+                lastname: user?.customer?.lastname,
                 fullname: user?.customer?.surname + " " + user?.customer?.lastname,
                 birthdate: user?.customer?.birthdate,
                 phone: user?.customer?.phone,
@@ -820,3 +867,4 @@ class AuthService {
 
 
 export default AuthService;
+

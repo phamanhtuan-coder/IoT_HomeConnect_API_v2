@@ -17,11 +17,12 @@ import {
     notificationIdSchema, notificationSchema,
     updateNotificationSchema
 } from "../utils/schemas/notification.schema";
-import NotificationService from "../services/notification.service";
+import AuthController from "../controllers/auth.controller";
 
 
 const router = Router();
 const notificationController = new NotificationController();
+const authController = new AuthController();
 
 /**
  * Hàm wrapper để xử lý bất đồng bộ và bắt lỗi cho các controller.
@@ -78,7 +79,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  *       201:
  *         description: Tạo thông báo thành công
  *       400:
- *         description: Dữ liệu đầu vào không hợp lệ
+ *         description: Dữ liệu đầu v��o không hợp lệ
  *       401:
  *         description: Token không hợp lệ hoặc đã hết hạn
  *       403:
@@ -377,28 +378,6 @@ router.post(
 );
 
 // Dùng để kiểm tra kết nối với Firebase Cloud Messaging (FCM)
-router.get('/fcm', async (req: Request, res: Response) => {
-    try {
-        const notificationService = new NotificationService();
-        const fcmHealthy = await notificationService.testFCMConnection();
-
-        res.json({
-            service: 'FCM',
-            status: fcmHealthy ? 'healthy' : 'degraded',
-            message: fcmHealthy
-                ? 'Firebase Cloud Messaging is available'
-                : 'FCM unavailable - push notifications disabled',
-            timestamp: new Date().toISOString()
-        });
-    } catch (error: any) {
-        res.status(503).json({
-            service: 'FCM',
-            status: 'unhealthy',
-            message: error.message,
-            timestamp: new Date().toISOString()
-        });
-    }
-});
+router.get('/fcm', asyncHandler(authController.testFCMStatus));
 
 export default router;
-

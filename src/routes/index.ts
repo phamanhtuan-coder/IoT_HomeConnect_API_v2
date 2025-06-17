@@ -138,6 +138,8 @@ import productionBatchesRoutes from './production-batches.routes';
 import customerSearchRoutes from './customer-search.routes';
 
 
+
+
 const router = Router();
 
 // Định nghĩa các route con
@@ -166,6 +168,7 @@ router.use('/planning', planningRoutes);
 router.use('/production-batches', productionBatchesRoutes);
 router.use('/sse', sseRoutes);
 router.use('/customer-search', customerSearchRoutes);
+
 
 export default router;
 
