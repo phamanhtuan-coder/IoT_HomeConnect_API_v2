@@ -294,8 +294,8 @@ router.delete(
  */
 router.get(
   '/detail/:ticketId',
-  authMiddleware,
-  validateMiddleware(ticketIdSchema),
+  // authMiddleware,
+  // validateMiddleware(ticketIdSchema),
   asyncHandler(ticketController.getTicketById)
 );
 
