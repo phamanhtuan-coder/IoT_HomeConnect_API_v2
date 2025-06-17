@@ -207,7 +207,7 @@ router.delete(
  *         description: Lỗi server
  */
 router.get(
-  '/:ticketId',
+  '/detail/:ticketId',
   authMiddleware,
   validateMiddleware(ticketIdSchema),
   asyncHandler(ticketController.getTicketById)
@@ -273,4 +273,3 @@ router.get(
 );
 
 export default router;
-

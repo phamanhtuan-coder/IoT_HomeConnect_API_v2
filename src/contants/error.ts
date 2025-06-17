@@ -126,6 +126,11 @@ export const ERROR_CODES = {
     DEVICE_ATTRIBUTE_INVALID: 1619,
     DEVICE_POWER_STATUS_INVALID: 1620,
 
+    // Employee - 17xx
+    EMPLOYEE_EMAIL_EXISTED: 1701,
+    EMPLOYEE_PHONE_EXISTED: 1702,
+    EMPLOYEE_NOT_FOUND: 1703,
+
 
 } as const;
 
@@ -255,5 +260,9 @@ export const ERROR_MESSAGES = {
     [ERROR_CODES.DEVICE_CAPABILITY_NOT_SUPPORTED]: 'Thiết bị không hỗ trợ tính năng này',
     [ERROR_CODES.DEVICE_ATTRIBUTE_INVALID]: 'Thuộc tính thiết bị không hợp lệ',
     [ERROR_CODES.DEVICE_POWER_STATUS_INVALID]: 'Trạng thái nguồn không hợp lệ',
-    
+
+    // Employee - 17xx
+    [ERROR_CODES.EMPLOYEE_EMAIL_EXISTED]: 'Email đã tồn tại',
+    [ERROR_CODES.EMPLOYEE_PHONE_EXISTED]: 'Số điện thoại đã tồn tại',
+    [ERROR_CODES.EMPLOYEE_NOT_FOUND]: 'Không tìm thấy nhân viên',
 } as const;
