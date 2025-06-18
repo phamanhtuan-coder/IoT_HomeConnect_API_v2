@@ -78,14 +78,32 @@ class GroupService {
         const viceUsers = await this.prisma.user_groups.findMany({
             where: { group_id: groupId, role: GroupRole.VICE, is_deleted: false },
         });
+
         for (const user of viceUsers) {
             await this.deviceService.removeViceDevicesFromGroup(groupId, user.account_id!);
         }
 
         await this.prisma.$transaction([
-            this.prisma.user_groups.deleteMany({ where: { group_id: groupId } }),
-            this.prisma.houses.updateMany({ where: { group_id: groupId }, data: { is_deleted: true } }),
-            this.prisma.groups.delete({ where: { group_id: groupId } }),
+            // Soft delete user_groups
+            this.prisma.user_groups.updateMany({
+                where: { group_id: groupId },
+                data: { is_deleted: true, updated_at: new Date() }
+            }),
+            // Soft delete houses
+            this.prisma.houses.updateMany({
+                where: { group_id: groupId },
+                data: { is_deleted: true, updated_at: new Date() }
+            }),
+            // Update devices to remove them from group
+            this.prisma.devices.updateMany({
+                where: { group_id: groupId },
+                data: { group_id: null, updated_at: new Date() }
+            }),
+            // Soft delete the group itself
+            this.prisma.groups.update({
+                where: { group_id: groupId },
+                data: { is_deleted: true, updated_at: new Date() }
+            }),
         ]);
     }
 
