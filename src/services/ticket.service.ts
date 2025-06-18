@@ -9,6 +9,8 @@ import { get_error_response } from '../utils/response.helper';
 import { ERROR_CODES } from '../contants/error';
 import { STATUS_CODE } from '../contants/status';
 import { ROLE, TICKET_TYPE } from '../contants/info';
+import { PermissionType } from '../types/share-request';
+import { sendEmergencyAlertEmail } from './email.service';
 
 const TICKET_STATUS = {
 	PENDING: 'pending',
@@ -42,9 +44,11 @@ class TicketService {
 		description?: string;
 		evidence?: any;
 		assigned_to?: string;
+		permission_type?: PermissionType;
 	}): Promise<any> {
-		const { user_id, device_serial, ticket_type_id, description, evidence, assigned_to } = input;
+		const { user_id, device_serial, ticket_type_id, description, evidence, assigned_to, permission_type } = input;
 		let is_franchise = false;
+		let is_share_permission = false;
 
 		// 1. Kiểm tra tài khoản
 		const account = await this.prisma.account.findFirst({
@@ -66,8 +70,9 @@ class TicketService {
 		});
 		if (!ticketType) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy loại vấn đề');
 
+		let to_user: any = null;
 		// 4. Kiểm tra người nhận thiết bị
-		if(ticketType?.ticket_type_id === TICKET_TYPE.FRANCHISE) {			
+		if (ticketType?.ticket_type_id === TICKET_TYPE.FRANCHISE) {
 			if (!assigned_to) throwError(ErrorCodes.BAD_REQUEST, 'Không tìm thấy người nhận thiết bị được yêu cầu');
 
 			// 4.1. Kiểm tra yêu cầu nhượng quyền thiết bị
@@ -80,20 +85,48 @@ class TicketService {
 				},
 			});
 			// 4.1.1. Nếu có yêu cầu nhượng quyền của thiết bị thì không tạo mới
-			if(ticket_franchise) throwError(ErrorCodes.BAD_REQUEST, 'Đã có yêu cầu nhượng quyền thiết bị cho thiết bị này');
-			
+			if (ticket_franchise) throwError(ErrorCodes.BAD_REQUEST, 'Đã có yêu cầu nhượng quyền thiết bị cho thiết bị này');
+
 			// 4.2. Kiểm tra người nhận thiết bị
 			const to_user = await this.prisma.account.findFirst({
 				where: { account_id: assigned_to, deleted_at: null },
 			});
 			// 4.1.2. Kiểm tra người nhận thiết bị
-			if(!to_user) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy người nhận thiết bị được yêu cầu');
+			if (!to_user) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy người nhận thiết bị được yêu cầu');
 
 			// 4.1.3. Kiểm tra người nhận thiết bị không phải là người tạo vấn đề
-			if(to_user?.account_id === user_id) throwError(ErrorCodes.BAD_REQUEST, 'Bạn không thể nhượng quyền thiết bị cho chính mình');
-			
+			if (to_user?.account_id === user_id) throwError(ErrorCodes.BAD_REQUEST, 'Bạn không thể nhượng quyền thiết bị cho chính mình');
+
 			// Bật cờ - Đây là ticket nhượng quyền thiết bị
 			is_franchise = true;
+		} else if (ticketType?.ticket_type_id === TICKET_TYPE.SHARE_PERMISSION) {
+			if (!assigned_to) throwError(ErrorCodes.BAD_REQUEST, 'Không tìm thấy người nhận thiết bị được yêu cầu');
+
+			// 4.2. Kiểm tra mô tả vấn đề
+			if (description !== PermissionType.CONTROL && description !== PermissionType.VIEW) throwError(ErrorCodes.BAD_REQUEST, 'Quyền chia sẻ không hợp lệ')
+
+			// 4.3. Kiểm tra người nhận thiết bị
+			to_user = await this.prisma.account.findFirst({
+				where: { account_id: assigned_to, deleted_at: null },
+			});
+
+			if (!to_user) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy người nhận thiết bị được yêu cầu');
+
+			if (to_user?.is_locked) throwError(ErrorCodes.BAD_REQUEST, 'Tài khoản đã bị khóa');
+
+			if (to_user?.employee_id) {
+				// 4.4. Kiểm tra người nhận thiết bị là nhân viên
+				const employee = await this.prisma.employee.findFirst({
+					where: { employee_id: to_user!.employee_id, deleted_at: null },
+				});
+				if (!employee) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy nhân viên');
+			} else if (to_user?.customer_id) {
+				// 4.4. Kiểm tra người nhận thiết bị là khách hàng
+				const customer = await this.prisma.customer.findFirst({
+					where: { customer_id: to_user!.customer_id, deleted_at: null },
+				});
+				if (!customer) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy khách hàng');
+			}
 		}
 
 		// 5. Tạo ID vấn đề
@@ -122,7 +155,6 @@ class TicketService {
 			},
 		});
 
-
 		// THDB: Xử lý nhượng quyền thiết bị 
 		// 7. Tạo yêu cầu nhượng quyền thiết bị
 		if (is_franchise) {
@@ -135,6 +167,12 @@ class TicketService {
 					created_at: new Date(),
 				},
 			});
+		} else if (is_share_permission) {
+			// HỎI LẠI VỀ VẤN ĐỀ CÓ CHO PHÉP SHARE QUYỀN CHO TÀI KHOẢN NHÂN VIÊN HAY KHÔNG
+			await sendEmergencyAlertEmail(
+				to_user!.email,
+				`Bạn được chia sẻ quyền ${description === PermissionType.CONTROL ? 'kiểm soát' : 'xem'} thiết bị ${device_serial} từ ${to_user!.surname} ${to_user!.lastname}`
+			);
 		}
 
 		// 8. Gửi thông báo đến người tạo vấn đề
@@ -157,9 +195,9 @@ class TicketService {
 			where: { account_id: account_id, deleted_at: null },
 		});
 		if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
-		
 
-		if(account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền xác nhận vấn đề');
+
+		if (account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền xác nhận vấn đề');
 
 		const ticket = await this.prisma.tickets.findFirst({
 			where: { ticket_id: ticketId, is_deleted: false },
@@ -177,7 +215,7 @@ class TicketService {
 			STATUS_CODE.OK,
 			updatedTicket
 		);
-	}	
+	}
 
 	// Nhân viên cập nhật trạng thái vấn đề
 	async updateTicketStatus(ticketId: string, account_id: string, data: TicketStatusUpdate): Promise<any> {
@@ -185,8 +223,8 @@ class TicketService {
 			where: { account_id: account_id, deleted_at: null },
 		});
 		if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
-		
-		if(account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền cập nhật trạng thái vấn đề');
+
+		if (account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền cập nhật trạng thái vấn đề');
 
 		const ticket = await this.prisma.tickets.findFirst({
 			where: { ticket_id: ticketId, is_deleted: false },
@@ -208,7 +246,7 @@ class TicketService {
 			where: { ticket_id: ticketId },
 			data: {
 				status: data.status,
-				resolve_solution: data.resolve_solution,	
+				resolve_solution: data.resolve_solution,
 				resolved_at: new Date(),
 				updated_at: new Date(),
 			},
@@ -216,7 +254,7 @@ class TicketService {
 
 		// 3. Xử lý vấn đề
 		// 3.1. Xử lý vấn đề người dùng báo mất thiết bị
-		if(ticket?.ticket_type_id === TICKET_TYPE.LOST_DEVICE && ticket?.device_serial) {
+		if (ticket?.ticket_type_id === TICKET_TYPE.LOST_DEVICE && ticket?.device_serial) {
 			await this.prisma.devices.update({
 				where: { serial_number: ticket?.device_serial },
 				data: {
@@ -228,7 +266,7 @@ class TicketService {
 		}
 
 		// 3.2. Xử lý vấn đề mất tài khoản
-		if(ticket?.ticket_type_id === TICKET_TYPE.LOST_ACCOUNT) {
+		if (ticket?.ticket_type_id === TICKET_TYPE.LOST_ACCOUNT) {
 			await this.prisma.account.update({
 				where: { account_id: ticket?.user_id! },
 				data: {
@@ -278,21 +316,21 @@ class TicketService {
 		}
 
 		const get_attr = `
-		tickets.ticket_id, tickets.device_serial, tickets.description, tickets.evidence,
-		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, tickets.is_deleted,
-		ticket_types.name as ticket_type_name, 
+		tickets.device_serial, tickets.description, tickets.evidence,
+		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, ticket_types.type_name as ticket_type_name, 
 		ticket_types.priority,
-		customer.surname + ' ' + customer.lastname as customer_name,
-		employee.surname + ' ' + employee.lastname as employee_name,
+		COALESCE(CONCAT_WS(' ', customer.surname, customer.lastname), 'N/A') as user_name,
+		COALESCE(CONCAT_WS(' ', employee.surname, employee.lastname), 'N/A') as assigned_name
 		`
 
 		const get_table = "tickets"
 
 		const query_join = `
 			LEFT JOIN ticket_types ON tickets.ticket_type_id = ticket_types.ticket_type_id
-			LEFT JOIN account ON tickets.user_id = account.account_id
-			LEFT JOIN customer ON account.customer_id = customer.customer_id
-			LEFT JOIN employee ON tickets.assigned_to = employee.employee_id
+		  LEFT JOIN account ON tickets.user_id = account.account_id
+		  LEFT JOIN customer ON account.customer_id = customer.customer_id
+		  LEFT JOIN account assigned_account ON tickets.assigned_to = assigned_account.account_id
+		  LEFT JOIN employee ON assigned_account.employee_id = employee.employee_id
 		`
 
 		const result = await executeSelectData({
@@ -300,8 +338,10 @@ class TicketService {
 			queryJoin: query_join,
 			strGetColumn: get_attr,
 			filter: filters,
-			sort: 'created_at',
+			sort: 'tickets.created_at',
 			order: 'desc',
+			idSpecial: 'ticket_id',
+			isDeleteBoolean: true
 		});
 
 		return get_error_response(
@@ -326,52 +366,56 @@ class TicketService {
 	}
 
 	async getAllTickets(filters: any, page: number = 1, limit: number = 10, sort: string = 'created_at', order: string = 'desc'): Promise<any> {
-        const get_attr = `
-        tickets.ticket_id, tickets.device_serial, tickets.description,
-        tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, tickets.is_deleted,
-        ticket_types.name as ticket_type_name,
-        ticket_types.priority,
-        customer.surname + ' ' + customer.lastname as customer_name,
-        employee.surname + ' ' + employee.lastname as employee_name
-        `
+		const get_attr = `
+		tickets.ticket_id, tickets.device_serial, tickets.description,
+		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, tickets.is_deleted,
+		ticket_types.type_name as ticket_type_name,
+		ticket_types.priority,
+		COALESCE(CONCAT_WS(' ', customer.surname, customer.lastname), 'N/A') as user_name,
+		COALESCE(CONCAT_WS(' ', employee.surname, employee.lastname), 'N/A') as assigned_name,
+		tickets.created_at, tickets.updated_at, tickets.is_deleted
+		`
 
-        const get_table = "tickets"
+		const get_table = "tickets"
 
-        const query_join = `
-            LEFT JOIN ticket_types ON tickets.ticket_type_id = ticket_types.ticket_type_id
-            LEFT JOIN account ON tickets.user_id = account.account_id
-            LEFT JOIN customer ON account.customer_id = customer.customer_id
-            LEFT JOIN employee ON tickets.assigned_to = employee.employee_id
-        `
+		const query_join = `
+		  LEFT JOIN ticket_types ON tickets.ticket_type_id = ticket_types.ticket_type_id
+		  LEFT JOIN account ON tickets.user_id = account.account_id
+		  LEFT JOIN customer ON account.customer_id = customer.customer_id
+		  LEFT JOIN account assigned_account ON tickets.assigned_to = assigned_account.account_id
+		  LEFT JOIN employee ON assigned_account.employee_id = employee.employee_id
+		`
 
-        const result = await executeSelectData({
-            table: get_table,
-            queryJoin: query_join,
-            strGetColumn: get_attr,
-            filter: filters,
-            page: page,
-            limit: limit,
-            sort: sort,
-            order: order,
-        });
+		const result = await executeSelectData({
+			table: get_table,
+			queryJoin: query_join,
+			strGetColumn: get_attr,
+			filter: filters,
+			page: page,
+			limit: limit,
+			sort: 'tickets.created_at',
+			order: 'desc',
+			idSpecial: 'ticket_id',
+			isDeleteBoolean: true
+		});
 
-        return get_error_response(
-            ERROR_CODES.SUCCESS,
-            STATUS_CODE.OK,
-            {
-                data: result.data,
-                total_page: result.total_page,
-            }
-        );
-    }
+		return get_error_response(
+			ERROR_CODES.SUCCESS,
+			STATUS_CODE.OK,
+			{
+				data: result.data,
+				total_page: result.total_page,
+			}
+		);
+	}
 
 	async customerCancelTicket(ticketId: string, account_id: string): Promise<any> {
 		const ticket = await this.prisma.tickets.findFirst({
 			where: { ticket_id: ticketId, is_deleted: false },
 		});
 		if (!ticket) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy vấn đề');
-		
-		if(ticket!.user_id !== account_id) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền hủy vấn đề này');
+
+		if (ticket!.user_id !== account_id) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền hủy vấn đề này');
 
 		await this.prisma.tickets.update({
 			where: { ticket_id: ticketId },

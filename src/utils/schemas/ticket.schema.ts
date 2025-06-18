@@ -60,9 +60,8 @@ export const ticketSchema = z.object({
             .max(50, "Device serial must be 50 characters or less")
             .optional(),
         ticket_type_id: z
-            .number()
-            .int()
-            .positive("Ticket type ID must be a positive number"),
+            .string()
+            .min(1, "Ticket type ID is required"),
         description: z
             .string()
             .max(5000, "Description must be 5000 characters or less")
@@ -96,8 +95,8 @@ export const ticketIdSchema = z.object({
     params: z.object({
         ticketId: z
             .string()
-            .transform((val) => parseInt(val))
-            .refine((val) => val > 0, "Ticket ID must be a positive number"),
+            .transform((val) => (val))
+            .refine((val) => val.length > 0, "Ticket ID invalid"),
     }),
 });
 
