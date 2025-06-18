@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import DeviceService from '../services/device.service';
 import { ErrorCodes, throwError } from '../utils/errors';
 import {GroupRole} from "../types/group";
+import {LEDEffectInput} from "../types/device-state";
 
 class DeviceController {
     private deviceService: DeviceService;
@@ -465,6 +466,148 @@ class DeviceController {
                 success: true,
                 message: 'Device capabilities updated successfully',
                 timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+
+
+    /**
+     * Apply LED effect preset
+     * POST /devices/:deviceId/led-preset
+     */
+    applyLEDPreset = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { deviceId } = req.params;
+            const { serial_number, preset, duration } = req.body;
+
+            if (!serial_number || !preset) {
+                throwError(ErrorCodes.BAD_REQUEST, 'serial_number and preset are required');
+            }
+
+            const device = await this.deviceService.applyLEDPreset(
+                deviceId,
+                serial_number,
+                preset,
+                duration,
+                accountId,
+                req.app.get('io')
+            );
+
+            res.json({
+                success: true,
+                device,
+                message: `LED preset '${preset}' applied successfully`
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Set LED dynamic effect
+     * POST /devices/:deviceId/led-effect
+     */
+    setLEDEffect = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { deviceId } = req.params;
+            const { serial_number, effect, speed, count, duration, color1, color2 } = req.body;
+
+            if (!serial_number || !effect) {
+                throwError(ErrorCodes.BAD_REQUEST, 'serial_number and effect are required');
+            }
+
+            const effectInput: LEDEffectInput = {
+                effect,
+                speed,
+                count,
+                duration,
+                color1,
+                color2
+            };
+
+            const device = await this.deviceService.setLEDEffect(
+                deviceId,
+                serial_number,
+                effectInput,
+                accountId,
+                req.app.get('io')
+            );
+
+            res.json({
+                success: true,
+                device,
+                message: `LED effect '${effect}' applied successfully`
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Stop LED effect
+     * POST /devices/:deviceId/stop-led-effect
+     */
+    stopLEDEffect = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { deviceId } = req.params;
+            const { serial_number } = req.body;
+
+            if (!serial_number) {
+                throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
+            }
+
+            const device = await this.deviceService.stopLEDEffect(
+                deviceId,
+                serial_number,
+                accountId,
+                req.app.get('io')
+            );
+
+            res.json({
+                success: true,
+                device,
+                message: 'LED effect stopped successfully'
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Get available LED effects
+     * GET /devices/:deviceId/led-effects
+     */
+    getAvailableLEDEffects = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const effects = this.deviceService.getAvailableLEDEffects();
+
+            const effectsWithInfo = [
+                { name: 'solid', description: 'Solid color (default mode)', params: ['color'] },
+                { name: 'blink', description: 'Blinking on/off', params: ['color1', 'speed', 'count'] },
+                { name: 'breathe', description: 'Breathing effect (fade in/out)', params: ['color1', 'speed'] },
+                { name: 'rainbow', description: 'Rainbow color cycle', params: ['speed'] },
+                { name: 'chase', description: 'Chase effect with moving pixels', params: ['color1', 'speed'] },
+                { name: 'fade', description: 'Fade between two colors', params: ['color1', 'color2', 'speed'] },
+                { name: 'strobe', description: 'Fast strobe effect', params: ['color1', 'speed', 'count'] },
+                { name: 'colorWave', description: 'Wave effect with two colors', params: ['color1', 'color2', 'speed'] }
+            ];
+
+            res.json({
+                success: true,
+                effects: effectsWithInfo,
+                available_effects: effects
             });
         } catch (error) {
             next(error);

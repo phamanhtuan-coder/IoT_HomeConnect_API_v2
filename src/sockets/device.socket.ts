@@ -459,6 +459,87 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 });
             });
 
+            // LED Effects WebSocket commands
+            socket.on('setEffect', (effectData) => {
+                console.log(`🌟 Set LED effect command for device ${deviceId}:`, effectData);
+
+                // Forward to device namespace with enhanced structure
+                deviceNamespace.to(`device:${deviceId}`).emit('command', {
+                    action: 'setEffect',
+                    effect: effectData.effect,
+                    speed: effectData.speed || 500,
+                    count: effectData.count || 0,
+                    duration: effectData.duration || 0,
+                    color1: effectData.color1 || '#FF0000',
+                    color2: effectData.color2 || '#0000FF',
+                    fromClient: accountId,
+                    timestamp: new Date().toISOString()
+                });
+
+                // Send acknowledgment back to client
+                socket.emit('led_effect_set', {
+                    deviceId,
+                    effect: effectData.effect,
+                    speed: effectData.speed || 500,
+                    count: effectData.count || 0,
+                    duration: effectData.duration || 0,
+                    color1: effectData.color1 || '#FF0000',
+                    color2: effectData.color2 || '#0000FF',
+                    timestamp: new Date().toISOString()
+                });
+
+                console.log(`📤 LED effect command forwarded to device ${deviceId}:`, effectData);
+            });
+
+            socket.on('stopEffect', () => {
+                console.log(`⏹️ Stop LED effect command for device ${deviceId}`);
+
+                deviceNamespace.to(`device:${deviceId}`).emit('command', {
+                    action: 'stopEffect',
+                    fromClient: accountId,
+                    timestamp: new Date().toISOString()
+                });
+
+                socket.emit('led_effect_stopped', {
+                    deviceId,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            socket.on('applyPreset', (presetData) => {
+                console.log(`🎨 Apply LED preset command for device ${deviceId}:`, presetData);
+
+                // Define presets for WebSocket (simplified)
+                const presets = {
+                    party_mode: { effect: 'rainbow', speed: 200 },
+                    relaxation_mode: { effect: 'breathe', speed: 2000, color1: '#9370DB' },
+                    gaming_mode: { effect: 'chase', speed: 150, color1: '#00FF80', color2: '#FF0080' },
+                    alarm_mode: { effect: 'strobe', speed: 200, count: 20, color1: '#FF0000' },
+                    sleep_mode: { effect: 'fade', speed: 5000, color1: '#FFB366', color2: '#2F1B14' },
+                    wake_up_mode: { effect: 'fade', speed: 2000, color1: '#330000', color2: '#FFB366' },
+                    focus_mode: { effect: 'solid', color1: '#4169E1' },
+                    movie_mode: { effect: 'breathe', speed: 3000, color1: '#000080' }
+                };
+
+                const preset = presets[presetData.preset];
+                if (preset) {
+                    deviceNamespace.to(`device:${deviceId}`).emit('command', {
+                        action: 'setEffect',
+                        ...preset,
+                        duration: presetData.duration || 0,
+                        fromClient: accountId,
+                        timestamp: new Date().toISOString()
+                    });
+
+                    socket.emit('led_preset_applied', {
+                        deviceId,
+                        preset: presetData.preset,
+                        duration: presetData.duration || 0,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+            });
+
             socket.on('disconnect', () => {
                 console.log(`📱 CLIENT disconnected from device ${deviceId} (user: ${accountId})`);
             });

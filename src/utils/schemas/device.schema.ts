@@ -186,6 +186,91 @@ export const UpdateDeviceCapabilitiesSchema = z.object({
     })
 });
 
+/**
+ * LED Effect validation schema
+ */
+export const LEDEffectSchema = z.object({
+    body: z.object({
+        serial_number: z.string().min(1, 'Serial number is required'),
+        effect: z.enum([
+            'solid',
+            'blink',
+            'breathe',
+            'rainbow',
+            'chase',
+            'fade',
+            'strobe',
+            'colorWave'
+        ], {
+            errorMap: () => ({ message: 'Invalid effect type' })
+        }),
+        speed: z.number()
+            .min(100, 'Speed must be at least 100ms')
+            .max(2000, 'Speed must not exceed 2000ms')
+            .optional(),
+        count: z.number()
+            .min(0, 'Count must be non-negative')
+            .max(50, 'Count must not exceed 50')
+            .optional(),
+        duration: z.number()
+            .min(0, 'Duration must be non-negative')
+            .max(60000, 'Duration must not exceed 60000ms (1 minute)')
+            .optional(),
+        color1: z.string()
+            .regex(/^#[0-9A-Fa-f]{6}$/, 'color1 must be in hex format (#RRGGBB)')
+            .optional(),
+        color2: z.string()
+            .regex(/^#[0-9A-Fa-f]{6}$/, 'color2 must be in hex format (#RRGGBB)')
+            .optional()
+    }).refine(data => {
+        // Custom validation for effect-specific requirements
+        if (data.effect === 'fade' || data.effect === 'colorWave') {
+            return data.color1 && data.color2;
+        }
+        return true;
+    }, {
+        message: 'fade and colorWave effects require both color1 and color2'
+    })
+});
+
+/**
+ * Stop LED Effect validation schema
+ */
+export const StopLEDEffectSchema = z.object({
+    body: z.object({
+        serial_number: z.string().min(1, 'Serial number is required')
+    })
+});
+
+/**
+ * LED Effect preset validation schema
+ */
+export const LEDEffectPresetSchema = z.object({
+    body: z.object({
+        serial_number: z.string().min(1, 'Serial number is required'),
+        preset: z.enum([
+            'party_mode',
+            'relaxation_mode',
+            'gaming_mode',
+            'alarm_mode',
+            'sleep_mode',
+            'wake_up_mode',
+            'focus_mode',
+            'movie_mode'
+        ], {
+            errorMap: () => ({ message: 'Invalid preset type' })
+        }),
+        duration: z.number()
+            .min(0, 'Duration must be non-negative')
+            .max(300000, 'Duration must not exceed 300000ms (5 minutes)')
+            .optional()
+    })
+});
+
+
+export type LEDEffectInput = z.infer<typeof LEDEffectSchema>['body'];
+export type StopLEDEffectInput = z.infer<typeof StopLEDEffectSchema>['body'];
+export type LEDEffectPresetInput = z.infer<typeof LEDEffectPresetSchema>['body'];
 export type UpdateDeviceCapabilitiesInput = z.infer<typeof UpdateDeviceCapabilitiesSchema>['body'];
 export type DeviceStateUpdateInput = z.infer<typeof DeviceStateUpdateSchema>['body'];
 export type DeviceStateQueryInput = z.infer<typeof DeviceStateQuerySchema>;

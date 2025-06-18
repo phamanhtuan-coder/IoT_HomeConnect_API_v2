@@ -17,8 +17,8 @@ import {
     DeviceBulkStateSchema,
     DeviceCapabilitiesSchema,
     deviceIdSchema,
-    deviceSchema, DeviceStateQuerySchema, DeviceStateUpdateSchema,
-    linkDeviceSchema, QuickToggleSchema,
+    deviceSchema, DeviceStateQuerySchema, DeviceStateUpdateSchema, LEDEffectPresetSchema, LEDEffectSchema,
+    linkDeviceSchema, QuickToggleSchema, StopLEDEffectSchema,
     toggleDeviceSchema,
     updateAttributesSchema, UpdateDeviceCapabilitiesSchema, updateWifiSchema
 } from "../utils/schemas/device.schema";
@@ -808,6 +808,85 @@ router.put(
     validateMiddleware(deviceIdSchema),
     validateMiddleware(UpdateDeviceCapabilitiesSchema),
     asyncHandler(deviceController.updateDeviceCapabilities)
+);
+
+/**
+ * Apply LED effect preset
+ * @swagger
+ * /api/devices/{deviceId}/led-preset:
+ *   post:
+ *     tags:
+ *       - Device
+ *     summary: Apply LED effect preset
+ *     description: |
+ *       Apply predefined LED effect presets for common scenarios like party mode,
+ *       relaxation mode, gaming mode, etc.
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: deviceId
+ *         required: true
+ *         type: string
+ *         description: ID of the LED device
+ *       - in: body
+ *         name: body
+ *         description: LED preset configuration
+ *         schema:
+ *           type: object
+ *           required:
+ *             - serial_number
+ *             - preset
+ *           properties:
+ *             serial_number:
+ *               type: string
+ *               example: "SERL12JUN2501LED24RGB001"
+ *             preset:
+ *               type: string
+ *               enum: [party_mode, relaxation_mode, gaming_mode, alarm_mode, sleep_mode, wake_up_mode, focus_mode, movie_mode]
+ *               example: "party_mode"
+ *             duration:
+ *               type: integer
+ *               minimum: 0
+ *               maximum: 300000
+ *               example: 30000
+ *               description: Preset duration in milliseconds (0 = infinite)
+ *     responses:
+ *       200:
+ *         description: LED preset applied successfully
+ *       400:
+ *         description: Invalid preset parameters
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: No permission to control device
+ *       404:
+ *         description: Device not found
+ */
+router.post(
+    '/:deviceId/led-preset',
+    authMiddleware,
+    validateMiddleware(deviceIdSchema),
+    validateMiddleware(LEDEffectPresetSchema),
+    asyncHandler(deviceController.applyLEDPreset)
+);
+
+// ADD validation to existing routes:
+router.post(
+    '/:deviceId/led-effect',
+    authMiddleware,
+    validateMiddleware(deviceIdSchema),
+    validateMiddleware(LEDEffectSchema),
+    asyncHandler(deviceController.setLEDEffect)
+);
+
+router.post(
+    '/:deviceId/stop-led-effect',
+    authMiddleware,
+    validateMiddleware(deviceIdSchema),
+    validateMiddleware(StopLEDEffectSchema),
+    asyncHandler(deviceController.stopLEDEffect)
 );
 
 // ===== BACKWARD COMPATIBILITY ROUTES (DEPRECATED) =====

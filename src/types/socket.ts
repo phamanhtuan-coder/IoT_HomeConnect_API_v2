@@ -443,6 +443,47 @@ export interface ServerToClientEvents {
      * Error events
      */
     error: (data: { code: string; message: string }) => void;
+
+    // ================== LED CONTROL EVENTS ==================
+    /**
+     * Emitted when LED effect is set
+     */
+    led_effect_set: (data: LEDEffectData) => void;
+
+    /**
+     * Emitted when LED effect is stopped
+     */
+    led_effect_stopped: (data: { deviceId: string; timestamp: string }) => void;
+
+    /**
+     * Emitted when LED preset is applied
+     */
+    led_preset_applied: (data: LEDPresetData) => void;
+
+    /**
+     * Emitted when LED status is updated
+     */
+    led_status_updated: (data: LEDStatusData) => void;
+
+    /**
+     * Emitted to confirm LED effect command was sent
+     */
+    led_effect_command_sent: (data: {
+        deviceId: string;
+        effect: string;
+        success: boolean;
+        timestamp: string;
+    }) => void;
+
+    /**
+     * Emitted when LED test pattern is completed
+     */
+    led_test_completed: (data: {
+        deviceId: string;
+        test_type: string;
+        success: boolean;
+        timestamp: string;
+    }) => void;
 }
 
 /**
@@ -578,6 +619,45 @@ export interface ClientToServerEvents {
      */
     error: (error: any) => void;
     connect_error: (error: any) => void;
+
+    // ================== LED CONTROL EVENTS ==================
+    /**
+     * Sent to set LED effect
+     */
+    setEffect: (data: {
+        effect: string;
+        speed?: number;
+        count?: number;
+        duration?: number;
+        color1?: string;
+        color2?: string;
+    }) => void;
+
+    /**
+     * Sent to stop LED effect
+     */
+    stopEffect: () => void;
+
+    /**
+     * Sent to apply LED preset
+     */
+    applyPreset: (data: { preset: string; duration?: number }) => void;
+
+    /**
+     * Sent to test LED pattern
+     */
+    testLED: (data?: { pattern?: string }) => void;
+
+    /**
+     * Sent to get LED status
+     */
+    getLEDStatus: () => void;
+
+    /**
+     * Sent when LED status changes from device
+     */
+    led_status_update: (data: LEDStatusData) => void;
+
 }
 
 /**
@@ -725,4 +805,97 @@ export function isESP8266Command(data: any): data is CommandData {
     return isCommandData(data) &&
         data.esp8266_command !== undefined &&
         typeof data.esp8266_command === 'object';
+}
+
+/**
+ * LED Effect data structure
+ */
+export interface LEDEffectData {
+    deviceId: string;
+    effect: string;  // 'solid', 'blink', 'breathe', 'rainbow', 'chase', 'fade', 'strobe', 'colorWave'
+    speed?: number;  // Effect speed in milliseconds (100-2000)
+    count?: number;  // Number of iterations (0 = infinite)
+    duration?: number;  // Total duration in milliseconds (0 = infinite)
+    color1?: string;  // Primary color in hex format
+    color2?: string;  // Secondary color in hex format
+    timestamp: string;
+}
+
+/**
+ * LED Preset data structure
+ */
+export interface LEDPresetData {
+    deviceId: string;
+    preset: string;  // 'party_mode', 'relaxation_mode', 'gaming_mode', etc.
+    duration?: number;  // Duration in milliseconds
+    timestamp: string;
+}
+
+/**
+ * LED Status data structure
+ */
+export interface LEDStatusData {
+    deviceId: string;
+    power_status: boolean;
+    color: string;
+    brightness: number;
+    effect?: string;
+    effect_active?: boolean;
+    effect_speed?: number;
+    effect_count?: number;
+    effect_duration?: number;
+    effect_color1?: string;
+    effect_color2?: string;
+    pixel_count?: number;
+    timestamp: string;
+}
+
+/**
+ * Available LED effects
+ */
+export enum LEDEffect {
+    SOLID = 'solid',
+    BLINK = 'blink',
+    BREATHE = 'breathe',
+    RAINBOW = 'rainbow',
+    CHASE = 'chase',
+    FADE = 'fade',
+    STROBE = 'strobe',
+    COLOR_WAVE = 'colorWave'
+}
+
+/**
+ * LED presets
+ */
+export enum LEDPreset {
+    PARTY_MODE = 'party_mode',
+    RELAXATION_MODE = 'relaxation_mode',
+    GAMING_MODE = 'gaming_mode',
+    ALARM_MODE = 'alarm_mode',
+    SLEEP_MODE = 'sleep_mode',
+    WAKE_UP_MODE = 'wake_up_mode',
+    FOCUS_MODE = 'focus_mode',
+    MOVIE_MODE = 'movie_mode'
+}
+
+/**
+ * Type guard for LED effect data
+ */
+export function isLEDEffectData(data: any): data is LEDEffectData {
+    return data &&
+        typeof data === 'object' &&
+        typeof data.deviceId === 'string' &&
+        typeof data.effect === 'string' &&
+        Object.values(LEDEffect).includes(data.effect);
+}
+
+/**
+ * Type guard for LED preset data
+ */
+export function isLEDPresetData(data: any): data is LEDPresetData {
+    return data &&
+        typeof data === 'object' &&
+        typeof data.deviceId === 'string' &&
+        typeof data.preset === 'string' &&
+        Object.values(LEDPreset).includes(data.preset);
 }

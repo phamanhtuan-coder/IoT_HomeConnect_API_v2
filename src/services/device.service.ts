@@ -6,7 +6,7 @@ import {Device, DeviceAttributes} from "../types/device";
 import {GroupRole} from "../types/group";
 import {PermissionType} from "../types/share-request";
 import {generateComponentId, generateDeviceId} from "../utils/helpers";
-import {DeviceState, StateUpdateInput} from "../types/device-state"; // Import AlertService
+import {DeviceState, LEDEffectInput, StateUpdateInput} from "../types/device-state"; // Import AlertService
 
 let io: Server | null = null;
 const alertService = new AlertService(); // Instantiate AlertService
@@ -574,6 +574,336 @@ class DeviceService {
         return this.updateDeviceState(deviceId, serial_number, mergedUpdate, accountId);
     }
 
+    /**
+     * Apply LED effect preset
+     */
+    async applyLEDPreset(
+        deviceId: string,
+        serial_number: string,
+        preset: string,
+        duration: number = 0,
+        accountId: string,
+        io?: Server
+    ): Promise<Device> {
+        // Check device permissions
+        await this.checkDevicePermission(deviceId, serial_number, accountId, true);
+
+        // Get device capabilities to validate LED support
+        const capabilities = await this.getDeviceCapabilities(deviceId, serial_number);
+        this.validateLEDSupport(capabilities);
+
+        // Define presets
+        const presets = this.getLEDPresets();
+
+        if (!presets[preset]) {
+            throwError(ErrorCodes.BAD_REQUEST, `Unknown preset: ${preset}. Available presets: ${Object.keys(presets).join(', ')}`);
+        }
+
+        const presetConfig = presets[preset];
+
+        // Apply duration override if provided
+        if (duration > 0) {
+            presetConfig.duration = duration;
+        }
+
+        // Apply the preset effect
+        return this.setLEDEffect(deviceId, serial_number, presetConfig, accountId, io);
+    }
+
+    /**
+     * Get LED effect presets
+     */
+    private getLEDPresets(): Record<string, LEDEffectInput> {
+        return {
+            party_mode: {
+                effect: 'rainbow',
+                speed: 200,
+                count: 0,
+                duration: 0,
+                color1: '#FF0080',
+                color2: '#00FF80'
+            },
+            relaxation_mode: {
+                effect: 'breathe',
+                speed: 2000,
+                count: 0,
+                duration: 0,
+                color1: '#9370DB',
+                color2: '#4169E1'
+            },
+            gaming_mode: {
+                effect: 'chase',
+                speed: 150,
+                count: 0,
+                duration: 0,
+                color1: '#00FF80',
+                color2: '#FF0080'
+            },
+            alarm_mode: {
+                effect: 'strobe',
+                speed: 200,
+                count: 20,
+                duration: 10000,
+                color1: '#FF0000',
+                color2: '#000000'
+            },
+            sleep_mode: {
+                effect: 'fade',
+                speed: 5000,
+                count: 0,
+                duration: 30000,
+                color1: '#FFB366',
+                color2: '#2F1B14'
+            },
+            wake_up_mode: {
+                effect: 'fade',
+                speed: 2000,
+                count: 0,
+                duration: 30000,
+                color1: '#330000',
+                color2: '#FFB366'
+            },
+            focus_mode: {
+                effect: 'solid',
+                speed: 500,
+                count: 0,
+                duration: 0,
+                color1: '#4169E1',
+                color2: '#4169E1'
+            },
+            movie_mode: {
+                effect: 'breathe',
+                speed: 3000,
+                count: 0,
+                duration: 0,
+                color1: '#000080',
+                color2: '#191970'
+            }
+        };
+    }
+
+    /**
+     * Validate LED support
+     */
+    private validateLEDSupport(capabilities: any): void {
+        const mergedCapabilities = capabilities.merged_capabilities?.capabilities || [];
+        const deviceCapabilities = Array.isArray(mergedCapabilities) ? mergedCapabilities : [];
+
+        if (!deviceCapabilities.includes('RGB_CONTROL')) {
+            throwError(ErrorCodes.FORBIDDEN, 'Device does not support RGB control');
+        }
+    }
+
+    /**
+     * Set LED dynamic effect
+     */
+    async setLEDEffect(
+        deviceId: string,
+        serial_number: string,
+        effectInput: LEDEffectInput,
+        accountId: string,
+        io?: Server
+    ): Promise<Device> {
+        // Check device permissions
+        await this.checkDevicePermission(deviceId, serial_number, accountId, true);
+
+        // Get device capabilities to validate LED support
+        const capabilities = await this.getDeviceCapabilities(deviceId, serial_number);
+        this.validateLEDEffectInput(effectInput, capabilities);
+
+        // Get current device state
+        const device = await this.prisma.devices.findFirst({
+            where: { device_id: deviceId, serial_number, is_deleted: false }
+        });
+
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
+
+        const currentState = (device?.attribute as DeviceState) || {};
+
+        // Prepare effect parameters with defaults
+        const effectParams = {
+            effect: effectInput.effect,
+            speed: effectInput.speed || 500,
+            count: effectInput.count || 0,
+            duration: effectInput.duration || 0,
+            color1: effectInput.color1 || currentState.color || "#FF0000",
+            color2: effectInput.color2 || this.getComplementaryColor(effectInput.color1 || currentState.color || "#FF0000")
+        };
+
+        // Update device state to include effect info
+        const newState: DeviceState = {
+            ...currentState,
+            power_status: true, // Auto turn on when setting effect
+            effect: effectParams.effect,
+            effect_active: true,
+            effect_speed: effectParams.speed,
+            effect_count: effectParams.count,
+            effect_duration: effectParams.duration,
+            effect_color1: effectParams.color1,
+            effect_color2: effectParams.color2
+        };
+
+        // Update database
+        const updatedDevice = await this.prisma.devices.update({
+            where: { device_id_serial_number: { device_id: deviceId, serial_number } },
+            data: {
+                attribute: newState,
+                power_status: true,
+                updated_at: new Date()
+            },
+        });
+
+        // Send effect command to IoT device
+        if (io) {
+            io.of("/device").to(`device:${serial_number}`).emit("command", {
+                action: "setEffect",
+                effect: effectParams.effect,
+                speed: effectParams.speed,
+                count: effectParams.count,
+                duration: effectParams.duration,
+                color1: effectParams.color1,
+                color2: effectParams.color2,
+                timestamp: new Date().toISOString()
+            });
+
+            // Send status update to clients
+            io.of("/device").to(`device:${serial_number}`).emit("deviceStatus", {
+                deviceId: serial_number,
+                state: newState,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        return this.mapPrismaDeviceToAuthDevice(updatedDevice);
+    }
+
+    /**
+     * Stop LED effect and return to solid mode
+     */
+    async stopLEDEffect(
+        deviceId: string,
+        serial_number: string,
+        accountId: string,
+        io?: Server
+    ): Promise<Device> {
+        // Check device permissions
+        await this.checkDevicePermission(deviceId, serial_number, accountId, true);
+
+        // Get current device state
+        const device = await this.prisma.devices.findFirst({
+            where: { device_id: deviceId, serial_number, is_deleted: false }
+        });
+
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
+
+        const currentState = (device?.attribute as DeviceState) || {};
+
+        // Update state to stop effect
+        const newState: DeviceState = {
+            ...currentState,
+            effect: 'solid',
+            effect_active: false,
+            effect_speed: 500,
+            effect_count: 0,
+            effect_duration: 0
+        };
+
+        // Update database
+        const updatedDevice = await this.prisma.devices.update({
+            where: { device_id_serial_number: { device_id: deviceId, serial_number } },
+            data: {
+                attribute: newState,
+                updated_at: new Date()
+            },
+        });
+
+        // Send stop command to IoT device
+        if (io) {
+            io.of("/device").to(`device:${serial_number}`).emit("command", {
+                action: "stopEffect",
+                timestamp: new Date().toISOString()
+            });
+
+            // Send status update to clients
+            io.of("/device").to(`device:${serial_number}`).emit("deviceStatus", {
+                deviceId: serial_number,
+                state: newState,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        return this.mapPrismaDeviceToAuthDevice(updatedDevice);
+    }
+
+    /**
+     * Get available LED effects for device
+     */
+    getAvailableLEDEffects(): string[] {
+        return ['solid', 'blink', 'breathe', 'rainbow', 'chase', 'fade', 'strobe', 'colorWave'];
+    }
+
+    /**
+     * Validate LED effect input
+     */
+    private validateLEDEffectInput(effectInput: LEDEffectInput, capabilities: any): void {
+        const mergedCapabilities = capabilities.merged_capabilities?.capabilities || [];
+        const deviceCapabilities = Array.isArray(mergedCapabilities) ? mergedCapabilities : [];
+
+        // Check if device supports RGB control
+        if (!deviceCapabilities.includes('RGB_CONTROL')) {
+            throwError(ErrorCodes.FORBIDDEN, 'Device does not support RGB control');
+        }
+
+        // Validate effect type
+        const validEffects = this.getAvailableLEDEffects();
+        if (!validEffects.includes(effectInput.effect)) {
+            throwError(ErrorCodes.BAD_REQUEST, `Invalid effect. Valid effects: ${validEffects.join(', ')}`);
+        }
+
+        // Validate speed range (100ms to 2000ms)
+        if (effectInput.speed !== undefined && (effectInput.speed < 100 || effectInput.speed > 2000)) {
+            throwError(ErrorCodes.BAD_REQUEST, 'Effect speed must be between 100 and 2000 milliseconds');
+        }
+
+        // Validate count range (0 to 50)
+        if (effectInput.count !== undefined && (effectInput.count < 0 || effectInput.count > 50)) {
+            throwError(ErrorCodes.BAD_REQUEST, 'Effect count must be between 0 and 50');
+        }
+
+        // Validate duration range (0 to 60000ms = 1 minute)
+        if (effectInput.duration !== undefined && (effectInput.duration < 0 || effectInput.duration > 60000)) {
+            throwError(ErrorCodes.BAD_REQUEST, 'Effect duration must be between 0 and 60000 milliseconds');
+        }
+
+        // Validate color formats
+        if (effectInput.color1 && !/^#[0-9A-Fa-f]{6}$/.test(effectInput.color1)) {
+            throwError(ErrorCodes.BAD_REQUEST, 'color1 must be in hex format (#RRGGBB)');
+        }
+
+        if (effectInput.color2 && !/^#[0-9A-Fa-f]{6}$/.test(effectInput.color2)) {
+            throwError(ErrorCodes.BAD_REQUEST, 'color2 must be in hex format (#RRGGBB)');
+        }
+    }
+
+    /**
+     * Generate complementary color
+     */
+    private getComplementaryColor(hexColor: string): string {
+        if (!hexColor || hexColor.charAt(0) !== '#' || hexColor.length !== 7) {
+            return "#0000FF"; // Default blue
+        }
+
+        const r = parseInt(hexColor.substr(1, 2), 16);
+        const g = parseInt(hexColor.substr(3, 2), 16);
+        const b = parseInt(hexColor.substr(5, 2), 16);
+
+        // Calculate complementary color
+        const compR = 255 - r;
+        const compG = 255 - g;
+        const compB = 255 - b;
+
+        return `#${compR.toString(16).padStart(2, '0')}${compG.toString(16).padStart(2, '0')}${compB.toString(16).padStart(2, '0')}`.toUpperCase();
+    }
 
     /**
      * Merge base and runtime capabilities
@@ -631,5 +961,7 @@ class DeviceService {
         };
     }
 }
+
+
 
 export default DeviceService;
