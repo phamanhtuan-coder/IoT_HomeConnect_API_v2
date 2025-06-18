@@ -326,44 +326,44 @@ class TicketService {
 	}
 
 	async getAllTickets(filters: any, page: number = 1, limit: number = 10, sort: string = 'created_at', order: string = 'desc'): Promise<any> {
-		const get_attr = `
-		tickets.ticket_id, tickets.device_serial, tickets.description,
-		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, tickets.is_deleted,
-		ticket_types.name as ticket_type_name,
-		ticket_types.priority,
-		customer.surname + ' ' + customer.lastname as customer_name,
-		employee.surname + ' ' + employee.lastname as employee_name,
-		`
+        const get_attr = `
+        tickets.ticket_id, tickets.device_serial, tickets.description,
+        tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, tickets.is_deleted,
+        ticket_types.name as ticket_type_name,
+        ticket_types.priority,
+        customer.surname + ' ' + customer.lastname as customer_name,
+        employee.surname + ' ' + employee.lastname as employee_name
+        `
 
-		const get_table = "tickets"
+        const get_table = "tickets"
 
-		const query_join = `
-			LEFT JOIN ticket_types ON tickets.ticket_type_id = ticket_types.ticket_type_id
-			LEFT JOIN account ON tickets.user_id = account.account_id
-			LEFT JOIN customer ON account.customer_id = customer.customer_id
-			LEFT JOIN employee ON tickets.assigned_to = employee.employee_id
-		`
+        const query_join = `
+            LEFT JOIN ticket_types ON tickets.ticket_type_id = ticket_types.ticket_type_id
+            LEFT JOIN account ON tickets.user_id = account.account_id
+            LEFT JOIN customer ON account.customer_id = customer.customer_id
+            LEFT JOIN employee ON tickets.assigned_to = employee.employee_id
+        `
 
-		const result = await executeSelectData({
-			table: get_table,
-			queryJoin: query_join,
-			strGetColumn: get_attr,
-			filter: filters,
-			page: page,
-			limit: limit,
-			sort: 'created_at',
-			order: 'desc',
-		});
+        const result = await executeSelectData({
+            table: get_table,
+            queryJoin: query_join,
+            strGetColumn: get_attr,
+            filter: filters,
+            page: page,
+            limit: limit,
+            sort: sort,
+            order: order,
+        });
 
-		return get_error_response(
-			ERROR_CODES.SUCCESS,
-			STATUS_CODE.OK,
-			{
-				data: result.data,
-				total_page: result.total_page,
-			}
-		);
-	}
+        return get_error_response(
+            ERROR_CODES.SUCCESS,
+            STATUS_CODE.OK,
+            {
+                data: result.data,
+                total_page: result.total_page,
+            }
+        );
+    }
 
 	async customerCancelTicket(ticketId: string, account_id: string): Promise<any> {
 		const ticket = await this.prisma.tickets.findFirst({
