@@ -5,7 +5,7 @@ import { Socket } from 'socket.io';
  * Device socket data interface - Enhanced for ESP8266
  */
 export interface DeviceSocketData {
-    deviceId: string;
+    serialNumber: string;
     accountId?: string;
     isIoTDevice: boolean;
     isESP8266?: boolean;              // ESP8266 detection flag
@@ -40,7 +40,7 @@ export interface DeviceCapabilities {
 }
 
 export interface LEDPresetData {
-    deviceId: string;
+    serialNumber: string;
     preset: string;
     duration?: number;
     timestamp: string;
@@ -55,7 +55,7 @@ export interface LEDPresetData {
  * Sensor data structure - Enhanced for ESP8266 Fire Alarm
  */
 export interface SensorData {
-    deviceId?: string;
+    serialNumber?: string;
     gas?: number;
     temperature?: number;
     humidity?: number;
@@ -95,7 +95,7 @@ export interface ESP8266FireAlarmData {
  * ESP8266 Status structure
  */
 export interface ESP8266Status {
-    deviceId: string;
+    serialNumber: string;
     online: boolean;
     wifi_connected: boolean;
     wifi_rssi: number;
@@ -131,7 +131,7 @@ export interface ESP8266Config {
  * Device status structure
  */
 export interface DeviceStatus {
-    deviceId: string;
+    serialNumber: string;
     power_status?: boolean;
     color?: string;
     brightness?: number;
@@ -145,7 +145,7 @@ export interface DeviceStatus {
  * Alert data structure - Enhanced for ESP8266
  */
 export interface AlertData {
-    deviceId: string;
+    serialNumber: string;
     alertType: number;
     message: string;
     severity: 'low' | 'medium' | 'high' | 'critical';
@@ -168,7 +168,7 @@ export interface CommandData {
         color?: string;
         [key: string]: any;
     };
-    deviceId?: string;
+    serialNumber?: string;
     fromClient?: string;
     timestamp?: string;
     // ESP8266 specific commands
@@ -187,7 +187,7 @@ export interface CommandResponse {
     success: boolean;
     result?: any;
     error?: string;
-    deviceId?: string;
+    serialNumber?: string;
     commandId?: string;
     timestamp: string;
 }
@@ -198,7 +198,7 @@ export interface CommandResponse {
 export interface CommandStatus {
     status: 'pending' | 'executing' | 'completed' | 'failed';
     progress?: number;
-    deviceId?: string;
+    serialNumber?: string;
     commandId?: string;
     timestamp: string;
 }
@@ -232,18 +232,18 @@ export interface ServerToClientEvents {
     /**
      * Emitted when a device connects
      */
-    device_connect: (data: { deviceId: string; deviceType?: string; timestamp?: string }) => void;
+    device_connect: (data: { serialNumber: string; deviceType?: string; timestamp?: string }) => void;
 
     /**
      * Emitted when a device disconnects
      */
-    device_disconnect: (data: { deviceId: string; timestamp: string }) => void;
+    device_disconnect: (data: { serialNumber: string; timestamp: string }) => void;
 
     /**
      * Emitted when a device comes online
      */
     device_online: (data: {
-        deviceId: string;
+        serialNumber: string;
         capabilities?: DeviceCapabilities;
         deviceType?: string;
         firmware_version?: string;
@@ -256,7 +256,7 @@ export interface ServerToClientEvents {
      * Emitted when device capabilities are updated
      */
     capabilities_updated: (data: {
-        deviceId: string;
+        serialNumber: string;
         capabilities: DeviceCapabilities;
         timestamp: string;
     }) => void;
@@ -297,7 +297,7 @@ export interface ServerToClientEvents {
      * Emitted for emergency alerts from ESP8266
      */
     emergency_alert: (data: {
-        deviceId: string;
+        serialNumber: string;
         type: 'fire_alarm' | 'smoke' | 'gas' | 'co' | 'system_error';
         severity: 'critical' | 'high' | 'medium' | 'low';
         data: ESP8266FireAlarmData;
@@ -314,7 +314,7 @@ export interface ServerToClientEvents {
      * Emitted when an alarm alert occurs - Enhanced for ESP8266
      */
     alarmAlert: (data: {
-        deviceId: string;
+        serialNumber: string;
         alarmActive: boolean;
         temperature?: number;
         gasValue?: number;
@@ -349,7 +349,7 @@ export interface ServerToClientEvents {
      */
     command_sent: (data: {
         success: boolean;
-        deviceId: string;
+        serialNumber: string;
         command: CommandData;
         timestamp: string;
     }) => void;
@@ -358,12 +358,12 @@ export interface ServerToClientEvents {
     /**
      * Emitted to reset ESP8266 alarm
      */
-    reset_alarm: (data: { deviceId: string; fromClient: string; timestamp: string }) => void;
+    reset_alarm: (data: { serialNumber: string; fromClient: string; timestamp: string }) => void;
 
     /**
      * Emitted to test ESP8266 alarm
      */
-    test_alarm: (data: { deviceId: string; fromClient: string; timestamp: string }) => void;
+    test_alarm: (data: { serialNumber: string; fromClient: string; timestamp: string }) => void;
 
     /**
      * Emitted to update ESP8266 configuration
@@ -373,17 +373,17 @@ export interface ServerToClientEvents {
     /**
      * Emitted to confirm ESP8266 reset alarm sent
      */
-    reset_alarm_sent: (data: { success: boolean; deviceId: string; timestamp: string }) => void;
+    reset_alarm_sent: (data: { success: boolean; serialNumber: string; timestamp: string }) => void;
 
     /**
      * Emitted to confirm ESP8266 test alarm sent
      */
-    test_alarm_sent: (data: { success: boolean; deviceId: string; timestamp: string }) => void;
+    test_alarm_sent: (data: { success: boolean; serialNumber: string; timestamp: string }) => void;
 
     /**
      * Emitted to confirm ESP8266 config update sent
      */
-    config_update_sent: (data: { success: boolean; deviceId: string; configSize: number; timestamp: string }) => void;
+    config_update_sent: (data: { success: boolean; serialNumber: string; configSize: number; timestamp: string }) => void;
 
     /**
      * Emitted when ESP8266 config error occurs
@@ -395,7 +395,7 @@ export interface ServerToClientEvents {
      * Emitted to confirm real-time monitoring started
      */
     realtime_started: (data: {
-        deviceId: string;
+        serialNumber: string;
         status: 'started';
         timestamp: string;
     }) => void;
@@ -404,7 +404,7 @@ export interface ServerToClientEvents {
      * Emitted to confirm real-time monitoring stopped
      */
     realtime_stopped: (data: {
-        deviceId: string;
+        serialNumber: string;
         status: 'stopped';
         timestamp: string;
     }) => void;
@@ -414,7 +414,7 @@ export interface ServerToClientEvents {
      * Emitted when buzzer status changes
      */
     buzzerStatus: (data: {
-        deviceId: string;
+        serialNumber: string;
         buzzerActive: boolean;
         timestamp: string;
     }) => void;
@@ -466,7 +466,7 @@ export interface ServerToClientEvents {
     /**
      * Emitted when LED effect is stopped
      */
-    led_effect_stopped: (data: { deviceId: string; timestamp: string }) => void;
+    led_effect_stopped: (data: { serialNumber: string; timestamp: string }) => void;
 
     /**
      * Emitted when LED preset is applied
@@ -477,7 +477,7 @@ export interface ServerToClientEvents {
      * Emitted when LED preset error occurs
      */
     led_preset_error: (data: {                    // ADD THIS
-        deviceId: string;
+        serialNumber: string;
         error: string;
         available_presets?: string[];
         timestamp: string;
@@ -492,7 +492,7 @@ export interface ServerToClientEvents {
      * Emitted when LED state is updated
      */
     led_state_updated: (data: {                   // ADD THIS
-        deviceId: string;
+        serialNumber: string;
         state: {
             power_status?: boolean;
             color?: string;
@@ -505,7 +505,7 @@ export interface ServerToClientEvents {
      * Emitted to confirm LED effect command was sent
      */
     led_effect_command_sent: (data: {
-        deviceId: string;
+        serialNumber: string;
         effect: string;
         success: boolean;
         timestamp: string;
@@ -515,7 +515,7 @@ export interface ServerToClientEvents {
      * Emitted when LED test pattern is completed
      */
     led_test_completed: (data: {
-        deviceId: string;
+        serialNumber: string;
         test_type: string;
         success: boolean;
         timestamp: string;
@@ -525,7 +525,7 @@ export interface ServerToClientEvents {
      * Emitted when LED capabilities are requested
      */
     led_capabilities: (data: {                    // ADD THIS
-        deviceId: string;
+        serialNumber: string;
         supported_effects: string[];
         supported_presets: string[];
         parameters: {
@@ -572,7 +572,7 @@ export interface ClientToServerEvents {
      */
     alarmAlert: (data: {
         type: 'alarmAlert';
-        deviceId: string;
+        serialNumber: string;
         alarmActive: boolean;
         temperature?: number;
         gasValue?: number;
@@ -584,7 +584,7 @@ export interface ClientToServerEvents {
      * Sent when buzzer status changes
      */
     buzzerStatus: (data: {
-        deviceId: string;
+        serialNumber: string;
         buzzerActive: boolean;
         timestamp: string;
     }) => void;
@@ -613,7 +613,7 @@ export interface ClientToServerEvents {
     /**
      * Sent for ESP8266 heartbeat
      */
-    heartbeat: (data: { deviceId: string; uptime: number; free_heap: number; timestamp: string }) => void;
+    heartbeat: (data: { serialNumber: string; uptime: number; free_heap: number; timestamp: string }) => void;
 
     // ================== COMMAND EVENTS ==================
     /**
@@ -635,12 +635,12 @@ export interface ClientToServerEvents {
     /**
      * Sent to reset ESP8266 alarm
      */
-    reset_alarm: (data: { deviceId: string }) => void;
+    reset_alarm: (data: { serialNumber: string }) => void;
 
     /**
      * Sent to test ESP8266 alarm
      */
-    test_alarm: (data: { deviceId: string }) => void;
+    test_alarm: (data: { serialNumber: string }) => void;
 
     /**
      * Sent to update ESP8266 configuration
@@ -651,12 +651,12 @@ export interface ClientToServerEvents {
     /**
      * Sent to start real-time device monitoring
      */
-    start_real_time_device: (data: { deviceId: string }) => void;
+    start_real_time_device: (data: { serialNumber: string }) => void;
 
     /**
      * Sent to stop real-time device monitoring
      */
-    stop_real_time_device: (data: { deviceId: string }) => void;
+    stop_real_time_device: (data: { serialNumber: string }) => void;
 
     // ================== CONNECTION MANAGEMENT ==================
     /**
@@ -748,7 +748,7 @@ export interface InterServerEvents {
      */
     broadcast_device_event: (data: {
         event: string;
-        deviceId: string;
+        serialNumber: string;
         data: any;
     }) => void;
 }
@@ -880,7 +880,7 @@ export function isESP8266Command(data: any): data is CommandData {
  * LED Effect data structure
  */
 export interface LEDEffectData {
-    deviceId: string;
+    serialNumber: string;
     effect: string;  // 'solid', 'blink', 'breathe', 'rainbow', 'chase', 'fade', 'strobe', 'colorWave'
     speed?: number;  // Effect speed in milliseconds (100-2000)
     count?: number;  // Number of iterations (0 = infinite)
@@ -894,7 +894,7 @@ export interface LEDEffectData {
  * LED Preset data structure
  */
 export interface LEDPresetData {
-    deviceId: string;
+    serialNumber: string;
     preset: string;  // 'party_mode', 'relaxation_mode', 'gaming_mode', etc.
     duration?: number;  // Duration in milliseconds
     timestamp: string;
@@ -904,7 +904,7 @@ export interface LEDPresetData {
  * LED Status data structure
  */
 export interface LEDStatusData {
-    deviceId: string;
+    serialNumber: string;
     power_status: boolean;
     color: string;
     brightness: number;
@@ -953,7 +953,7 @@ export enum LEDPreset {
 export function isLEDEffectData(data: any): data is LEDEffectData {
     return data &&
         typeof data === 'object' &&
-        typeof data.deviceId === 'string' &&
+        typeof data.serialNumber === 'string' &&
         typeof data.effect === 'string' &&
         Object.values(LEDEffect).includes(data.effect);
 }
@@ -964,7 +964,7 @@ export function isLEDEffectData(data: any): data is LEDEffectData {
 export function isLEDPresetData(data: any): data is LEDPresetData {
     return data &&
         typeof data === 'object' &&
-        typeof data.deviceId === 'string' &&
+        typeof data.serialNumber === 'string' &&
         typeof data.preset === 'string' &&
         Object.values(LEDPreset).includes(data.preset);
 }

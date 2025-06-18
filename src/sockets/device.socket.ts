@@ -1,4 +1,3 @@
-// src/sockets/device.socket.ts
 import { Server, Socket, Namespace } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
 import redisClient from '../utils/redis';
@@ -76,36 +75,36 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
             });
         }
 
-        const { deviceId, isIoTDevice = 'true', client_type, firmware_version } = socket.handshake.query as {
-            deviceId?: string;
+        const { serialNumber, isIoTDevice = 'true', client_type, firmware_version } = socket.handshake.query as {
+            serialNumber?: string;
             isIoTDevice?: string;
             client_type?: string;
             firmware_version?: string;
         };
 
         console.log(`📋 ${clientType} connection params:`, {
-            deviceId,
+            serialNumber,
             isIoTDevice,
             client_type,
             firmware_version: firmware_version || 'unknown'
         });
 
-        if (!deviceId) {
-            console.log(`❌ ${clientType} connection rejected: Missing deviceId`);
+        if (!serialNumber) {
+            console.log(`❌ ${clientType} connection rejected: Missing serialNumber`);
             socket.disconnect();
             return;
         }
 
         socket.data = {
-            deviceId,
+            serialNumber,
             isIoTDevice: isIoTDevice === 'true',
             isESP8266,
             firmware_version
         };
 
         try {
-            const device = await prisma.devices.findUnique({
-                where: { serial_number: deviceId, is_deleted: false },
+            const device = await prisma.devices.findFirst({
+                where: { serial_number: serialNumber, is_deleted: false },
                 include: {
                     account: true,
                     spaces: true,
@@ -115,12 +114,12 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
             });
 
             if (!device) {
-                console.log(`❌ Device not found: ${deviceId}`);
+                console.log(`❌ Device not found: ${serialNumber}`);
                 socket.disconnect();
                 return;
             }
 
-            console.log(`📱 Device found in database: ${deviceId} - Owner: ${device.account_id} (${clientType})`);
+            console.log(`📱 Device found in database: ${serialNumber} - Owner: ${device.account_id} (${clientType})`);
 
             // Update device link status with ESP8266 info
             const updateData: any = {
@@ -135,61 +134,61 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
             }
 
             await prisma.devices.update({
-                where: { serial_number: deviceId },
+                where: { serial_number: serialNumber },
                 data: updateData,
             });
 
             // Create notification for device owner
             if (device.account_id) {
-                await redisClient.setex(`device:${deviceId}:account`, 3600, device.account_id);
+                await redisClient.setex(`device:${serialNumber}:account`, 3600, device.account_id);
                 await notificationService.createNotification({
                     account_id: device.account_id,
-                    text: `${clientType} ${deviceId} is now online.`,
+                    text: `${clientType} ${serialNumber} is now online.`,
                     type: NotificationType.SYSTEM,
                 });
             }
 
-            socket.join(`device:${deviceId}`);
+            socket.join(`device:${serialNumber}`);
 
             // Notify clients about device connection
             clientNamespace.emit('device_connect', {
-                deviceId,
+                serialNumber,
                 deviceType: clientType,
                 timestamp: new Date().toISOString()
             });
             clientNamespace.emit('device_online', {
-                deviceId,
+                serialNumber,
                 deviceType: clientType,
                 firmware_version,
                 timestamp: new Date().toISOString()
             });
 
-            console.log(`✅ ${clientType} connected successfully: ${deviceId}`);
+            console.log(`✅ ${clientType} connected successfully: ${serialNumber}`);
 
             // ============= SOCKET EVENT HANDLERS =============
 
             socket.on('device_online', (data) => {
-                console.log(`📡 Device online event from ${deviceId} (${clientType}):`, data);
+                console.log(`📡 Device online event from ${serialNumber} (${clientType}):`, data);
                 handleDeviceOnline(socket, clientNamespace, data, prisma);
             });
 
             socket.on('device_capabilities', (data) => {
-                console.log(`⚙️  Device capabilities from ${deviceId} (${clientType}):`, data);
+                console.log(`⚙️  Device capabilities from ${serialNumber} (${clientType}):`, data);
                 handleDeviceCapabilities(socket, clientNamespace, data, prisma);
             });
 
             socket.on('sensorData', (data) => {
-                console.log(`🌡️  Sensor data from ${deviceId} (${clientType}):`, data);
+                console.log(`🌡️  Sensor data from ${serialNumber} (${clientType}):`, data);
                 handleSensorData(socket, data, clientNamespace, prisma, alertService, notificationService, hourlyValueService);
             });
 
             // ESP8266 Fire Alarm specific events
             socket.on('alarm_trigger', (data) => {
-                console.log(`🚨 FIRE ALARM TRIGGERED from ${deviceId} (${clientType}):`, data);
+                console.log(`🚨 FIRE ALARM TRIGGERED from ${serialNumber} (${clientType}):`, data);
 
                 // Broadcast emergency alert to all clients
                 clientNamespace.emit('emergency_alert', {
-                    deviceId,
+                    serialNumber,
                     type: 'fire_alarm',
                     severity: 'critical',
                     data,
@@ -197,8 +196,8 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 });
 
                 // Also emit to device-specific room with correct alarmAlert format
-                clientNamespace.to(`device:${deviceId}`).emit('alarmAlert', {
-                    deviceId,
+                clientNamespace.to(`device:${serialNumber}`).emit('alarmAlert', {
+                    serialNumber,
                     alarmActive: true,
                     temperature: data.temperature,
                     gasValue: data.gas_level || data.smoke_level,
@@ -210,7 +209,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
             });
 
             socket.on('fire_detected', (data) => {
-                console.log(`🔥 Fire detection from ${deviceId} (${clientType}):`, data);
+                console.log(`🔥 Fire detection from ${serialNumber} (${clientType}):`, data);
 
                 clientNamespace.emit('fire_alert', {
                     ...data,
@@ -219,7 +218,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
             });
 
             socket.on('smoke_detected', (data) => {
-                console.log(`💨 Smoke detection from ${deviceId} (${clientType}):`, data);
+                console.log(`💨 Smoke detection from ${serialNumber} (${clientType}):`, data);
 
                 clientNamespace.emit('smoke_alert', {
                     ...data,
@@ -229,9 +228,9 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
 
             // ESP8266 Status events
             socket.on('esp8266_status', (data) => {
-                console.log(`📊 ESP8266 status from ${deviceId}:`, data);
+                console.log(`📊 ESP8266 status from ${serialNumber}:`, data);
 
-                clientNamespace.to(`device:${deviceId}`).emit('esp8266_status', {
+                clientNamespace.to(`device:${serialNumber}`).emit('esp8266_status', {
                     ...data,
                     timestamp: new Date().toISOString()
                 });
@@ -239,44 +238,44 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
 
             // Existing device events (maintained for compatibility)
             socket.on('deviceStatus', (data) => {
-                console.log(`📊 Device status from ${deviceId} (${clientType}):`, data);
-                clientNamespace.to(`device:${deviceId}`).emit('deviceStatus', data);
+                console.log(`📊 Device status from ${serialNumber} (${clientType}):`, data);
+                clientNamespace.to(`device:${serialNumber}`).emit('deviceStatus', data);
             });
 
             socket.on('alarmAlert', (data) => {
-                console.log(`🚨 Alarm alert from ${deviceId} (${clientType}):`, data);
-                clientNamespace.to(`device:${deviceId}`).emit('alarmAlert', data);
+                console.log(`🚨 Alarm alert from ${serialNumber} (${clientType}):`, data);
+                clientNamespace.to(`device:${serialNumber}`).emit('alarmAlert', data);
             });
 
             // Command response from IoT device back to client
             socket.on('command_response', (responseData) => {
-                console.log(`📥 Command response from device ${deviceId} (${clientType}):`, responseData);
-                clientNamespace.to(`device:${deviceId}`).emit('command_response', {
+                console.log(`📥 Command response from device ${serialNumber} (${clientType}):`, responseData);
+                clientNamespace.to(`device:${serialNumber}`).emit('command_response', {
                     ...responseData,
-                    deviceId,
+                    serialNumber,
                     timestamp: new Date().toISOString()
                 });
             });
 
             // Command execution status
             socket.on('command_status', (statusData) => {
-                console.log(`⚡ Command status from device ${deviceId} (${clientType}):`, statusData);
-                clientNamespace.to(`device:${deviceId}`).emit('command_status', {
+                console.log(`⚡ Command status from device ${serialNumber} (${clientType}):`, statusData);
+                clientNamespace.to(`device:${serialNumber}`).emit('command_status', {
                     ...statusData,
-                    deviceId,
+                    serialNumber,
                     timestamp: new Date().toISOString()
                 });
             });
 
             // ============= ESP8266 SPECIFIC PING/PONG =============
             socket.on('ping', () => {
-                console.log(`🏓 Ping from ${clientType} ${deviceId}`);
+                console.log(`🏓 Ping from ${clientType} ${serialNumber}`);
                 socket.emit('pong', { timestamp: new Date().toISOString() });
             });
 
             // ESP8266 keep-alive (alternative to ping)
             socket.on('heartbeat', (data) => {
-                console.log(`💓 Heartbeat from ${clientType} ${deviceId}:`, data);
+                console.log(`💓 Heartbeat from ${clientType} ${serialNumber}:`, data);
                 socket.emit('heartbeat_ack', {
                     received: true,
                     timestamp: new Date().toISOString()
@@ -285,20 +284,20 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
 
             // ============= ERROR HANDLING FOR ESP8266 =============
             socket.on('error', (error) => {
-                console.error(`❌ Socket error from ${clientType} ${deviceId}:`, error);
+                console.error(`❌ Socket error from ${clientType} ${serialNumber}:`, error);
             });
 
             socket.on('connect_error', (error) => {
-                console.error(`❌ Connection error from ${clientType} ${deviceId}:`, error);
+                console.error(`❌ Connection error from ${clientType} ${serialNumber}:`, error);
             });
 
             socket.on('disconnect', (reason) => {
-                console.log(`🔌 ${clientType} ${deviceId} disconnecting... Reason: ${reason}`);
+                console.log(`🔌 ${clientType} ${serialNumber} disconnecting... Reason: ${reason}`);
                 handleDeviceDisconnect(socket, clientNamespace, prisma, notificationService);
             });
 
         } catch (error) {
-            console.error(`❌ ${clientType} socket error for ${deviceId}:`, error);
+            console.error(`❌ ${clientType} socket error for ${serialNumber}:`, error);
             socket.disconnect();
         }
     });
@@ -307,60 +306,60 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
     clientNamespace.on('connection', async (socket: DeviceSocket) => {
         console.log(`📱 New CLIENT connection attempt to /client - Socket ID: ${socket.id}`);
 
-        const { deviceId, accountId } = socket.handshake.query as {
-            deviceId?: string;
+        const { serialNumber, accountId } = socket.handshake.query as {
+            serialNumber?: string;
             accountId?: string;
         };
 
-        console.log(`📋 Client connection params - deviceId: ${deviceId}, accountId: ${accountId}`);
+        console.log(`📋 Client connection params - serialNumber: ${serialNumber}, accountId: ${accountId}`);
 
-        if (!deviceId || !accountId) {
-            console.log('❌ CLIENT connection rejected: Missing deviceId or accountId');
+        if (!serialNumber|| !accountId) {
+            console.log('❌ CLIENT connection rejected: Missing serialNumber or accountId');
             socket.disconnect();
             return;
         }
 
-        socket.data = { deviceId, accountId, isIoTDevice: false };
+        socket.data = { serialNumber, accountId, isIoTDevice: false };
 
         try {
             // Validate device access
-            const hasAccess = await validateDeviceAccess(deviceId, accountId, prisma);
+            const hasAccess = await validateDeviceAccess(serialNumber, accountId, prisma);
             if (!hasAccess) {
-                console.log(`❌ Access denied for user ${accountId} to device ${deviceId}`);
+                console.log(`❌ Access denied for user ${accountId} to device ${serialNumber}`);
                 socket.disconnect();
                 return;
             }
 
-            socket.join(`device:${deviceId}`);
-            console.log(`✅ CLIENT connected to device ${deviceId} by user ${accountId}`);
+            socket.join(`device:${serialNumber}`);
+            console.log(`✅ CLIENT connected to device ${serialNumber} by user ${accountId}`);
 
             // Real-time device monitoring
-            socket.on('start_real_time_device', ({ deviceId: targetDeviceId }) => {
-                console.log(`🔴 Client requesting real-time for device: ${targetDeviceId}`);
-                if (targetDeviceId === deviceId) {
-                    socket.join(`device:${deviceId}:realtime`);
-                    console.log(`✅ Started real-time monitoring for device ${deviceId} - Client in room: device:${deviceId}:realtime`);
+            socket.on('start_real_time_device', ({ serialNumber: targetSerialNumber}) => {
+                console.log(`🔴 Client requesting real-time for device: ${targetSerialNumber}`);
+                if (targetSerialNumber=== serialNumber) {
+                    socket.join(`device:${serialNumber}:realtime`);
+                    console.log(`✅ Started real-time monitoring for device ${serialNumber} - Client in room: device:${serialNumber}:realtime`);
 
                     // Confirm to client
                     socket.emit('realtime_started', {
-                        deviceId,
+                        serialNumber,
                         status: 'started',
                         timestamp: new Date().toISOString()
                     });
                 } else {
-                    console.log(`❌ Device ID mismatch: requested=${targetDeviceId}, connected=${deviceId}`);
+                    console.log(`❌ Device ID mismatch: requested=${targetSerialNumber}, connected=${serialNumber}`);
                 }
             });
 
-            socket.on('stop_real_time_device', ({ deviceId: targetDeviceId }) => {
-                console.log(`🔵 Client stopping real-time for device: ${targetDeviceId}`);
-                if (targetDeviceId === deviceId) {
-                    socket.leave(`device:${deviceId}:realtime`);
-                    console.log(`✅ Stopped real-time monitoring for device ${deviceId}`);
+            socket.on('stop_real_time_device', ({ serialNumber: targetSerialNumber}) => {
+                console.log(`🔵 Client stopping real-time for device: ${targetSerialNumber}`);
+                if (targetSerialNumber=== serialNumber) {
+                    socket.leave(`device:${serialNumber}:realtime`);
+                    console.log(`✅ Stopped real-time monitoring for device ${serialNumber}`);
 
                     // Confirm to client
                     socket.emit('realtime_stopped', {
-                        deviceId,
+                        serialNumber,
                         status: 'stopped',
                         timestamp: new Date().toISOString()
                     });
@@ -370,7 +369,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
             // ============= COMMAND HANDLING FOR ESP8266 =============
             // Forward commands to IoT device (including ESP8266)
             socket.on('command', (commandData) => {
-                console.log(`🎮 Generic command from client for device ${deviceId}:`, commandData);
+                console.log(`🎮 Generic command from client for device ${serialNumber}:`, commandData);
 
                 // Only handle non-LED specific commands here
                 const isLEDCommand = ['setEffect', 'applyPreset', 'stopEffect', 'updateLEDState'].includes(commandData.action);
@@ -388,7 +387,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 };
 
                 // Forward command to IoT device in device namespace
-                deviceNamespace.to(`device:${deviceId}`).emit('command', {
+                deviceNamespace.to(`device:${serialNumber}`).emit('command', {
                     ...simplifiedCommand,
                     fromClient: accountId
                 });
@@ -396,50 +395,50 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 // Send acknowledgment back to client
                 socket.emit('command_sent', {
                     success: true,
-                    deviceId,
+                    serialNumber,
                     command: simplifiedCommand,
                     timestamp: new Date().toISOString()
                 });
 
-                console.log(`📤 Generic command forwarded to device ${deviceId} (ESP8266 compatible):`, simplifiedCommand);
+                console.log(`📤 Generic command forwarded to device ${serialNumber} (ESP8266 compatible):`, simplifiedCommand);
             });
             // ESP8266 specific: Reset alarm command
             socket.on('reset_alarm', (data) => {
-                console.log(`🔄 Reset alarm command for device ${deviceId}:`, data);
+                console.log(`🔄 Reset alarm command for device ${serialNumber}:`, data);
 
-                deviceNamespace.to(`device:${deviceId}`).emit('reset_alarm', {
-                    deviceId,
+                deviceNamespace.to(`device:${serialNumber}`).emit('reset_alarm', {
+                    serialNumber,
                     fromClient: accountId,
                     timestamp: new Date().toISOString()
                 });
 
                 socket.emit('reset_alarm_sent', {
                     success: true,
-                    deviceId,
+                    serialNumber,
                     timestamp: new Date().toISOString()
                 });
             });
 
             // ESP8266 specific: Test alarm command
             socket.on('test_alarm', (data) => {
-                console.log(`🧪 Test alarm command for device ${deviceId}:`, data);
+                console.log(`🧪 Test alarm command for device ${serialNumber}:`, data);
 
-                deviceNamespace.to(`device:${deviceId}`).emit('test_alarm', {
-                    deviceId,
+                deviceNamespace.to(`device:${serialNumber}`).emit('test_alarm', {
+                    serialNumber,
                     fromClient: accountId,
                     timestamp: new Date().toISOString()
                 });
 
                 socket.emit('test_alarm_sent', {
                     success: true,
-                    deviceId,
+                    serialNumber,
                     timestamp: new Date().toISOString()
                 });
             });
 
             // ESP8266 specific: Configuration update
             socket.on('update_config', (configData) => {
-                console.log(`⚙️ Config update for ESP8266 device ${deviceId}:`, configData);
+                console.log(`⚙️ Config update for ESP8266 device ${serialNumber}:`, configData);
 
                 // Validate config size for ESP8266 memory constraints
                 const configSize = JSON.stringify(configData).length;
@@ -452,7 +451,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                     return;
                 }
 
-                deviceNamespace.to(`device:${deviceId}`).emit('update_config', {
+                deviceNamespace.to(`device:${serialNumber}`).emit('update_config', {
                     config: configData,
                     fromClient: accountId,
                     timestamp: new Date().toISOString()
@@ -460,7 +459,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
 
                 socket.emit('config_update_sent', {
                     success: true,
-                    deviceId,
+                    serialNumber,
                     configSize,
                     timestamp: new Date().toISOString()
                 });
@@ -476,7 +475,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 color1?: string;
                 color2?: string;
             }) => {
-                console.log(`🌟 Set LED effect command for device ${deviceId}:`, effectData);
+                console.log(`🌟 Set LED effect command for device ${serialNumber}:`, effectData);
 
                 const ledCommand = {
                     action: 'setEffect',
@@ -490,10 +489,10 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                     timestamp: new Date().toISOString()
                 };
 
-                deviceNamespace.to(`device:${deviceId}`).emit('command', ledCommand);
+                deviceNamespace.to(`device:${serialNumber}`).emit('command', ledCommand);
 
                 socket.emit('led_effect_set', {
-                    deviceId,
+                    serialNumber,
                     effect: effectData.effect,
                     speed: effectData.speed || 500,
                     count: effectData.count || 0,
@@ -503,11 +502,11 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                     timestamp: new Date().toISOString()
                 } as LEDEffectData);
 
-                console.log(`📤 LED effect command forwarded to device ${deviceId}:`, ledCommand);
+                console.log(`📤 LED effect command forwarded to device ${serialNumber}:`, ledCommand);
             });
 
             socket.on('applyPreset', (presetData: { preset: string; duration?: number }) => {
-                console.log(`🎨 Apply LED preset command for device ${deviceId}:`, presetData);
+                console.log(`🎨 Apply LED preset command for device ${serialNumber}:`, presetData);
 
                 const presets: Record<string, {
                     effect: string;
@@ -543,10 +542,10 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                         timestamp: new Date().toISOString()
                     };
 
-                    deviceNamespace.to(`device:${deviceId}`).emit('command', ledCommand);
+                    deviceNamespace.to(`device:${serialNumber}`).emit('command', ledCommand);
 
                     socket.emit('led_preset_applied', {
-                        deviceId,
+                        serialNumber,
                         preset: presetData.preset,
                         duration: presetData.duration || 0,
                         timestamp: new Date().toISOString(),
@@ -561,7 +560,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 } else {
                     console.warn(`❌ Unknown preset: ${presetData.preset}`);
                     socket.emit('led_preset_error', {
-                        deviceId,
+                        serialNumber,
                         error: `Unknown preset: ${presetData.preset}`,
                         available_presets: Object.keys(presets),
                         timestamp: new Date().toISOString()
@@ -574,7 +573,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 color?: string;
                 brightness?: number;
             }) => {
-                console.log(`💡 Update LED state command for device ${deviceId}:`, stateData);
+                console.log(`💡 Update LED state command for device ${serialNumber}:`, stateData);
 
                 const stateCommand = {
                     action: 'updateState',
@@ -587,22 +586,22 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                     timestamp: new Date().toISOString()
                 };
 
-                deviceNamespace.to(`device:${deviceId}`).emit('command', stateCommand);
+                deviceNamespace.to(`device:${serialNumber}`).emit('command', stateCommand);
 
                 socket.emit('led_state_updated', {
-                    deviceId,
+                    serialNumber,
                     state: stateCommand.state,
                     timestamp: new Date().toISOString()
                 });
 
-                console.log(`📤 LED state update forwarded to device ${deviceId}:`, stateCommand);
+                console.log(`📤 LED state update forwarded to device ${serialNumber}:`, stateCommand);
             });
 
             socket.on('getLEDCapabilities', () => {
-                console.log(`🔍 LED capabilities request for device ${deviceId}`);
+                console.log(`🔍 LED capabilities request for device ${serialNumber}`);
 
                 const ledCapabilities = {
-                    deviceId,
+                    serialNumber,
                     supported_effects: [
                         'solid', 'blink', 'breathe', 'rainbow', 'chase',
                         'fade', 'strobe', 'colorWave', 'pulse', 'sparkle'
@@ -622,11 +621,11 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 };
 
                 socket.emit('led_capabilities', ledCapabilities);
-                console.log(`📤 LED capabilities sent for device ${deviceId}`);
+                console.log(`📤 LED capabilities sent for device ${serialNumber}`);
             });
 
             socket.on('disconnect', () => {
-                console.log(`📱 CLIENT disconnected from device ${deviceId} (user: ${accountId})`);
+                console.log(`📱 CLIENT disconnected from device ${serialNumber} (user: ${accountId})`);
             });
 
 

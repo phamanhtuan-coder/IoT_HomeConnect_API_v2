@@ -28,7 +28,7 @@ export const handleDeviceOnline = async (
     data: any,
     prisma: PrismaClient
 ) => {
-    const { deviceId } = socket.data;
+    const { serialNumber } = socket.data;
 
     try {
         const updateData: any = {
@@ -39,39 +39,39 @@ export const handleDeviceOnline = async (
         // Update runtime capabilities if provided
         if (data?.capabilities) {
             updateData.runtime_capabilities = data.capabilities;
-            console.log(`🔧 Updated capabilities for device ${deviceId}:`, data.capabilities);
+            console.log(`🔧 Updated capabilities for device ${serialNumber}:`, data.capabilities);
         }
 
         // ESP8266 specific: Handle firmware version if provided
         if (data?.firmware_version) {
             updateData.firmware_version = data.firmware_version;
-            console.log(`📡 ESP8266 firmware version ${deviceId}: ${data.firmware_version}`);
+            console.log(`📡 ESP8266 firmware version ${serialNumber}: ${data.firmware_version}`);
         }
 
         // ESP8266 specific: Handle hardware info
         if (data?.hardware_info) {
             updateData.hardware_info = data.hardware_info;
-            console.log(`🔌 ESP8266 hardware info ${deviceId}:`, data.hardware_info);
+            console.log(`🔌 ESP8266 hardware info ${serialNumber}:`, data.hardware_info);
         }
 
         await prisma.devices.update({
-            where: { serial_number: deviceId },
+            where: { serial_number: serialNumber },
             data: updateData,
         });
 
         // Broadcast device online with capabilities to all clients
         clientNamespace.emit('device_online', {
-            deviceId,
+            serialNumber,
             capabilities: data?.capabilities,
             firmware_version: data?.firmware_version,
             hardware_info: data?.hardware_info,
             timestamp: new Date().toISOString()
         });
 
-        console.log(`✅ Device ${deviceId} is online with capabilities (ESP8266 compatible)`);
+        console.log(`✅ Device ${serialNumber} is online with capabilities (ESP8266 compatible)`);
 
     } catch (error) {
-        console.error(`❌ Error handling device online for ${deviceId}:`, error);
+        console.error(`❌ Error handling device online for ${serialNumber}:`, error);
 
         // ESP8266 specific: Send simple error response for memory-constrained devices
         try {
@@ -80,7 +80,7 @@ export const handleDeviceOnline = async (
                 message: 'Failed to update device status'
             });
         } catch (emitError) {
-            console.error(`Failed to send error to ESP8266 device ${deviceId}:`, emitError);
+            console.error(`Failed to send error to ESP8266 device ${serialNumber}:`, emitError);
         }
     }
 };
@@ -95,17 +95,17 @@ export const handleDeviceCapabilities = async (
     data: any,
     prisma: PrismaClient
 ) => {
-    const { deviceId } = socket.data;
+    const { serialNumber } = socket.data;
 
     try {
         // ESP8266 optimization: Validate data size before processing
         const dataSize = JSON.stringify(data).length;
         if (dataSize > 10000) { // 10KB limit for ESP8266
-            console.warn(`⚠️  Large capabilities data from ESP8266 ${deviceId}: ${dataSize} bytes`);
+            console.warn(`⚠️  Large capabilities data from ESP8266 ${serialNumber}: ${dataSize} bytes`);
         }
 
         await prisma.devices.update({
-            where: { serial_number: deviceId },
+            where: { serial_number: serialNumber },
             data: {
                 runtime_capabilities: data,
                 updated_at: new Date()
@@ -113,8 +113,8 @@ export const handleDeviceCapabilities = async (
         });
 
         // Broadcast capabilities update to clients
-        clientNamespace.to(`device:${deviceId}`).emit('capabilities_updated', {
-            deviceId,
+        clientNamespace.to(`device:${serialNumber}`).emit('capabilities_updated', {
+            serialNumber,
             capabilities: data,
             timestamp: new Date().toISOString()
         });
@@ -125,10 +125,10 @@ export const handleDeviceCapabilities = async (
             timestamp: new Date().toISOString()
         });
 
-        console.log(`🔧 Capabilities updated for device ${deviceId} (ESP8266 compatible)`);
+        console.log(`🔧 Capabilities updated for device ${serialNumber} (ESP8266 compatible)`);
 
     } catch (error) {
-        console.error(`❌ Error updating capabilities for ${deviceId}:`, error);
+        console.error(`❌ Error updating capabilities for ${serialNumber}:`, error);
 
         // ESP8266 specific: Send error acknowledgment
         socket.emit('capabilities_ack', {
@@ -161,7 +161,7 @@ export const handleSensorData = async (
     notificationService: NotificationService,
     hourlyValueService: HourlyValueService
 ) => {
-    const { deviceId } = socket.data;
+    const { serialNumber } = socket.data;
 
     try {
         // ESP8266 optimization: Process data efficiently
@@ -181,7 +181,7 @@ export const handleSensorData = async (
             data.humidity !== undefined;
 
         if (hasAnalyticsData) {
-            await hourlyValueService.processSensorData(deviceId, {
+            await hourlyValueService.processSensorData(serialNumber, {
                 gas: data.gas,
                 temperature: data.temperature,
                 humidity: data.humidity
@@ -222,14 +222,14 @@ export const handleSensorData = async (
 
         // ESP8266 specific: Low battery warning
         if (data.battery_level && data.battery_level < 20) {
-            console.warn(`🔋 Low battery warning for ESP8266 ${deviceId}: ${data.battery_level}%`);
+            console.warn(`🔋 Low battery warning for ESP8266 ${serialNumber}: ${data.battery_level}%`);
             // Create low battery notification (non-critical)
         }
 
         // Create alert if conditions met
         if (alertTriggered && alertType) {
             const device = await prisma.devices.findUnique({
-                where: { serial_number: deviceId },
+                where: { serial_number: serialNumber },
                 include: { account: true }
             });
 
@@ -256,27 +256,27 @@ export const handleSensorData = async (
 
                 // Broadcast alert to all clients monitoring this device
                 clientNamespace.emit('device_alert', {
-                    deviceId,
+                    serialNumber,
                     alertType,
                     message: alertMessage,
                     sensorData: data,
                     timestamp: new Date().toISOString()
                 });
 
-                console.log(`🚨 ALERT triggered for ESP8266 device ${deviceId}: ${alertMessage}`);
+                console.log(`🚨 ALERT triggered for ESP8266 device ${serialNumber}: ${alertMessage}`);
             }
         }
 
         // Broadcast sensor data to clients monitoring this device
-        clientNamespace.to(`device:${deviceId}`).emit('sensorData', {
-            deviceId,
+        clientNamespace.to(`device:${serialNumber}`).emit('sensorData', {
+            serialNumber,
             ...sensorData,
             timestamp: new Date().toISOString()
         });
 
         // Broadcast to real-time monitoring clients
-        clientNamespace.to(`device:${deviceId}:realtime`).emit('realtime_device_value', {
-            serial: deviceId,
+        clientNamespace.to(`device:${serialNumber}:realtime`).emit('realtime_device_value', {
+            serial: serialNumber,
             data: { val: sensorData }
         });
 
@@ -286,10 +286,10 @@ export const handleSensorData = async (
             timestamp: new Date().toISOString()
         });
 
-        console.log(`📊 Sensor data processed for ESP8266 device ${deviceId}`);
+        console.log(`📊 Sensor data processed for ESP8266 device ${serialNumber}`);
 
     } catch (error) {
-        console.error(`❌ Error handling sensor data for ${deviceId}:`, error);
+        console.error(`❌ Error handling sensor data for ${serialNumber}:`, error);
 
         // ESP8266 specific: Send error acknowledgment
         try {
@@ -299,7 +299,7 @@ export const handleSensorData = async (
                 timestamp: new Date().toISOString()
             });
         } catch (emitError) {
-            console.error(`Failed to send sensor_ack to ESP8266 ${deviceId}:`, emitError);
+            console.error(`Failed to send sensor_ack to ESP8266 ${serialNumber}:`, emitError);
         }
     }
 };
@@ -314,12 +314,12 @@ export const handleDeviceDisconnect = async (
     prisma: PrismaClient,
     notificationService: NotificationService
 ) => {
-    const { deviceId } = socket.data;
+    const { serialNumber } = socket.data;
 
     try {
         // Update device status
         await prisma.devices.update({
-            where: { serial_number: deviceId },
+            where: { serial_number: serialNumber },
             data: {
                 link_status: 'unlinked',
                 updated_at: new Date()
@@ -327,8 +327,8 @@ export const handleDeviceDisconnect = async (
         });
 
         // Get device info for notification
-        const device = await prisma.devices.findUnique({
-            where: { serial_number: deviceId },
+        const device = await prisma.devices.findFirst({
+            where: { serial_number: serialNumber },
             include: { account: true }
         });
 
@@ -336,21 +336,21 @@ export const handleDeviceDisconnect = async (
             // Create disconnect notification
             await notificationService.createNotification({
                 account_id: device.account_id,
-                text: `Device ${deviceId} has been disconnected.`,
+                text: `Device ${serialNumber} has been disconnected.`,
                 type: NotificationType.SYSTEM,
             });
         }
 
         // Broadcast disconnect to clients
         clientNamespace.emit('device_disconnect', {
-            deviceId,
+            serialNumber,
             timestamp: new Date().toISOString()
         });
 
-        console.log(`🔌 ESP8266 device ${deviceId} disconnected`);
+        console.log(`🔌 ESP8266 device ${serialNumber} disconnected`);
 
     } catch (error) {
-        console.error(`❌ Error handling ESP8266 disconnect for ${deviceId}:`, error);
+        console.error(`❌ Error handling ESP8266 disconnect for ${serialNumber}:`, error);
     }
 };
 
@@ -359,13 +359,13 @@ export const handleDeviceDisconnect = async (
  * Same logic maintained for compatibility
  */
 export const validateDeviceAccess = async (
-    deviceId: string,
+    serialNumber: string,
     accountId: string,
     prisma: PrismaClient
 ): Promise<boolean> => {
     try {
-        const device = await prisma.devices.findUnique({
-            where: { serial_number: deviceId, is_deleted: false },
+        const device = await prisma.devices.findFirst({
+            where: { serial_number: serialNumber, is_deleted: false },
             include: {
                 account: true,
                 spaces: {
@@ -396,7 +396,7 @@ export const validateDeviceAccess = async (
         // Check shared permissions
         const sharedPermission = await prisma.shared_permissions.findFirst({
             where: {
-                device_serial: deviceId,
+                device_serial: serialNumber,
                 shared_with_user_id: accountId,
                 is_deleted: false,
             },
