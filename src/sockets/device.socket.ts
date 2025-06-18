@@ -2,7 +2,7 @@
 import { Server, Socket, Namespace } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
 import redisClient from '../utils/redis';
-import { DeviceSocket, ServerToClientEvents, ClientToServerEvents } from '../types/socket';
+import {DeviceSocket, ServerToClientEvents, ClientToServerEvents, LEDPresetData, LEDEffectData} from '../types/socket';
 import { ErrorCodes, throwError } from '../utils/errors';
 import admin from '../config/firebase';
 import AlertService from '../services/alert.service';
@@ -370,7 +370,15 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
             // ============= COMMAND HANDLING FOR ESP8266 =============
             // Forward commands to IoT device (including ESP8266)
             socket.on('command', (commandData) => {
-                console.log(`🎮 Command from client for device ${deviceId}:`, commandData);
+                console.log(`🎮 Generic command from client for device ${deviceId}:`, commandData);
+
+                // Only handle non-LED specific commands here
+                const isLEDCommand = ['setEffect', 'applyPreset', 'stopEffect', 'updateLEDState'].includes(commandData.action);
+
+                if (isLEDCommand) {
+                    console.log(`⚠️  LED command received via generic handler. Use dedicated LED events instead.`);
+                    // Still forward but warn - for backward compatibility
+                }
 
                 // ESP8266 specific: Simplify command structure for memory constraints
                 const simplifiedCommand = {
@@ -393,9 +401,8 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                     timestamp: new Date().toISOString()
                 });
 
-                console.log(`📤 Command forwarded to device ${deviceId} (ESP8266 compatible):`, simplifiedCommand);
+                console.log(`📤 Generic command forwarded to device ${deviceId} (ESP8266 compatible):`, simplifiedCommand);
             });
-
             // ESP8266 specific: Reset alarm command
             socket.on('reset_alarm', (data) => {
                 console.log(`🔄 Reset alarm command for device ${deviceId}:`, data);
@@ -460,11 +467,18 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
             });
 
             // LED Effects WebSocket commands
-            socket.on('setEffect', (effectData) => {
+
+            socket.on('setEffect', (effectData: {
+                effect: string;
+                speed?: number;
+                count?: number;
+                duration?: number;
+                color1?: string;
+                color2?: string;
+            }) => {
                 console.log(`🌟 Set LED effect command for device ${deviceId}:`, effectData);
 
-                // Forward to device namespace with enhanced structure
-                deviceNamespace.to(`device:${deviceId}`).emit('command', {
+                const ledCommand = {
                     action: 'setEffect',
                     effect: effectData.effect,
                     speed: effectData.speed || 500,
@@ -474,9 +488,10 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                     color2: effectData.color2 || '#0000FF',
                     fromClient: accountId,
                     timestamp: new Date().toISOString()
-                });
+                };
 
-                // Send acknowledgment back to client
+                deviceNamespace.to(`device:${deviceId}`).emit('command', ledCommand);
+
                 socket.emit('led_effect_set', {
                     deviceId,
                     effect: effectData.effect,
@@ -486,63 +501,134 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                     color1: effectData.color1 || '#FF0000',
                     color2: effectData.color2 || '#0000FF',
                     timestamp: new Date().toISOString()
-                });
+                } as LEDEffectData);
 
-                console.log(`📤 LED effect command forwarded to device ${deviceId}:`, effectData);
+                console.log(`📤 LED effect command forwarded to device ${deviceId}:`, ledCommand);
             });
 
-            socket.on('stopEffect', () => {
-                console.log(`⏹️ Stop LED effect command for device ${deviceId}`);
-
-                deviceNamespace.to(`device:${deviceId}`).emit('command', {
-                    action: 'stopEffect',
-                    fromClient: accountId,
-                    timestamp: new Date().toISOString()
-                });
-
-                socket.emit('led_effect_stopped', {
-                    deviceId,
-                    timestamp: new Date().toISOString()
-                });
-            });
-
-            socket.on('applyPreset', (presetData) => {
+            socket.on('applyPreset', (presetData: { preset: string; duration?: number }) => {
                 console.log(`🎨 Apply LED preset command for device ${deviceId}:`, presetData);
 
-                // Define presets for WebSocket (simplified)
-                const presets = {
-                    party_mode: { effect: 'rainbow', speed: 200 },
-                    relaxation_mode: { effect: 'breathe', speed: 2000, color1: '#9370DB' },
-                    gaming_mode: { effect: 'chase', speed: 150, color1: '#00FF80', color2: '#FF0080' },
-                    alarm_mode: { effect: 'strobe', speed: 200, count: 20, color1: '#FF0000' },
-                    sleep_mode: { effect: 'fade', speed: 5000, color1: '#FFB366', color2: '#2F1B14' },
-                    wake_up_mode: { effect: 'fade', speed: 2000, color1: '#330000', color2: '#FFB366' },
-                    focus_mode: { effect: 'solid', color1: '#4169E1' },
-                    movie_mode: { effect: 'breathe', speed: 3000, color1: '#000080' }
+                const presets: Record<string, {
+                    effect: string;
+                    speed: number;
+                    count: number;
+                    color1: string;
+                    color2: string;
+                }> = {
+                    party_mode: { effect: 'rainbow', speed: 200, count: 0, color1: '#FF0000', color2: '#0000FF' },
+                    relaxation_mode: { effect: 'breathe', speed: 2000, count: 0, color1: '#9370DB', color2: '#9370DB' },
+                    gaming_mode: { effect: 'chase', speed: 150, count: 0, color1: '#00FF80', color2: '#FF0080' },
+                    alarm_mode: { effect: 'strobe', speed: 200, count: 20, color1: '#FF0000', color2: '#FF0000' },
+                    sleep_mode: { effect: 'fade', speed: 5000, count: 0, color1: '#FFB366', color2: '#2F1B14' },
+                    wake_up_mode: { effect: 'fade', speed: 2000, count: 0, color1: '#330000', color2: '#FFB366' },
+                    focus_mode: { effect: 'solid', speed: 0, count: 0, color1: '#4169E1', color2: '#4169E1' },
+                    movie_mode: { effect: 'breathe', speed: 3000, count: 0, color1: '#000080', color2: '#000080' },
+                    romantic_mode: { effect: 'pulse', speed: 1000, count: 0, color1: '#FF1493', color2: '#FF69B4' },
+                    celebration_mode: { effect: 'sparkle', speed: 100, count: 0, color1: '#FFD700', color2: '#FFFFFF' }
                 };
 
                 const preset = presets[presetData.preset];
+
                 if (preset) {
-                    deviceNamespace.to(`device:${deviceId}`).emit('command', {
+                    const ledCommand = {
                         action: 'setEffect',
-                        ...preset,
+                        effect: preset.effect,
+                        speed: preset.speed,
+                        count: preset.count,
                         duration: presetData.duration || 0,
+                        color1: preset.color1,
+                        color2: preset.color2,
                         fromClient: accountId,
                         timestamp: new Date().toISOString()
-                    });
+                    };
+
+                    deviceNamespace.to(`device:${deviceId}`).emit('command', ledCommand);
 
                     socket.emit('led_preset_applied', {
                         deviceId,
                         preset: presetData.preset,
                         duration: presetData.duration || 0,
+                        timestamp: new Date().toISOString(),
+                        // Add the missing fields
+                        effect: preset.effect,
+                        speed: preset.speed,
+                        color1: preset.color1,
+                        color2: preset.color2
+                    } as LEDPresetData);
+
+                    console.log(`📤 LED preset '${presetData.preset}' converted to setEffect and forwarded:`, ledCommand);
+                } else {
+                    console.warn(`❌ Unknown preset: ${presetData.preset}`);
+                    socket.emit('led_preset_error', {
+                        deviceId,
+                        error: `Unknown preset: ${presetData.preset}`,
+                        available_presets: Object.keys(presets),
                         timestamp: new Date().toISOString()
                     });
                 }
             });
 
+            socket.on('updateLEDState', (stateData: {
+                power_status?: boolean;
+                color?: string;
+                brightness?: number;
+            }) => {
+                console.log(`💡 Update LED state command for device ${deviceId}:`, stateData);
+
+                const stateCommand = {
+                    action: 'updateState',
+                    state: {
+                        power_status: stateData.power_status,
+                        color: stateData.color,
+                        brightness: stateData.brightness
+                    },
+                    fromClient: accountId,
+                    timestamp: new Date().toISOString()
+                };
+
+                deviceNamespace.to(`device:${deviceId}`).emit('command', stateCommand);
+
+                socket.emit('led_state_updated', {
+                    deviceId,
+                    state: stateCommand.state,
+                    timestamp: new Date().toISOString()
+                });
+
+                console.log(`📤 LED state update forwarded to device ${deviceId}:`, stateCommand);
+            });
+
+            socket.on('getLEDCapabilities', () => {
+                console.log(`🔍 LED capabilities request for device ${deviceId}`);
+
+                const ledCapabilities = {
+                    deviceId,
+                    supported_effects: [
+                        'solid', 'blink', 'breathe', 'rainbow', 'chase',
+                        'fade', 'strobe', 'colorWave', 'pulse', 'sparkle'
+                    ],
+                    supported_presets: [
+                        'party_mode', 'relaxation_mode', 'gaming_mode', 'alarm_mode',
+                        'sleep_mode', 'wake_up_mode', 'focus_mode', 'movie_mode',
+                        'romantic_mode', 'celebration_mode'
+                    ],
+                    parameters: {
+                        speed: { min: 50, max: 5000, default: 500 },
+                        brightness: { min: 0, max: 100, default: 100 },
+                        count: { min: 0, max: 100, default: 0 },
+                        duration: { min: 0, max: 60000, default: 0 }
+                    },
+                    timestamp: new Date().toISOString()
+                };
+
+                socket.emit('led_capabilities', ledCapabilities);
+                console.log(`📤 LED capabilities sent for device ${deviceId}`);
+            });
+
             socket.on('disconnect', () => {
                 console.log(`📱 CLIENT disconnected from device ${deviceId} (user: ${accountId})`);
             });
+
 
         } catch (error) {
             console.error(`❌ Client socket error:`, error);

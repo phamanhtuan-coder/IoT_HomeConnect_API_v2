@@ -889,6 +889,37 @@ router.post(
     asyncHandler(deviceController.stopLEDEffect)
 );
 
+/**
+ * Get available LED effects
+ */
+router.get(
+    '/:deviceId/led-effects',
+    authMiddleware,
+    validateMiddleware(deviceIdSchema),
+    asyncHandler(deviceController.getAvailableLEDEffects)
+);
+
+// /**
+//  * Get current LED status with effect info
+//  */
+// router.get(
+//     '/:deviceId/led-status',
+//     authMiddleware,
+//     validateMiddleware(deviceIdSchema),
+//     asyncHandler(deviceController.getLEDStatus)
+// );
+//
+// /**
+//  * Test LED patterns
+//  */
+// router.post(
+//     '/:deviceId/led-test',
+//     authMiddleware,
+//     validateMiddleware(deviceIdSchema),
+//     asyncHandler(deviceController.testLEDPattern)
+// );
+
+
 // ===== BACKWARD COMPATIBILITY ROUTES (DEPRECATED) =====
 // These routes are maintained for backward compatibility but should be migrated to unified endpoints
 

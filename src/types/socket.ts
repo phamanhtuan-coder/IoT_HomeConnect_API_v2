@@ -39,6 +39,18 @@ export interface DeviceCapabilities {
     };
 }
 
+export interface LEDPresetData {
+    deviceId: string;
+    preset: string;
+    duration?: number;
+    timestamp: string;
+    // Add missing fields that are being used
+    effect?: string;        // Add this
+    speed?: number;         // Add this
+    color1?: string;        // Add this
+    color2?: string;        // Add this
+}
+
 /**
  * Sensor data structure - Enhanced for ESP8266 Fire Alarm
  */
@@ -445,6 +457,7 @@ export interface ServerToClientEvents {
     error: (data: { code: string; message: string }) => void;
 
     // ================== LED CONTROL EVENTS ==================
+    // ================== LED CONTROL EVENTS ==================
     /**
      * Emitted when LED effect is set
      */
@@ -461,9 +474,32 @@ export interface ServerToClientEvents {
     led_preset_applied: (data: LEDPresetData) => void;
 
     /**
+     * Emitted when LED preset error occurs
+     */
+    led_preset_error: (data: {                    // ADD THIS
+        deviceId: string;
+        error: string;
+        available_presets?: string[];
+        timestamp: string;
+    }) => void;
+
+    /**
      * Emitted when LED status is updated
      */
     led_status_updated: (data: LEDStatusData) => void;
+
+    /**
+     * Emitted when LED state is updated
+     */
+    led_state_updated: (data: {                   // ADD THIS
+        deviceId: string;
+        state: {
+            power_status?: boolean;
+            color?: string;
+            brightness?: number;
+        };
+        timestamp: string;
+    }) => void;
 
     /**
      * Emitted to confirm LED effect command was sent
@@ -484,6 +520,25 @@ export interface ServerToClientEvents {
         success: boolean;
         timestamp: string;
     }) => void;
+
+    /**
+     * Emitted when LED capabilities are requested
+     */
+    led_capabilities: (data: {                    // ADD THIS
+        deviceId: string;
+        supported_effects: string[];
+        supported_presets: string[];
+        parameters: {
+            speed: { min: number; max: number; default: number };
+            brightness: { min: number; max: number; default: number };
+            count: { min: number; max: number; default: number };
+            duration: { min: number; max: number; default: number };
+        };
+        timestamp: string;
+    }) => void;
+
+
+
 }
 
 /**
@@ -652,6 +707,20 @@ export interface ClientToServerEvents {
      * Sent to get LED status
      */
     getLEDStatus: () => void;
+
+    /**
+     * Sent to get LED capabilities
+     */
+    getLEDCapabilities: () => void;              // ADD THIS
+
+    /**
+     * Sent to update LED state (basic control)
+     */
+    updateLEDState: (data: {                     // ADD THIS
+        power_status?: boolean;
+        color?: string;
+        brightness?: number;
+    }) => void;
 
     /**
      * Sent when LED status changes from device
