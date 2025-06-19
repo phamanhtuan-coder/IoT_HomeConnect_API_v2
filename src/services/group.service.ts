@@ -259,7 +259,17 @@ class GroupService {
 
         return userGroups
             .filter(ug => ug.groups && !ug.groups.is_deleted)
-            .map(ug => this.mapPrismaGroupToAuthGroup(ug.groups!));
+            .map(ug => ({
+                group_id: ug.groups!.group_id,
+                group_name: ug.groups!.group_name,
+                group_description: ug.groups!.group_description,
+                icon_name: ug.groups!.icon_name,
+                icon_color: ug.groups!.icon_color,
+                created_at: ug.groups!.created_at,
+                updated_at: ug.groups!.updated_at,
+                is_deleted: ug.groups!.is_deleted,
+                role: ug.role as GroupRole
+            }));
     }
 
     async getUsersInGroup(groupId: number): Promise<GroupMember[]> {

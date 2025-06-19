@@ -117,13 +117,13 @@ class TicketService {
 			if (to_user?.employee_id) {
 				// 4.4. Kiểm tra người nhận thiết bị là nhân viên
 				const employee = await this.prisma.employee.findFirst({
-					where: { employee_id: to_user!.employee_id, deleted_at: null },
+					where: { id: to_user!.id, deleted_at: null },
 				});
 				if (!employee) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy nhân viên');
 			} else if (to_user?.customer_id) {
 				// 4.4. Kiểm tra người nhận thiết bị là khách hàng
 				const customer = await this.prisma.customer.findFirst({
-					where: { customer_id: to_user!.customer_id, deleted_at: null },
+					where: { id: to_user!.id, deleted_at: null },
 				});
 				if (!customer) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy khách hàng');
 			}

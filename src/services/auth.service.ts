@@ -206,7 +206,7 @@ class AuthService {
                 accountId = generateAccountId();
                 customerId = generateCustomerId();
                 const idExists = await this.prisma.account.findFirst({ where: { account_id: accountId } });
-                const customerExists = await this.prisma.customer.findFirst({ where: { customer_id: customerId } });
+                const customerExists = await this.prisma.customer.findFirst({ where: { id: customerId } });
                 if (!idExists && !customerExists) break;
                 attempts++;
                 if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
@@ -225,7 +225,7 @@ class AuthService {
                 password: passwordHash,
                 customer: {
                     create: {   
-                        customer_id: customerId,
+                        id: customerId,
                         surname,
                         lastname: lastname || null,
                         image: image || null,
@@ -271,7 +271,7 @@ class AuthService {
             accountId = generateAccountId();
             employeeId = generateEmployeeId();
             const idExists = await this.prisma.account.findFirst({ where: { account_id: accountId } });
-            const employeeExists = await this.prisma.employee.findFirst({ where: { employee_id: employeeId } });
+            const employeeExists = await this.prisma.employee.findFirst({ where: { id: employeeId } });
             if (!idExists && !employeeExists) break;
             attempts++;
             if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
@@ -293,7 +293,7 @@ class AuthService {
         // Step 2: Create the employee and link to account
         const employee = await this.prisma.employee.create({
             data: {
-                employee_id: employeeId,
+                id: employeeId,
                 surname,
                 lastname: lastname || null,
                 image: image || null,
@@ -437,7 +437,7 @@ class AuthService {
         }
 
         await this.prisma.customer.update({
-            where: { customer_id: customer!.customer_id },
+            where: { id: customer!.id },
             data: {
                 email_verified: true,
                 updated_at: new Date()
@@ -496,7 +496,7 @@ class AuthService {
             const existingEmail = await this.prisma.customer.findFirst({
                 where: {
                     email: data.email,
-                    customer_id: { not: account?.customer?.customer_id }
+                    id: { not: account?.customer?.id }
                 }
             });
 
@@ -513,7 +513,7 @@ class AuthService {
 
         try {
             const customer = await this.prisma.customer.update({
-                where: { customer_id: account?.customer?.customer_id },
+                where: { id: account?.customer?.id },
                 data: {
                     ...updateData,
                     updated_at: new Date()
@@ -583,7 +583,7 @@ class AuthService {
                     username: true,
                     employee: {
                         select: {
-                            employee_id: true,
+                            id: true,
                             lastname: true,
                             surname: true,
                             phone: true,
@@ -672,6 +672,7 @@ class AuthService {
             })
 
             const formatUser = {
+                account_id: user?.account_id,
                 username: user?.username,
                 surname: user?.customer?.surname,
                 lastname: user?.customer?.lastname,
@@ -723,7 +724,7 @@ class AuthService {
 
             const emailExists = await this.prisma.employee.findFirst({
                 where: {
-                    employee_id: {
+                    id: {
                         not: account.employee_id!
                     },
                     deleted_at: null,
@@ -742,7 +743,7 @@ class AuthService {
             const phoneExists = await this.prisma.employee.findFirst({
                 where: {
                     phone: phone,
-                    employee_id: {
+                    id: {
                         not: account.employee_id!
                     }
                 }
@@ -754,7 +755,7 @@ class AuthService {
                 );
             }
             const employee = await this.prisma.employee.findFirst({
-                where: { employee_id: account.employee_id! }
+                where: { id: account.employee_id! }
             });
             if (!employee) {
                 return get_error_response(
@@ -763,7 +764,7 @@ class AuthService {
                 );
             }
             const updatedEmployee = await this.prisma.employee.update({
-                where: { employee_id: account.employee_id! },
+                where: { id: account.employee_id! },
                 data: {
                     surname,
                     lastname,
@@ -778,7 +779,7 @@ class AuthService {
             return get_error_response(
                 ERROR_CODES.SUCCESS,
                 STATUS_CODE.OK,
-                updatedEmployee.employee_id
+                updatedEmployee.id
             );
         } catch (error) {
             console.error('Error in updateEmployeeService:', error);

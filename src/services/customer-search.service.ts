@@ -45,7 +45,7 @@ export class CustomerSearchService {
                     AND: [
                         {
                             OR: [
-                                ...(customer ? [{ customer_id: customer.customer_id }] : []),
+                                ...(customer ? [{ customer_id: customer.id }] : []),
                                 ...(filters.username ? [{ username: { contains: filters.username } }] : []),
                                 ...(filters.customerId ? [{ customer_id: filters.customerId }] : [])
                             ]
@@ -144,7 +144,7 @@ export class CustomerSearchService {
                     status: account?.status
                 } : null,
                 customer: account?.customer ? {
-                    customer_id: account?.customer?.customer_id,
+                    customer_id: account?.customer?.id,
                     email: account?.customer?.email,
                     phone: account?.customer?.phone,
                     full_name: `${account?.customer?.surname ?? ''} ${account?.customer?.lastname ?? ''}`.trim(),
@@ -232,7 +232,7 @@ export class CustomerSearchService {
         try {
             const customer = await this.prisma.customer.findUnique({
                 where: {
-                    customer_id: customerId
+                    id: customerId
                 },
                 include: {
                     account: true
@@ -273,7 +273,7 @@ export class CustomerSearchService {
         try {
             const customer = await this.prisma.customer.findUnique({
                 where: {
-                    customer_id: customerId
+                    id: customerId
                 },
                 include: {
                     account: true
@@ -322,7 +322,7 @@ export class CustomerSearchService {
         try {
             const customer = await this.prisma.customer.findUnique({
                 where: {
-                    customer_id: customerId
+                    id: customerId
                 }
             });
 
@@ -332,7 +332,7 @@ export class CustomerSearchService {
 
             const updatedCustomer = await this.prisma.customer.update({
                 where: {
-                    customer_id: customerId
+                    id: customerId
                 },
                 data: {
                     ...updateData,
@@ -357,7 +357,7 @@ export class CustomerSearchService {
         try {
             const customer = await this.prisma.customer.findUnique({
                 where: {
-                    customer_id: customerId
+                    id: customerId
                 },
                 include: {
                     account: true
@@ -373,7 +373,7 @@ export class CustomerSearchService {
                 // Soft delete customer
                 await prisma.customer.update({
                     where: {
-                        customer_id: customerId
+                        id: customerId
                     },
                     data: {
                         deleted_at: new Date()
