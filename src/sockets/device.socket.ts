@@ -474,7 +474,8 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 duration?: number;
                 color1?: string;
                 color2?: string;
-            }) => {
+            }) =>
+            {
                 console.log(`🌟 Set LED effect command for device ${serialNumber}:`, effectData);
 
                 const ledCommand = {
@@ -508,64 +509,25 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
             socket.on('applyPreset', (presetData: { preset: string; duration?: number }) => {
                 console.log(`🎨 Apply LED preset command for device ${serialNumber}:`, presetData);
 
-                const presets: Record<string, {
-                    effect: string;
-                    speed: number;
-                    count: number;
-                    color1: string;
-                    color2: string;
-                }> = {
-                    party_mode: { effect: 'rainbow', speed: 200, count: 0, color1: '#FF0000', color2: '#0000FF' },
-                    relaxation_mode: { effect: 'breathe', speed: 2000, count: 0, color1: '#9370DB', color2: '#9370DB' },
-                    gaming_mode: { effect: 'chase', speed: 150, count: 0, color1: '#00FF80', color2: '#FF0080' },
-                    alarm_mode: { effect: 'strobe', speed: 200, count: 20, color1: '#FF0000', color2: '#FF0000' },
-                    sleep_mode: { effect: 'fade', speed: 5000, count: 0, color1: '#FFB366', color2: '#2F1B14' },
-                    wake_up_mode: { effect: 'fade', speed: 2000, count: 0, color1: '#330000', color2: '#FFB366' },
-                    focus_mode: { effect: 'solid', speed: 0, count: 0, color1: '#4169E1', color2: '#4169E1' },
-                    movie_mode: { effect: 'breathe', speed: 3000, count: 0, color1: '#000080', color2: '#000080' },
-                    romantic_mode: { effect: 'pulse', speed: 1000, count: 0, color1: '#FF1493', color2: '#FF69B4' },
-                    celebration_mode: { effect: 'sparkle', speed: 100, count: 0, color1: '#FFD700', color2: '#FFFFFF' }
+                // GỬI TRỰC TIẾP applyPreset command thay vì convert thành setEffect
+                const presetCommand = {
+                    action: 'applyPreset',  // ← QUAN TRỌNG: gửi applyPreset thay vì setEffect
+                    preset: presetData.preset,
+                    duration: presetData.duration || 0,
+                    fromClient: accountId,
+                    timestamp: new Date().toISOString()
                 };
 
-                const preset = presets[presetData.preset];
+                deviceNamespace.to(`device:${serialNumber}`).emit('command', presetCommand);
 
-                if (preset) {
-                    const ledCommand = {
-                        action: 'setEffect',
-                        effect: preset.effect,
-                        speed: preset.speed,
-                        count: preset.count,
-                        duration: presetData.duration || 0,
-                        color1: preset.color1,
-                        color2: preset.color2,
-                        fromClient: accountId,
-                        timestamp: new Date().toISOString()
-                    };
+                socket.emit('led_preset_applied', {
+                    serialNumber,
+                    preset: presetData.preset,
+                    duration: presetData.duration || 0,
+                    timestamp: new Date().toISOString()
+                } as LEDPresetData);
 
-                    deviceNamespace.to(`device:${serialNumber}`).emit('command', ledCommand);
-
-                    socket.emit('led_preset_applied', {
-                        serialNumber,
-                        preset: presetData.preset,
-                        duration: presetData.duration || 0,
-                        timestamp: new Date().toISOString(),
-                        // Add the missing fields
-                        effect: preset.effect,
-                        speed: preset.speed,
-                        color1: preset.color1,
-                        color2: preset.color2
-                    } as LEDPresetData);
-
-                    console.log(`📤 LED preset '${presetData.preset}' converted to setEffect and forwarded:`, ledCommand);
-                } else {
-                    console.warn(`❌ Unknown preset: ${presetData.preset}`);
-                    socket.emit('led_preset_error', {
-                        serialNumber,
-                        error: `Unknown preset: ${presetData.preset}`,
-                        available_presets: Object.keys(presets),
-                        timestamp: new Date().toISOString()
-                    });
-                }
+                console.log(`📤 LED preset '${presetData.preset}' command forwarded:`, presetCommand);
             });
 
             socket.on('updateLEDState', (stateData: {
