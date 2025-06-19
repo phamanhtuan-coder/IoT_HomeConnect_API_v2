@@ -474,16 +474,39 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 duration?: number;
                 color1?: string;
                 color2?: string;
-            }) =>
-            {
+            }) => {
                 console.log(`🌟 Set LED effect command for device ${serialNumber}:`, effectData);
+
+                // Validate effect name
+                const supportedEffects = [
+                    'solid', 'blink', 'breathe', 'rainbow', 'chase',
+                    'fade', 'strobe', 'sparkle', 'colorWave', 'rainbowMove',
+                    'disco', 'meteor', 'pulse', 'twinkle', 'fireworks'
+                ];
+
+                if (!supportedEffects.includes(effectData.effect)) {
+                    socket.emit('led_preset_error', {
+                        serialNumber,
+                        error: `Invalid preset: ${effectData.effect}`,
+                        available_presets: supportedEffects,
+                        timestamp: new Date().toISOString()
+                    });
+                    return;
+                }
+
+                // Validate and optimize parameters for ESP8266
+                let speed = effectData.speed || 500;
+                if (effectData.effect === 'disco' && speed > 200) {
+                    speed = Math.max(80, speed / 4); // Auto-optimize disco speed
+                    console.log(`⚡ Auto-optimized disco speed to ${speed}ms for ESP8266`);
+                }
 
                 const ledCommand = {
                     action: 'setEffect',
                     effect: effectData.effect,
-                    speed: effectData.speed || 500,
-                    count: effectData.count || 0,
-                    duration: effectData.duration || 0,
+                    speed: Math.max(50, Math.min(5000, speed)), // Clamp speed
+                    count: Math.max(0, Math.min(100, effectData.count || 0)), // Clamp count
+                    duration: Math.max(0, Math.min(300000, effectData.duration || 0)), // Max 5 minutes
                     color1: effectData.color1 || '#FF0000',
                     color2: effectData.color2 || '#0000FF',
                     fromClient: accountId,
@@ -494,26 +517,52 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
 
                 socket.emit('led_effect_set', {
                     serialNumber,
-                    effect: effectData.effect,
-                    speed: effectData.speed || 500,
-                    count: effectData.count || 0,
-                    duration: effectData.duration || 0,
-                    color1: effectData.color1 || '#FF0000',
-                    color2: effectData.color2 || '#0000FF',
+                    effect: ledCommand.effect,
+                    speed: ledCommand.speed,
+                    count: ledCommand.count,
+                    duration: ledCommand.duration,
+                    color1: ledCommand.color1,
+                    color2: ledCommand.color2,
                     timestamp: new Date().toISOString()
-                } as LEDEffectData);
+                });
 
-                console.log(`📤 LED effect command forwarded to device ${serialNumber}:`, ledCommand);
+                console.log(`📤 Enhanced LED effect command forwarded to device ${serialNumber}:`, ledCommand);
             });
 
             socket.on('applyPreset', (presetData: { preset: string; duration?: number }) => {
                 console.log(`🎨 Apply LED preset command for device ${serialNumber}:`, presetData);
 
-                // GỬI TRỰC TIẾP applyPreset command thay vì convert thành setEffect
+                // Validate preset name
+                const supportedPresets = [
+                    'party_mode', 'relaxation_mode', 'gaming_mode', 'alarm_mode',
+                    'sleep_mode', 'wake_up_mode', 'focus_mode', 'movie_mode',
+                    'romantic_mode', 'celebration_mode', 'rainbow_dance',
+                    'ocean_wave', 'meteor_shower', 'christmas_mode', 'disco_fever'
+                ];
+
+                if (!supportedPresets.includes(presetData.preset)) {
+                    socket.emit('led_preset_error', {
+                        serialNumber,
+                        error: `Invalid preset: ${presetData.preset}`,
+                        available_presets: supportedPresets,
+                        timestamp: new Date().toISOString()
+                    });
+                    return;
+                }
+
+                // ESP8266 optimization: Limit duration for memory-intensive presets
+                let duration = presetData.duration || 0;
+                const memoryIntensivePresets = ['disco_fever', 'meteor_shower', 'fireworks'];
+
+                if (memoryIntensivePresets.includes(presetData.preset) && duration === 0) {
+                    duration = 60000; // Auto-limit to 1 minute for continuous operation
+                    console.log(`⚠️  Applied 1-minute limit to memory-intensive preset: ${presetData.preset}`);
+                }
+
                 const presetCommand = {
-                    action: 'applyPreset',  // ← QUAN TRỌNG: gửi applyPreset thay vì setEffect
+                    action: 'applyPreset',
                     preset: presetData.preset,
-                    duration: presetData.duration || 0,
+                    duration: Math.max(0, Math.min(300000, duration)), // Max 5 minutes
                     fromClient: accountId,
                     timestamp: new Date().toISOString()
                 };
@@ -522,12 +571,12 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
 
                 socket.emit('led_preset_applied', {
                     serialNumber,
-                    preset: presetData.preset,
-                    duration: presetData.duration || 0,
+                    preset: presetCommand.preset,
+                    duration: presetCommand.duration,
                     timestamp: new Date().toISOString()
-                } as LEDPresetData);
+                });
 
-                console.log(`📤 LED preset '${presetData.preset}' command forwarded:`, presetCommand);
+                console.log(`📤 Enhanced LED preset '${presetData.preset}' command forwarded:`, presetCommand);
             });
 
             socket.on('updateLEDState', (stateData: {
@@ -565,26 +614,142 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 const ledCapabilities = {
                     serialNumber,
                     supported_effects: [
+                        // Original effects
                         'solid', 'blink', 'breathe', 'rainbow', 'chase',
-                        'fade', 'strobe', 'colorWave', 'pulse', 'sparkle'
+                        'fade', 'strobe', 'sparkle',
+                        // New enhanced effects
+                        'colorWave', 'rainbowMove', 'disco', 'meteor',
+                        'pulse', 'twinkle', 'fireworks'
                     ],
                     supported_presets: [
+                        // Original presets
                         'party_mode', 'relaxation_mode', 'gaming_mode', 'alarm_mode',
                         'sleep_mode', 'wake_up_mode', 'focus_mode', 'movie_mode',
-                        'romantic_mode', 'celebration_mode'
+                        'romantic_mode', 'celebration_mode',
+                        // New enhanced presets
+                        'rainbow_dance', 'ocean_wave', 'meteor_shower',
+                        'christmas_mode', 'disco_fever'
                     ],
+                    effect_descriptions: {
+                        // Original effects
+                        'solid': 'Static solid color',
+                        'blink': 'Simple on/off blinking',
+                        'breathe': 'Smooth breathing effect',
+                        'rainbow': 'Static rainbow colors',
+                        'chase': 'Moving light chase',
+                        'fade': 'Fade between two colors',
+                        'strobe': 'Rapid flashing',
+                        'sparkle': 'Random sparkling pixels',
+                        // New enhanced effects
+                        'colorWave': 'Smooth color wave flowing across strip',
+                        'rainbowMove': 'Dynamic rainbow with movement',
+                        'disco': 'Quick flashing different colors',
+                        'meteor': 'Meteor with trailing tail effect',
+                        'pulse': 'Rhythmic pulsing brightness',
+                        'twinkle': 'Gentle twinkling stars effect',
+                        'fireworks': 'Exploding fireworks animation'
+                    },
+                    preset_descriptions: {
+                        // Original presets
+                        'party_mode': 'Energetic disco lighting',
+                        'relaxation_mode': 'Calming purple pulse',
+                        'gaming_mode': 'Dynamic wave effect',
+                        'alarm_mode': 'Emergency red strobe',
+                        'sleep_mode': 'Gentle warm breathing',
+                        'wake_up_mode': 'Sunrise simulation',
+                        'focus_mode': 'Steady sky blue',
+                        'movie_mode': 'Dark blue ambient',
+                        'romantic_mode': 'Soft pink twinkling',
+                        'celebration_mode': 'Golden fireworks',
+                        // New enhanced presets
+                        'rainbow_dance': 'Fast-moving rainbow',
+                        'ocean_wave': 'Blue ocean wave flow',
+                        'meteor_shower': 'White meteors falling',
+                        'christmas_mode': 'Red-green holiday wave',
+                        'disco_fever': 'Ultra-fast party disco'
+                    },
                     parameters: {
-                        speed: { min: 50, max: 5000, default: 500 },
-                        brightness: { min: 0, max: 100, default: 100 },
-                        count: { min: 0, max: 100, default: 0 },
-                        duration: { min: 0, max: 60000, default: 0 }
+                        speed: {
+                            min: 50,
+                            max: 5000,
+                            default: 500,
+                            description: 'Effect speed in milliseconds (lower = faster)'
+                        },
+                        brightness: {
+                            min: 0,
+                            max: 100,
+                            default: 100,
+                            description: 'LED brightness percentage'
+                        },
+                        count: {
+                            min: 0,
+                            max: 100,
+                            default: 0,
+                            description: 'Number of repetitions (0 = infinite)'
+                        },
+                        duration: {
+                            min: 0,
+                            max: 60000,
+                            default: 0,
+                            description: 'Effect duration in milliseconds (0 = infinite)'
+                        }
+                    },
+                    color_palette: {
+                        warm_colors: ['#FF8C69', '#FFE4B5', '#FFDAB9', '#F0E68C'],
+                        cool_colors: ['#87CEEB', '#6A5ACD', '#4169E1', '#0077BE'],
+                        vibrant_colors: ['#FF0000', '#00FF00', '#0000FF', '#FF00FF', '#FFFF00', '#00FFFF'],
+                        festive_colors: ['#FF0000', '#00FF00', '#FFD700', '#FF4500'],
+                        romantic_colors: ['#FF69B4', '#FF1493', '#DC143C', '#B22222']
+                    },
+                    recommended_combinations: [
+                        {
+                            name: 'Sunset Vibes',
+                            effect: 'colorWave',
+                            speed: 800,
+                            color1: '#FF8C69',
+                            color2: '#FF4500',
+                            brightness: 80
+                        },
+                        {
+                            name: 'Ocean Breeze',
+                            effect: 'pulse',
+                            speed: 3000,
+                            color1: '#0077BE',
+                            color2: '#40E0D0',
+                            brightness: 70
+                        },
+                        {
+                            name: 'Forest Glow',
+                            effect: 'twinkle',
+                            speed: 600,
+                            color1: '#228B22',
+                            color2: '#ADFF2F',
+                            brightness: 75
+                        },
+                        {
+                            name: 'Galaxy Stars',
+                            effect: 'meteor',
+                            speed: 300,
+                            color1: '#9370DB',
+                            color2: '#4B0082',
+                            brightness: 85
+                        }
+                    ],
+                    performance_notes: {
+                        disco: 'High CPU usage - reduce speed if ESP8266 becomes unstable',
+                        fireworks: 'Complex animation - may need adjustment on slower devices',
+                        meteor: 'Memory intensive due to trail calculations',
+                        colorWave: 'Smooth performance, good for continuous use'
                     },
                     timestamp: new Date().toISOString()
                 };
 
                 socket.emit('led_capabilities', ledCapabilities);
-                console.log(`📤 LED capabilities sent for device ${serialNumber}`);
+                console.log(`📤 Enhanced LED capabilities sent for device ${serialNumber}`);
             });
+
+
+
 
             socket.on('disconnect', () => {
                 console.log(`📱 CLIENT disconnected from device ${serialNumber} (user: ${accountId})`);
