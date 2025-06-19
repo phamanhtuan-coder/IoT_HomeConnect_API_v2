@@ -151,4 +151,175 @@ export class CustomerSearchController {
             });
         }
     }
+
+    // Lock device
+    async lockDevice(req: Request, res: Response) {
+        try {
+            const { deviceId, serialNumber } = req.params;
+
+            if (!deviceId || !serialNumber) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Device ID and Serial Number are required');
+            }
+
+            const result = await this.customerSearchService.lockDevice(deviceId, serialNumber);
+            return res.json(result);
+        } catch (error) {
+            if (error instanceof AppError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: error.code,
+                        message: error.message
+                    }
+                });
+            }
+            return res.status(500).json({
+                success: false,
+                error: {
+                    code: ErrorCodes.INTERNAL_SERVER_ERROR,
+                    message: 'Internal server error'
+                }
+            });
+        }
+    }
+
+    // Unlock device
+    async unlockDevice(req: Request, res: Response) {
+        try {
+            const { deviceId, serialNumber } = req.params;
+
+            if (!deviceId || !serialNumber) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Device ID and Serial Number are required');
+            }
+
+            const result = await this.customerSearchService.unlockDevice(deviceId, serialNumber);
+            return res.json(result);
+        } catch (error) {
+            if (error instanceof AppError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: error.code,
+                        message: error.message
+                    }
+                });
+            }
+            return res.status(500).json({
+                success: false,
+                error: {
+                    code: ErrorCodes.INTERNAL_SERVER_ERROR,
+                    message: 'Internal server error'
+                }
+            });
+        }
+    }
+
+    // Update device
+    async updateDevice(req: Request, res: Response) {
+        try {
+            const { deviceId, serialNumber } = req.params;
+            const updateData = req.body;
+
+            if (!deviceId || !serialNumber) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Device ID and Serial Number are required');
+            }
+
+            // Validate update data
+            const allowedFields = ['name', 'attribute', 'wifi_ssid', 'wifi_password'];
+            const filteredData: any = {};
+
+            Object.keys(updateData).forEach(key => {
+                if (allowedFields.includes(key)) {
+                    filteredData[key] = updateData[key];
+                }
+            });
+
+            if (Object.keys(filteredData).length === 0) {
+                throwError(ErrorCodes.BAD_REQUEST, 'No valid fields to update');
+            }
+
+            const result = await this.customerSearchService.updateDevice(deviceId, serialNumber, filteredData);
+            return res.json(result);
+        } catch (error) {
+            if (error instanceof AppError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: error.code,
+                        message: error.message
+                    }
+                });
+            }
+            return res.status(500).json({
+                success: false,
+                error: {
+                    code: ErrorCodes.INTERNAL_SERVER_ERROR,
+                    message: 'Internal server error'
+                }
+            });
+        }
+    }
+
+    // Delete device
+    async deleteDevice(req: Request, res: Response) {
+        try {
+            const { deviceId, serialNumber } = req.params;
+
+            if (!deviceId || !serialNumber) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Device ID and Serial Number are required');
+            }
+
+            const result = await this.customerSearchService.deleteDevice(deviceId, serialNumber);
+            return res.json(result);
+        } catch (error) {
+            if (error instanceof AppError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: error.code,
+                        message: error.message
+                    }
+                });
+            }
+            return res.status(500).json({
+                success: false,
+                error: {
+                    code: ErrorCodes.INTERNAL_SERVER_ERROR,
+                    message: 'Internal server error'
+                }
+            });
+        }
+    }
+
+    // Unlink device
+    async unlinkDevice(req: Request, res: Response) {
+        try {
+            const { deviceId, serialNumber } = req.params;
+
+            if (!deviceId || !serialNumber) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Device ID and Serial Number are required');
+            }
+
+            const result = await this.customerSearchService.unlinkDevice(deviceId, serialNumber);
+            return res.json(result);
+        } catch (error) {
+            if (error instanceof AppError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: error.code,
+                        message: error.message
+                    }
+                });
+            }
+            return res.status(500).json({
+                success: false,
+                error: {
+                    code: ErrorCodes.INTERNAL_SERVER_ERROR,
+                    message: 'Internal server error'
+                }
+            });
+        }
+    }
+
 }
