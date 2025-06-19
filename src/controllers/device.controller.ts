@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
+import {Request, Response, NextFunction} from 'express';
 import DeviceService from '../services/device.service';
-import { ErrorCodes, throwError } from '../utils/errors';
+import {ErrorCodes, throwError} from '../utils/errors';
 import {GroupRole} from "../types/group";
 import {LEDEffectInput} from "../types/device-state";
 
@@ -26,7 +26,7 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const device = await this.deviceService.createDevice({ ...req.body, accountId });
+            const device = await this.deviceService.createDevice({...req.body, accountId});
             res.status(201).json(device);
         } catch (error) {
             next(error);
@@ -48,7 +48,7 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { serial_number, spaceId, name } = req.body;
+            const {serial_number, spaceId, name} = req.body;
             const device = await this.deviceService.linkDevice(serial_number, spaceId, accountId, name);
             res.json(device);
         } catch (error) {
@@ -67,8 +67,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { deviceId } = req.params;
-            const { power_status, serial_number } = req.body; // Add serial_number
+            const {deviceId} = req.params;
+            const {power_status, serial_number} = req.body;
             const device = await this.deviceService.toggleDevice(
                 deviceId,
                 serial_number,
@@ -92,8 +92,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { deviceId } = req.params;
-            const { serial_number } = req.body; // Add serial_number
+            const {deviceId} = req.params;
+            const {serial_number} = req.body;
             const device = await this.deviceService.updateDeviceAttributes(
                 deviceId,
                 serial_number,
@@ -117,8 +117,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { deviceId } = req.params;
-            const { serial_number } = req.body; // Add serial_number
+            const {deviceId} = req.params;
+            const {serial_number} = req.body;
             const device = await this.deviceService.getDeviceById(
                 deviceId,
                 serial_number,
@@ -145,8 +145,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { deviceId } = req.params;
-            const { serial_number } = req.body; // Add serial_number
+            const {deviceId} = req.params;
+            const {serial_number} = req.body;
             await this.deviceService.unlinkDevice(deviceId, serial_number, accountId);
             res.status(204).send();
         } catch (error) {
@@ -162,15 +162,15 @@ class DeviceController {
      */
     updateDeviceSpace = async (req: Request, res: Response, next: NextFunction) => {
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
-            throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can update device.ts space');
+            throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can update device space');
         }
 
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { deviceId } = req.params;
-            const { spaceId, serial_number } = req.body; // Add serial_number
+            const {deviceId} = req.params;
+            const {spaceId, serial_number} = req.body;
             const device = await this.deviceService.updateDeviceSpace(
                 deviceId,
                 serial_number,
@@ -191,15 +191,15 @@ class DeviceController {
      */
     updateDeviceWifi = async (req: Request, res: Response, next: NextFunction) => {
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
-            throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can update device.ts WiFi');
+            throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can update device WiFi');
         }
 
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { deviceId } = req.params;
-            const { serial_number } = req.body; // Add serial_number
+            const {deviceId} = req.params;
+            const {serial_number} = req.body;
             const device = await this.deviceService.updateDeviceWifi(
                 deviceId,
                 serial_number,
@@ -238,7 +238,7 @@ class DeviceController {
      */
     getDevicesByGroup = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { groupId } = req.params;
+            const {groupId} = req.params;
             const devices = await this.deviceService.getDevicesByGroup(parseInt(groupId));
             res.json(devices);
         } catch (error) {
@@ -254,7 +254,7 @@ class DeviceController {
      */
     getDevicesByHouse = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { houseId } = req.params;
+            const {houseId} = req.params;
             const devices = await this.deviceService.getDevicesByHouse(parseInt(houseId));
             res.json(devices);
         } catch (error) {
@@ -270,7 +270,7 @@ class DeviceController {
      */
     getDevicesBySpace = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { spaceId } = req.params;
+            const {spaceId} = req.params;
             const devices = await this.deviceService.getDevicesBySpace(parseInt(spaceId));
             res.json(devices);
         } catch (error) {
@@ -287,8 +287,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { deviceId } = req.params;
-            const { serial_number, ...stateUpdate } = req.body;
+            const {deviceId} = req.params;
+            const {serial_number, ...stateUpdate} = req.body;
 
             if (!serial_number) {
                 throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
@@ -320,8 +320,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { deviceId } = req.params;
-            const { serial_number } = req.query;
+            const {deviceId} = req.params;
+            const {serial_number} = req.query;
 
             if (!serial_number) {
                 throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
@@ -352,8 +352,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { deviceId } = req.params;
-            const { serial_number, updates } = req.body;
+            const {deviceId} = req.params;
+            const {serial_number, updates} = req.body;
 
             if (!serial_number || !Array.isArray(updates)) {
                 throwError(ErrorCodes.BAD_REQUEST, 'serial_number and updates array are required');
@@ -385,13 +385,13 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { deviceId } = req.params;
-            const { serial_number, power_status } = req.body;
+            const {deviceId} = req.params;
+            const {serial_number, power_status} = req.body;
 
             const device = await this.deviceService.updateDeviceState(
                 deviceId,
                 serial_number,
-                { power_status: power_status !== undefined ? power_status : true },
+                {power_status: power_status !== undefined ? power_status : true},
                 accountId
             );
 
@@ -414,8 +414,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { deviceId } = req.params;
-            const { serial_number } = req.body;
+            const {deviceId} = req.params;
+            const {serial_number} = req.body;
 
             if (!serial_number) {
                 throwError(ErrorCodes.BAD_REQUEST, 'Số seri thiết bị không hợp lệ');
@@ -445,8 +445,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { deviceId } = req.params;
-            const { serial_number, capabilities } = req.body;
+            const {deviceId} = req.params;
+            const {serial_number, capabilities} = req.body;
 
             if (!serial_number) {
                 throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
@@ -472,7 +472,139 @@ class DeviceController {
         }
     };
 
+    /**
+     * Get LED capabilities
+     * GET /devices/:deviceId/led-capabilities
+     */
+    getLEDCapabilities = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
+        try {
+            const {deviceId} = req.params;
+            const {serial_number} = req.body;
+
+            if (!serial_number) {
+                throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
+            }
+
+            const ledCapabilities = {
+                serial_number,
+                supported_effects: [
+                    'solid', 'blink', 'breathe', 'rainbow', 'chase',
+                    'fade', 'strobe', 'sparkle', 'colorWave', 'rainbowMove',
+                    'disco', 'meteor', 'pulse', 'twinkle', 'fireworks'
+                ],
+                supported_presets: [
+                    'party_mode', 'relaxation_mode', 'gaming_mode', 'alarm_mode',
+                    'sleep_mode', 'wake_up_mode', 'focus_mode', 'movie_mode',
+                    'romantic_mode', 'celebration_mode', 'rainbow_dance',
+                    'ocean_wave', 'meteor_shower', 'christmas_mode', 'disco_fever'
+                ],
+                preset_descriptions: {
+                    'party_mode': 'Ánh sáng disco nhấp nháy nhanh và đầy năng lượng',
+                    'relaxation_mode': 'Ánh sáng tím nhẹ nhàng, nhịp đập chậm',
+                    'gaming_Mode': 'Sóng màu rực rỡ, năng động',
+                    'alarm_mode': 'Đèn nháy màu đỏ dồn dập, mạnh mẽ cho tình huống khẩn cấp',
+                    'sleep_mode': 'Ánh sáng ấm áp, nhẹ nhàng như hơi thở',
+                    'wake_up_mode': 'Mô phỏng bình minh dịu nhẹ',
+                    'focus_mode': 'Ánh sáng xanh da trời ổn định, tạo sự tập trung',
+                    'movie_mode': 'Ánh xanh sâu, nhịp thở nhẹ nhàng tạo không gian',
+                    'romantic_mode': 'Ánh hồng nhấp nháy nhẹ nhàng, thường xuyên tạo không gian lãng mạn',
+                    'celebration_mode': 'Pháo hoa vàng rực rỡ, bùng nổ',
+                    'rainbow_dance': 'Cầu vồng chuyển động rực rỡ, siêu nhanh',
+                    'ocean_wave': 'Sóng biển xanh dịu dàng, chảy trôi',
+                    'meteor_shower': 'Mưa sao băng trắng rơi nhanh, đầy kịch tính',
+                    'christmas_mode': 'Sóng màu đỏ-xanh lá lễ hội, năng động',
+                    'disco_fever': 'Đèn disco đa màu rực rỡ, siêu nhanh'
+                },
+                parameters: {
+                    speed: {
+                        min: 50,
+                        max: 5000,
+                        default: 500,
+                        description: 'Tốc độ hiệu ứng tính bằng mili giây (giá trị thấp = nhanh hơn)'
+                    },
+                    brightness: {
+                        min: 0,
+                        max: 100,
+                        default: 100,
+                        description: 'Phần trăm độ sáng của đèn LED'
+                    },
+                    count: {
+                        min: 0,
+                        max: 100,
+                        default: 0,
+                        description: 'Số lần lặp lại (0 = vô hạn)'
+                    },
+                    duration: {
+                        min: 0,
+                        max: 60000,
+                        default: 0,
+                        description: 'Thời lượng hiệu ứng tính bằng mili giây (0 = vô hạn)'
+                    }
+                },
+                color_palette: {
+                    warm_colors: ['#FF8C69', '#FFE4B5', '#FFDAB9', '#F0E68C'],
+                    cool_colors: ['#87CEEB', '#6A5ACD', '#4169E1', '#0077BE'],
+                    vibrant_colors: ['#FF0000', '#00FF00', '#0000FF', '#FF00FF', '#FFFF00', '#00FFFF'],
+                    festive_colors: ['#FF0000', '#00FF00', '#FFD700', '#FF4500'],
+                    romantic_colors: ['#FF69B4', '#FF1493', '#DC143C', '#B22222']
+                },
+                recommended_combinations: [
+                    {
+                        name: 'Sắc Hoàng Hôn',
+                        effect: 'colorWave',
+                        speed: 800,
+                        color1: '#FF8C69',
+                        color2: '#FF4500',
+                        brightness: 80
+                    },
+                    {
+                        name: 'Gió Biển',
+                        effect: 'pulse',
+                        speed: 3000,
+                        color1: '#0077BE',
+                        color2: '#40E0D0',
+                        brightness: 70
+                    },
+                    {
+                        name: 'Ánh Sáng Rừng',
+                        effect: 'twinkle',
+                        speed: 600,
+                        color1: '#228B22',
+                        color2: '#ADFF2F',
+                        brightness: 75
+                    },
+                    {
+                        name: 'Sao Thiên Hà',
+                        effect: 'meteor',
+                        speed: 300,
+                        color1: '#9370DB',
+                        color2: '#4B0082',
+                        brightness: 85
+                    }
+                ],
+                performance_notes: {
+                    disco: 'Sử dụng CPU cao - giảm tốc độ nếu ESP8266 trở nên không ổn định',
+                    fireworks: 'Hoạt ảnh phức tạp - có thể cần điều chỉnh trên thiết bị chậm hơn',
+                    meteor: 'Sử dụng nhiều bộ nhớ do tính toán vệt sáng',
+                    colorWave: 'Hiệu suất mượt mà, phù hợp cho sử dụng liên tục',
+                    rainbowMove: 'Tốc độ cập nhật cao - đảm bảo nguồn điện ổn định',
+                    disco_fever: 'Hiệu ứng siêu nhanh - giới hạn thời lượng để tránh quá nhiệt'
+                },
+                timestamp: new Date().toISOString()
+            };
+
+            res.json({
+                success: true,
+                ledCapabilities,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
 
     /**
      * Apply LED effect preset
@@ -483,8 +615,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { deviceId } = req.params;
-            const { serial_number, preset, duration } = req.body;
+            const {deviceId} = req.params;
+            const {serial_number, preset, duration} = req.body;
 
             if (!serial_number || !preset) {
                 throwError(ErrorCodes.BAD_REQUEST, 'serial_number and preset are required');
@@ -518,8 +650,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { deviceId } = req.params;
-            const { serial_number, effect, speed, count, duration, color1, color2 } = req.body;
+            const {deviceId} = req.params;
+            const {serial_number, effect, speed, count, duration, color1, color2} = req.body;
 
             if (!serial_number || !effect) {
                 throwError(ErrorCodes.BAD_REQUEST, 'serial_number and effect are required');
@@ -561,8 +693,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { deviceId } = req.params;
-            const { serial_number } = req.body;
+            const {deviceId} = req.params;
+            const {serial_number} = req.body;
 
             if (!serial_number) {
                 throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
@@ -593,16 +725,31 @@ class DeviceController {
         try {
             const effects = this.deviceService.getAvailableLEDEffects();
 
-            const effectsWithInfo = [
-                { name: 'solid', description: 'Solid color (default mode)', params: ['color'] },
-                { name: 'blink', description: 'Blinking on/off', params: ['color1', 'speed', 'count'] },
-                { name: 'breathe', description: 'Breathing effect (fade in/out)', params: ['color1', 'speed'] },
-                { name: 'rainbow', description: 'Rainbow color cycle', params: ['speed'] },
-                { name: 'chase', description: 'Chase effect with moving pixels', params: ['color1', 'speed'] },
-                { name: 'fade', description: 'Fade between two colors', params: ['color1', 'color2', 'speed'] },
-                { name: 'strobe', description: 'Fast strobe effect', params: ['color1', 'speed', 'count'] },
-                { name: 'colorWave', description: 'Wave effect with two colors', params: ['color1', 'color2', 'speed'] }
-            ];
+            const effectsWithInfo = [{
+                name: 'solid',
+                description: 'Màu đơn sắc (chế độ mặc định)',
+                params: ['color']
+            }, {
+                name: 'blink',
+                description: 'Nhấp nháy bật/tắt',
+                params: ['color1', 'speed', 'count']
+            }, {
+                name: 'breathe',
+                description: 'Hiệu ứng hơi thở (mờ dần/sáng dần)',
+                params: ['color1', 'speed']
+            }, {name: 'rainbow', description: 'Chu kỳ màu cầu vồng', params: ['speed']}, {
+                name: 'chase',
+                description: 'Hiệu ứng đuổi theo với pixel chuyển động',
+                params: ['color1', 'speed']
+            }, {
+                name: 'fade',
+                description: 'Chuyển màu giữa hai màu',
+                params: ['color1', 'color2', 'speed']
+            }, {
+                name: 'strobe',
+                description: 'Hiệu ứng nhấp nháy nhanh',
+                params: ['color1', 'speed', 'count']
+            }, {name: 'colorWave', description: 'Hiệu ứng sóng với hai màu', params: ['color1', 'color2', 'speed']}];
 
             res.json({
                 success: true,
@@ -613,8 +760,6 @@ class DeviceController {
             next(error);
         }
     };
-
 }
 
 export default DeviceController;
-

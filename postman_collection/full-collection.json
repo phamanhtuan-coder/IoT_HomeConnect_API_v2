@@ -2206,6 +2206,217 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Set LED Effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('LED effect set successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial_number\": \"ABC123\",\n  \"effect\": \"rainbow\",\n  \"speed\": 500,\n  \"count\": 10,\n  \"duration\": 5000,\n  \"color1\": \"#FF0000\",\n  \"color2\": \"#00FF00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/:deviceId/led-effect",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                ":deviceId",
+                "led-effect"
+              ],
+              "variable": [
+                {
+                  "key": "deviceId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Stop LED Effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('LED effect stopped successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial_number\": \"ABC123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/:deviceId/stop-led-effect",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                ":deviceId",
+                "stop-led-effect"
+              ],
+              "variable": [
+                {
+                  "key": "deviceId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Apply LED Preset",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('LED preset applied successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial_number\": \"ABC123\",\n  \"preset\": \"party_mode\",\n  \"duration\": 30000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/:deviceId/led-preset",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                ":deviceId",
+                "led-preset"
+              ],
+              "variable": [
+                {
+                  "key": "deviceId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Available LED Effects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('LED effects retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.effects).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/devices/:deviceId/led-effects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                ":deviceId",
+                "led-effects"
+              ],
+              "variable": [
+                {
+                  "key": "deviceId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -3397,431 +3608,6 @@
                 "permissions",
                 "user",
                 ":userId"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Share Requests",
-      "item": [
-        {
-          "name": "Initiate Share Request",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Share request initiated successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.message).to.equal('Share request initiated');",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"to_user_email\": \"user@example.com\",\n  \"permission_type\": \"CONTROL\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/share-requests/:groupId",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "share-requests",
-                ":groupId"
-              ],
-              "variable": [
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Approve Share Request",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Share request processed successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.message).to.be.oneOf(['Share request approved', 'Share request rejected']);",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"accept\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/share-requests/approve/:requestId",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "share-requests",
-                "approve",
-                ":requestId"
-              ],
-              "variable": [
-                {
-                  "key": "requestId",
-                  "value": "1"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Share Requests by Device",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Share requests retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/share-requests/device/:deviceId/group/:groupId?serial_number=ABC123",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "share-requests",
-                "device",
-                ":deviceId",
-                "group",
-                ":groupId"
-              ],
-              "query": [
-                {
-                  "key": "serial_number",
-                  "value": "ABC123"
-                }
-              ],
-              "variable": [
-                {
-                  "key": "deviceId",
-                  "value": "1"
-                },
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Shared Permissions by Device",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Shared permissions retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/share-requests/permissions/device/:deviceId/group/:groupId?serial_number=ABC123",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "share-requests",
-                "permissions",
-                "device",
-                ":deviceId",
-                "group",
-                ":groupId"
-              ],
-              "query": [
-                {
-                  "key": "serial_number",
-                  "value": "ABC123"
-                }
-              ],
-              "variable": [
-                {
-                  "key": "deviceId",
-                  "value": "1"
-                },
-                {
-                  "key": "groupId",
-                  "value": "1"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Shared Devices by Owner",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Shared devices retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/share-requests/owner",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "share-requests",
-                "owner"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Create Share Request",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"to_user_email\": \"user@example.com\",\n  \"permission_type\": \"CONTROL\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/share-requests",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "share-requests"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get Share Request by ID",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/share-requests/:requestId",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "share-requests",
-                ":requestId"
-              ],
-              "variable": [
-                {
-                  "key": "requestId",
-                  "value": "1"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Update Share Request",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"permission_type\": \"VIEW\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/share-requests/:requestId",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "share-requests",
-                ":requestId"
-              ],
-              "variable": [
-                {
-                  "key": "requestId",
-                  "value": "1"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Delete Share Request",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/share-requests/:requestId",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "share-requests",
-                ":requestId"
-              ],
-              "variable": [
-                {
-                  "key": "requestId",
-                  "value": "1"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get Pending Share Requests",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/share-requests/pending",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "share-requests",
-                "pending"
               ]
             }
           }
@@ -5931,6 +5717,159 @@
             "description": "Get all tickets with optional filters. Requires employee authentication and admin role."
           },
           "response": []
+        },
+        {
+          "name": "Confirm Ticket",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Ticket confirmed successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.ticket_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/:ticketId/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets",
+                ":ticketId",
+                "confirm"
+              ],
+              "variable": [
+                {
+                  "key": "ticketId",
+                  "value": "1",
+                  "description": "ID of the ticket to confirm"
+                }
+              ]
+            },
+            "description": "Confirm a ticket for processing. Requires employee authentication."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Ticket Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Ticket status updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.ticket_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"resolved\",\n  \"resolve_solution\": \"Issue has been resolved by updating firmware\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tickets/:ticketId/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets",
+                ":ticketId",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "ticketId",
+                  "value": "1",
+                  "description": "ID of the ticket to update status"
+                }
+              ]
+            },
+            "description": "Update ticket status. Requires employee authentication."
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Ticket",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Ticket cancelled successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.ticket_id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/:ticketId/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets",
+                ":ticketId",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "ticketId",
+                  "value": "1",
+                  "description": "ID of the ticket to cancel"
+                }
+              ]
+            },
+            "description": "Cancel a ticket. Requires user authentication and must be the ticket creator."
+          },
+          "response": []
         }
       ]
     },
@@ -7303,251 +7242,6 @@
               ]
             },
             "description": "Delete a production batch from the system"
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Production Components",
-      "item": [
-        {
-          "name": "Create Production Component",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Production component created successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(201);",
-                  "  pm.expect(response.production_component_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"production_id\": 1,\n  \"component_id\": 1,\n  \"quantity_used\": 1\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/production-components",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "production-components"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Production Component by ID",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Production component retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.production_component_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/production-components/:productionComponentId",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "production-components",
-                ":productionComponentId"
-              ],
-              "variable": [
-                {
-                  "key": "productionComponentId",
-                  "value": "1"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Production Components by Production ID",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Production components retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/production-components/production/:productionId",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "production-components",
-                "production",
-                ":productionId"
-              ],
-              "variable": [
-                {
-                  "key": "productionId",
-                  "value": "1"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update Production Component",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Production component updated successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.production_component_id).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"production_id\": 1,\n  \"component_id\": 1,\n  \"quantity_used\": 2\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/production-components/:productionComponentId",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "production-components",
-                ":productionComponentId"
-              ],
-              "variable": [
-                {
-                  "key": "productionComponentId",
-                  "value": "1"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Production Component",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Production component deleted successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(204);",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{employeeAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/production-components/:productionComponentId",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "production-components",
-                ":productionComponentId"
-              ],
-              "variable": [
-                {
-                  "key": "productionComponentId",
-                  "value": "1"
-                }
-              ]
-            }
           },
           "response": []
         }
