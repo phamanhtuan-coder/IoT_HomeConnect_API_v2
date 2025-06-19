@@ -47,4 +47,41 @@ router.delete(
     asyncHandler(customerSearchController.deleteCustomer.bind(customerSearchController))
 );
 
+// Device management routes
+// Lock device
+router.put(
+    '/devices/:deviceId/:serialNumber/lock',
+    // authMiddleware, 
+    asyncHandler(customerSearchController.lockDevice.bind(customerSearchController))
+);
+
+// Unlock device
+router.put(
+    '/devices/:deviceId/:serialNumber/unlock',
+    // authMiddleware,
+    asyncHandler(customerSearchController.unlockDevice.bind(customerSearchController))
+);
+
+// Update device
+router.put(
+    '/devices/:deviceId/:serialNumber',
+    // authMiddleware, 
+    asyncHandler(customerSearchController.updateDevice.bind(customerSearchController))
+);
+
+// Delete device
+router.delete(
+    '/devices/:deviceId/:serialNumber',
+    // authMiddleware, 
+    asyncHandler(customerSearchController.deleteDevice.bind(customerSearchController))
+);
+
+// Unlink device
+router.put(
+    '/devices/:deviceId/:serialNumber/unlink',
+    asyncHandler(customerSearchController.unlinkDevice.bind(customerSearchController))
+);
+
+
+
 export default router;

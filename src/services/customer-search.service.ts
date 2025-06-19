@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { AppError, ErrorCodes, throwError } from '../utils/errors';
 import { Device } from '../types/device';
 import { Group } from '../types/group';
+import { Prisma } from '@prisma/client';
 
 export class CustomerSearchService {
     private prisma: PrismaClient;
@@ -141,7 +142,8 @@ export class CustomerSearchService {
                     created_at: account?.created_at,
                     updated_at: account?.updated_at,
                     is_deleted: account?.deleted_at !== null,
-                    status: account?.status
+                    status: account?.status,
+                    is_locked: account?.is_locked
                 } : null,
                 customer: account?.customer ? {
                     customer_id: account?.customer?.customer_id,
@@ -160,6 +162,7 @@ export class CustomerSearchService {
                     device_id: device?.device_id,
                     serial_number: device?.serial_number,
                     template_id: device?.template_id,
+                    group_id: device?.group_id,
                     space_id: device?.space_id,
                     account_id: device?.account_id,
                     hub_id: device?.hub_id,
@@ -422,6 +425,159 @@ export class CustomerSearchService {
         } catch (error) {
             if (error instanceof AppError) throw error;
             throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Error deleting customer');
+        }
+    }
+
+    async lockDevice(deviceId: string, serialNumber: string) {
+        try {
+            const device = await this.prisma.devices.findFirst({
+                where: { device_id: deviceId, serial_number: serialNumber, is_deleted: false }
+            });
+            if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found");
+
+            if (device?.lock_status === "locked") {
+                throwError(ErrorCodes.BAD_REQUEST, "Device is already locked");
+            }
+
+            const updatedDevice = await this.prisma.devices.update({
+                where: { device_id_serial_number: { device_id: deviceId, serial_number: serialNumber } },
+                data: {
+                    lock_status: "locked",
+                    locked_at: new Date(),
+                    updated_at: new Date()
+                }
+            });
+
+            return {
+                success: true,
+                message: "Device locked successfully",
+                data: updatedDevice
+            };
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throwError(ErrorCodes.INTERNAL_SERVER_ERROR, "Error locking device");
+        }
+    }
+
+
+    async unlockDevice(deviceId: string, serialNumber: string) {
+        try {
+            const device = await this.prisma.devices.findFirst({
+                where: { device_id: deviceId, serial_number: serialNumber, is_deleted: false }
+            });
+            if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found");
+
+            if (device?.lock_status !== "locked") {
+                throwError(ErrorCodes.BAD_REQUEST, "Device is not locked");
+            }
+
+            const updatedDevice = await this.prisma.devices.update({
+                where: { device_id_serial_number: { device_id: deviceId, serial_number: serialNumber } },
+                data: {
+                    lock_status: "unlocked",
+                    locked_at: null,
+                    updated_at: new Date()
+                }
+            });
+
+            return {
+                success: true,
+                message: "Device unlocked successfully",
+                data: updatedDevice
+            };
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throwError(ErrorCodes.INTERNAL_SERVER_ERROR, "Error unlocking device");
+        }
+    }
+
+    async updateDevice(deviceId: string, serialNumber: string, updateData: {
+        name?: string;
+        attribute?: any;
+        wifi_ssid?: string;
+        wifi_password?: string;
+    }) {
+        try {
+            const device = await this.prisma.devices.findFirst({
+                where: { device_id: deviceId, serial_number: serialNumber, is_deleted: false }
+            });
+            if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found");
+
+            const updatedDevice = await this.prisma.devices.update({
+                where: { device_id_serial_number: { device_id: deviceId, serial_number: serialNumber } },
+                data: {
+                    ...updateData,
+                    updated_at: new Date()
+                }
+            });
+
+            return {
+                success: true,
+                message: "Device updated successfully",
+                data: updatedDevice
+            };
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throwError(ErrorCodes.INTERNAL_SERVER_ERROR, "Error updating device");
+        }
+    }
+
+
+    async deleteDevice(deviceId: string, serialNumber: string) {
+        try {
+            const device = await this.prisma.devices.findFirst({
+                where: { device_id: deviceId, serial_number: serialNumber, is_deleted: false }
+            });
+            if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found");
+
+            await this.prisma.devices.update({
+                where: { device_id_serial_number: { device_id: deviceId, serial_number: serialNumber } },
+                data: {
+                    is_deleted: true,
+                    updated_at: new Date()
+                }
+            });
+
+            return {
+                success: true,
+                message: "Device deleted successfully"
+            };
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throwError(ErrorCodes.INTERNAL_SERVER_ERROR, "Error deleting device");
+        }
+    }
+
+    async unlinkDevice(deviceId: string, serialNumber: string) {
+        try {
+            const device = await this.prisma.devices.findFirst({
+                where: { device_id: deviceId, serial_number: serialNumber, is_deleted: false }
+            });
+            if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found");
+
+            if (device?.link_status === "unlinked") {
+                throwError(ErrorCodes.BAD_REQUEST, "Device is already unlinked");
+            }
+
+            const updatedDevice = await this.prisma.devices.update({
+                where: { device_id_serial_number: { device_id: deviceId, serial_number: serialNumber } },
+                data: {
+                    account_id: null,
+                    space_id: null,
+                    link_status: "unlinked",
+                    runtime_capabilities: Prisma.JsonNull,
+                    updated_at: new Date()
+                }
+            });
+
+            return {
+                success: true,
+                message: "Device unlinked successfully",
+                data: updatedDevice
+            };
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throwError(ErrorCodes.INTERNAL_SERVER_ERROR, "Error unlinking device");
         }
     }
 }
