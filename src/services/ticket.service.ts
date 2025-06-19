@@ -24,7 +24,6 @@ const TICKET_STATUS = {
 interface TicketStatusUpdate {
 	status: typeof TICKET_STATUS.APPROVED | typeof TICKET_STATUS.REJECTED | typeof TICKET_STATUS.RESOLVED;
 	resolve_solution: string;
-	evidence: any;
 }
 
 class TicketService {
@@ -197,7 +196,7 @@ class TicketService {
 		if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
 
 
-		if (account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền xác nhận vấn đề');
+		// if (account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền xác nhận vấn đề');
 
 		const ticket = await this.prisma.tickets.findFirst({
 			where: { ticket_id: ticketId, is_deleted: false },
@@ -224,7 +223,7 @@ class TicketService {
 		});
 		if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
 
-		if (account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền cập nhật trạng thái vấn đề');
+		// if (account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền cập nhật trạng thái vấn đề');
 
 		const ticket = await this.prisma.tickets.findFirst({
 			where: { ticket_id: ticketId, is_deleted: false },
@@ -319,14 +318,17 @@ class TicketService {
 		tickets.device_serial, tickets.description, tickets.evidence,
 		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, ticket_types.type_name as ticket_type_name, 
 		ticket_types.priority,
+		customer.customer_id as user_id,
 		COALESCE(CONCAT_WS(' ', customer.surname, customer.lastname), 'N/A') as user_name,
+		customer.phone as user_phone, customer.email as user_email,
 		COALESCE(CONCAT_WS(' ', employee.surname, employee.lastname), 'N/A') as assigned_name,
+		employee.phone as assigned_phone, employee.email as assigned_email,
 		devices.name as device_name,
 		groups.group_name,
 		spaces.space_name,
 		device_templates.name as template_name,
 		houses.house_name
-		--detail_export.created_at AS export_date
+		-- detail_export.created_at AS export_date
 		`
 
 		const get_table = "tickets"
@@ -386,7 +388,7 @@ class TicketService {
 		ticket_types.priority,
 		COALESCE(CONCAT_WS(' ', customer.surname, customer.lastname), 'N/A') as user_name,
 		COALESCE(CONCAT_WS(' ', employee.surname, employee.lastname), 'N/A') as assigned_name,
-		tickets.created_at, tickets.updated_at, tickets.is_deleted,
+		tickets.created_at, tickets.updated_at, tickets.is_deleted
 		`
 
 		const get_table = "tickets"

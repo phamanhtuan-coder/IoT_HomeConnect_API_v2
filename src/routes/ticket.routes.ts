@@ -126,7 +126,7 @@ router.post(
 router.put(
   '/:ticketId/confirm',
   authMiddleware,
-  roleMiddleware,
+  // roleMiddleware,
   validateMiddleware(ticketIdSchema),
   asyncHandler(ticketController.confirmTicket)
 );
@@ -185,7 +185,7 @@ router.put(
 router.put(
   '/:ticketId/status',
   authMiddleware,
-  roleMiddleware,
+  // roleMiddleware,
   validateMiddleware(ticketIdSchema),
   validateMiddleware(updateTicketSchema),
   asyncHandler(ticketController.updateTicketStatus)
@@ -294,7 +294,7 @@ router.delete(
  */
 router.get(
   '/detail/:ticketId',
-  authMiddleware,
+  // authMiddleware,
   validateMiddleware(ticketIdSchema),
   asyncHandler(ticketController.getTicketById)
 );

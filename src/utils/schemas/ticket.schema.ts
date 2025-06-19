@@ -72,17 +72,8 @@ export const ticketSchema = z.object({
 
 export const updateTicketSchema = z.object({
     body: z.object({
-        description: z
-            .string()
-            .max(5000, "Description must be 5000 characters or less")
-            .optional(),
-        evidence: z.any().optional(),
         status: z
             .enum(["pending", "in_progress", "approved", "rejected", "resolved"])
-            .optional(),
-        assigned_to: z
-            .string()
-            .max(32, "Assigned to ID must be 32 characters or less")
             .optional(),
         resolve_solution: z
             .string()
