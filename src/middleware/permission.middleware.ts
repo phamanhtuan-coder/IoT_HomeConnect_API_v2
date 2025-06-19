@@ -5,7 +5,8 @@ import redisClient from '../utils/redis';
 
 const prisma = new PrismaClient();
 
-export const checkEmployeePermission = async (employeeId: string, permissionId: number): Promise<boolean> => {
+export const checkEmployeePermission = async (req: Request, permissionId: number): Promise<boolean> => {
+    const employeeId = req.user?.employeeId;
     if (!employeeId) return false;
 
     // Tìm account

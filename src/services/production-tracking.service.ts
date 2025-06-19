@@ -196,7 +196,6 @@ export class ProductionTrackingService {
             }
         });
 
-        console.log('production_list', production_list);
         if (production_list.length !== device_serials?.length) {
             return errorResponse(ErrorCodes.PRODUCTION_NOT_FOUND, 'Không tìm thấy sản phẩm trong giai đoạn cần từ chối');
         }

@@ -44,7 +44,7 @@ class OwnershipHistoryService {
 
         // Find recipient
         const customer = await this.prisma.customer.findUnique({ where: { email: to_user_email } });
-        const recipient = await this.prisma.account.findFirst({ where: { customer_id: customer?.customer_id } });
+        const recipient = await this.prisma.account.findFirst({ where: { customer_id: customer?.id } });
         if (!recipient) throwError(ErrorCodes.NOT_FOUND, 'Recipient account not found');
 
         // Check if device.ts is already associated with recipient
