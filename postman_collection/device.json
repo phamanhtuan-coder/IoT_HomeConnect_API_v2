@@ -806,8 +806,194 @@
           }
         },
         "response": []
+      },
+      {
+        "name": "Set LED Effect",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('LED effect set successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.success).to.be.true;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"serial_number\": \"ABC123\",\n  \"effect\": \"rainbow\",\n  \"speed\": 500,\n  \"count\": 10,\n  \"duration\": 5000,\n  \"color1\": \"#FF0000\",\n  \"color2\": \"#00FF00\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/devices/:deviceId/led-effect",
+            "host": ["{{baseUrl}}"],
+            "path": ["devices", ":deviceId", "led-effect"],
+            "variable": [
+              {
+                "key": "deviceId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Stop LED Effect",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('LED effect stopped successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.success).to.be.true;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"serial_number\": \"ABC123\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/devices/:deviceId/stop-led-effect",
+            "host": ["{{baseUrl}}"],
+            "path": ["devices", ":deviceId", "stop-led-effect"],
+            "variable": [
+              {
+                "key": "deviceId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Apply LED Preset",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('LED preset applied successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.success).to.be.true;",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"serial_number\": \"ABC123\",\n  \"preset\": \"party_mode\",\n  \"duration\": 30000\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{baseUrl}}/devices/:deviceId/led-preset",
+            "host": ["{{baseUrl}}"],
+            "path": ["devices", ":deviceId", "led-preset"],
+            "variable": [
+              {
+                "key": "deviceId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Available LED Effects",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const response = pm.response.json();",
+                "pm.test('LED effects retrieved successfully', () => {",
+                "  pm.expect(pm.response.code).to.equal(200);",
+                "  pm.expect(response.effects).to.be.an('array');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{userAccessToken}}",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{baseUrl}}/devices/:deviceId/led-effects",
+            "host": ["{{baseUrl}}"],
+            "path": ["devices", ":deviceId", "led-effects"],
+            "variable": [
+              {
+                "key": "deviceId",
+                "value": "1"
+              }
+            ]
+          }
+        },
+        "response": []
       }
     ]
   }
 ]
-
