@@ -614,85 +614,58 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 const ledCapabilities = {
                     serialNumber,
                     supported_effects: [
-                        // Original effects
                         'solid', 'blink', 'breathe', 'rainbow', 'chase',
-                        'fade', 'strobe', 'sparkle',
-                        // New enhanced effects
-                        'colorWave', 'rainbowMove', 'disco', 'meteor',
-                        'pulse', 'twinkle', 'fireworks'
+                        'fade', 'strobe', 'sparkle', 'colorWave', 'rainbowMove',
+                        'disco', 'meteor', 'pulse', 'twinkle', 'fireworks'
                     ],
                     supported_presets: [
-                        // Original presets
                         'party_mode', 'relaxation_mode', 'gaming_mode', 'alarm_mode',
                         'sleep_mode', 'wake_up_mode', 'focus_mode', 'movie_mode',
-                        'romantic_mode', 'celebration_mode',
-                        // New enhanced presets
-                        'rainbow_dance', 'ocean_wave', 'meteor_shower',
-                        'christmas_mode', 'disco_fever'
+                        'romantic_mode', 'celebration_mode', 'rainbow_dance',
+                        'ocean_wave', 'meteor_shower', 'christmas_mode', 'disco_fever'
                     ],
-                    effect_descriptions: {
-                        // Original effects
-                        'solid': 'Static solid color',
-                        'blink': 'Simple on/off blinking',
-                        'breathe': 'Smooth breathing effect',
-                        'rainbow': 'Static rainbow colors',
-                        'chase': 'Moving light chase',
-                        'fade': 'Fade between two colors',
-                        'strobe': 'Rapid flashing',
-                        'sparkle': 'Random sparkling pixels',
-                        // New enhanced effects
-                        'colorWave': 'Smooth color wave flowing across strip',
-                        'rainbowMove': 'Dynamic rainbow with movement',
-                        'disco': 'Quick flashing different colors',
-                        'meteor': 'Meteor with trailing tail effect',
-                        'pulse': 'Rhythmic pulsing brightness',
-                        'twinkle': 'Gentle twinkling stars effect',
-                        'fireworks': 'Exploding fireworks animation'
-                    },
-                    preset_descriptions: {
-                        // Original presets
-                        'party_mode': 'Energetic disco lighting',
-                        'relaxation_mode': 'Calming purple pulse',
-                        'gaming_mode': 'Dynamic wave effect',
-                        'alarm_mode': 'Emergency red strobe',
-                        'sleep_mode': 'Gentle warm breathing',
-                        'wake_up_mode': 'Sunrise simulation',
-                        'focus_mode': 'Steady sky blue',
-                        'movie_mode': 'Dark blue ambient',
-                        'romantic_mode': 'Soft pink twinkling',
-                        'celebration_mode': 'Golden fireworks',
-                        // New enhanced presets
-                        'rainbow_dance': 'Fast-moving rainbow',
-                        'ocean_wave': 'Blue ocean wave flow',
-                        'meteor_shower': 'White meteors falling',
-                        'christmas_mode': 'Red-green holiday wave',
-                        'disco_fever': 'Ultra-fast party disco'
-                    },
+                   preset_descriptions: {
+                       'party_mode': 'Ánh sáng disco nhấp nháy nhanh và đầy năng lượng',
+                       'relaxation_mode': 'Ánh sáng tím nhẹ nhàng, nhịp đập chậm',
+                       'gaming_Mode': 'Sóng màu rực rỡ, năng động',
+                       'alarm_mode': 'Đèn nháy màu đỏ dồn dập, mạnh mẽ cho tình huống khẩn cấp',
+                       'sleep_mode': 'Ánh sáng ấm áp, nhẹ nhàng như hơi thở',
+                       'wake_up_mode': 'Mô phỏng bình minh dịu nhẹ',
+                       'focus_mode': 'Ánh sáng xanh da trời ổn định, tạo sự tập trung',
+                       'movie_mode': 'Ánh xanh sâu, nhịp thở nhẹ nhàng tạo không gian',
+                       'romantic_mode': 'Ánh hồng nhấp nháy nhẹ nhàng, thường xuyên tạo không gian lãng mạn',
+                       'celebration_mode': 'Pháo hoa vàng rực rỡ, bùng nổ',
+                       'rainbow_dance': 'Cầu vồng chuyển động rực rỡ, siêu nhanh',
+                       'ocean_wave': 'Sóng biển xanh dịu dàng, chảy trôi',
+                       'meteor_shower': 'Mưa sao băng trắng rơi nhanh, đầy kịch tính',
+                       'christmas_mode': 'Sóng màu đỏ-xanh lá lễ hội, năng động',
+                       'disco_fever': 'Đèn disco đa màu rực rỡ, siêu nhanh'
+                   },
                     parameters: {
-                        speed: {
-                            min: 50,
-                            max: 5000,
-                            default: 500,
-                            description: 'Effect speed in milliseconds (lower = faster)'
-                        },
-                        brightness: {
-                            min: 0,
-                            max: 100,
-                            default: 100,
-                            description: 'LED brightness percentage'
-                        },
-                        count: {
-                            min: 0,
-                            max: 100,
-                            default: 0,
-                            description: 'Number of repetitions (0 = infinite)'
-                        },
-                        duration: {
-                            min: 0,
-                            max: 60000,
-                            default: 0,
-                            description: 'Effect duration in milliseconds (0 = infinite)'
-                        }
+                       speed: {
+                           min: 50,
+                           max: 5000,
+                           default: 500,
+                           description: 'Tốc độ hiệu ứng tính bằng mili giây (giá trị thấp = nhanh hơn)'
+                       },
+                       brightness: {
+                           min: 0,
+                           max: 100,
+                           default: 100,
+                           description: 'Phần trăm độ sáng của đèn LED'
+                       },
+                       count: {
+                           min: 0,
+                           max: 100,
+                           default: 0,
+                           description: 'Số lần lặp lại (0 = vô hạn)'
+                       },
+                       duration: {
+                           min: 0,
+                           max: 60000,
+                           default: 0,
+                           description: 'Thời lượng hiệu ứng tính bằng mili giây (0 = vô hạn)'
+                       }
                     },
                     color_palette: {
                         warm_colors: ['#FF8C69', '#FFE4B5', '#FFDAB9', '#F0E68C'],
@@ -701,46 +674,48 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                         festive_colors: ['#FF0000', '#00FF00', '#FFD700', '#FF4500'],
                         romantic_colors: ['#FF69B4', '#FF1493', '#DC143C', '#B22222']
                     },
-                    recommended_combinations: [
-                        {
-                            name: 'Sunset Vibes',
-                            effect: 'colorWave',
-                            speed: 800,
-                            color1: '#FF8C69',
-                            color2: '#FF4500',
-                            brightness: 80
-                        },
-                        {
-                            name: 'Ocean Breeze',
-                            effect: 'pulse',
-                            speed: 3000,
-                            color1: '#0077BE',
-                            color2: '#40E0D0',
-                            brightness: 70
-                        },
-                        {
-                            name: 'Forest Glow',
-                            effect: 'twinkle',
-                            speed: 600,
-                            color1: '#228B22',
-                            color2: '#ADFF2F',
-                            brightness: 75
-                        },
-                        {
-                            name: 'Galaxy Stars',
-                            effect: 'meteor',
-                            speed: 300,
-                            color1: '#9370DB',
-                            color2: '#4B0082',
-                            brightness: 85
-                        }
-                    ],
-                    performance_notes: {
-                        disco: 'High CPU usage - reduce speed if ESP8266 becomes unstable',
-                        fireworks: 'Complex animation - may need adjustment on slower devices',
-                        meteor: 'Memory intensive due to trail calculations',
-                        colorWave: 'Smooth performance, good for continuous use'
-                    },
+                recommended_combinations: [
+                                {
+                                    name: 'Sắc Hoàng Hôn',
+                                    effect: 'colorWave',
+                                    speed: 800,
+                                    color1: '#FF8C69',
+                                    color2: '#FF4500',
+                                    brightness: 80
+                                },
+                                {
+                                    name: 'Gió Biển',
+                                    effect: 'pulse',
+                                    speed: 3000,
+                                    color1: '#0077BE',
+                                    color2: '#40E0D0',
+                                    brightness: 70
+                                },
+                                {
+                                    name: 'Ánh Sáng Rừng',
+                                    effect: 'twinkle',
+                                    speed: 600,
+                                    color1: '#228B22',
+                                    color2: '#ADFF2F',
+                                    brightness: 75
+                                },
+                                {
+                                    name: 'Sao Thiên Hà',
+                                    effect: 'meteor',
+                                    speed: 300,
+                                    color1: '#9370DB',
+                                    color2: '#4B0082',
+                                    brightness: 85
+                                }
+                            ],
+                  performance_notes: {
+                      disco: 'Sử dụng CPU cao - giảm tốc độ nếu ESP8266 trở nên không ổn định',
+                      fireworks: 'Hoạt ảnh phức tạp - có thể cần điều chỉnh trên thiết bị chậm hơn',
+                      meteor: 'Sử dụng nhiều bộ nhớ do tính toán vệt sáng',
+                      colorWave: 'Hiệu suất mượt mà, phù hợp cho sử dụng liên tục',
+                      rainbowMove: 'Tốc độ cập nhật cao - đảm bảo nguồn điện ổn định',
+                      disco_fever: 'Hiệu ứng siêu nhanh - giới hạn thời lượng để tránh quá nhiệt'
+                  },
                     timestamp: new Date().toISOString()
                 };
 
