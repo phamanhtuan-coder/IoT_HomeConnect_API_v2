@@ -24,7 +24,6 @@ const TICKET_STATUS = {
 interface TicketStatusUpdate {
 	status: typeof TICKET_STATUS.APPROVED | typeof TICKET_STATUS.REJECTED | typeof TICKET_STATUS.RESOLVED;
 	resolve_solution: string;
-	evidence: any;
 }
 
 class TicketService {
@@ -197,7 +196,7 @@ class TicketService {
 		if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
 
 
-		if (account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền xác nhận vấn đề');
+		// if (account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền xác nhận vấn đề');
 
 		const ticket = await this.prisma.tickets.findFirst({
 			where: { ticket_id: ticketId, is_deleted: false },
@@ -224,7 +223,7 @@ class TicketService {
 		});
 		if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
 
-		if (account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền cập nhật trạng thái vấn đề');
+		// if (account!.role_id !== ROLE.CUSTOMER_SUPPORT) throwError(ErrorCodes.FORBIDDEN, 'Bạn không có quyền cập nhật trạng thái vấn đề');
 
 		const ticket = await this.prisma.tickets.findFirst({
 			where: { ticket_id: ticketId, is_deleted: false },
@@ -319,18 +318,34 @@ class TicketService {
 		tickets.device_serial, tickets.description, tickets.evidence,
 		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, ticket_types.type_name as ticket_type_name, 
 		ticket_types.priority,
+		customer.customer_id as user_id,
 		COALESCE(CONCAT_WS(' ', customer.surname, customer.lastname), 'N/A') as user_name,
-		COALESCE(CONCAT_WS(' ', employee.surname, employee.lastname), 'N/A') as assigned_name
+		customer.phone as user_phone, customer.email as user_email,
+		COALESCE(CONCAT_WS(' ', employee.surname, employee.lastname), 'N/A') as assigned_name,
+		employee.phone as assigned_phone, employee.email as assigned_email,
+		devices.name as device_name,
+		groups.group_name,
+		spaces.space_name,
+		device_templates.name as template_name,
+		houses.house_name
+		-- detail_export.created_at AS export_date
 		`
 
 		const get_table = "tickets"
 
 		const query_join = `
 			LEFT JOIN ticket_types ON tickets.ticket_type_id = ticket_types.ticket_type_id
-		  LEFT JOIN account ON tickets.user_id = account.account_id
-		  LEFT JOIN customer ON account.customer_id = customer.customer_id
-		  LEFT JOIN account assigned_account ON tickets.assigned_to = assigned_account.account_id
-		  LEFT JOIN employee ON assigned_account.employee_id = employee.employee_id
+			LEFT JOIN account ON tickets.user_id = account.account_id
+			LEFT JOIN customer ON account.customer_id = customer.customer_id
+			LEFT JOIN account assigned_account ON tickets.assigned_to = assigned_account.account_id
+			LEFT JOIN employee ON assigned_account.employee_id = employee.employee_id
+			LEFT JOIN devices ON tickets.device_serial = devices.serial_number
+			LEFT JOIN device_templates ON devices.template_id = device_templates.template_id
+			LEFT JOIN spaces ON devices.space_id = spaces.space_id
+			LEFT JOIN \`groups\` ON devices.group_id = groups.group_id
+			LEFT JOIN houses ON spaces.house_id = houses.house_id
+			-- LEFT JOIN batch_product_detail ON batch_product_detail.serial_number = devices.serial_number
+			-- LEFT JOIN detail_export ON detail_export.batch_code = batch_product_detail.exp_batch_id
 		`
 
 		const result = await executeSelectData({
@@ -379,11 +394,11 @@ class TicketService {
 		const get_table = "tickets"
 
 		const query_join = `
-		  LEFT JOIN ticket_types ON tickets.ticket_type_id = ticket_types.ticket_type_id
-		  LEFT JOIN account ON tickets.user_id = account.account_id
-		  LEFT JOIN customer ON account.customer_id = customer.customer_id
-		  LEFT JOIN account assigned_account ON tickets.assigned_to = assigned_account.account_id
-		  LEFT JOIN employee ON assigned_account.employee_id = employee.employee_id
+			LEFT JOIN ticket_types ON tickets.ticket_type_id = ticket_types.ticket_type_id
+			LEFT JOIN account ON tickets.user_id = account.account_id
+			LEFT JOIN customer ON account.customer_id = customer.customer_id
+			LEFT JOIN account assigned_account ON tickets.assigned_to = assigned_account.account_id
+			LEFT JOIN employee ON assigned_account.employee_id = employee.employee_id
 		`
 
 		const result = await executeSelectData({
