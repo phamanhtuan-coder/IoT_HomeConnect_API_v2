@@ -60,8 +60,11 @@ export const ticketSchema = z.object({
             .max(50, "Device serial must be 50 characters or less")
             .optional(),
         ticket_type_id: z
-            .string()
-            .min(1, "Ticket type ID is required"),
+            .number(
+                {
+                    invalid_type_error: "Yêu cầu ticket type id là số"
+                }
+            ),
         description: z
             .string()
             .max(5000, "Description must be 5000 characters or less")
