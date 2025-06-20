@@ -187,56 +187,72 @@ export const UpdateDeviceCapabilitiesSchema = z.object({
 });
 
 export const LEDEffectSchema = z.object({
-    serial_number: z.string({
-        required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
-        invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
-    }).min(1, `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`),
-    effect: z.enum([
-        'solid', 'blink', 'breathe', 'rainbow', 'chase',
-        'fade', 'strobe', 'colorWave', 'sparkle', 'rainbowMove',
-        'disco', 'meteor', 'pulse', 'twinkle', 'fireworks'
-    ], {
-        required_error: `[${ERROR_CODES.DEVICE_EFFECT_REQUIRED}]LED effect is required`,
-        invalid_type_error: `[${ERROR_CODES.DEVICE_EFFECT_INVALID}]Invalid LED effect`
+    params: z.object({
+        deviceId: z.string({
+            required_error: `[${ERROR_CODES.DEVICE_ID_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_ID_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.DEVICE_ID_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_ID_INVALID]}`
+        })
     }),
-    speed: z.number()
-        .min(50, `[${ERROR_CODES.DEVICE_EFFECT_SPEED_INVALID}]Effect speed must be between 50 and 5000 milliseconds`)
-        .max(5000, `[${ERROR_CODES.DEVICE_EFFECT_SPEED_INVALID}]Effect speed must be between 50 and 5000 milliseconds`)
-        .optional(),
-    count: z.number()
-        .min(0, `[${ERROR_CODES.DEVICE_EFFECT_COUNT_INVALID}]Effect count must be between 0 and 100`)
-        .max(100, `[${ERROR_CODES.DEVICE_EFFECT_COUNT_INVALID}]Effect count must be between 0 and 100`)
-        .optional(),
-    duration: z.number()
-        .min(0, `[${ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID}]Effect duration must be between 0 and 300000 milliseconds`)
-        .max(300000, `[${ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID}]Effect duration must be between 0 and 300000 milliseconds`)
-        .optional(),
-    color1: z.string()
-        .regex(/^#[0-9A-Fa-f]{6}$/, `[${ERROR_CODES.DEVICE_COLOR_INVALID}]Color must be in hex format (#RRGGBB)`)
-        .optional(),
-    color2: z.string()
-        .regex(/^#[0-9A-Fa-f]{6}$/, `[${ERROR_CODES.DEVICE_COLOR_INVALID}]Color must be in hex format (#RRGGBB)`)
-        .optional()
+    body: z.object({
+        serial_number: z.string({
+            required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
+        }).min(1, `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`),
+        effect: z.enum([
+            'solid', 'blink', 'breathe', 'rainbow', 'chase',
+            'fade', 'strobe', 'colorWave', 'sparkle', 'rainbowMove',
+            'disco', 'meteor', 'pulse', 'twinkle', 'fireworks'
+        ], {
+            required_error: `[${ERROR_CODES.DEVICE_EFFECT_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_EFFECT_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.DEVICE_EFFECT_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_EFFECT_INVALID]}`
+        }),
+        speed: z.number()
+            .min(50, `[${ERROR_CODES.DEVICE_EFFECT_SPEED_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_EFFECT_SPEED_INVALID]}`)
+            .max(5000, `[${ERROR_CODES.DEVICE_EFFECT_SPEED_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_EFFECT_SPEED_INVALID]}`)
+            .optional(),
+        count: z.number()
+            .min(0, `[${ERROR_CODES.DEVICE_EFFECT_COUNT_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_EFFECT_COUNT_INVALID]}`)
+            .max(100, `[${ERROR_CODES.DEVICE_EFFECT_COUNT_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_EFFECT_COUNT_INVALID]}`)
+            .optional(),
+        duration: z.number()
+            .min(0, `[${ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID]}`)
+            .max(300000, `[${ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID]}`)
+            .optional(),
+        color1: z.string()
+            .regex(/^#[0-9A-Fa-f]{6}$/, `[${ERROR_CODES.DEVICE_COLOR_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_COLOR_INVALID]}`)
+            .optional(),
+        color2: z.string()
+            .regex(/^#[0-9A-Fa-f]{6}$/, `[${ERROR_CODES.DEVICE_COLOR_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_COLOR_INVALID]}`)
+            .optional()
+    })
 });
 
 export const LEDEffectPresetSchema = z.object({
-    serial_number: z.string({
-        required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
-        invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
-    }).min(1, `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`),
-    preset: z.enum([
-        'party_mode', 'relaxation_mode', 'gaming_mode', 'alarm_mode',
-        'sleep_mode', 'wake_up_mode', 'focus_mode', 'movie_mode',
-        'romantic_mode', 'celebration_mode', 'rainbow_dance',
-        'ocean_wave', 'meteor_shower', 'christmas_mode', 'disco_fever'
-    ], {
-        required_error: `[${ERROR_CODES.DEVICE_PRESET_REQUIRED}]LED preset is required`,
-        invalid_type_error: `[${ERROR_CODES.DEVICE_PRESET_INVALID}]Invalid LED preset`
+    params: z.object({
+        deviceId: z.string({
+            required_error: `[${ERROR_CODES.DEVICE_ID_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_ID_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.DEVICE_ID_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_ID_INVALID]}`
+        })
     }),
-    duration: z.number()
-        .min(0, `[${ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID}]Preset duration must be between 0 and 300000 milliseconds`)
-        .max(300000, `[${ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID}]Preset duration must be between 0 and 300000 milliseconds`)
-        .optional()
+    body: z.object({
+        serial_number: z.string({
+            required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
+        }).min(1, `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`),
+        preset: z.enum([
+            'party_mode', 'relaxation_mode', 'gaming_mode', 'alarm_mode',
+            'sleep_mode', 'wake_up_mode', 'focus_mode', 'movie_mode',
+            'romantic_mode', 'celebration_mode', 'rainbow_dance',
+            'ocean_wave', 'meteor_shower', 'christmas_mode', 'disco_fever'
+        ], {
+            required_error: `[${ERROR_CODES.DEVICE_PRESET_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_PRESET_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.DEVICE_PRESET_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_PRESET_INVALID]}`
+        }),
+        duration: z.number()
+            .min(0, `[${ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID]}`)
+            .max(300000, `[${ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID]}`)
+            .optional()
+    })
 });
 
 export const StopLEDEffectSchema = z.object({
