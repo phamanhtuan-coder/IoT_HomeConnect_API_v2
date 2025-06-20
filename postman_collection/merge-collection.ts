@@ -31,11 +31,27 @@ const modules = [
 
 const items: any[] = [];
 for (const module of modules) {
-    const moduleData = JSON.parse(fs.readFileSync(path.join(basePath, `${module}.json`), 'utf8'));
-    items.push(...moduleData);
+    try {
+        const moduleData = JSON.parse(fs.readFileSync(path.join(basePath, `${module}.json`), 'utf8'));
+
+        // Handle both array and object structures
+        if (Array.isArray(moduleData)) {
+            items.push(...moduleData);
+        } else if (moduleData.item && Array.isArray(moduleData.item)) {
+            items.push(moduleData); // Push the whole object if it has an item array
+        } else {
+            console.warn(`Warning: ${module}.json does not have the expected structure`);
+        }
+    } catch (error) {
+        console.error(`Error processing ${module}.json:`, error);
+    }
 }
 
 base.item = items;
+
+// Ensure the base collection has required properties
+if (!base.event) base.event = [];
+if (!base.variable) base.variable = [];
 
 fs.writeFileSync(path.join(basePath, 'full-collection.json'), JSON.stringify(base, null, 2));
 console.log('Collection merged successfully!');
