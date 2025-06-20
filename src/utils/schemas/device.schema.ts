@@ -15,13 +15,16 @@ export const deviceSchema = z.object({
 
 export const deviceIdSchema = z.object({
     params: z.object({
-        deviceId: z.string().min(1, 'Device ID is required')
+        serialNumber: z.string({
+            required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
+        }).min(1, `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`),
     }),
 });
 
-export const deviceSerialSchema = z.object({
+export const serialNumberSchema = z.object({
     params: z.object({
-        device_serial: z.string().min(1, 'Serial number is required').max(50),
+        serialNumber: z.string().min(1, 'Serial number is required').max(50, 'Serial number too long'),
     }),
 });
 
@@ -103,13 +106,7 @@ export const DeviceStateUpdateSchema = z.object({
 
 export const DeviceStateQuerySchema = z.object({
     params: z.object({
-        deviceId: z.string({
-            required_error: `[${ERROR_CODES.DEVICE_ID_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_ID_REQUIRED]}`,
-            invalid_type_error: `[${ERROR_CODES.DEVICE_ID_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_ID_INVALID]}`
-        }).min(1, `[${ERROR_CODES.DEVICE_ID_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_ID_INVALID]}`),
-    }),
-    query: z.object({
-        serial_number: z.string({
+        serialNumber: z.string({
             required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
             invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
         }).min(1, `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`),
@@ -148,16 +145,10 @@ export const QuickToggleSchema = z.object({
 
 export const DeviceCapabilitiesSchema = z.object({
     params: z.object({
-        deviceId: z.string({
-            required_error: `[${ERROR_CODES.DEVICE_ID_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_ID_REQUIRED]}`,
-            invalid_type_error: `[${ERROR_CODES.DEVICE_ID_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_ID_INVALID]}`
-        }).min(1, `[${ERROR_CODES.DEVICE_ID_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_ID_INVALID]}`),
-    }),
-    body: z.object({
-        serial_number: z.string({
+        serialNumber: z.string({
             required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
             invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
-        }).min(1, `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`),
+        }).min(1, `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`)
     })
 });
 
@@ -188,9 +179,9 @@ export const UpdateDeviceCapabilitiesSchema = z.object({
 
 export const LEDEffectSchema = z.object({
     params: z.object({
-        deviceId: z.string({
-            required_error: `[${ERROR_CODES.DEVICE_ID_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_ID_REQUIRED]}`,
-            invalid_type_error: `[${ERROR_CODES.DEVICE_ID_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_ID_INVALID]}`
+        serialNumber: z.string({
+            required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
         })
     }),
     body: z.object({
@@ -229,9 +220,9 @@ export const LEDEffectSchema = z.object({
 
 export const LEDEffectPresetSchema = z.object({
     params: z.object({
-        deviceId: z.string({
-            required_error: `[${ERROR_CODES.DEVICE_ID_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_ID_REQUIRED]}`,
-            invalid_type_error: `[${ERROR_CODES.DEVICE_ID_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_ID_INVALID]}`
+        serialNumber: z.string({
+            required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
         })
     }),
     body: z.object({
@@ -269,6 +260,7 @@ export type DeviceStateQueryInput = z.infer<typeof DeviceStateQuerySchema>;
 export type DeviceBulkStateInput = z.infer<typeof DeviceBulkStateSchema>['body'];
 export type QuickToggleInput = z.infer<typeof QuickToggleSchema>['body'];
 export type DeviceCapabilitiesInput = z.infer<typeof DeviceCapabilitiesSchema>;
+export type SerialNumberInput = z.infer<typeof serialNumberSchema>['params'];
 
 export type DeviceInput = z.infer<typeof deviceSchema>['body'];
 export type DeviceIdInput = z.infer<typeof deviceIdSchema>['params'];
@@ -276,6 +268,5 @@ export type LinkDeviceInput = z.infer<typeof linkDeviceSchema>['body'];
 export type ToggleDeviceInput = z.infer<typeof toggleDeviceSchema>['body'];
 export type UpdateAttributesInput = z.infer<typeof updateAttributesSchema>['body'];
 export type UpdateWifiInput = z.infer<typeof updateWifiSchema>['body'];
-export type DeviceSerialInput = z.infer<typeof deviceSerialSchema>['params'];
 export type UserDeviceIdInput = z.infer<typeof userDeviceIdSchema>['params'];
 export type DeviceIdForRevokeInput = z.infer<typeof deviceIdForRevokeSchema>['params'];
