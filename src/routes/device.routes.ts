@@ -308,23 +308,23 @@ router.get(
 );
 
 /**
- * Lấy thông tin thiết bị theo ID.
+ * Lấy thông tin thiết bị theo số serial.
  * @swagger
- * /api/devices/{deviceId}:
+ * /api/devices/{serialNumber}:
  *   get:
  *     tags:
  *       - Device
  *     summary: Lấy thông tin chi tiết thiết bị
- *     description: Lấy thông tin chi tiết của một thiết bị theo ID
+ *     description: Lấy thông tin chi tiết của một thiết bị theo số serial
  *     security:
  *       - UserBearer: []
  *       - EmployeeBearer: []
  *     parameters:
  *       - in: path
- *         name: deviceId
+ *         name: serialNumber
  *         required: true
  *         type: string
- *         description: ID của thiết bị cần xem
+ *         description: Số serial của thiết bị cần xem
  *     responses:
  *       200:
  *         description: Trả về thông tin chi tiết của thiết bị
@@ -338,7 +338,7 @@ router.get(
  *         description: Lỗi server
  */
 router.get(
-    '/:deviceId',
+    '/:serialNumber',
     authMiddleware,
     validateMiddleware(deviceIdSchema),
     asyncHandler(deviceController.getDeviceById)
@@ -347,7 +347,7 @@ router.get(
 /**
  * Gỡ liên kết thiết bị.
  * @swagger
- * /api/devices/{deviceId}:
+ * /api/devices/{serialNumber}:
  *   delete:
  *     tags:
  *       - Device
@@ -360,10 +360,10 @@ router.get(
  *       - EmployeeBearer: []
  *     parameters:
  *       - in: path
- *         name: deviceId
+ *         name: serialNumber
  *         required: true
  *         type: string
- *         description: ID của thiết bị cần gỡ liên kết
+ *         description: Số serial của thiết bị cần gỡ liên kết
  *     responses:
  *       200:
  *         description: Gỡ liên kết thiết bị thành công
@@ -377,7 +377,7 @@ router.get(
  *         description: Lỗi server
  */
 router.delete(
-    '/:deviceId',
+    '/:serialNumber',
     authMiddleware,
     groupRoleMiddleware,
     validateMiddleware(deviceIdSchema),
@@ -387,7 +387,7 @@ router.delete(
 /**
  * Cập nhật không gian cho thiết bị.
  * @swagger
- * /api/devices/{deviceId}/space:
+ * /api/devices/{serialNumber}/space:
  *   put:
  *     tags:
  *       - Device
@@ -400,10 +400,10 @@ router.delete(
  *       - EmployeeBearer: []
  *     parameters:
  *       - in: path
- *         name: deviceId
+ *         name: serialNumber
  *         required: true
  *         type: string
- *         description: ID của thiết bị cần cập nhật
+ *         description: Serial number của thiết bị cần cập nhật
  *       - in: body
  *         name: body
  *         description: Thông tin không gian mới
@@ -431,7 +431,7 @@ router.delete(
  *         description: Lỗi server
  */
 router.put(
-    '/:deviceId/space',
+    '/:serialNumber/space',
     authMiddleware,
     groupRoleMiddleware,
     validateMiddleware(deviceIdSchema),
@@ -509,7 +509,7 @@ router.put(
  *         description: Device not found
  */
 router.patch(
-    '/:deviceId/state',
+    '/:serialNumber/state',
     authMiddleware,
     validateMiddleware(deviceIdSchema),
     validateMiddleware(DeviceStateUpdateSchema),
@@ -550,7 +550,7 @@ router.patch(
  *         description: Device not found
  */
 router.get(
-    '/:deviceId/state',
+    '/:serialNumber/state',
     authMiddleware,
     validateMiddleware(DeviceStateQuerySchema),
     asyncHandler(deviceController.getDeviceState)
@@ -609,7 +609,7 @@ router.get(
  *         description: Invalid updates array
  */
 router.post(
-    '/:deviceId/state/bulk',
+    '/:serialNumber/state/bulk',
     authMiddleware,
     validateMiddleware(deviceIdSchema),
     validateMiddleware(DeviceBulkStateSchema),
@@ -653,7 +653,7 @@ router.post(
  *         description: Device toggled successfully
  */
 router.post(
-    '/:deviceId/toggle',
+    '/:serialNumber/toggle',
     authMiddleware,
     validateMiddleware(deviceIdSchema),
     validateMiddleware(QuickToggleSchema),
@@ -719,7 +719,7 @@ router.post(
  *                   example: "LIGHTING"
  */
 router.post(
-    '/:deviceId/capabilities',
+    '/:serialNumber/capabilities',
     authMiddleware,
     validateMiddleware(DeviceCapabilitiesSchema),
     asyncHandler(deviceController.getDeviceCapabilities)
@@ -801,10 +801,8 @@ router.post(
  *         description: Device not found
  */
 router.put(
-    '/:deviceId/capabilities',
+    '/:serialNumber/capabilities',
     authMiddleware,
-    // Note: This endpoint might need special permissions
-    // Add groupRoleMiddleware if only group owners should update capabilities
     validateMiddleware(deviceIdSchema),
     validateMiddleware(UpdateDeviceCapabilitiesSchema),
     asyncHandler(deviceController.updateDeviceCapabilities)
@@ -865,7 +863,7 @@ router.put(
  *         description: Device not found
  */
 router.post(
-    '/:deviceId/led-preset',
+    '/:serialNumber/led-preset',
     authMiddleware,
     validateMiddleware(deviceIdSchema),
     validateMiddleware(LEDEffectPresetSchema),
@@ -874,7 +872,7 @@ router.post(
 
 // ADD validation to existing routes:
 router.post(
-    '/:deviceId/led-effect',
+    '/:serialNumber/led-effect',
     authMiddleware,
     validateMiddleware(deviceIdSchema),
     validateMiddleware(LEDEffectSchema),
@@ -882,18 +880,15 @@ router.post(
 );
 
 router.post(
-    '/:deviceId/stop-led-effect',
+    '/:serialNumber/stop-led-effect',
     authMiddleware,
     validateMiddleware(deviceIdSchema),
     validateMiddleware(StopLEDEffectSchema),
     asyncHandler(deviceController.stopLEDEffect)
 );
 
-/**
- * Get available LED effects
- */
 router.get(
-    '/:deviceId/led-effects',
+    '/:serialNumber/led-effects',
     authMiddleware,
     validateMiddleware(deviceIdSchema),
     asyncHandler(deviceController.getAvailableLEDEffects)
@@ -927,7 +922,7 @@ router.get(
  * @deprecated Use PATCH /devices/:deviceId/state instead
  */
 router.put(
-    '/:deviceId/toggle',
+    '/:serialNumber/toggle',
     authMiddleware,
     validateMiddleware(deviceIdSchema),
     validateMiddleware(toggleDeviceSchema),
@@ -938,7 +933,7 @@ router.put(
  * @deprecated Use PATCH /devices/:deviceId/state instead
  */
 router.put(
-    '/:deviceId/attributes',
+    '/:serialNumber/attributes',
     authMiddleware,
     validateMiddleware(deviceIdSchema),
     validateMiddleware(updateAttributesSchema),
@@ -949,7 +944,7 @@ router.put(
  * @deprecated Use PATCH /devices/:deviceId/state instead
  */
 router.put(
-    '/:deviceId/wifi',
+    '/:serialNumber/wifi',
     authMiddleware,
     groupRoleMiddleware,
     validateMiddleware(deviceIdSchema),

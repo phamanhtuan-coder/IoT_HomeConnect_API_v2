@@ -65,7 +65,7 @@ router.get(
     '/info-need-upload-firmware/:type/:planning_id/:batch_id',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(GetSerialFirmwareSchema),
+    //validateMiddleware(GetSerialFirmwareSchema),
     productionTrackingController.getSerialWithNeedFirmwareInProgress
 );
 

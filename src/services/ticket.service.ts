@@ -113,13 +113,13 @@ class TicketService {
 
 			if (to_user?.is_locked) throwError(ErrorCodes.BAD_REQUEST, 'Tài khoản đã bị khóa');
 
-			if (to_user?.employee_id) {
+			if (to_user?.id) {
 				// 4.4. Kiểm tra người nhận thiết bị là nhân viên
 				const employee = await this.prisma.employee.findFirst({
 					where: { id: to_user!.id, deleted_at: null },
 				});
 				if (!employee) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy nhân viên');
-			} else if (to_user?.customer_id) {
+			} else if (to_user?.id) {
 				// 4.4. Kiểm tra người nhận thiết bị là khách hàng
 				const customer = await this.prisma.customer.findFirst({
 					where: { id: to_user!.id, deleted_at: null },
@@ -318,7 +318,7 @@ class TicketService {
 		tickets.device_serial, tickets.description, tickets.evidence,
 		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, ticket_types.type_name as ticket_type_name, 
 		ticket_types.priority,
-		customer.customer_id as user_id,
+		customer.id as user_id,
 		COALESCE(CONCAT_WS(' ', customer.surname, customer.lastname), 'N/A') as user_name,
 		customer.phone as user_phone, customer.email as user_email,
 		COALESCE(CONCAT_WS(' ', employee.surname, employee.lastname), 'N/A') as assigned_name,
@@ -336,9 +336,9 @@ class TicketService {
 		const query_join = `
 			LEFT JOIN ticket_types ON tickets.ticket_type_id = ticket_types.ticket_type_id
 			LEFT JOIN account ON tickets.user_id = account.account_id
-			LEFT JOIN customer ON account.customer_id = customer.customer_id
+			LEFT JOIN customer ON account.customer_id = customer.id
 			LEFT JOIN account assigned_account ON tickets.assigned_to = assigned_account.account_id
-			LEFT JOIN employee ON assigned_account.employee_id = employee.employee_id
+			LEFT JOIN employee ON assigned_account.employee_id = employee.id
 			LEFT JOIN devices ON tickets.device_serial = devices.serial_number
 			LEFT JOIN device_templates ON devices.template_id = device_templates.template_id
 			LEFT JOIN spaces ON devices.space_id = spaces.space_id
@@ -396,9 +396,9 @@ class TicketService {
 		const query_join = `
 			LEFT JOIN ticket_types ON tickets.ticket_type_id = ticket_types.ticket_type_id
 			LEFT JOIN account ON tickets.user_id = account.account_id
-			LEFT JOIN customer ON account.customer_id = customer.customer_id
+			LEFT JOIN customer ON account.customer_id = customer.id
 			LEFT JOIN account assigned_account ON tickets.assigned_to = assigned_account.account_id
-			LEFT JOIN employee ON assigned_account.employee_id = employee.employee_id
+			LEFT JOIN employee ON assigned_account.employee_id = employee.id
 		`
 
 		const result = await executeSelectData({

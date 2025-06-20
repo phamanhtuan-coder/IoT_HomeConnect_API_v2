@@ -1,260 +1,250 @@
-[
-  {
-    "name": "Ownership History",
-    "item": [
-      {
-        "name": "Initiate Ownership Transfer",
-        "event": [
+{
+  "name": "Ownership History",
+  "item": [
+    {
+      "name": "Initiate Ownership Transfer",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "pm.test('Ownership transfer initiated successfully', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "  pm.expect(response.success).to.be.true;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
           {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Ownership transfer initiated successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(201);",
-                "  pm.expect(response.message).to.equal('Ownership transfer request initiated');",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
-            }
+            "key": "Authorization",
+            "value": "Bearer {{userAccessToken}}",
+            "type": "text"
           }
         ],
-        "request": {
-          "method": "POST",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"to_user_email\": \"recipient@example.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
             }
-          ],
-          "body": {
-            "mode": "raw",
-            "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"to_user_email\": \"newuser@example.com\"\n}",
-            "options": {
-              "raw": {
-                "language": "json"
-              }
-            }
-          },
-          "url": {
-            "raw": "{{baseUrl}}/ownership-history/transfer",
-            "host": ["{{baseUrl}}"],
-            "path": ["ownership-history", "transfer"]
           }
         },
-        "response": []
+        "url": {
+          "raw": "{{baseUrl}}/ownership-history/transfer",
+          "host": ["{{baseUrl}}"],
+          "path": ["ownership-history", "transfer"]
+        }
       },
-      {
-        "name": "Approve Ownership Transfer",
-        "event": [
+      "response": []
+    },
+    {
+      "name": "Approve Ownership Transfer",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "pm.test('Ownership transfer approved successfully', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "  pm.expect(response.success).to.be.true;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
           {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Ownership transfer processed successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.message).to.be.oneOf(['Ownership transfer approved', 'Ownership transfer rejected']);",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
-            }
+            "key": "Authorization",
+            "value": "Bearer {{userAccessToken}}",
+            "type": "text"
           }
         ],
-        "request": {
-          "method": "POST",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"accept\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
             }
-          ],
-          "body": {
-            "mode": "raw",
-            "raw": "{\n  \"accept\": true\n}",
-            "options": {
-              "raw": {
-                "language": "json"
-              }
-            }
-          },
-          "url": {
-            "raw": "{{baseUrl}}/ownership-history/transfer/:ticketId/approve",
-            "host": ["{{baseUrl}}"],
-            "path": ["ownership-history", "transfer", ":ticketId", "approve"],
-            "variable": [
-              {
-                "key": "ticketId",
-                "value": "1"
-              }
-            ]
           }
         },
-        "response": []
+        "url": {
+          "raw": "{{baseUrl}}/ownership-history/transfer/:ticketId/approve",
+          "host": ["{{baseUrl}}"],
+          "path": ["ownership-history", "transfer", ":ticketId", "approve"],
+          "variable": [
+            {
+              "key": "ticketId",
+              "value": "TICKET123"
+            }
+          ]
+        }
       },
-      {
-        "name": "Get Ownership History by ID",
-        "event": [
+      "response": []
+    },
+    {
+      "name": "Get Ownership History by ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "pm.test('Ownership history retrieved successfully', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "  pm.expect(response.data).to.exist;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
           {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Ownership history retrieved successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.history_id).to.exist;",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
-            }
+            "key": "Authorization",
+            "value": "Bearer {{userAccessToken}}",
+            "type": "text"
           }
         ],
-        "request": {
-          "method": "GET",
-          "header": [
+        "url": {
+          "raw": "{{baseUrl}}/ownership-history/:historyId",
+          "host": ["{{baseUrl}}"],
+          "path": ["ownership-history", ":historyId"],
+          "variable": [
             {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
+              "key": "historyId",
+              "value": "1"
             }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/ownership-history/:historyId",
-            "host": ["{{baseUrl}}"],
-            "path": ["ownership-history", ":historyId"],
-            "variable": [
-              {
-                "key": "historyId",
-                "value": "1"
-              }
-            ]
-          }
-        },
-        "response": []
+          ]
+        }
       },
-      {
-        "name": "Get Ownership History by Device",
-        "event": [
+      "response": []
+    },
+    {
+      "name": "Get Ownership History by Device",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "pm.test('Ownership history retrieved successfully', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "  pm.expect(response.data).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
           {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Ownership histories retrieved successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response).to.be.an('array');",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
-            }
+            "key": "Authorization",
+            "value": "Bearer {{userAccessToken}}",
+            "type": "text"
           }
         ],
-        "request": {
-          "method": "GET",
-          "header": [
+        "url": {
+          "raw": "{{baseUrl}}/ownership-history/device/:device_serial",
+          "host": ["{{baseUrl}}"],
+          "path": ["ownership-history", "device", ":device_serial"],
+          "variable": [
             {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
+              "key": "device_serial",
+              "value": "ABC123"
             }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/ownership-history/device/:device_serial",
-            "host": ["{{baseUrl}}"],
-            "path": ["ownership-history", "device", ":device_serial"],
-            "variable": [
-              {
-                "key": "device_serial",
-                "value": "ABC123"
-              }
-            ]
-          }
-        },
-        "response": []
+          ]
+        }
       },
-      {
-        "name": "Get Ownership History by User",
-        "event": [
+      "response": []
+    },
+    {
+      "name": "Get User's Ownership History",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "pm.test('User ownership history retrieved successfully', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "  pm.expect(response.data).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
           {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Ownership histories retrieved successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response).to.be.an('array');",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
-            }
+            "key": "Authorization",
+            "value": "Bearer {{userAccessToken}}",
+            "type": "text"
           }
         ],
-        "request": {
-          "method": "GET",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
-            }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/ownership-history/user",
-            "host": ["{{baseUrl}}"],
-            "path": ["ownership-history", "user"]
-          }
-        },
-        "response": []
+        "url": {
+          "raw": "{{baseUrl}}/ownership-history/user",
+          "host": ["{{baseUrl}}"],
+          "path": ["ownership-history", "user"]
+        }
       },
-      {
-        "name": "Delete Ownership History",
-        "event": [
+      "response": []
+    },
+    {
+      "name": "Delete Ownership History",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Ownership history deleted successfully', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
           {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const response = pm.response.json();",
-                "pm.test('Ownership history deleted successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(200);",
-                "  pm.expect(response.message).to.equal('Ownership history deleted');",
-                "});"
-              ],
-              "type": "text/javascript",
-              "packages": {}
-            }
+            "key": "Authorization",
+            "value": "Bearer {{userAccessToken}}",
+            "type": "text"
           }
         ],
-        "request": {
-          "method": "DELETE",
-          "header": [
+        "url": {
+          "raw": "{{baseUrl}}/ownership-history/:historyId",
+          "host": ["{{baseUrl}}"],
+          "path": ["ownership-history", ":historyId"],
+          "variable": [
             {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
+              "key": "historyId",
+              "value": "1"
             }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/ownership-history/:historyId",
-            "host": ["{{baseUrl}}"],
-            "path": ["ownership-history", ":historyId"],
-            "variable": [
-              {
-                "key": "historyId",
-                "value": "1"
-              }
-            ]
-          }
-        },
-        "response": []
-      }
-    ]
-  }
-]
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
 
