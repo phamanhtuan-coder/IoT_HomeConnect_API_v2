@@ -187,29 +187,62 @@ export const UpdateDeviceCapabilitiesSchema = z.object({
 });
 
 export const LEDEffectSchema = z.object({
-    serial_number: z.string(),
-    effect: z.enum(['solid', 'blink', 'breathe', 'rainbow', 'chase', 'fade', 'strobe', 'colorWave']),
-    speed: z.number().min(100).max(2000).optional(),
-    count: z.number().min(0).max(50).optional(),
-    duration: z.number().min(0).max(60000).optional(),
-    color1: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-    color2: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional()
+    serial_number: z.string({
+        required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
+        invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
+    }).min(1, `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`),
+    effect: z.enum([
+        'solid', 'blink', 'breathe', 'rainbow', 'chase',
+        'fade', 'strobe', 'colorWave', 'sparkle', 'rainbowMove',
+        'disco', 'meteor', 'pulse', 'twinkle', 'fireworks'
+    ], {
+        required_error: `[${ERROR_CODES.DEVICE_EFFECT_REQUIRED}]LED effect is required`,
+        invalid_type_error: `[${ERROR_CODES.DEVICE_EFFECT_INVALID}]Invalid LED effect`
+    }),
+    speed: z.number()
+        .min(50, `[${ERROR_CODES.DEVICE_EFFECT_SPEED_INVALID}]Effect speed must be between 50 and 5000 milliseconds`)
+        .max(5000, `[${ERROR_CODES.DEVICE_EFFECT_SPEED_INVALID}]Effect speed must be between 50 and 5000 milliseconds`)
+        .optional(),
+    count: z.number()
+        .min(0, `[${ERROR_CODES.DEVICE_EFFECT_COUNT_INVALID}]Effect count must be between 0 and 100`)
+        .max(100, `[${ERROR_CODES.DEVICE_EFFECT_COUNT_INVALID}]Effect count must be between 0 and 100`)
+        .optional(),
+    duration: z.number()
+        .min(0, `[${ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID}]Effect duration must be between 0 and 300000 milliseconds`)
+        .max(300000, `[${ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID}]Effect duration must be between 0 and 300000 milliseconds`)
+        .optional(),
+    color1: z.string()
+        .regex(/^#[0-9A-Fa-f]{6}$/, `[${ERROR_CODES.DEVICE_COLOR_INVALID}]Color must be in hex format (#RRGGBB)`)
+        .optional(),
+    color2: z.string()
+        .regex(/^#[0-9A-Fa-f]{6}$/, `[${ERROR_CODES.DEVICE_COLOR_INVALID}]Color must be in hex format (#RRGGBB)`)
+        .optional()
 });
 
 export const LEDEffectPresetSchema = z.object({
-    serial_number: z.string(),
-    preset: z.enum(['party_mode', 'relaxation_mode', 'gaming_mode', 'alarm_mode', 'sleep_mode', 'wake_up_mode', 'focus_mode', 'movie_mode']),
-    duration: z.number().min(0).max(300000).optional()
+    serial_number: z.string({
+        required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
+        invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
+    }).min(1, `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`),
+    preset: z.enum([
+        'party_mode', 'relaxation_mode', 'gaming_mode', 'alarm_mode',
+        'sleep_mode', 'wake_up_mode', 'focus_mode', 'movie_mode',
+        'romantic_mode', 'celebration_mode', 'rainbow_dance',
+        'ocean_wave', 'meteor_shower', 'christmas_mode', 'disco_fever'
+    ], {
+        required_error: `[${ERROR_CODES.DEVICE_PRESET_REQUIRED}]LED preset is required`,
+        invalid_type_error: `[${ERROR_CODES.DEVICE_PRESET_INVALID}]Invalid LED preset`
+    }),
+    duration: z.number()
+        .min(0, `[${ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID}]Preset duration must be between 0 and 300000 milliseconds`)
+        .max(300000, `[${ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID}]Preset duration must be between 0 and 300000 milliseconds`)
+        .optional()
 });
 
 export const StopLEDEffectSchema = z.object({
     serial_number: z.string()
 });
 
-export const LEDTestSchema = z.object({
-    serial_number: z.string(),
-    pattern: z.enum(['rainbow', 'color_cycle', 'brightness_test', 'pixel_test']).optional()
-});
 
 export type LEDEffectInput = z.infer<typeof LEDEffectSchema>;
 export type LEDEffectPresetInput = z.infer<typeof LEDEffectPresetSchema>;
