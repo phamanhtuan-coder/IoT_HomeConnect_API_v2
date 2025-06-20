@@ -3,6 +3,7 @@ import { ERROR_CODES, ERROR_MESSAGES } from "../contants/error";
 // Enum chứa mã lỗi chi tiết
 export enum ErrorCodes {
     // HTTP Errors
+    SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE', // 503
     NOT_IMPLEMENTED = 'NOT_IMPLEMENTED',         // 501
     BAD_REQUEST = 'BAD_REQUEST',               // 400
     UNAUTHORIZED = 'UNAUTHORIZED',             // 401
@@ -99,6 +100,11 @@ export const ERROR_RESPONSES: { [key: string]: ErrorResponse } = {
         code: ErrorCodes.TEMPLATE_NOT_FOUND,
         message: 'Template not found',
         status_code: 404
+    },
+    'SERVICE_UNAVAILABLE': {
+        code: ErrorCodes.SERVICE_UNAVAILABLE,
+        message: 'Service is currently unavailable',
+        status_code: 502
     }
 };
 
@@ -158,6 +164,8 @@ export class AppError extends Error {
                 return new AppError({ status: 409, code, message: message || 'Conflict' });
             case ErrorCodes.TOO_MANY_REQUESTS:
                 return new AppError({ status: 429, code, message: message || 'Too many requests' });
+            case ErrorCodes.SERVICE_UNAVAILABLE:
+                return new AppError({ status: 502, code, message: message || 'Service unavailable' });
 
             // Internal Errors
             case ErrorCodes.INTERNAL_SERVER_ERROR:
