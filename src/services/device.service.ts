@@ -620,7 +620,96 @@ class DeviceService {
             presetConfig.duration = duration;
         }
 
-        return this.setLEDEffect(deviceId, serial_number, presetConfig, accountId, io);
+        // Update database with the effect settings from the preset
+        const device = await this.prisma.devices.findFirst({
+            where: { device_id: deviceId, serial_number, is_deleted: false }
+        });
+
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
+
+        const currentState = (device?.attribute as DeviceState) || {};
+
+        const effectParams = {
+            effect: presetConfig.effect,
+            speed: presetConfig.speed || 500,
+            count: presetConfig.count || 0,
+            duration: presetConfig.duration || 0,
+            color1: presetConfig.color1 || currentState.color || "#FF0000",
+            color2: presetConfig.color2 || this.getComplementaryColor(presetConfig.color1 || currentState.color || "#FF0000")
+        };
+
+        const newState: DeviceState = {
+            ...currentState,
+            power_status: true,
+            effect: effectParams.effect,
+            effect_active: true,
+            effect_speed: effectParams.speed,
+            effect_count: effectParams.count,
+            effect_duration: effectParams.duration,
+            effect_color1: effectParams.color1,
+            effect_color2: effectParams.color2
+        };
+
+        const updatedDevice = await this.prisma.devices.update({
+            where: { device_id_serial_number: { device_id: deviceId, serial_number } },
+            data: {
+                attribute: newState,
+                power_status: true,
+                updated_at: new Date()
+            },
+        });
+
+        // Use socket.io to send commands to device - this needs to match the client socket implementation
+        if (io) {
+            // First send the effect command to apply the LED settings
+            const ledCommand = {
+                action: 'setEffect',
+                effect: effectParams.effect,
+                speed: effectParams.speed,
+                count: effectParams.count,
+                duration: effectParams.duration,
+                color1: effectParams.color1,
+                color2: effectParams.color2,
+                fromClient: accountId,
+                timestamp: new Date().toISOString()
+            };
+
+            // Then send the preset command which is what the client is expecting
+            const presetCommand = {
+                action: 'applyPreset',
+                preset: preset,
+                duration: duration || 0,
+                fromClient: accountId,
+                timestamp: new Date().toISOString()
+            };
+
+            // Send both commands to the device namespace
+            io.of("/device").to(`device:${serial_number}`).emit("command", ledCommand);
+            io.of("/device").to(`device:${serial_number}`).emit("command", presetCommand);
+
+            // Send deviceStatus update with the new state to all clients
+            io.of("/client").to(`device:${serial_number}`).emit("deviceStatus", {
+                serialNumber: serial_number,
+                state: newState,
+                timestamp: new Date().toISOString()
+            });
+
+            // Send the led_preset_applied event to client sockets for UI feedback
+            io.of("/client").to(`device:${serial_number}`).emit("led_preset_applied", {
+                serialNumber: serial_number,
+                preset: preset,
+                duration: duration || 0,
+                effect: effectParams.effect,
+                speed: effectParams.speed,
+                color1: effectParams.color1,
+                color2: effectParams.color2,
+                timestamp: new Date().toISOString()
+            });
+
+            console.log(`📤 LED preset '${preset}' command forwarded to device ${serial_number}`);
+        }
+
+        return this.mapPrismaDeviceToAuthDevice(updatedDevice);
     }
 
     private getLEDPresets(): Record<string, LEDEffectInput> {
@@ -751,9 +840,34 @@ class DeviceService {
             },
         });
 
+        // Use socket.io to send commands to device
         if (io) {
-            io.of("/device").to(`device:${serial_number}`).emit("command", {
-                action: "setEffect",
+            // This needs to match the expected format in device.socket.ts
+            const ledCommand = {
+                action: 'setEffect',
+                effect: effectParams.effect,
+                speed: effectParams.speed,
+                count: effectParams.count,
+                duration: effectParams.duration,
+                color1: effectParams.color1,
+                color2: effectParams.color2,
+                fromClient: accountId,
+                timestamp: new Date().toISOString()
+            };
+
+            // Send command to the device namespace
+            io.of("/device").to(`device:${serial_number}`).emit("command", ledCommand);
+
+            // Also emit a deviceStatus update with the new state
+            io.of("/client").to(`device:${serial_number}`).emit("deviceStatus", {
+                serialNumber: serial_number,
+                state: newState,
+                timestamp: new Date().toISOString()
+            });
+
+            // Emit led_effect_set to clients for feedback
+            io.of("/client").to(`device:${serial_number}`).emit("led_effect_set", {
+                serialNumber: serial_number,
                 effect: effectParams.effect,
                 speed: effectParams.speed,
                 count: effectParams.count,
@@ -763,11 +877,7 @@ class DeviceService {
                 timestamp: new Date().toISOString()
             });
 
-            io.of("/device").to(`device:${serial_number}`).emit("deviceStatus", {
-                deviceId: serial_number,
-                state: newState,
-                timestamp: new Date().toISOString()
-            });
+            console.log(`📤 LED effect command forwarded to device ${serial_number}:`, ledCommand);
         }
 
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);
