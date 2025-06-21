@@ -135,6 +135,7 @@ import planningRoutes from "./planning.routes";
 import sseRoutes from './sse.routes';
 import productionBatchesRoutes from './production-batches.routes';
 import customerSearchRoutes from './customer-search.routes';
+import cameraRoutes from "./camera.routes";
 
 
 
@@ -166,6 +167,7 @@ router.use('/planning', planningRoutes);
 router.use('/production-batches', productionBatchesRoutes);
 router.use('/sse', sseRoutes);
 router.use('/customer-search', customerSearchRoutes);
+router.use('/camera',cameraRoutes);
 
 
 export default router;

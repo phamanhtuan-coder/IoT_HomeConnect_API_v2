@@ -189,18 +189,18 @@ class CameraService {
                 return false;
             }
 
-            // **FIXED: Check capabilities more gracefully**
-            try {
-                const capabilities = await this.getCameraCapabilities(serial_number);
-                if (!capabilities.merged_capabilities?.capabilities.includes("CAMERA_CONTROL")) {
-                    console.log(`⚠️ Device ${serial_number} does not have camera control capability`);
-                    // **FIXED: Don't throw error, just return false**
-                    return false;
-                }
-            } catch (capError) {
-                console.log(`⚠️ Could not check capabilities for ${serial_number}: ${capError}`);
-                // Allow access even if capabilities check fails
-            }
+            // // **FIXED: Check capabilities more gracefully**
+            // try {
+            //     const capabilities = await this.getCameraCapabilities(serial_number);
+            //     if (!capabilities.merged_capabilities?.capabilities.includes("CAMERA_CONTROL")) {
+            //         console.log(`⚠️ Device ${serial_number} does not have camera control capability`);
+            //         // **FIXED: Don't throw error, just return false**
+            //         return false;
+            //     }
+            // } catch (capError) {
+            //     console.log(`⚠️ Could not check capabilities for ${serial_number}: ${capError}`);
+            //     // Allow access even if capabilities check fails
+            // }
 
             if (device?.account_id === accountId) return true;
 
