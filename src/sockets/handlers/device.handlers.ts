@@ -1,4 +1,3 @@
-// src/sockets/handlers/device.handlers.ts
 import { Namespace, Socket } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
 import { DeviceSocket } from '../../types/socket';

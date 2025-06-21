@@ -1,7 +1,8 @@
 import { Server, Socket } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
-import { ErrorCodes, throwError } from '../utils/errors';
 import CameraService from '../services/camera.service';
+import {handleCameraStatus, handleMotionDetected, handlePhotoCaptured} from "./handlers/camera.handlers";
+import {PermissionType} from "../types/share-request";
 
 const prisma = new PrismaClient();
 const cameraService = new CameraService();
@@ -142,6 +143,246 @@ export const setupCameraSocket = (io: Server) => {
         }
     });
 
+    // ========== CLIENT CONNECTIONS (for camera control) ==========
+    clientNamespace.on('connection', async (socket: Socket) => {
+        console.log(`📱 Client connection attempt - Socket ID: ${socket.id}`);
+
+        const { serialNumber, accountId } = socket.handshake.query;
+
+        if (!serialNumber || !accountId) {
+            console.log(`❌ Client connection rejected: Missing serialNumber or accountId - Socket ID: ${socket.id}`);
+            socket.disconnect(true);
+            return;
+        }
+
+        console.log(`✅ Client connected: ${socket.id}, Serial: ${serialNumber}, Account: ${accountId}`);
+
+        // Store client data
+        socket.data = { serialNumber, accountId };
+
+        // ========== CLIENT EVENT HANDLERS ==========
+
+        // Join camera room for receiving camera-specific events
+        socket.on('join_camera_room', async (data: { serialNumber: string }) => {
+            try {
+                const { serialNumber: roomSerial } = data;
+
+                // Verify access permission
+                const hasAccess = await cameraService.checkCameraAccess(roomSerial, accountId as string);
+                if (!hasAccess) {
+                    socket.emit('error', { message: 'No permission to access this camera' });
+                    return;
+                }
+
+                socket.join(`camera:${roomSerial}`);
+                console.log(`📱 Client ${socket.id} joined camera room: ${roomSerial}`);
+
+                // Send current camera status if camera is online
+                const cameraSocket = activeCameras.get(roomSerial);
+                if (cameraSocket) {
+                    socket.emit('camera_connected', {
+                        serialNumber: roomSerial,
+                        deviceType: 'ESP32-CAM',
+                        timestamp: new Date().toISOString(),
+                        online: true
+                    });
+                } else {
+                    socket.emit('camera_disconnected', {
+                        serialNumber: roomSerial,
+                        timestamp: new Date().toISOString(),
+                        online: false
+                    });
+                }
+            } catch (error) {
+                console.error('Error joining camera room:', error);
+                socket.emit('error', { message: 'Failed to join camera room' });
+            }
+        });
+
+        // Send command to camera
+        socket.on('send_camera_command', async (data: {
+            serialNumber: string;
+            action: string;
+            params?: any;
+        }) => {
+            try {
+                const { serialNumber: targetSerial, action, params } = data;
+
+                // Verify control permission
+                const hasAccess = await cameraService.checkCameraAccess(
+                    targetSerial,
+                    accountId as string,
+                    PermissionType.CONTROL
+                );
+                if (!hasAccess) {
+                    socket.emit('command_response', {
+                        success: false,
+                        error: 'No permission to control this camera',
+                        serialNumber: targetSerial,
+                        action
+                    });
+                    return;
+                }
+
+                const cameraSocket = activeCameras.get(targetSerial);
+                if (!cameraSocket) {
+                    socket.emit('command_response', {
+                        success: false,
+                        error: 'Camera is offline',
+                        serialNumber: targetSerial,
+                        action
+                    });
+                    return;
+                }
+
+                // Send command to camera via Socket.IO
+                console.log(`📤 Sending command to camera ${targetSerial}: ${action}`);
+                cameraSocket.emit('command', {
+                    action,
+                    params: params || {},
+                    commandId: `cmd_${Date.now()}`,
+                    timestamp: new Date().toISOString()
+                });
+
+                // Acknowledge command sent
+                socket.emit('command_sent', {
+                    success: true,
+                    serialNumber: targetSerial,
+                    action,
+                    message: 'Command sent to camera',
+                    timestamp: new Date().toISOString()
+                });
+
+            } catch (error) {
+                console.error('Error sending camera command:', error);
+                socket.emit('command_response', {
+                    success: false,
+                    error: 'Failed to send command',
+                    serialNumber: data.serialNumber,
+                    action: data.action
+                });
+            }
+        });
+
+        // Get camera status
+        socket.on('get_camera_status', async (data: { serialNumber: string }) => {
+            try {
+                const { serialNumber: targetSerial } = data;
+
+                // Verify access permission
+                const hasAccess = await cameraService.checkCameraAccess(targetSerial, accountId as string);
+                if (!hasAccess) {
+                    socket.emit('camera_status_response', {
+                        success: false,
+                        error: 'No permission to access this camera'
+                    });
+                    return;
+                }
+
+                const cameraSocket = activeCameras.get(targetSerial);
+                if (!cameraSocket) {
+                    socket.emit('camera_status_response', {
+                        success: false,
+                        error: 'Camera is offline',
+                        status: { online: false }
+                    });
+                    return;
+                }
+
+                // Request status from camera
+                cameraSocket.emit('get_status');
+
+                // Send immediate response
+                socket.emit('camera_status_response', {
+                    success: true,
+                    serialNumber: targetSerial,
+                    message: 'Status request sent to camera'
+                });
+
+            } catch (error) {
+                console.error('Error getting camera status:', error);
+                socket.emit('camera_status_response', {
+                    success: false,
+                    error: 'Failed to get camera status'
+                });
+            }
+        });
+
+        // Start camera stream
+        socket.on('start_camera_stream', async (data: { serialNumber: string }) => {
+            try {
+                const { serialNumber: targetSerial } = data;
+
+                // Verify access permission
+                const hasAccess = await cameraService.checkCameraAccess(targetSerial, accountId as string);
+                if (!hasAccess) {
+                    socket.emit('stream_response', {
+                        success: false,
+                        error: 'No permission to access this camera'
+                    });
+                    return;
+                }
+
+                // Generate stream token and URL
+                const streamResponse = await cameraService.generateStreamToken(targetSerial, accountId as string);
+
+                socket.emit('stream_response', {
+                    success: true,
+                    serialNumber: targetSerial,
+                    streamUrl: streamResponse.streamUrl,
+                    proxyUrl: streamResponse.proxyUrl,
+                    token: streamResponse.token,
+                    expires: streamResponse.expires
+                });
+
+            } catch (error) {
+                console.error('Error starting camera stream:', error);
+                socket.emit('stream_response', {
+                    success: false,
+                    error: 'Failed to start camera stream'
+                });
+            }
+        });
+
+        // Stop camera stream
+        socket.on('stop_camera_stream', async (data: { serialNumber: string }) => {
+            try {
+                const { serialNumber: targetSerial } = data;
+
+                const cameraSocket = activeCameras.get(targetSerial);
+                if (cameraSocket) {
+                    cameraSocket.emit('command', {
+                        action: 'stopStream',
+                        params: {},
+                        timestamp: new Date().toISOString()
+                    });
+                }
+
+                socket.emit('stream_response', {
+                    success: true,
+                    serialNumber: targetSerial,
+                    message: 'Stream stop command sent'
+                });
+
+            } catch (error) {
+                console.error('Error stopping camera stream:', error);
+                socket.emit('stream_response', {
+                    success: false,
+                    error: 'Failed to stop camera stream'
+                });
+            }
+        });
+
+        // Handle client disconnect
+        socket.on('disconnect', (reason) => {
+            console.log(`📱 Client disconnected: ${socket.id}, Reason: ${reason}`);
+        });
+
+        socket.on('error', (err) => {
+            console.log(`⚠️ Client error: ${socket.id}, Error: ${err.message || err}`);
+        });
+    });
+
     // **FIXED: Add middleware to prevent premature disconnections**
     cameraNamespace.use((socket, next) => {
         const userAgent = socket.handshake.headers['user-agent'] || '';
@@ -157,69 +398,4 @@ export const setupCameraSocket = (io: Server) => {
     });
 };
 
-async function handleCameraStatus(socket: Socket, clientNamespace: any, data: any) {
-    const { serialNumber } = socket.data;
-    console.log(`📊 Handling camera_status for ${serialNumber}: ${JSON.stringify(data, null, 2)}`);
 
-    const statusData = {
-        serialNumber,
-        status: data.status,
-        streamActive: data.streamActive,
-        resolution: data.resolution,
-        fps: data.fps || 0,
-        clients: data.clients,
-        uptime: data.uptime,
-        freeHeap: data.freeHeap,
-        timestamp: new Date().toISOString()
-    };
-
-    try {
-        await cameraService.updateCameraMetrics(serialNumber, statusData);
-        clientNamespace.to(`camera:${serialNumber}`).emit('camera_status_update', statusData);
-    } catch (err) {
-        console.log(`❌ Error handling camera_status for ${serialNumber}: ${err}`);
-    }
-}
-
-async function handlePhotoCaptured(socket: Socket, clientNamespace: any, data: any) {
-    const { serialNumber } = socket.data;
-    console.log(`📸 Handling photo_captured for ${serialNumber}: ${JSON.stringify(data, null, 2)}`);
-
-    const photoData = {
-        serialNumber,
-        filename: data.filename,
-        size: data.size,
-        capturedAt: new Date(data.timestamp),
-        savedToSD: data.savedToSD
-    };
-
-    try {
-        await cameraService.savePhotoMetadata(photoData);
-        clientNamespace.to(`camera:${serialNumber}`).emit('photo_captured', {
-            serialNumber,
-            filename: data.filename,
-            timestamp: new Date().toISOString()
-        });
-    } catch (err) {
-        console.log(`❌ Error handling photo_captured for ${serialNumber}: ${err}`);
-    }
-}
-
-async function handleMotionDetected(socket: Socket, clientNamespace: any, data: any) {
-    const { serialNumber } = socket.data;
-    console.log(`🚨 Handling motion_detected for ${serialNumber}: ${JSON.stringify(data, null, 2)}`);
-
-    try {
-        await cameraService.createMotionAlert(serialNumber, data);
-        clientNamespace.to(`camera:${serialNumber}`).emit('motion_alert', {
-            serialNumber,
-            intensity: data.intensity,
-            region: data.region,
-            timestamp: new Date().toISOString()
-        });
-    } catch (err) {
-        console.log(`❌ Error handling motion_detected for ${serialNumber}: ${err}`);
-    }
-}
-
-export { handleCameraStatus, handlePhotoCaptured, handleMotionDetected };
