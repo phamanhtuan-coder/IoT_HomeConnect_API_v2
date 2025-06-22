@@ -237,9 +237,9 @@ class DeviceService {
         }));
     }
 
-    async getDeviceById(deviceId: string, serial_number: string, accountId: string): Promise<Device> {
+    async getDeviceById(serial_number: string, accountId: string): Promise<Device> {
         const device = await this.prisma.devices.findFirst({
-            where: { device_id: deviceId, serial_number: serial_number, is_deleted: false },
+            where: { serial_number: serial_number, is_deleted: false },
             include: {
                 device_templates: {
                     include: {
@@ -256,7 +256,7 @@ class DeviceService {
         });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
 
-        await this.checkDevicePermission(device!.device_id, serial_number, accountId, false);
+        await this.checkDevicePermission(serial_number, accountId, false);
 
         try {
             const capabilities = await this.getDeviceCapabilities(serial_number);
@@ -271,7 +271,6 @@ class DeviceService {
                 capabilities
             };
         } catch (error) {
-            console.warn(`Could not fetch capabilities for device ${deviceId}:`, error);
             return {
                 ...this.mapPrismaDeviceToAuthDevice(device),
                 device_type_id: device?.device_templates?.device_type_id ?? null,
@@ -356,7 +355,7 @@ class DeviceService {
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);
     }
 
-    async checkDevicePermission(device_id: string, serial_number: string, accountId: string, requireControl: boolean): Promise<void> {
+    async checkDevicePermission( serial_number: string, accountId: string, requireControl: boolean): Promise<void> {
         const device = await this.prisma.devices.findFirst({
             where: { serial_number, is_deleted: false },
             include: { spaces: { include: { houses: true } } },
@@ -495,7 +494,7 @@ class DeviceService {
     }
 
     async updateDeviceState(serial_number: string, stateUpdate: StateUpdateInput, accountId: string): Promise<Device> {
-        await this.checkDevicePermission("", serial_number, accountId, true);
+        await this.checkDevicePermission(serial_number, accountId, true);
 
         const device = await this.prisma.devices.findFirst({
             where: { serial_number, is_deleted: false },
@@ -537,7 +536,7 @@ class DeviceService {
     }
 
     async getDeviceState(serial_number: string, accountId: string): Promise<DeviceState> {
-        await this.checkDevicePermission("", serial_number, accountId, false);
+        await this.checkDevicePermission( serial_number, accountId, false);
 
         const device = await this.prisma.devices.findFirst({ where: { serial_number, is_deleted: false } });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
@@ -604,7 +603,7 @@ class DeviceService {
     }
 
     async applyLEDPreset(serial_number: string, preset: string, duration: number | undefined, accountId: string): Promise<Device> {
-        await this.checkDevicePermission("", serial_number, accountId, true);
+        await this.checkDevicePermission(serial_number, accountId, true);
 
         const device = await this.prisma.devices.findFirst({
             where: { serial_number, is_deleted: false },
@@ -668,7 +667,7 @@ class DeviceService {
     }
 
     async setLEDEffect(serial_number: string, effectInput: LEDEffectInput, accountId: string): Promise<Device> {
-        await this.checkDevicePermission("", serial_number, accountId, true);
+        await this.checkDevicePermission(serial_number, accountId, true);
 
         const device = await this.prisma.devices.findFirst({
             where: { serial_number, is_deleted: false },
@@ -745,7 +744,7 @@ class DeviceService {
     }
 
     async stopLEDEffect(serial_number: string, accountId: string): Promise<Device> {
-        await this.checkDevicePermission("", serial_number, accountId, true);
+        await this.checkDevicePermission(serial_number, accountId, true);
 
         const device = await this.prisma.devices.findFirst({
             where: { serial_number, is_deleted: false },
