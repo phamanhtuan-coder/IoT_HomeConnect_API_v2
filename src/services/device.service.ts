@@ -259,7 +259,7 @@ class DeviceService {
         await this.checkDevicePermission(device!.device_id, serial_number, accountId, false);
 
         try {
-            const capabilities = await this.getDeviceCapabilities(deviceId, serial_number);
+            const capabilities = await this.getDeviceCapabilities(serial_number);
 
             return {
                 ...this.mapPrismaDeviceToAuthDevice(device),
