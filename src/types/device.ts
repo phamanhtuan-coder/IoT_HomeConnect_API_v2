@@ -32,6 +32,12 @@ export interface DeviceAttributes {
  * @property {Date | null} created_at - Thời gian tạo (có thể null).
  * @property {Date | null} updated_at - Thời gian cập nhật (có thể null).
  * @property {boolean | null} is_deleted - Đánh dấu đã xóa (có thể null).
+ * @property {number | null} device_type_id - ID loại thiết bị (có thể null).
+ * @property {string | null} device_type_name - Tên loại thiết bị (có thể null).
+ * @property {string | null} device_template_name - Tên mẫu thiết bị (có thể null).
+ * @property {string | null} device_template_status - Trạng thái mẫu thiết bị (có thể null).
+ * @property {any | null} device_base_capabilities - Khả năng cơ bản của thiết bị (có thể null).
+ * @property {any | null} capabilities - Khả năng của thiết bị (có thể null).
  */
 export interface Device {
     device_id: string;
@@ -39,7 +45,7 @@ export interface Device {
     template_id: string | null;
     space_id: number | null;
     account_id: string | null;
-    group_id: number | null; // Thêm group_id
+    group_id: number | null;
     hub_id: string | null;
     firmware_id: string | null;
     name: string;
@@ -55,4 +61,11 @@ export interface Device {
     created_at: Date | null;
     updated_at: Date | null;
     is_deleted: boolean | null;
+    // Additional template-related fields
+    device_type_id?: number | null;
+    device_type_name?: string | null;
+    device_template_name?: string | null;
+    device_template_status?: string | null;
+    device_base_capabilities?: any | null;
+    capabilities?: any | null;
 }

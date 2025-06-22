@@ -119,10 +119,29 @@ class DeviceService {
     async getDevicesByAccount(accountId: string): Promise<Device[]> {
         const devices = await this.prisma.devices.findMany({
             where: { account_id: accountId, is_deleted: false },
-            include: { device_templates: true, spaces: { include: { houses: true } } },
+            include: {
+                device_templates: {
+                    include: {
+                        categories: true  // Include category information
+                    }
+                },
+                spaces: {
+                    include: {
+                        houses: true
+                    }
+                },
+                firmware: true
+            },
         });
 
-        return devices.map((device) => this.mapPrismaDeviceToAuthDevice(device));
+        return devices.map((device) => ({
+            ...this.mapPrismaDeviceToAuthDevice(device),
+            device_type_id: device.device_templates?.device_type_id ?? null,
+            device_type_name: device.device_templates?.categories?.name ?? null,
+            device_template_name: device.device_templates?.name ?? null,
+            device_template_status: device.device_templates?.status ?? null,
+            device_base_capabilities: device.device_templates?.base_capabilities ?? null
+        }));
     }
 
     async getDevicesByGroup(groupId: number): Promise<Device[]> {
@@ -134,47 +153,132 @@ class DeviceService {
                     { spaces: { houses: { group_id: groupId, is_deleted: false }, is_deleted: false } },
                 ],
             },
-            include: { device_templates: true, spaces: { include: { houses: true } } },
+            include: {
+                device_templates: {
+                    include: {
+                        categories: true
+                    }
+                },
+                spaces: {
+                    include: {
+                        houses: true
+                    }
+                },
+                firmware: true
+            },
         });
 
-        return devices.map((device) => this.mapPrismaDeviceToAuthDevice(device));
+        return devices.map((device) => ({
+            ...this.mapPrismaDeviceToAuthDevice(device),
+            device_type_id: device.device_templates?.device_type_id ?? null,
+            device_type_name: device.device_templates?.categories?.name ?? null,
+            device_template_name: device.device_templates?.name ?? null,
+            device_template_status: device.device_templates?.status ?? null,
+            device_base_capabilities: device.device_templates?.base_capabilities ?? null
+        }));
     }
 
     async getDevicesByHouse(houseId: number): Promise<Device[]> {
         const devices = await this.prisma.devices.findMany({
-            where: { spaces: { house_id: houseId, is_deleted: false }, is_deleted: false },
-            include: { device_templates: true, spaces: true },
+            where: {
+                is_deleted: false,
+                spaces: { house_id: houseId, is_deleted: false },
+            },
+            include: {
+                device_templates: {
+                    include: {
+                        categories: true
+                    }
+                },
+                spaces: {
+                    include: {
+                        houses: true
+                    }
+                },
+                firmware: true
+            },
         });
 
-        return devices.map((device) => this.mapPrismaDeviceToAuthDevice(device));
+        return devices.map((device) => ({
+            ...this.mapPrismaDeviceToAuthDevice(device),
+            device_type_id: device.device_templates?.device_type_id ?? null,
+            device_type_name: device.device_templates?.categories?.name ?? null,
+            device_template_name: device.device_templates?.name ?? null,
+            device_template_status: device.device_templates?.status ?? null,
+            device_base_capabilities: device.device_templates?.base_capabilities ?? null
+        }));
     }
 
     async getDevicesBySpace(spaceId: number): Promise<Device[]> {
         const devices = await this.prisma.devices.findMany({
             where: { space_id: spaceId, is_deleted: false },
-            include: { device_templates: true },
+            include: {
+                device_templates: {
+                    include: {
+                        categories: true
+                    }
+                },
+                spaces: {
+                    include: {
+                        houses: true
+                    }
+                },
+                firmware: true
+            },
         });
 
-        return devices.map((device) => this.mapPrismaDeviceToAuthDevice(device));
+        return devices.map((device) => ({
+            ...this.mapPrismaDeviceToAuthDevice(device),
+            device_type_id: device.device_templates?.device_type_id ?? null,
+            device_type_name: device.device_templates?.categories?.name ?? null,
+            device_template_name: device.device_templates?.name ?? null,
+            device_template_status: device.device_templates?.status ?? null,
+            device_base_capabilities: device.device_templates?.base_capabilities ?? null
+        }));
     }
 
-    async getDeviceById(serial_number: string, accountId: string): Promise<Device & { capabilities?: any }> {
+    async getDeviceById(serial_number: string, accountId: string): Promise<Device> {
         const device = await this.prisma.devices.findFirst({
-            where: { serial_number, is_deleted: false },
-            include: { device_templates: true, spaces: true, firmware: true },
+            where: { serial_number: serial_number, is_deleted: false },
+            include: {
+                device_templates: {
+                    include: {
+                        categories: true
+                    }
+                },
+                spaces: {
+                    include: {
+                        houses: true
+                    }
+                },
+                firmware: true
+            },
         });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
 
-        await this.checkDevicePermission(device!.device_id, serial_number, accountId, false);
-
-        const mappedDevice = this.mapPrismaDeviceToAuthDevice(device);
+        await this.checkDevicePermission(serial_number, accountId, false);
 
         try {
             const capabilities = await this.getDeviceCapabilities(serial_number);
-            return { ...mappedDevice, capabilities };
+
+            return {
+                ...this.mapPrismaDeviceToAuthDevice(device),
+                device_type_id: device?.device_templates?.device_type_id ?? null,
+                device_type_name: device?.device_templates?.categories?.name ?? null,
+                device_template_name: device?.device_templates?.name ?? null,
+                device_template_status: device?.device_templates?.status ?? null,
+                device_base_capabilities: device?.device_templates?.base_capabilities ?? null,
+                capabilities
+            };
         } catch (error) {
-            console.warn(`Could not fetch capabilities for device ${serial_number}:`, error);
-            return mappedDevice;
+            return {
+                ...this.mapPrismaDeviceToAuthDevice(device),
+                device_type_id: device?.device_templates?.device_type_id ?? null,
+                device_type_name: device?.device_templates?.categories?.name ?? null,
+                device_template_name: device?.device_templates?.name ?? null,
+                device_template_status: device?.device_templates?.status ?? null,
+                device_base_capabilities: device?.device_templates?.base_capabilities ?? null
+            };
         }
     }
 
@@ -251,7 +355,7 @@ class DeviceService {
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);
     }
 
-    async checkDevicePermission(device_id: string, serial_number: string, accountId: string, requireControl: boolean): Promise<void> {
+    async checkDevicePermission( serial_number: string, accountId: string, requireControl: boolean): Promise<void> {
         const device = await this.prisma.devices.findFirst({
             where: { serial_number, is_deleted: false },
             include: { spaces: { include: { houses: true } } },
@@ -390,7 +494,7 @@ class DeviceService {
     }
 
     async updateDeviceState(serial_number: string, stateUpdate: StateUpdateInput, accountId: string): Promise<Device> {
-        await this.checkDevicePermission("", serial_number, accountId, true);
+        await this.checkDevicePermission(serial_number, accountId, true);
 
         const device = await this.prisma.devices.findFirst({
             where: { serial_number, is_deleted: false },
@@ -432,7 +536,7 @@ class DeviceService {
     }
 
     async getDeviceState(serial_number: string, accountId: string): Promise<DeviceState> {
-        await this.checkDevicePermission("", serial_number, accountId, false);
+        await this.checkDevicePermission( serial_number, accountId, false);
 
         const device = await this.prisma.devices.findFirst({ where: { serial_number, is_deleted: false } });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
@@ -499,7 +603,7 @@ class DeviceService {
     }
 
     async applyLEDPreset(serial_number: string, preset: string, duration: number | undefined, accountId: string): Promise<Device> {
-        await this.checkDevicePermission("", serial_number, accountId, true);
+        await this.checkDevicePermission(serial_number, accountId, true);
 
         const device = await this.prisma.devices.findFirst({
             where: { serial_number, is_deleted: false },
@@ -563,7 +667,7 @@ class DeviceService {
     }
 
     async setLEDEffect(serial_number: string, effectInput: LEDEffectInput, accountId: string): Promise<Device> {
-        await this.checkDevicePermission("", serial_number, accountId, true);
+        await this.checkDevicePermission(serial_number, accountId, true);
 
         const device = await this.prisma.devices.findFirst({
             where: { serial_number, is_deleted: false },
@@ -640,7 +744,7 @@ class DeviceService {
     }
 
     async stopLEDEffect(serial_number: string, accountId: string): Promise<Device> {
-        await this.checkDevicePermission("", serial_number, accountId, true);
+        await this.checkDevicePermission(serial_number, accountId, true);
 
         const device = await this.prisma.devices.findFirst({
             where: { serial_number, is_deleted: false },

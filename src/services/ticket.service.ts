@@ -151,6 +151,7 @@ class TicketService {
 				evidence,
 				status: TICKET_STATUS.PENDING,
 				created_at: new Date(),
+				updated_at: new Date(),
 			},
 		});
 
