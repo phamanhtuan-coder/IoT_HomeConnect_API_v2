@@ -126,6 +126,15 @@ export const ERROR_CODES = {
     DEVICE_ATTRIBUTE_INVALID: 1619,
     DEVICE_POWER_STATUS_INVALID: 1620,
 
+    // Device LED Effects - 18xx
+    DEVICE_EFFECT_REQUIRED: 1801,
+    DEVICE_EFFECT_INVALID: 1802,
+    DEVICE_EFFECT_SPEED_INVALID: 1803,
+    DEVICE_EFFECT_COUNT_INVALID: 1804,
+    DEVICE_EFFECT_DURATION_INVALID: 1805,
+    DEVICE_PRESET_REQUIRED: 1806,
+    DEVICE_PRESET_INVALID: 1807,
+
     // Employee - 17xx
     EMPLOYEE_EMAIL_EXISTED: 1701,
     EMPLOYEE_PHONE_EXISTED: 1702,
@@ -260,6 +269,15 @@ export const ERROR_MESSAGES = {
     [ERROR_CODES.DEVICE_CAPABILITY_NOT_SUPPORTED]: 'Thiết bị không hỗ trợ tính năng này',
     [ERROR_CODES.DEVICE_ATTRIBUTE_INVALID]: 'Thuộc tính thiết bị không hợp lệ',
     [ERROR_CODES.DEVICE_POWER_STATUS_INVALID]: 'Trạng thái nguồn không hợp lệ',
+
+    // Device LED Effects - 18xx
+    [ERROR_CODES.DEVICE_EFFECT_REQUIRED]: 'Hiệu ứng LED là bắt buộc',
+    [ERROR_CODES.DEVICE_EFFECT_INVALID]: 'Hiệu ứng LED không hợp lệ',
+    [ERROR_CODES.DEVICE_EFFECT_SPEED_INVALID]: 'Tốc độ hiệu ứng phải từ 50 đến 5000 milliseconds',
+    [ERROR_CODES.DEVICE_EFFECT_COUNT_INVALID]: 'Số lần lặp hiệu ứng phải từ 0 đến 100',
+    [ERROR_CODES.DEVICE_EFFECT_DURATION_INVALID]: 'Thời lượng hiệu ứng phải từ 0 đến 300000 milliseconds (5 phút)',
+    [ERROR_CODES.DEVICE_PRESET_REQUIRED]: 'Preset LED là bắt buộc',
+    [ERROR_CODES.DEVICE_PRESET_INVALID]: 'Preset LED không hợp lệ',
 
     // Employee - 17xx
     [ERROR_CODES.EMPLOYEE_EMAIL_EXISTED]: 'Email đã tồn tại',

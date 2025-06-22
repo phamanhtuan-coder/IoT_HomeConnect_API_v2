@@ -8,7 +8,7 @@ import {
     ownershipHistoryIdSchema,
     ownershipTransferSchema
 } from "../utils/schemas/sharing.schema";
-import {deviceSerialSchema} from "../utils/schemas/device.schema";
+import {serialNumberSchema} from "../utils/schemas/device.schema";
 
 /**
  * Định nghĩa các route cho lịch sử chuyển nhượng quyền sở hữu thiết bị.
@@ -230,7 +230,7 @@ router.get(
 router.get(
     '/device/:device_serial',
     authMiddleware,
-    validate(deviceSerialSchema),
+    validate(serialNumberSchema),
     asyncHandler(ownershipHistoryController.getOwnershipHistoryByDevice.bind(ownershipHistoryController))
 );
 

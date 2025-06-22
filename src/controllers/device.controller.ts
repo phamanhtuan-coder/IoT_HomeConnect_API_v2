@@ -67,10 +67,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {deviceId} = req.params;
-            const {power_status, serial_number} = req.body;
+                        const {power_status, serial_number} = req.body;
             const device = await this.deviceService.toggleDevice(
-                deviceId,
                 serial_number,
                 power_status,
                 accountId
@@ -92,10 +90,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {deviceId} = req.params;
-            const {serial_number} = req.body;
+                        const {serial_number} = req.body;
             const device = await this.deviceService.updateDeviceAttributes(
-                deviceId,
                 serial_number,
                 req.body,
                 accountId
@@ -117,11 +113,9 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {deviceId} = req.params;
-            const {serial_number} = req.body;
+            const { serialNumber } = req.params;
             const device = await this.deviceService.getDeviceById(
-                deviceId,
-                serial_number,
+                serialNumber,
                 accountId
             );
             res.json(device);
@@ -145,9 +139,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {deviceId} = req.params;
-            const {serial_number} = req.body;
-            await this.deviceService.unlinkDevice(deviceId, serial_number, accountId);
+            const { serialNumber } = req.params;
+            await this.deviceService.unlinkDevice(serialNumber, accountId);
             res.status(204).send();
         } catch (error) {
             next(error);
@@ -169,10 +162,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {deviceId} = req.params;
-            const {spaceId, serial_number} = req.body;
+                        const {spaceId, serial_number} = req.body;
             const device = await this.deviceService.updateDeviceSpace(
-                deviceId,
                 serial_number,
                 spaceId,
                 accountId
@@ -198,10 +189,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {deviceId} = req.params;
-            const {serial_number} = req.body;
+                        const {serial_number} = req.body;
             const device = await this.deviceService.updateDeviceWifi(
-                deviceId,
                 serial_number,
                 req.body,
                 accountId
@@ -287,16 +276,11 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {deviceId} = req.params;
-            const {serial_number, ...stateUpdate} = req.body;
-
-            if (!serial_number) {
-                throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
-            }
+            const { serialNumber } = req.params;
+            const stateUpdate = req.body;
 
             const device = await this.deviceService.updateDeviceState(
-                deviceId,
-                serial_number,
+                serialNumber,
                 stateUpdate,
                 accountId
             );
@@ -320,16 +304,9 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {deviceId} = req.params;
-            const {serial_number} = req.query;
-
-            if (!serial_number) {
-                throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
-            }
-
+            const { serialNumber } = req.params;
             const state = await this.deviceService.getDeviceState(
-                deviceId,
-                serial_number as string,
+                serialNumber,
                 accountId
             );
 
@@ -352,16 +329,11 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {deviceId} = req.params;
-            const {serial_number, updates} = req.body;
-
-            if (!serial_number || !Array.isArray(updates)) {
-                throwError(ErrorCodes.BAD_REQUEST, 'serial_number and updates array are required');
-            }
+            const { serialNumber } = req.params;
+            const { updates } = req.body;
 
             const device = await this.deviceService.updateDeviceBulkState(
-                deviceId,
-                serial_number,
+                serialNumber,
                 updates,
                 accountId
             );
@@ -385,13 +357,12 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {deviceId} = req.params;
-            const {serial_number, power_status} = req.body;
+            const { serialNumber } = req.params;
+            const { power_status } = req.body;
 
             const device = await this.deviceService.updateDeviceState(
-                deviceId,
-                serial_number,
-                {power_status: power_status !== undefined ? power_status : true},
+                serialNumber,
+                { power_status: power_status !== undefined ? power_status : true },
                 accountId
             );
 
@@ -414,15 +385,13 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {deviceId} = req.params;
-            const {serial_number} = req.body;
+                        const {serial_number} = req.body;
 
             if (!serial_number) {
                 throwError(ErrorCodes.BAD_REQUEST, 'Số seri thiết bị không hợp lệ');
             }
 
             const capabilities = await this.deviceService.getDeviceCapabilities(
-                deviceId,
                 serial_number,
             );
 
@@ -445,8 +414,7 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {deviceId} = req.params;
-            const {serial_number, capabilities} = req.body;
+                        const {serial_number, capabilities} = req.body;
 
             if (!serial_number) {
                 throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
@@ -457,7 +425,6 @@ class DeviceController {
             }
 
             await this.deviceService.updateDeviceCapabilities(
-                deviceId,
                 serial_number,
                 capabilities
             );
@@ -481,8 +448,7 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {deviceId} = req.params;
-            const {serial_number} = req.body;
+                        const {serial_number} = req.body;
 
             if (!serial_number) {
                 throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
@@ -610,77 +576,51 @@ class DeviceController {
      * Apply LED effect preset
      * POST /devices/:deviceId/led-preset
      */
-    applyLEDPreset = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
-
+    applyLEDPreset = async (req: Request, res: Response) => {
         try {
-            const {deviceId} = req.params;
-            const {serial_number, preset, duration} = req.body;
+            const { serial_number, preset, duration } = req.body;
+            const accountId = req.user?.userId;
 
-            if (!serial_number || !preset) {
-                throwError(ErrorCodes.BAD_REQUEST, 'serial_number and preset are required');
+            if (!accountId) {
+                throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
             }
 
             const device = await this.deviceService.applyLEDPreset(
-                deviceId,
                 serial_number,
                 preset,
                 duration,
-                accountId,
-                req.app.get('io')
+                accountId
+                // No io parameter needed
             );
 
-            res.json({
-                success: true,
-                device,
-                message: `LED preset '${preset}' applied successfully`
-            });
-        } catch (error) {
-            next(error);
+            res.status(200).json({ success: true, data: device });
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     };
-
     /**
      * Set LED dynamic effect
      * POST /devices/:deviceId/led-effect
      */
-    setLEDEffect = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
-
+    setLEDEffect = async (req: Request, res: Response) => {
         try {
-            const {deviceId} = req.params;
-            const {serial_number, effect, speed, count, duration, color1, color2} = req.body;
+            const { serial_number, effect, speed, count, duration, color1, color2 } = req.body;
+            const accountId = req.user?.userId;
 
-            if (!serial_number || !effect) {
-                throwError(ErrorCodes.BAD_REQUEST, 'serial_number and effect are required');
+            if (!accountId) {
+                throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
             }
 
-            const effectInput: LEDEffectInput = {
-                effect,
-                speed,
-                count,
-                duration,
-                color1,
-                color2
-            };
-
             const device = await this.deviceService.setLEDEffect(
-                deviceId,
                 serial_number,
-                effectInput,
-                accountId,
-                req.app.get('io')
+                { effect, speed, count, duration, color1, color2 },
+                accountId
+                // No io parameter needed
             );
 
-            res.json({
-                success: true,
-                device,
-                message: `LED effect '${effect}' applied successfully`
-            });
-        } catch (error) {
-            next(error);
+            res.status(200).json({ success: true, data: device });
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     };
 
@@ -688,32 +628,24 @@ class DeviceController {
      * Stop LED effect
      * POST /devices/:deviceId/stop-led-effect
      */
-    stopLEDEffect = async (req: Request, res: Response, next: NextFunction) => {
-        const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
-
+    stopLEDEffect = async (req: Request, res: Response) => {
         try {
-            const {deviceId} = req.params;
-            const {serial_number} = req.body;
+            const { serialNumber } = req.params;
+            const accountId = req.user?.userId;
 
-            if (!serial_number) {
-                throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
+            if (!accountId) {
+                throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
             }
 
             const device = await this.deviceService.stopLEDEffect(
-                deviceId,
-                serial_number,
-                accountId,
-                req.app.get('io')
+                serialNumber,
+                accountId
+                // No io parameter needed
             );
 
-            res.json({
-                success: true,
-                device,
-                message: 'LED effect stopped successfully'
-            });
-        } catch (error) {
-            next(error);
+            res.status(200).json({ success: true, data: device });
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     };
 
@@ -763,3 +695,4 @@ class DeviceController {
 }
 
 export default DeviceController;
+

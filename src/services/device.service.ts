@@ -1,12 +1,18 @@
 import {Prisma, PrismaClient } from "@prisma/client";
 import { ErrorCodes, throwError } from "../utils/errors";
 import { Server } from "socket.io";
-import  AlertService  from "../services/alert.service";
+import AlertService from "../services/alert.service";
 import {Device, DeviceAttributes} from "../types/device";
 import {GroupRole} from "../types/group";
 import {PermissionType} from "../types/share-request";
 import {generateComponentId, generateDeviceId} from "../utils/helpers";
-import {DeviceState, LEDEffectInput, StateUpdateInput} from "../types/device-state";
+import {
+    AVAILABLE_LED_EFFECTS,
+    DeviceState,
+    LEDEffectInput,
+    LEDEffectParams, LEDPresetMap, PresetInput,
+    StateUpdateInput
+} from "../types/device-state";
 
 let io: Server | null = null;
 const alertService = new AlertService();
@@ -32,8 +38,7 @@ class DeviceService {
         attribute?: Record<string, any>;
         wifi_ssid?: string;
         wifi_password?: string;
-    }): Promise<Device>
-    {
+    }): Promise<Device> {
         const { templateId, serial_number, spaceId, groupId, accountId, name, attribute, wifi_ssid, wifi_password } = input;
 
         const template = await this.prisma.device_templates.findFirst({
@@ -45,18 +50,10 @@ class DeviceService {
         if (spaceId) {
             const space = await this.prisma.spaces.findFirst({
                 where: { space_id: spaceId, is_deleted: false },
-                include: {
-                    houses: {
-                        select: {
-                            group_id: true
-                        }
-                    }
-                }
+                include: { houses: { select: { group_id: true } } }
             });
             if (!space) throwError(ErrorCodes.NOT_FOUND, "Space not found");
-            if (!groupId && space?.houses?.group_id) {
-                finalGroupId = space?.houses.group_id;
-            }
+            if (!groupId && space?.houses?.group_id) finalGroupId = space.houses.group_id;
         }
 
         if (finalGroupId) {
@@ -66,17 +63,15 @@ class DeviceService {
             if (!group) throwError(ErrorCodes.NOT_FOUND, "Group not found");
         }
 
-        const existingDevice = await this.prisma.devices.findFirst({
-            where: { serial_number },
-        });
+        const existingDevice = await this.prisma.devices.findFirst({ where: { serial_number } });
         if (existingDevice) throwError(ErrorCodes.CONFLICT, "Serial number already exists");
 
         let device_id: string;
         let attempts = 0;
         const maxAttempts = 5;
         do {
-            device_id = generateDeviceId()
-            const idExists = await this.prisma.devices.findFirst({ where: { device_id: device_id } });
+            device_id = generateDeviceId();
+            const idExists = await this.prisma.devices.findFirst({ where: { device_id } });
             if (!idExists) break;
             attempts++;
             if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
@@ -84,7 +79,7 @@ class DeviceService {
 
         const device = await this.prisma.devices.create({
             data: {
-                device_id: device_id,
+                device_id,
                 serial_number,
                 template_id: templateId,
                 space_id: spaceId,
@@ -103,15 +98,11 @@ class DeviceService {
     }
 
     async linkDevice(serial_number: string, spaceId: number | null, accountId: string, name: string): Promise<Device> {
-        const device = await this.prisma.devices.findUnique({
-            where: { serial_number, is_deleted: false },
-        });
+        const device = await this.prisma.devices.findUnique({ where: { serial_number, is_deleted: false } });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
 
         if (spaceId) {
-            const space = await this.prisma.spaces.findUnique({
-                where: { space_id: spaceId, is_deleted: false },
-            });
+            const space = await this.prisma.spaces.findUnique({ where: { space_id: spaceId, is_deleted: false } });
             if (!space) throwError(ErrorCodes.NOT_FOUND, "Space not found");
         }
 
@@ -120,9 +111,7 @@ class DeviceService {
             data: { account_id: accountId, space_id: spaceId, name, link_status: "linked", updated_at: new Date() },
         });
 
-        if (io) {
-            io.of("/device").to(`device:${serial_number}`).emit("device_online", { deviceId: serial_number });
-        }
+        if (io) io.of("/device").to(`device:${serial_number}`).emit("device_online", { serialNumber: serial_number });
 
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);
     }
@@ -153,10 +142,7 @@ class DeviceService {
 
     async getDevicesByHouse(houseId: number): Promise<Device[]> {
         const devices = await this.prisma.devices.findMany({
-            where: {
-                is_deleted: false,
-                spaces: { house_id: houseId, is_deleted: false },
-            },
+            where: { spaces: { house_id: houseId, is_deleted: false }, is_deleted: false },
             include: { device_templates: true, spaces: true },
         });
 
@@ -172,59 +158,46 @@ class DeviceService {
         return devices.map((device) => this.mapPrismaDeviceToAuthDevice(device));
     }
 
-    async getDeviceById(deviceId: string, serial_number: string, accountId: string): Promise<Device & { capabilities?: any }> {
+    async getDeviceById(serial_number: string, accountId: string): Promise<Device & { capabilities?: any }> {
         const device = await this.prisma.devices.findFirst({
-            where: { device_id: deviceId, serial_number: serial_number, is_deleted: false },
-            include: {
-                device_templates: true,
-                spaces: true,
-                firmware: true
-            },
+            where: { serial_number, is_deleted: false },
+            include: { device_templates: true, spaces: true, firmware: true },
         });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
 
-        await this.checkDevicePermission(deviceId, serial_number, accountId, false);
+        await this.checkDevicePermission(device!.device_id, serial_number, accountId, false);
 
         const mappedDevice = this.mapPrismaDeviceToAuthDevice(device);
 
         try {
-            const capabilities = await this.getDeviceCapabilities(deviceId, serial_number);
+            const capabilities = await this.getDeviceCapabilities(serial_number);
             return { ...mappedDevice, capabilities };
         } catch (error) {
-            console.warn(`Could not fetch capabilities for device ${deviceId}:`, error);
+            console.warn(`Could not fetch capabilities for device ${serial_number}:`, error);
             return mappedDevice;
         }
     }
 
-    async unlinkDevice(deviceId: string, serial_number: string, accountId: string): Promise<void> {
+    async unlinkDevice(serial_number: string, accountId: string): Promise<void> {
         const device = await this.prisma.devices.findFirst({
-            where: {
-                device_id: deviceId,
-                serial_number: serial_number,
-                is_deleted: false
-            },
-            include: {
-                device_templates: true
-            }
+            where: { serial_number, is_deleted: false },
+            include: { device_templates: true },
         });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found");
 
-        if (device!.account_id !== accountId) {
-            throwError(ErrorCodes.FORBIDDEN, "You don't have permission to unlink this device");
-        }
+        if (device!.account_id !== accountId) throwError(ErrorCodes.FORBIDDEN, "No permission to unlink this device");
 
         const updatedDevice = await this.prisma.devices.update({
-            where: { device_id_serial_number: { device_id: deviceId, serial_number } },
+            where: { serial_number },
             data: {
                 account_id: null,
                 space_id: null,
                 link_status: "unlinked",
                 runtime_capabilities: Prisma.JsonNull,
-                updated_at: new Date()
+                updated_at: new Date(),
             },
         });
 
-        // Convert Prisma device to Device type for alert service
         const deviceForAlert: Device = {
             device_id: device!.device_id,
             serial_number: device!.serial_number,
@@ -246,51 +219,41 @@ class DeviceService {
             locked_at: device!.locked_at,
             created_at: device!.created_at,
             updated_at: device!.updated_at,
-            is_deleted: device!.is_deleted
+            is_deleted: device!.is_deleted,
         };
 
-        await alertService.createAlert(
-            deviceForAlert,
-            3,
-            `Device ${device!.name || serial_number} has been unlinked`
-        );
+        await alertService.createAlert(deviceForAlert, 3, `Device ${device!.name || serial_number} has been unlinked`);
 
         if (io) {
-            try {
-                io.of("/device").to(`device:${serial_number}`).emit("device_disconnect", {
-                    deviceId: serial_number,
-                    timestamp: new Date().toISOString()
-                });
-            } catch (error) {
-                console.warn(`Failed to emit device_disconnect event for ${serial_number}:`, error);
-            }
+            io.of("/device").to(`device:${serial_number}`).emit("device_disconnect", {
+                serialNumber: serial_number,
+                timestamp: new Date().toISOString(),
+            });
         }
     }
 
-    async updateDeviceSpace(deviceId: string, serial_number: string, spaceId: number | null, accountId: string): Promise<Device> {
+    async updateDeviceSpace(serial_number: string, spaceId: number | null, accountId: string): Promise<Device> {
         const device = await this.prisma.devices.findFirst({
-            where: { device_id: deviceId, serial_number: serial_number, account_id: accountId, is_deleted: false },
+            where: { serial_number, account_id: accountId, is_deleted: false },
         });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị or access denied");
 
         if (spaceId) {
-            const space = await this.prisma.spaces.findFirst({
-                where: { space_id: spaceId, is_deleted: false },
-            });
+            const space = await this.prisma.spaces.findFirst({ where: { space_id: spaceId, is_deleted: false } });
             if (!space) throwError(ErrorCodes.NOT_FOUND, "Space not found");
         }
 
         const updatedDevice = await this.prisma.devices.update({
-            where: { device_id_serial_number: { device_id: deviceId, serial_number } },
+            where: { serial_number },
             data: { space_id: spaceId, updated_at: new Date() },
         });
 
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);
     }
 
-    async checkDevicePermission(deviceId: string, serial_number: string, accountId: string, requireControl: boolean): Promise<void> {
+    async checkDevicePermission(device_id: string, serial_number: string, accountId: string, requireControl: boolean): Promise<void> {
         const device = await this.prisma.devices.findFirst({
-            where: { device_id: deviceId, serial_number, is_deleted: false },
+            where: { serial_number, is_deleted: false },
             include: { spaces: { include: { houses: true } } },
         });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
@@ -300,30 +263,20 @@ class DeviceService {
         const groupId = device!.group_id || device!.spaces?.houses?.group_id;
         if (groupId) {
             const userGroup = await this.prisma.user_groups.findFirst({
-                where: {
-                    group_id: groupId,
-                    account_id: accountId,
-                    is_deleted: false,
-                },
+                where: { group_id: groupId, account_id: accountId, is_deleted: false },
             });
             if (userGroup && userGroup.role) {
                 const role = userGroup.role as GroupRole;
-                if (!requireControl || [GroupRole.OWNER, GroupRole.VICE, GroupRole.ADMIN].includes(role)) {
-                    return;
-                }
+                if (!requireControl || [GroupRole.OWNER, GroupRole.VICE, GroupRole.ADMIN].includes(role)) return;
             }
         }
 
         const sharedPermission = await this.prisma.shared_permissions.findFirst({
-            where: {
-                device_serial: device!.serial_number,
-                shared_with_user_id: accountId,
-                is_deleted: false,
-            },
+            where: { device_serial: serial_number, shared_with_user_id: accountId, is_deleted: false },
         });
         if (sharedPermission) {
             if (requireControl && sharedPermission.permission_type !== PermissionType.CONTROL) {
-                throwError(ErrorCodes.FORBIDDEN, "Control permission required for this operation");
+                throwError(ErrorCodes.FORBIDDEN, "Control permission required");
             }
             return;
         }
@@ -361,57 +314,47 @@ class DeviceService {
         });
 
         for (const device of devices) {
-            // Convert Prisma device to Device type for alert service
             const deviceForAlert: Device = {
-                device_id: device.device_id,
-                serial_number: device.serial_number,
-                template_id: device.template_id,
-                group_id: device.group_id,
-                space_id: device.space_id,
-                account_id: device.account_id,
-                hub_id: device.hub_id,
-                firmware_id: device.firmware_id,
-                name: device.name,
-                power_status: device.power_status,
-                attribute: device.attribute as Record<string, any> | null,
-                wifi_ssid: device.wifi_ssid,
-                wifi_password: device.wifi_password,
-                current_value: device.current_value as Record<string, any> | null,
-                link_status: device.link_status,
-                last_reset_at: device.last_reset_at,
-                lock_status: device.lock_status,
-                locked_at: device.locked_at,
-                created_at: device.created_at,
-                updated_at: device.updated_at,
-                is_deleted: device.is_deleted
+                device_id: device!.device_id,
+                serial_number: device!.serial_number,
+                template_id: device!.template_id,
+                group_id: device!.group_id,
+                space_id: device!.space_id,
+                account_id: device!.account_id,
+                hub_id: device!.hub_id,
+                firmware_id: device!.firmware_id,
+                name: device!.name,
+                power_status: device!.power_status,
+                attribute: device!.attribute as Record<string, any> | null,
+                wifi_ssid: device!.wifi_ssid,
+                wifi_password: device!.wifi_password,
+                current_value: device!.current_value as Record<string, any> | null,
+                link_status: device!.link_status,
+                last_reset_at: device!.last_reset_at,
+                lock_status: device!.lock_status,
+                locked_at: device!.locked_at,
+                created_at: device!.created_at,
+                updated_at: device!.updated_at,
+                is_deleted: device!.is_deleted,
             };
 
-            await alertService.createAlert(
-                deviceForAlert,
-                3,
-                `Device ${device.name || device.serial_number} has been unlinked from group`
-            );
+            await alertService.createAlert(deviceForAlert, 3, `Device ${device!.name || device!.serial_number} unlinked from group`);
         }
 
         if (io) {
             devices.forEach((device) => {
-                io!.of("/device")
-                    .to(`device:${device.serial_number}`)
-                    .emit("device_disconnect", {
-                        deviceId: device.serial_number,
-                        timestamp: new Date().toISOString()
-                    });
+                io!.of("/device").to(`device:${device!.serial_number}`).emit("device_disconnect", {
+                    serialNumber: device!.serial_number,
+                    timestamp: new Date().toISOString(),
+                });
             });
         }
     }
 
-    async getDeviceCapabilities(deviceId: string, serial_number: string): Promise<any> {
+    async getDeviceCapabilities(serial_number: string): Promise<any> {
         const device = await this.prisma.devices.findFirst({
-            where: { device_id: deviceId, serial_number, is_deleted: false },
-            include: {
-                device_templates: true,
-                firmware: true
-            },
+            where: { serial_number, is_deleted: false },
+            include: { device_templates: true, firmware: true },
         });
 
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
@@ -424,104 +367,80 @@ class DeviceService {
             runtime: runtimeCapabilities,
             firmware_version: device!.firmware?.version || null,
             firmware_id: device!.firmware_id,
-            merged_capabilities: this.mergeCapabilities(baseCapabilities, runtimeCapabilities)
+            merged_capabilities: this.mergeCapabilities(baseCapabilities, runtimeCapabilities),
         };
     }
 
-    async updateDeviceCapabilities(
-        deviceId: string,
-        serial_number: string,
-        capabilities: any
-    ): Promise<void> {
-        const device = await this.prisma.devices.findFirst({
-            where: { device_id: deviceId, serial_number, is_deleted: false },
-        });
-
+    async updateDeviceCapabilities(serial_number: string, capabilities: any): Promise<void> {
+        const device = await this.prisma.devices.findFirst({ where: { serial_number, is_deleted: false } });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
 
         await this.prisma.devices.update({
-            where: { device_id_serial_number: { device_id: deviceId, serial_number } },
-            data: {
-                runtime_capabilities: capabilities,
-                updated_at: new Date()
-            },
+            where: { serial_number },
+            data: { runtime_capabilities: capabilities, updated_at: new Date() },
         });
 
         if (io) {
             io.of("/device").to(`device:${serial_number}`).emit("capabilities_updated", {
-                deviceId: serial_number,
+                serialNumber: serial_number,
                 capabilities,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             });
         }
     }
 
-    async updateDeviceState(
-        deviceId: string,
-        serial_number: string,
-        stateUpdate: StateUpdateInput,
-        accountId: string
-    ): Promise<Device> {
-        await this.checkDevicePermission(deviceId, serial_number, accountId, true);
+    async updateDeviceState(serial_number: string, stateUpdate: StateUpdateInput, accountId: string): Promise<Device> {
+        await this.checkDevicePermission("", serial_number, accountId, true);
 
         const device = await this.prisma.devices.findFirst({
-            where: { device_id: deviceId, serial_number, is_deleted: false },
-            include: { device_templates: true, firmware: true }
+            where: { serial_number, is_deleted: false },
+            include: { device_templates: true, firmware: true },
         });
-
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
 
-        const capabilities = await this.getDeviceCapabilities(deviceId, serial_number);
+        const capabilities = await this.getDeviceCapabilities(serial_number);
         this.validateStateUpdate(stateUpdate, capabilities);
 
         const currentState = (device!.attribute as DeviceState) || {};
         const newState: DeviceState = {
             ...currentState,
             ...stateUpdate,
-            power_status: stateUpdate.power_status !== undefined ? stateUpdate.power_status : (currentState.power_status || false)
+            power_status: stateUpdate.power_status !== undefined ? stateUpdate.power_status : (currentState.power_status || false),
         };
 
         const updatedDevice = await this.prisma.devices.update({
-            where: { device_id_serial_number: { device_id: deviceId, serial_number } },
+            where: { serial_number },
             data: {
                 attribute: newState,
                 power_status: newState.power_status,
                 ...(stateUpdate.wifi_ssid && { wifi_ssid: stateUpdate.wifi_ssid }),
                 ...(stateUpdate.wifi_password && { wifi_password: stateUpdate.wifi_password }),
-                updated_at: new Date()
+                updated_at: new Date(),
             },
         });
 
         if (io) {
             io.of("/device").to(`device:${serial_number}`).emit("command", {
                 action: "updateState",
+                serialNumber: serial_number,
                 state: stateUpdate,
-                timestamp: new Date().toISOString()
-            });
-            io.of("/device").to(`device:${serial_number}`).emit("deviceStatus", {
-                deviceId: serial_number,
-                state: newState,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             });
         }
 
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);
     }
 
-    async getDeviceState(deviceId: string, serial_number: string, accountId: string): Promise<DeviceState> {
-        await this.checkDevicePermission(deviceId, serial_number, accountId, false);
+    async getDeviceState(serial_number: string, accountId: string): Promise<DeviceState> {
+        await this.checkDevicePermission("", serial_number, accountId, false);
 
-        const device = await this.prisma.devices.findFirst({
-            where: { device_id: deviceId, serial_number, is_deleted: false }
-        });
-
+        const device = await this.prisma.devices.findFirst({ where: { serial_number, is_deleted: false } });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
 
         const state = (device!.attribute as DeviceState) || {};
-
         return {
             ...state,
-            power_status: state.power_status !== undefined ? state.power_status : (device!.power_status || false)
+            power_status: state.power_status !== undefined ? state.power_status : (device!.power_status || false),
         };
     }
 
@@ -537,8 +456,7 @@ class DeviceService {
             throwError(ErrorCodes.FORBIDDEN, 'Device does not support brightness control');
         }
 
-        if ((stateUpdate.alarmActive !== undefined || stateUpdate.buzzerOverride !== undefined)
-            && !deviceCapabilities.includes('ALARM_CONTROL')) {
+        if ((stateUpdate.alarmActive !== undefined || stateUpdate.buzzerOverride !== undefined) && !deviceCapabilities.includes('ALARM_CONTROL')) {
             throwError(ErrorCodes.FORBIDDEN, 'Device does not support alarm control');
         }
 
@@ -555,141 +473,217 @@ class DeviceService {
         }
     }
 
-    async toggleDevice(deviceId: string, serial_number: string, power_status: boolean, accountId: string): Promise<Device> {
-        return this.updateDeviceState(deviceId, serial_number, { power_status }, accountId);
+    async toggleDevice(serial_number: string, power_status: boolean, accountId: string): Promise<Device> {
+        return this.updateDeviceState(serial_number, { power_status }, accountId);
     }
 
-    async updateDeviceAttributes(
-        deviceId: string,
-        serial_number: string,
-        input: { brightness?: number; color?: string },
-        accountId: string
-    ): Promise<Device> {
+    async updateDeviceAttributes(serial_number: string, input: { brightness?: number; color?: string }, accountId: string): Promise<Device> {
         const stateUpdate: StateUpdateInput = {};
         if (input.brightness !== undefined) stateUpdate.brightness = input.brightness;
         if (input.color !== undefined) stateUpdate.color = input.color;
 
-        return this.updateDeviceState(deviceId, serial_number, stateUpdate, accountId);
+        return this.updateDeviceState(serial_number, stateUpdate, accountId);
     }
 
-    async updateDeviceWifi(
-        deviceId: string,
-        serial_number: string,
-        input: { wifi_ssid?: string; wifi_password?: string },
-        accountId: string
-    ): Promise<Device> {
+    async updateDeviceWifi(serial_number: string, input: { wifi_ssid?: string; wifi_password?: string }, accountId: string): Promise<Device> {
         const stateUpdate: StateUpdateInput = {};
         if (input.wifi_ssid !== undefined) stateUpdate.wifi_ssid = input.wifi_ssid;
         if (input.wifi_password !== undefined) stateUpdate.wifi_password = input.wifi_password;
 
-        return this.updateDeviceState(deviceId, serial_number, stateUpdate, accountId);
+        return this.updateDeviceState(serial_number, stateUpdate, accountId);
     }
 
-    async updateDeviceBulkState(
-        deviceId: string,
-        serial_number: string,
-        stateUpdates: StateUpdateInput[],
-        accountId: string
-    ): Promise<Device> {
+    async updateDeviceBulkState(serial_number: string, stateUpdates: StateUpdateInput[], accountId: string): Promise<Device> {
         const mergedUpdate = stateUpdates.reduce((acc, update) => ({ ...acc, ...update }), {});
-        return this.updateDeviceState(deviceId, serial_number, mergedUpdate, accountId);
+        return this.updateDeviceState(serial_number, mergedUpdate, accountId);
     }
 
-    async applyLEDPreset(
-        deviceId: string,
-        serial_number: string,
-        preset: string,
-        duration: number = 0,
-        accountId: string,
-        io?: Server
-    ): Promise<Device> {
-        await this.checkDevicePermission(deviceId, serial_number, accountId, true);
+    async applyLEDPreset(serial_number: string, preset: string, duration: number | undefined, accountId: string): Promise<Device> {
+        await this.checkDevicePermission("", serial_number, accountId, true);
 
-        const capabilities = await this.getDeviceCapabilities(deviceId, serial_number);
+        const device = await this.prisma.devices.findFirst({
+            where: { serial_number, is_deleted: false },
+            include: { device_templates: true }
+        });
+
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
+
+        const capabilities = await this.getDeviceCapabilities(serial_number);
         this.validateLEDSupport(capabilities);
 
         const presets = this.getLEDPresets();
-
         if (!presets[preset]) {
-            throwError(ErrorCodes.BAD_REQUEST, `Unknown preset: ${preset}. Available presets: ${Object.keys(presets).join(', ')}`);
+            throwError(ErrorCodes.BAD_REQUEST, `Invalid preset: ${preset}. Available presets: ${Object.keys(presets).join(', ')}`);
         }
 
-        const presetConfig = presets[preset];
-
-        if (duration > 0) {
-            presetConfig.duration = duration;
+        const presetEffectInput = { ...presets[preset] }; // Clone to avoid mutation
+        if (duration !== undefined) {
+            presetEffectInput.duration = Math.max(0, Math.min(300000, duration));
         }
 
-        return this.setLEDEffect(deviceId, serial_number, presetConfig, accountId, io);
+        const command = {
+            action: 'applyPreset',  // FIXED: Changed from 'command' to 'applyPreset'
+            serialNumber: serial_number,
+            preset,
+            duration: presetEffectInput.duration,
+            // Include all preset parameters for ESP8266
+            effect: presetEffectInput.effect,
+            speed: presetEffectInput.speed,
+            count: presetEffectInput.count,
+            color1: presetEffectInput.color1,
+            color2: presetEffectInput.color2,
+            fromClient: accountId,
+            timestamp: new Date().toISOString()
+        };
+
+        if (io) {
+            io.of("/device").to(`device:${serial_number}`).emit("command", command);
+            console.log(`[LED] Sent applyPreset command to device ${serial_number}:`, command);
+        }
+
+        // Update device state with preset info
+        const currentState = (device?.attribute as DeviceState) || {};
+        const newState: DeviceState = {
+            ...currentState,
+            effect: preset,
+            effect_active: true,
+            effect_preset: preset,
+            effect_params: presetEffectInput
+        };
+
+        const updatedDevice = await this.prisma.devices.update({
+            where: { serial_number },
+            data: {
+                attribute: newState,
+                updated_at: new Date()
+            }
+        });
+
+        return this.mapPrismaDeviceToAuthDevice(updatedDevice);
     }
 
-    private getLEDPresets(): Record<string, LEDEffectInput> {
-        return {
-            party_mode: {
-                effect: 'rainbow',
-                speed: 200,
-                count: 0,
-                duration: 0,
-                color1: '#FF0080',
-                color2: '#00FF80'
-            },
-            relaxation_mode: {
-                effect: 'breathe',
-                speed: 2000,
-                count: 0,
-                duration: 0,
-                color1: '#9370DB',
-                color2: '#4169E1'
-            },
-            gaming_mode: {
-                effect: 'chase',
-                speed: 150,
-                count: 0,
-                duration: 0,
-                color1: '#00FF80',
-                color2: '#FF0080'
-            },
-            alarm_mode: {
-                effect: 'strobe',
-                speed: 200,
-                count: 20,
-                duration: 10000,
-                color1: '#FF0000',
-                color2: '#000000'
-            },
-            sleep_mode: {
-                effect: 'fade',
-                speed: 5000,
-                count: 0,
-                duration: 30000,
-                color1: '#FFB366',
-                color2: '#2F1B14'
-            },
-            wake_up_mode: {
-                effect: 'fade',
-                speed: 2000,
-                count: 0,
-                duration: 30000,
-                color1: '#330000',
-                color2: '#FFB366'
-            },
-            focus_mode: {
-                effect: 'solid',
-                speed: 500,
-                count: 0,
-                duration: 0,
-                color1: '#4169E1',
-                color2: '#4169E1'
-            },
-            movie_mode: {
-                effect: 'breathe',
-                speed: 3000,
-                count: 0,
-                duration: 0,
-                color1: '#000080',
-                color2: '#191970'
-            }
+    async setLEDEffect(serial_number: string, effectInput: LEDEffectInput, accountId: string): Promise<Device> {
+        await this.checkDevicePermission("", serial_number, accountId, true);
+
+        const device = await this.prisma.devices.findFirst({
+            where: { serial_number, is_deleted: false },
+            include: { device_templates: true, firmware: true },
+        });
+
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
+
+        const capabilities = await this.getDeviceCapabilities(serial_number);
+        this.validateLEDSupport(capabilities);
+
+        // Sanitize and normalize effect parameters
+        const normalizedEffect: LEDEffectParams = {
+            effect: effectInput.effect,
+            speed: Math.max(50, Math.min(5000, effectInput.speed || 1000)),
+            count: Math.max(0, Math.min(100, effectInput.count || 0)),
+            duration: Math.max(0, Math.min(300000, effectInput.duration || 0)),
+            color1: effectInput.color1 || '#FFFFFF',
+            color2: effectInput.color2 || effectInput.color1 || '#FFFFFF'
         };
+
+        const command = {
+            action: 'setEffect',  // FIXED: Changed from 'command' to 'setEffect'
+            serialNumber: serial_number,
+            ...normalizedEffect,
+            fromClient: accountId,
+            timestamp: new Date().toISOString()
+        };
+
+        if (io) {
+            io.of("/device").to(`device:${serial_number}`).emit("command", command);
+            console.log(`[LED] Sent setEffect command to device ${serial_number}:`, command);
+        }
+
+        // Update device state
+        const currentState = (device?.attribute as DeviceState) || {};
+        const newState: DeviceState = {
+            ...currentState,
+            effect: normalizedEffect.effect,
+            effect_active: true,
+            effect_preset: "",
+            effect_params: normalizedEffect
+        };
+
+        const updatedDevice = await this.prisma.devices.update({
+            where: { serial_number },
+            data: {
+                attribute: newState,
+                updated_at: new Date()
+            }
+        });
+
+        return this.mapPrismaDeviceToAuthDevice(updatedDevice);
+    }
+
+    private getLEDPresets(): LEDPresetMap {
+        return {
+            party_mode: { effect: 'rainbow', speed: 200, count: 0, duration: 0, color1: '#FF0080', color2: '#00FF80' },
+            relaxation_mode: { effect: 'breathe', speed: 2000, count: 0, duration: 0, color1: '#9370DB', color2: '#4169E1' },
+            gaming_mode: { effect: 'chase', speed: 150, count: 0, duration: 0, color1: '#00FF80', color2: '#FF0080' },
+            alarm_mode: { effect: 'strobe', speed: 200, count: 20, duration: 10000, color1: '#FF0000', color2: '#000000' },
+            sleep_mode: { effect: 'fade', speed: 5000, count: 0, duration: 30000, color1: '#FFB366', color2: '#2F1B14' },
+            wake_up_mode: { effect: 'fade', speed: 2000, count: 0, duration: 30000, color1: '#330000', color2: '#FFB366' },
+            focus_mode: { effect: 'solid', speed: 500, count: 0, duration: 0, color1: '#4169E1', color2: '#4169E1' },
+            movie_mode: { effect: 'breathe', speed: 3000, count: 0, duration: 0, color1: '#000080', color2: '#191970' },
+            romantic_mode: { effect: 'pulse', speed: 1500, count: 0, duration: 0, color1: '#FF69B4', color2: '#FF1493' },
+            celebration_mode: { effect: 'sparkle', speed: 100, count: 0, duration: 0, color1: '#FFD700', color2: '#FF4500' },
+            rainbow_dance: { effect: 'rainbowMove', speed: 100, count: 0, duration: 0 },
+            ocean_wave: { effect: 'colorWave', speed: 2000, count: 0, duration: 0, color1: '#0077BE', color2: '#40E0D0' },
+            meteor_shower: { effect: 'meteor', speed: 150, count: 0, duration: 0, color1: '#FFFFFF', color2: '#4B0082' },
+            christmas_mode: { effect: 'chase', speed: 500, count: 0, duration: 0, color1: '#FF0000', color2: '#00FF00' },
+            disco_fever: { effect: 'disco', speed: 120, count: 0, duration: 60000 }
+        };
+    }
+
+    async stopLEDEffect(serial_number: string, accountId: string): Promise<Device> {
+        await this.checkDevicePermission("", serial_number, accountId, true);
+
+        const device = await this.prisma.devices.findFirst({
+            where: { serial_number, is_deleted: false },
+            include: { device_templates: true }
+        });
+
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
+
+        const command = {
+            action: 'stopEffect',  // FIXED: Changed from 'command' to 'stopEffect'
+            serialNumber: serial_number,
+            fromClient: accountId,
+            timestamp: new Date().toISOString()
+        };
+
+        if (io) {
+            io.of("/device").to(`device:${serial_number}`).emit("command", command);
+            console.log(`[LED] Sent stopEffect command to device ${serial_number}:`, command);
+        }
+
+        // Update device state
+        const currentState = (device?.attribute as DeviceState) || {};
+        const newState: DeviceState = {
+            ...currentState,
+            effect: 'solid',
+            effect_active: false,
+            effect_preset: "",
+            effect_params: undefined
+        };
+
+        const updatedDevice = await this.prisma.devices.update({
+            where: { serial_number },
+            data: {
+                attribute: newState,
+                updated_at: new Date()
+            }
+        });
+
+        return this.mapPrismaDeviceToAuthDevice(updatedDevice);
+    }
+
+    public getAvailableLEDEffects(): string[] {
+        return [...AVAILABLE_LED_EFFECTS]; // Spread to create mutable copy
     }
 
     private validateLEDSupport(capabilities: any): void {
@@ -701,172 +695,8 @@ class DeviceService {
         }
     }
 
-    async setLEDEffect(
-        deviceId: string,
-        serial_number: string,
-        effectInput: LEDEffectInput,
-        accountId: string,
-        io?: Server
-    ): Promise<Device> {
-        await this.checkDevicePermission(deviceId, serial_number, accountId, true);
-
-        const capabilities = await this.getDeviceCapabilities(deviceId, serial_number);
-        this.validateLEDEffectInput(effectInput, capabilities);
-
-        const device = await this.prisma.devices.findFirst({
-            where: { device_id: deviceId, serial_number, is_deleted: false }
-        });
-
-        if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
-
-        const currentState = (device!.attribute as DeviceState) || {};
-
-        const effectParams = {
-            effect: effectInput.effect,
-            speed: effectInput.speed || 500,
-            count: effectInput.count || 0,
-            duration: effectInput.duration || 0,
-            color1: effectInput.color1 || currentState.color || "#FF0000",
-            color2: effectInput.color2 || this.getComplementaryColor(effectInput.color1 || currentState.color || "#FF0000")
-        };
-
-        const newState: DeviceState = {
-            ...currentState,
-            power_status: true,
-            effect: effectParams.effect,
-            effect_active: true,
-            effect_speed: effectParams.speed,
-            effect_count: effectParams.count,
-            effect_duration: effectParams.duration,
-            effect_color1: effectParams.color1,
-            effect_color2: effectParams.color2
-        };
-
-        const updatedDevice = await this.prisma.devices.update({
-            where: { device_id_serial_number: { device_id: deviceId, serial_number } },
-            data: {
-                attribute: newState,
-                power_status: true,
-                updated_at: new Date()
-            },
-        });
-
-        if (io) {
-            io.of("/device").to(`device:${serial_number}`).emit("command", {
-                action: "setEffect",
-                effect: effectParams.effect,
-                speed: effectParams.speed,
-                count: effectParams.count,
-                duration: effectParams.duration,
-                color1: effectParams.color1,
-                color2: effectParams.color2,
-                timestamp: new Date().toISOString()
-            });
-
-            io.of("/device").to(`device:${serial_number}`).emit("deviceStatus", {
-                deviceId: serial_number,
-                state: newState,
-                timestamp: new Date().toISOString()
-            });
-        }
-
-        return this.mapPrismaDeviceToAuthDevice(updatedDevice);
-    }
-
-    async stopLEDEffect(
-        deviceId: string,
-        serial_number: string,
-        accountId: string,
-        io?: Server
-    ): Promise<Device> {
-        await this.checkDevicePermission(deviceId, serial_number, accountId, true);
-
-        const device = await this.prisma.devices.findFirst({
-            where: { device_id: deviceId, serial_number, is_deleted: false }
-        });
-
-        if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
-
-        const currentState = (device!.attribute as DeviceState) || {};
-
-        const newState: DeviceState = {
-            ...currentState,
-            effect: 'solid',
-            effect_active: false,
-            effect_speed: 500,
-            effect_count: 0,
-            effect_duration: 0
-        };
-
-        const updatedDevice = await this.prisma.devices.update({
-            where: { device_id_serial_number: { device_id: deviceId, serial_number } },
-            data: {
-                attribute: newState,
-                updated_at: new Date()
-            },
-        });
-
-        if (io) {
-            io.of("/device").to(`device:${serial_number}`).emit("command", {
-                action: "stopEffect",
-                timestamp: new Date().toISOString()
-            });
-
-            io.of("/device").to(`device:${serial_number}`).emit("deviceStatus", {
-                deviceId: serial_number,
-                state: newState,
-                timestamp: new Date().toISOString()
-            });
-        }
-
-        return this.mapPrismaDeviceToAuthDevice(updatedDevice);
-    }
-
-    getAvailableLEDEffects(): string[] {
-        return [
-            'solid', 'blink', 'breathe', 'rainbow', 'chase', 'fade', 'strobe', 'colorWave',
-            'sparkle', 'rainbowMove', 'disco', 'meteor', 'pulse', 'twinkle', 'fireworks'
-        ];
-    }
-
-    private validateLEDEffectInput(effectInput: LEDEffectInput, capabilities: any): void {
-        const mergedCapabilities = capabilities.merged_capabilities?.capabilities || [];
-        const deviceCapabilities = Array.isArray(mergedCapabilities) ? mergedCapabilities : [];
-
-        if (!deviceCapabilities.includes('RGB_CONTROL')) {
-            throwError(ErrorCodes.FORBIDDEN, 'Device does not support RGB control');
-        }
-
-        const validEffects = this.getAvailableLEDEffects();
-        if (!validEffects.includes(effectInput.effect)) {
-            throwError(ErrorCodes.BAD_REQUEST, `Invalid effect. Valid effects: ${validEffects.join(', ')}`);
-        }
-
-        if (effectInput.speed !== undefined && (effectInput.speed < 100 || effectInput.speed > 2000)) {
-            throwError(ErrorCodes.BAD_REQUEST, 'Effect speed must be between 100 and 2000 milliseconds');
-        }
-
-        if (effectInput.count !== undefined && (effectInput.count < 0 || effectInput.count > 50)) {
-            throwError(ErrorCodes.BAD_REQUEST, 'Effect count must be between 0 and 50');
-        }
-
-        if (effectInput.duration !== undefined && (effectInput.duration < 0 || effectInput.duration > 60000)) {
-            throwError(ErrorCodes.BAD_REQUEST, 'Effect duration must be between 0 and 60000 milliseconds');
-        }
-
-        if (effectInput.color1 && !/^#[0-9A-Fa-f]{6}$/.test(effectInput.color1)) {
-            throwError(ErrorCodes.BAD_REQUEST, 'color1 must be in hex format (#RRGGBB)');
-        }
-
-        if (effectInput.color2 && !/^#[0-9A-Fa-f]{6}$/.test(effectInput.color2)) {
-            throwError(ErrorCodes.BAD_REQUEST, 'color2 must be in hex format (#RRGGBB)');
-        }
-    }
-
     private getComplementaryColor(hexColor: string): string {
-        if (!hexColor || hexColor.charAt(0) !== '#' || hexColor.length !== 7) {
-            return "#0000FF";
-        }
+        if (!hexColor || hexColor.charAt(0) !== '#' || hexColor.length !== 7) return "#0000FF";
 
         const r = parseInt(hexColor.substr(1, 2), 16);
         const g = parseInt(hexColor.substr(3, 2), 16);
@@ -888,9 +718,8 @@ class DeviceService {
         return {
             capabilities: [
                 ...(base.capabilities || []),
-                ...(runtime.capabilities || [])
+                ...(runtime.capabilities || []),
             ].filter((value, index, self) => self.indexOf(value) === index),
-
             deviceType: runtime.deviceType || base.deviceType,
             category: runtime.category || base.category,
             hardware_version: runtime.hardware_version || base.hardware_version,
@@ -898,37 +727,33 @@ class DeviceService {
             isOutput: runtime.isOutput !== undefined ? runtime.isOutput : base.isOutput,
             isSensor: runtime.isSensor !== undefined ? runtime.isSensor : base.isSensor,
             isActuator: runtime.isActuator !== undefined ? runtime.isActuator : base.isActuator,
-
-            controls: {
-                ...base.controls,
-                ...runtime.controls
-            }
+            controls: { ...base.controls, ...runtime.controls },
         };
     }
 
     private mapPrismaDeviceToAuthDevice(device: any): Device {
         return {
-            device_id: device!.device_id,
-            serial_number: device!.serial_number,
-            template_id: device!.template_id ?? null,
-            group_id: device!.group_id ?? null,
-            space_id: device!.space_id ?? null,
-            account_id: device!.account_id ?? null,
-            hub_id: device!.hub_id ?? null,
-            firmware_id: device!.firmware_id ?? null,
-            name: device!.name,
-            power_status: device!.power_status ?? null,
-            attribute: device!.attribute ?? null,
-            wifi_ssid: device!.wifi_ssid ?? null,
-            wifi_password: device!.wifi_password ?? null,
-            current_value: device!.current_value ?? null,
-            link_status: device!.link_status ?? null,
-            last_reset_at: device!.last_reset_at ?? null,
-            lock_status: device!.lock_status ?? null,
-            locked_at: device!.locked_at ?? null,
-            created_at: device!.created_at ?? null,
-            updated_at: device!.updated_at ?? null,
-            is_deleted: device!.is_deleted ?? null,
+            device_id: device.device_id,
+            serial_number: device.serial_number,
+            template_id: device.template_id ?? null,
+            group_id: device.group_id ?? null,
+            space_id: device.space_id ?? null,
+            account_id: device.account_id ?? null,
+            hub_id: device.hub_id ?? null,
+            firmware_id: device.firmware_id ?? null,
+            name: device.name,
+            power_status: device.power_status ?? null,
+            attribute: device.attribute ?? null,
+            wifi_ssid: device.wifi_ssid ?? null,
+            wifi_password: device.wifi_password ?? null,
+            current_value: device.current_value ?? null,
+            link_status: device.link_status ?? null,
+            last_reset_at: device.last_reset_at ?? null,
+            lock_status: device.lock_status ?? null,
+            locked_at: device.locked_at ?? null,
+            created_at: device.created_at ?? null,
+            updated_at: device.updated_at ?? null,
+            is_deleted: device.is_deleted ?? null,
         };
     }
 }
