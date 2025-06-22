@@ -1,144 +1,174 @@
-[
-  {
-    "name": "Shared Permissions",
-    "item": [
-      {
-        "name": "Revoke Share Device",
-        "event": [
+{
+  "name": "Shared Permission",
+  "item": [
+    {
+      "name": "Revoke Share Permission (Owner/Admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Share permission revoked successfully', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
           {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "pm.test('Share device revoked successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(204);",
-                "});"
-              ],
-              "type": "text/javascript"
-            }
+            "key": "Authorization",
+            "value": "Bearer {{userAccessToken}}",
+            "type": "text"
           }
         ],
-        "request": {
-          "method": "DELETE",
-          "header": [
+        "url": {
+          "raw": "{{baseUrl}}/shared-permissions/:permissionId",
+          "host": ["{{baseUrl}}"],
+          "path": ["shared-permissions", ":permissionId"],
+          "variable": [
             {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
+              "key": "permissionId",
+              "value": "1"
             }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/permissions/:permissionId",
-            "host": ["{{baseUrl}}"],
-            "path": ["permissions", ":permissionId"],
-            "variable": [
-              {
-                "key": "permissionId",
-                "value": "1"
-              }
-            ]
-          }
-        },
-        "response": []
+          ]
+        }
       },
-      {
-        "name": "Revoke Share by Recipient",
-        "event": [
+      "response": []
+    },
+    {
+      "name": "Revoke Share Permission (Recipient)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Share permission revoked successfully', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
           {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "pm.test('Share revoked by recipient successfully', () => {",
-                "  pm.expect(pm.response.code).to.equal(204);",
-                "});"
-              ],
-              "type": "text/javascript"
-            }
+            "key": "Authorization",
+            "value": "Bearer {{userAccessToken}}",
+            "type": "text"
           }
         ],
-        "request": {
-          "method": "DELETE",
-          "header": [
+        "url": {
+          "raw": "{{baseUrl}}/shared-permissions/recipient/:permissionId",
+          "host": ["{{baseUrl}}"],
+          "path": ["shared-permissions", "recipient", ":permissionId"],
+          "variable": [
             {
-              "key": "Authorization",
-              "value": "Bearer {{userAccessToken}}",
-              "type": "text"
+              "key": "permissionId",
+              "value": "1"
             }
-          ],
-          "url": {
-            "raw": "{{baseUrl}}/permissions/recipient/:permissionId",
-            "host": ["{{baseUrl}}"],
-            "path": ["permissions", "recipient", ":permissionId"],
-            "variable": [
-              {
-                "key": "permissionId",
-                "value": "1"
-              }
-            ]
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Share Device",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "pm.test('Share request created successfully', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "  pm.expect(response.success).to.be.true;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userAccessToken}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"device_serial\": \"ABC123\",\n  \"to_user_email\": \"recipient@example.com\",\n  \"permission_type\": \"VIEW\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
           }
         },
-        "response": []
-      },
-      {
-        "name": "Create Permission",
-        "request": {
-          "url": {
-            "raw": "{{baseUrl}}/permissions",
-            "host": ["{{baseUrl}}"],
-            "path": ["permissions"]
-          }
+        "url": {
+          "raw": "{{baseUrl}}/shared-permissions",
+          "host": ["{{baseUrl}}"],
+          "path": ["shared-permissions"]
         }
       },
-      {
-        "name": "Get Permission by ID",
-        "request": {
-          "url": {
-            "raw": "{{baseUrl}}/permissions/:permissionId",
-            "host": ["{{baseUrl}}"],
-            "path": ["permissions", ":permissionId"]
+      "response": []
+    },
+    {
+      "name": "Approve Share Request",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "pm.test('Share request approved successfully', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "  pm.expect(response.success).to.be.true;",
+              "});"
+            ],
+            "type": "text/javascript"
           }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userAccessToken}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"accept\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/shared-permissions/:ticketId/approve",
+          "host": ["{{baseUrl}}"],
+          "path": ["shared-permissions", ":ticketId", "approve"],
+          "variable": [
+            {
+              "key": "ticketId",
+              "value": "TICKET123"
+            }
+          ]
         }
       },
-      {
-        "name": "Update Permission",
-        "request": {
-          "url": {
-            "raw": "{{baseUrl}}/permissions/:permissionId",
-            "host": ["{{baseUrl}}"],
-            "path": ["permissions", ":permissionId"]
-          }
-        }
-      },
-      {
-        "name": "Delete Permission",
-        "request": {
-          "url": {
-            "raw": "{{baseUrl}}/permissions/:permissionId",
-            "host": ["{{baseUrl}}"],
-            "path": ["permissions", ":permissionId"]
-          }
-        }
-      },
-      {
-        "name": "Get Device Permissions",
-        "request": {
-          "url": {
-            "raw": "{{baseUrl}}/permissions/device/:deviceId",
-            "host": ["{{baseUrl}}"],
-            "path": ["permissions", "device", ":deviceId"]
-          }
-        }
-      },
-      {
-        "name": "Get User Permissions",
-        "request": {
-          "url": {
-            "raw": "{{baseUrl}}/permissions/user/:userId",
-            "host": ["{{baseUrl}}"],
-            "path": ["permissions", "user", ":userId"]
-          }
-        }
-      }
-    ]
-  }
-]
+      "response": []
+    }
+  ]
+}
 

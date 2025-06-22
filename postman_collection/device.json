@@ -843,13 +843,13 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/devices/:deviceId/led-effect",
+            "raw": "{{baseUrl}}/devices/:serialNumber/led-effect",
             "host": ["{{baseUrl}}"],
-            "path": ["devices", ":deviceId", "led-effect"],
+            "path": ["devices", ":serialNumber", "led-effect"],
             "variable": [
               {
-                "key": "deviceId",
-                "value": "1"
+                "key": "serialNumber",
+                "value": "ABC123"
               }
             ]
           }
@@ -892,13 +892,13 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/devices/:deviceId/stop-led-effect",
+            "raw": "{{baseUrl}}/devices/:serialNumber/stop-led-effect",
             "host": ["{{baseUrl}}"],
-            "path": ["devices", ":deviceId", "stop-led-effect"],
+            "path": ["devices", ":serialNumber", "stop-led-effect"],
             "variable": [
               {
-                "key": "deviceId",
-                "value": "1"
+                "key": "serialNumber",
+                "value": "ABC123"
               }
             ]
           }
@@ -941,13 +941,13 @@
             }
           },
           "url": {
-            "raw": "{{baseUrl}}/devices/:deviceId/led-preset",
+            "raw": "{{baseUrl}}/devices/:serialNumber/led-preset",
             "host": ["{{baseUrl}}"],
-            "path": ["devices", ":deviceId", "led-preset"],
+            "path": ["devices", ":serialNumber", "led-preset"],
             "variable": [
               {
-                "key": "deviceId",
-                "value": "1"
+                "key": "serialNumber",
+                "value": "ABC123"
               }
             ]
           }
@@ -981,13 +981,13 @@
             }
           ],
           "url": {
-            "raw": "{{baseUrl}}/devices/:deviceId/led-effects",
+            "raw": "{{baseUrl}}/devices/:serialNumber/led-effects",
             "host": ["{{baseUrl}}"],
-            "path": ["devices", ":deviceId", "led-effects"],
+            "path": ["devices", ":serialNumber", "led-effects"],
             "variable": [
               {
-                "key": "deviceId",
-                "value": "1"
+                "key": "serialNumber",
+                "value": "ABC123"
               }
             ]
           }
