@@ -124,29 +124,29 @@ class GroupService {
         });
     }
 
-    async addUserToGroup(groupId: number, accountId: string, role: GroupRole): Promise<UserGroup> {
+    async addUserToGroup(groupId: number, username: string, role: GroupRole): Promise<UserGroup> {
         if (role === GroupRole.OWNER) {
             throwError(ErrorCodes.FORBIDDEN, 'Cannot add another owner to the group');
         }
 
-        const group = await this.prisma.groups.findUnique({
+        const group = await this.prisma.groups.findFirst({
             where: { group_id: groupId, is_deleted: false },
         });
         if (!group) throwError(ErrorCodes.NOT_FOUND, 'Group not found');
 
-        const account = await this.prisma.account.findUnique({
-            where: { account_id: accountId },
+        const account = await this.prisma.account.findFirst({
+            where: { username: username },
         });
         if (!account) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
 
         const existingUserGroup = await this.prisma.user_groups.findFirst({
-            where: { group_id: groupId, account_id: accountId, is_deleted: false },
+            where: { group_id: groupId, account_id: account?.account_id, is_deleted: false },
         });
         if (existingUserGroup) throwError(ErrorCodes.CONFLICT, 'User is already a member of this group');
 
         const userGroup = await this.prisma.user_groups.create({
             data: {
-                account_id: accountId,
+                account_id: account?.account_id,
                 group_id: groupId,
                 role,
             },

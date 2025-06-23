@@ -2671,7 +2671,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"groupId\": 1,\n  \"accountId\": \"user123\",\n  \"role\": \"member\"\n}",
+              "raw": "{\n  \"groupId\": 1,\n  \"username\": \"user123\",\n  \"role\": \"member\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
