@@ -33,7 +33,7 @@ class DeviceService {
         serial_number: string;
         spaceId?: number;
         groupId?: number;
-        accountId: string;
+        accountId?: string;
         name: string;
         attribute?: Record<string, any>;
         wifi_ssid?: string;
@@ -84,7 +84,7 @@ class DeviceService {
                 template_id: templateId,
                 space_id: spaceId,
                 group_id: finalGroupId,
-                account_id: accountId,
+                account_id: accountId || null,
                 name,
                 power_status: false,
                 attribute,

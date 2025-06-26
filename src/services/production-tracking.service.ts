@@ -4,6 +4,7 @@ import { ProductionTracking, ProductionTrackingNextStageInput, StageSerialStage,
 import sseController from '../controllers/sse.controller';
 import { ERROR_CODES, ERROR_MESSAGES } from '../contants/error';
 import { STATUS_CODE } from '../contants/status';
+import DeviceService from './device.service';
 
 function errorResponse(errorCode: ErrorCodes, message: string, data: any[] = []) {
     return {
@@ -268,6 +269,14 @@ let error_list: { device_serial: string | null; error: string }[] = [];
 
         const production = await this.prisma.production_tracking.findFirst({
             where: { device_serial: device_serial, is_deleted: false },
+            include: {
+                production_batches: {
+                    select: {
+                        production_batch_id: true,
+                        template_id: true
+                    }
+                }
+            }
         });
         
         if(!production) {
@@ -285,8 +294,8 @@ let error_list: { device_serial: string | null; error: string }[] = [];
         let newStage = stage;
         if (stage === StageSerialStage.ASSEMBLY) {
             if (status === StatusSerialStage.IN_PROGRESS) {
-                if (production.status !== StatusSerialStage.PENDING) {
-                    return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: đang chờ cập nhật');
+                if (production.status !== StatusSerialStage.IN_PROGRESS) {
+                    return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: Đang sản xuất');
                 }
 
                 stageLog = {
@@ -305,6 +314,18 @@ let error_list: { device_serial: string | null; error: string }[] = [];
                 stageLogList.push(newLog);
 
                 newStatus = StatusSerialStage.FIRMWARE_UPLOAD;
+
+                console.log(production);
+                // Tạo thiết bị mới
+                const newDevice = await new DeviceService().createDevice({
+                    templateId: production.production_batches.template_id,
+                    serial_number: device_serial,
+                    name: device_serial,
+                });
+                
+                if (!newDevice) {
+                    return errorResponse(ErrorCodes.BAD_REQUEST, 'Tạo thiết bị thất bại');
+                }
 
                 // Gửi SSE update
                 sseController.sendProductionUpdate({

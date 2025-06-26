@@ -28,11 +28,7 @@ class DeviceTemplateController {
 
         try {
             const template = await this.deviceTemplateService.createDeviceTemplate(req.body as DeviceTemplateCreateInput, employeeId);
-            return res.status(201).json({
-                status_code: 201,
-                message: "Tạo khuôn mẫu thành công",
-                data: template,
-            });
+            return res.status(template.status_code).json(template);
         } catch (error) {
             next(error);
         }

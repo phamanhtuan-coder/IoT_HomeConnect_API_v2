@@ -1,6 +1,8 @@
 export const ERROR_CODES = {
     SUCCESS: 0,
     BAD_REQUEST: 1,
+    INTERNAL_SERVER_ERROR: 2,
+    
     // Common - 0xx
     COMMON_INVALID_PAGE: 601,
     COMMON_INVALID_LIMIT: 602,
@@ -125,6 +127,7 @@ export const ERROR_CODES = {
     DEVICE_CAPABILITY_NOT_SUPPORTED: 1618,
     DEVICE_ATTRIBUTE_INVALID: 1619,
     DEVICE_POWER_STATUS_INVALID: 1620,
+    DEVICE_NAME_EXISTED: 1621,
 
     // Device LED Effects - 18xx
     DEVICE_EFFECT_REQUIRED: 1801,
@@ -144,6 +147,7 @@ export const ERROR_CODES = {
 } as const;
 
 export const ERROR_MESSAGES = {
+    [ERROR_CODES.INTERNAL_SERVER_ERROR]: 'Lỗi server',
 
     // Common - 0xx
     [ERROR_CODES.COMMON_INVALID_PAGE]: 'Số trang phải lớn hơn 0',
@@ -269,7 +273,7 @@ export const ERROR_MESSAGES = {
     [ERROR_CODES.DEVICE_CAPABILITY_NOT_SUPPORTED]: 'Thiết bị không hỗ trợ tính năng này',
     [ERROR_CODES.DEVICE_ATTRIBUTE_INVALID]: 'Thuộc tính thiết bị không hợp lệ',
     [ERROR_CODES.DEVICE_POWER_STATUS_INVALID]: 'Trạng thái nguồn không hợp lệ',
-
+    [ERROR_CODES.DEVICE_NAME_EXISTED]: 'Tên thiết bị đã tồn tại',
     // Device LED Effects - 18xx
     [ERROR_CODES.DEVICE_EFFECT_REQUIRED]: 'Hiệu ứng LED là bắt buộc',
     [ERROR_CODES.DEVICE_EFFECT_INVALID]: 'Hiệu ứng LED không hợp lệ',
