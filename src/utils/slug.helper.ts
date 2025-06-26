@@ -1,21 +1,26 @@
-const removeTagHtml = (str) => {    
-    return str.replace(/(<([^>]+)>)/gi, '');
-}
+import { PrismaClient } from '@prisma/client';
 
-const convertToSlug = (str) => {
+/**
+ * Chuyển đổi chuỗi thành slug
+ * @param str - Chuỗi cần chuyển đổi
+ * @returns Slug đã được chuẩn hóa
+ */
+export function convertToSlug(str: string): string {
+    if (!str) return '';
+    
     // Chuyển chuỗi về dạng không dấu
-    str = str
+    let slug = str
         .normalize("NFD") // Chuẩn hóa Unicode, tách ký tự thành ký tự cơ bản và dấu
         .replace(/[\u0300-\u036f]/g, "") // Loại bỏ các ký hiệu dấu
         .replace(/[đĐ]/g, "d"); // Thay thế "đ" và "Đ" thành "d"
 
     // Chuyển thành slug
-    return str
+    return slug
         .toLowerCase() // Chuyển thành chữ thường
         .replace(/[^a-z0-9]+/g, '-') // Thay thế tất cả ký tự không phải chữ cái hoặc số bằng dấu gạch ngang
         .replace(/-+/g, '-') // Thay thế nhiều dấu gạch ngang liên tiếp bằng một dấu
         .replace(/^-+|-+$/g, ''); // Loại bỏ dấu gạch ngang ở đầu và cuối
-};
+}
 
 /**
  * Tạo slug duy nhất bằng cách kiểm tra trùng lặp
@@ -24,11 +29,11 @@ const convertToSlug = (str) => {
  * @param maxAttempts - Số lần thử tối đa (mặc định 100)
  * @returns Slug duy nhất
  */
-async function generateUniqueSlug(
-    name, 
-    checkFunction,
-    maxAttempts = 100
-) {
+export async function generateUniqueSlug<T>(
+    name: string, 
+    checkFunction: (slug: string) => Promise<T | null>,
+    maxAttempts: number = 100
+): Promise<string> {
     let baseSlug = convertToSlug(name);
     let slug = baseSlug;
     let attempt = 1;
@@ -57,15 +62,15 @@ async function generateUniqueSlug(
  * @param excludeId - ID cần loại trừ (cho trường hợp update)
  * @returns Slug duy nhất
  */
-async function generateUniqueDeviceTemplateSlug(
-    name, 
-    prisma, 
-    excludeId
-) {
+export async function generateUniqueDeviceTemplateSlug(
+    name: string, 
+    prisma: PrismaClient, 
+    excludeId?: string
+): Promise<string> {
     return generateUniqueSlug(
         name,
-        async (slug) => {
-            const where = { 
+        async (slug: string) => {
+            const where: any = { 
                 slug, 
                 is_deleted: false 
             };
@@ -74,7 +79,7 @@ async function generateUniqueDeviceTemplateSlug(
                 where.template_id = { not: excludeId };
             }
             
-            return await prisma.product.findFirst({ where });
+            return await prisma.device_templates.findFirst({ where });
         }
     );
 }
@@ -86,15 +91,15 @@ async function generateUniqueDeviceTemplateSlug(
  * @param excludeId - ID cần loại trừ (cho trường hợp update)
  * @returns Slug duy nhất
  */
-async function generateUniqueProductSlug(
-    name, 
-    prisma, 
-    excludeId
-) {
+export async function generateUniqueProductSlug(
+    name: string, 
+    prisma: PrismaClient, 
+    excludeId?: string
+): Promise<string> {
     return generateUniqueSlug(
         name,
-        async (slug) => {
-            const where = { slug };
+        async (slug: string) => {
+            const where: any = { slug };
             
             if (excludeId) {
                 where.id = { not: excludeId };
@@ -103,11 +108,4 @@ async function generateUniqueProductSlug(
             return await prisma.product.findFirst({ where });
         }
     );
-}
-
-module.exports = {
-    removeTagHtml,
-    convertToSlug,
-    generateUniqueDeviceTemplateSlug,
-    generateUniqueProductSlug
-}
+} 
