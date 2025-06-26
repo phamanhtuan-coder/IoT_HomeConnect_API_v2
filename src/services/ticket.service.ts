@@ -52,6 +52,13 @@ class TicketService {
 		let is_share_permission = false;
 
 		try {
+			let accountByAssignedTo: any = null;
+			if (assigned_to) {
+				accountByAssignedTo = await this.prisma.account.findFirst({
+					where: { account_id: assigned_to, deleted_at: null },
+				});
+			}
+
 			// 1. Kiểm tra tài khoản
 			const account = await this.prisma.account.findFirst({
 				where: { account_id: user_id, deleted_at: null },
@@ -104,6 +111,8 @@ class TicketService {
 			} else if (ticketType?.ticket_type_id === TICKET_TYPE.SHARE_PERMISSION) {
 				if (!assigned_to) throwError(ErrorCodes.BAD_REQUEST, 'Không tìm thấy người nhận thiết bị được yêu cầu');
 				if (!device_serial) throwError(ErrorCodes.BAD_REQUEST, 'Không tìm thấy thiết bị');
+			
+				if (!accountByAssignedTo) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy người nhận thiết bị được yêu cầu');
 
 
 				// 1. Kiểm tra người chia sẻ có trong nhóm và là owner hoặc vice
@@ -125,7 +134,7 @@ class TicketService {
 
 				// 4. Kiểm tra người nhận thiết bị
 				to_user = await this.prisma.account.findFirst({
-					where: { account_id: assigned_to, deleted_at: null },
+					where: { account_id: accountByAssignedTo?.account_id, deleted_at: null },
 				});
 
 				// 5. Kiểm tra người nhận thiết bị tồn tại
@@ -199,7 +208,7 @@ class TicketService {
 					type: NotificationType.TICKET,
 				});
 				await this.notificationService.createNotification({
-					account_id: assigned_to,
+					account_id: accountByAssignedTo?.account_id,
 					text: `Bạn được chia sẻ quyền ${description} thiết bị ${device_serial}`,
 					type: NotificationType.TICKET,
 				});

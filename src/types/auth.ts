@@ -44,6 +44,7 @@ export interface LoginRequestBody {
 export interface TokenResponse {
     accessToken: string;
     refreshToken?: string;
+    customer_id?: string;
     deviceUuid?: string;
     userId?: string; // Thêm userId vào response
     employeeId?: string; // Thêm employeeId vào response

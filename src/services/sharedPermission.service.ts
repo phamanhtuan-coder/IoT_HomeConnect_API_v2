@@ -5,6 +5,7 @@ import { PermissionType } from '../types/share-request';
 import { TICKET_TYPE } from '../contants/info';
 import { ERROR_CODES } from '../contants/error';
 import { sendEmergencyAlertEmail } from './email.service';
+import { executeSelectData } from '../utils/sql_query';
 
 class SharedPermissionService {
     private prisma: PrismaClient;
@@ -13,6 +14,45 @@ class SharedPermissionService {
         this.prisma = new PrismaClient();
     }
 
+    async getDeviceSharedForCustomer(accountId: string) {
+        const account = await this.prisma.account.findUnique({
+            where: { account_id: accountId }
+        });
+
+        const filter = {
+            field: "shared_permissions.shared_with_user_id",
+            condition: "=",
+            value: account!.account_id
+        }
+        if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
+
+        const get_attr = `
+        shared_permissions.device_serial, shared_permissions.permission_type, shared_permissions.shared_with_user_id,
+        devices.name as device_name,
+        device_templates.name as template_device_name,
+        categories.name as category_name
+        `;
+
+        const get_table = "shared_permissions"
+
+        let query_join = `
+            LEFT JOIN devices ON shared_permissions.device_serial = devices.device_id
+            LEFT JOIN device_templates ON devices.template_id = device_templates.template_id
+            LEFT JOIN categories ON device_templates.device_type_id = categories.category_id
+        `;
+
+        const result = executeSelectData({
+            table: get_table,
+            strGetColumn: get_attr,
+            queryJoin: query_join,
+            filter: filter,
+            idSpecial: "permission_id",
+            isDeleteBoolean: true,
+        });
+
+        return result;
+    }
+    
     async revokeShareDevice(permissionId: number, requesterId: string, requesterRole: GroupRole): Promise<void> {
         const permission = await this.prisma.shared_permissions.findUnique({
             where: { permission_id: permissionId, is_deleted: false },

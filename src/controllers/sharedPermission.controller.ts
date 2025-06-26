@@ -51,6 +51,18 @@ class SharedPermissionController {
             next(error);
         }
     };
+
+    getDeviceSharedForCustomer = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const accountId = req.user?.userId || req.user?.employeeId;
+            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Không tìm thấy tài khoản');
+
+            const result = await this.sharedPermissionService.getDeviceSharedForCustomer(accountId as string);
+            res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 
 export default SharedPermissionController;

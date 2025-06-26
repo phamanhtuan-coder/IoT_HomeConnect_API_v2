@@ -65,6 +65,7 @@ class AuthService {
 
         const response: TokenResponse = {
             accessToken,
+            customer_id: account!.customer_id || undefined,
             userId: account!.account_id
 
         };
@@ -573,6 +574,7 @@ class AuthService {
 
     async getMeEmployee(userId: string) {
         try {
+            console.log('userId', userId);
             const user_employee = await this.prisma.account.findFirst({
                 where: {
                     account_id: userId,
@@ -599,7 +601,7 @@ class AuthService {
                     }
                 }
             })
-    
+            console.log('user_employee', user_employee);
             if (!user_employee?.employee) {
                 throwError(ErrorCodes.BAD_REQUEST, 'Account invalid');
             }
