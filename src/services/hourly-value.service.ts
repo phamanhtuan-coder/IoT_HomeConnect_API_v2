@@ -4,6 +4,7 @@ import redisClient from '../utils/redis';
 import {Server} from 'socket.io';
 import {HourlyValue} from "../types/hourly-value";
 import {Prisma} from "@prisma/client/extension";
+import prisma from "../config/database";
 
 const MINUTE_INTERVAL = 10; // 10 seconds per sample
 const SAMPLES_PER_MINUTE = 6; // 60 seconds / 10 seconds
@@ -23,7 +24,7 @@ class HourlyValueService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma
     }
 
     // Aggregate minute data and store in Redis

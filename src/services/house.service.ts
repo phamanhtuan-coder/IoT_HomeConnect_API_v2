@@ -1,12 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
 import {House} from "../types/house";
+import prisma from "../config/database";
 
 class HouseService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma
     }
 
     async createHouse(input: {

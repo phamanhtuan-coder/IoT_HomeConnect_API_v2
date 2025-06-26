@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
 import { TemplateComponent, TemplateComponentInput } from '../types/template-component';
+import prisma from "../config/database";
 
 /**
  * Dịch vụ quản lý TemplateComponent.
@@ -13,7 +14,7 @@ class TemplateComponentService {
      * Khởi tạo một instance của TemplateComponentService.
      */
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma
     }
 
     /**

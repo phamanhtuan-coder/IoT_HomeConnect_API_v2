@@ -6,12 +6,13 @@ import { TICKET_TYPE } from '../contants/info';
 import { ERROR_CODES } from '../contants/error';
 import { sendEmergencyAlertEmail } from './email.service';
 import { executeSelectData } from '../utils/sql_query';
+import prisma from "../config/database";
 
 class SharedPermissionService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma
     }
 
     async getDeviceSharedForCustomer(accountId: string) {

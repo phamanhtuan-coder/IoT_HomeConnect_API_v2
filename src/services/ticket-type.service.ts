@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { ErrorCodes, throwError } from "../utils/errors";
 import {TicketType} from "../types/ticket-type";
+import prisma from "../config/database";
 
 class TicketTypeService {
   private prisma: PrismaClient;
