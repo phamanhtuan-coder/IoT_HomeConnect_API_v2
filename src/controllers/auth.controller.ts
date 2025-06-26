@@ -287,7 +287,7 @@ class AuthController {
     updateDeviceToken = async (req: Request, res: Response) => {
         try {
             const { deviceToken, userDeviceId } = req.body;
-            const accountId = req?.user?.account_id;
+            const accountId = req?.user?.userId || req?.user?.employeeId;
 
             if (!deviceToken) {
                 return res.status(400).json({
@@ -454,7 +454,6 @@ class AuthController {
     getMeEmployee = async (req: Request, res: Response, next: NextFunction) => {
         const userId = req.user?.employeeId || req.user?.userId;
         if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
-
         const result = await this.authService.getMeEmployee(userId);
         res.json(result);
     };  

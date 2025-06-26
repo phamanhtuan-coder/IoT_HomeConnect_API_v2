@@ -11,6 +11,7 @@ import { STATUS_CODE } from '../contants/status';
 import { ROLE, TICKET_TYPE } from '../contants/info';
 import { PermissionType } from '../types/share-request';
 import { sendEmergencyAlertEmail } from './email.service';
+import { GroupRole } from '../types/group';
 
 const TICKET_STATUS = {
 	PENDING: 'pending',
@@ -46,147 +47,189 @@ class TicketService {
 		permission_type?: PermissionType;
 	}): Promise<any> {
 		const { user_id, device_serial, ticket_type_id, description, evidence, assigned_to, permission_type } = input;
+		let device: any = null;
 		let is_franchise = false;
 		let is_share_permission = false;
 
-		// 1. Kiểm tra tài khoản
-		const account = await this.prisma.account.findFirst({
-			where: { account_id: user_id, deleted_at: null },
-		});
-		if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
-
-		// 2. Kiểm tra thiết bị
-		if (device_serial) {
-			const device = await this.prisma.devices.findFirst({
-				where: { serial_number: device_serial, is_deleted: false },
-			});
-			if (!device) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy thiết bị');
-		}
-
-		// 3. Kiểm tra loại vấn đề
-		const ticketType = await this.prisma.ticket_types.findFirst({
-			where: { ticket_type_id, is_deleted: false },
-		});
-		if (!ticketType) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy loại vấn đề');
-
-		let to_user: any = null;
-		// 4. Kiểm tra người nhận thiết bị
-		if (ticketType?.ticket_type_id === TICKET_TYPE.FRANCHISE) {
-			if (!assigned_to) throwError(ErrorCodes.BAD_REQUEST, 'Không tìm thấy người nhận thiết bị được yêu cầu');
-
-			// 4.1. Kiểm tra yêu cầu nhượng quyền thiết bị
-			const ticket_franchise = await this.prisma.tickets.findFirst({
-				where: {
-					ticket_type_id: TICKET_TYPE.FRANCHISE,
-					device_serial: device_serial,
-					is_deleted: false,
-					status: { notIn: [TICKET_STATUS.REJECTED, TICKET_STATUS.RESOLVED] }
-				},
-			});
-			// 4.1.1. Nếu có yêu cầu nhượng quyền của thiết bị thì không tạo mới
-			if (ticket_franchise) throwError(ErrorCodes.BAD_REQUEST, 'Đã có yêu cầu nhượng quyền thiết bị cho thiết bị này');
-
-			// 4.2. Kiểm tra người nhận thiết bị
-			const to_user = await this.prisma.account.findFirst({
-				where: { account_id: assigned_to, deleted_at: null },
-			});
-			// 4.1.2. Kiểm tra người nhận thiết bị
-			if (!to_user) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy người nhận thiết bị được yêu cầu');
-
-			// 4.1.3. Kiểm tra người nhận thiết bị không phải là người tạo vấn đề
-			if (to_user?.account_id === user_id) throwError(ErrorCodes.BAD_REQUEST, 'Bạn không thể nhượng quyền thiết bị cho chính mình');
-
-			// Bật cờ - Đây là ticket nhượng quyền thiết bị
-			is_franchise = true;
-		} else if (ticketType?.ticket_type_id === TICKET_TYPE.SHARE_PERMISSION) {
-			if (!assigned_to) throwError(ErrorCodes.BAD_REQUEST, 'Không tìm thấy người nhận thiết bị được yêu cầu');
-
-			// 4.2. Kiểm tra mô tả vấn đề
-			if (description !== PermissionType.CONTROL && description !== PermissionType.VIEW) throwError(ErrorCodes.BAD_REQUEST, 'Quyền chia sẻ không hợp lệ')
-
-			// 4.3. Kiểm tra người nhận thiết bị
-			to_user = await this.prisma.account.findFirst({
-				where: { account_id: assigned_to, deleted_at: null },
-			});
-
-			if (!to_user) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy người nhận thiết bị được yêu cầu');
-
-			if (to_user?.is_locked) throwError(ErrorCodes.BAD_REQUEST, 'Tài khoản đã bị khóa');
-
-			if (to_user?.id) {
-				// 4.4. Kiểm tra người nhận thiết bị là nhân viên
-				const employee = await this.prisma.employee.findFirst({
-					where: { id: to_user!.id, deleted_at: null },
+		try {
+			let accountByAssignedTo: any = null;
+			if (assigned_to) {
+				accountByAssignedTo = await this.prisma.account.findFirst({
+					where: { account_id: assigned_to, deleted_at: null },
 				});
-				if (!employee) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy nhân viên');
-			} else if (to_user?.id) {
-				// 4.4. Kiểm tra người nhận thiết bị là khách hàng
-				const customer = await this.prisma.customer.findFirst({
-					where: { id: to_user!.id, deleted_at: null },
-				});
-				if (!customer) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy khách hàng');
 			}
-		}
 
-		// 5. Tạo ID vấn đề
-		let ticket_id: string;
-		let attempts = 0;
-		const maxAttempts = 5;
-		do {
-			ticket_id = generateTicketId();
-			const idExists = await this.prisma.tickets.findFirst({ where: { ticket_id: ticket_id } });
-			if (!idExists) break;
-			attempts++;
-			if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Không thể tạo ID duy nhất');
-		} while (true);
+			// 1. Kiểm tra tài khoản
+			const account = await this.prisma.account.findFirst({
+				where: { account_id: user_id, deleted_at: null },
+			});
+			if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
 
-		// 6. Tạo vấn đề
-		const ticket = await this.prisma.tickets.create({
-			data: {
-				ticket_id: ticket_id,
-				user_id,
-				device_serial,
-				ticket_type_id,
-				description,
-				evidence,
-				status: TICKET_STATUS.PENDING,
-				created_at: new Date(),
-				updated_at: new Date(),
-			},
-		});
+			// 2. Kiểm tra thiết bị
+			if (device_serial) {
+				device = await this.prisma.devices.findFirst({
+					where: { serial_number: device_serial, is_deleted: false },
+				});
+				if (!device) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy thiết bị');
+			}
 
-		// THDB: Xử lý nhượng quyền thiết bị 
-		// 7. Tạo yêu cầu nhượng quyền thiết bị
-		if (is_franchise) {
-			await this.prisma.ownership_history.create({
+			// 3. Kiểm tra loại vấn đề
+			const ticketType = await this.prisma.ticket_types.findFirst({
+				where: { ticket_type_id, is_deleted: false },
+			});
+			if (!ticketType) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy loại vấn đề');
+
+			let to_user: any = null;
+			// 4. Kiểm tra người nhận thiết bị
+			if (ticketType?.ticket_type_id === TICKET_TYPE.FRANCHISE) {
+				if (!assigned_to) throwError(ErrorCodes.BAD_REQUEST, 'Không tìm thấy người nhận thiết bị được yêu cầu');
+
+				// 4.1. Kiểm tra yêu cầu nhượng quyền thiết bị
+				const ticket_franchise = await this.prisma.tickets.findFirst({
+					where: {
+						ticket_type_id: TICKET_TYPE.FRANCHISE,
+						device_serial: device_serial,
+						is_deleted: false,
+						status: { notIn: [TICKET_STATUS.REJECTED, TICKET_STATUS.RESOLVED] }
+					},
+				});
+				// 4.1.1. Nếu có yêu cầu nhượng quyền của thiết bị thì không tạo mới
+				if (ticket_franchise) throwError(ErrorCodes.BAD_REQUEST, 'Đã có yêu cầu nhượng quyền thiết bị cho thiết bị này');
+
+				// 4.2. Kiểm tra người nhận thiết bị
+				const to_user = await this.prisma.account.findFirst({
+					where: { account_id: assigned_to, deleted_at: null },
+				});
+				// 4.1.2. Kiểm tra người nhận thiết bị
+				if (!to_user) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy người nhận thiết bị được yêu cầu');
+
+				// 4.1.3. Kiểm tra người nhận thiết bị không phải là người tạo vấn đề
+				if (to_user?.account_id === user_id) throwError(ErrorCodes.BAD_REQUEST, 'Bạn không thể nhượng quyền thiết bị cho chính mình');
+
+				// Bật cờ - Đây là ticket nhượng quyền thiết bị
+				is_franchise = true;
+			} else if (ticketType?.ticket_type_id === TICKET_TYPE.SHARE_PERMISSION) {
+				if (!assigned_to) throwError(ErrorCodes.BAD_REQUEST, 'Không tìm thấy người nhận thiết bị được yêu cầu');
+				if (!device_serial) throwError(ErrorCodes.BAD_REQUEST, 'Không tìm thấy thiết bị');
+			
+				if (!accountByAssignedTo) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy người nhận thiết bị được yêu cầu');
+
+
+				// 1. Kiểm tra người chia sẻ có trong nhóm và là owner hoặc vice
+				const userGroup = await this.prisma.user_groups.findFirst({
+					where: { account_id: user_id, group_id: device!.group_id, is_deleted: false },
+				});
+				if (!userGroup || (userGroup.role !== GroupRole.OWNER && userGroup.role !== GroupRole.VICE)) {
+					throwError(ErrorCodes.BAD_REQUEST, 'Bạn không có quyền chia sẻ thiết bị');
+				}
+
+				// 2. Kiểm tra người nhận không thuộc nhóm này
+				const toUserGroup = await this.prisma.user_groups.findFirst({
+					where: { account_id: assigned_to, group_id: device!.group_id, is_deleted: false },
+				});
+				if (toUserGroup) throwError(ErrorCodes.BAD_REQUEST, 'Người được chia sẻ quyền phải là người ngoài nhóm');
+
+				// 3. Kiểm tra mô tả vấn đề
+				if (description !== PermissionType.CONTROL && description !== PermissionType.VIEW) throwError(ErrorCodes.BAD_REQUEST, 'Quyền chia sẻ không hợp lệ')
+
+				// 4. Kiểm tra người nhận thiết bị
+				to_user = await this.prisma.account.findFirst({
+					where: { account_id: accountByAssignedTo?.account_id, deleted_at: null },
+				});
+
+				// 5. Kiểm tra người nhận thiết bị tồn tại
+				if (!to_user) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy người nhận thiết bị được yêu cầu');
+				if (to_user?.is_locked) throwError(ErrorCodes.BAD_REQUEST, 'Tài khoản đã bị khóa');
+
+				is_share_permission = true;
+			} else if (ticketType?.ticket_type_id === TICKET_TYPE.LOST_DEVICE) {
+				if (!device_serial) throwError(ErrorCodes.BAD_REQUEST, 'Không tìm thấy thiết bị');
+
+				if (device!.lock_status === 'locked') throwError(ErrorCodes.BAD_REQUEST, 'Thiết bị đã bị khóa');
+
+				// 4.6. Kiểm tra người báo mất có phải là chủ hay không
+				if (device!.account_id !== user_id) throwError(ErrorCodes.BAD_REQUEST, 'Bạn không phải là chủ sở hữu thiết bị');
+			} else if (ticketType?.ticket_type_id === TICKET_TYPE.LOCK_DEVICE) {
+				if (device!.lock_status === 'locked') throwError(ErrorCodes.BAD_REQUEST, 'Thiết bị đã bị khóa');
+
+				// 4.6. Kiểm tra người báo mất có phải là chủ hay không
+				if (device!.account_id !== user_id) throwError(ErrorCodes.BAD_REQUEST, 'Bạn không phải là chủ sở hữu thiết bị');
+			}
+
+			// 5. Tạo ID vấn đề
+			let ticket_id: string;
+			let attempts = 0;
+			const maxAttempts = 5;
+			do {
+				ticket_id = generateTicketId();
+				const idExists = await this.prisma.tickets.findFirst({ where: { ticket_id: ticket_id } });
+				if (!idExists) break;
+				attempts++;
+				if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Không thể tạo ID duy nhất');
+			} while (true);
+
+			// 6. Tạo vấn đề
+			const ticket = await this.prisma.tickets.create({
 				data: {
 					ticket_id: ticket_id,
-					device_serial: device_serial,
-					from_user_id: user_id,
-					to_user_id: assigned_to,
+					user_id,
+					device_serial,
+					ticket_type_id,
+					description,
+					evidence,
+					status: TICKET_STATUS.PENDING,
 					created_at: new Date(),
+					updated_at: new Date(),
 				},
 			});
-		} else if (is_share_permission) {
-			// HỎI LẠI VỀ VẤN ĐỀ CÓ CHO PHÉP SHARE QUYỀN CHO TÀI KHOẢN NHÂN VIÊN HAY KHÔNG
-			await sendEmergencyAlertEmail(
-				to_user!.email,
-				`Bạn được chia sẻ quyền ${description === PermissionType.CONTROL ? 'kiểm soát' : 'xem'} thiết bị ${device_serial} từ ${to_user!.surname} ${to_user!.lastname}`
+
+			// THDB: Xử lý nhượng quyền thiết bị 
+			// 7. Tạo yêu cầu nhượng quyền thiết bị
+			if (is_franchise) {
+				await this.prisma.ownership_history.create({
+					data: {
+						ticket_id: ticket_id,
+						device_serial: device_serial,
+						from_user_id: user_id,
+						to_user_id: assigned_to,
+						created_at: new Date(),
+					},
+				});
+			} else if (is_share_permission) {
+				// Gửi email hoặc notification cho người nhận
+				await sendEmergencyAlertEmail(
+					to_user!.email,
+					`Bạn được chia sẻ quyền ${description === PermissionType.CONTROL ? 'kiểm soát' : 'xem'} thiết bị ${device_serial} từ ${account!.username}`
+				);
+				// Gửi notification cho cả người chia sẻ và người nhận
+				await this.notificationService.createNotification({
+					account_id: user_id,
+					text: `Bạn đã chia sẻ quyền ${description} thiết bị ${device_serial} cho ${to_user!.username}`,
+					type: NotificationType.TICKET,
+				});
+				await this.notificationService.createNotification({
+					account_id: accountByAssignedTo?.account_id,
+					text: `Bạn được chia sẻ quyền ${description} thiết bị ${device_serial}`,
+					type: NotificationType.TICKET,
+				});
+			}
+
+			// 8. Gửi thông báo đến người tạo vấn đề
+			await this.notificationService.createNotification({
+				account_id: user_id,
+				text: `Tạo vấn đề mới: ${description || 'Không có mô tả'}`,
+				type: NotificationType.TICKET,
+			});
+
+			return get_error_response(
+				ERROR_CODES.SUCCESS,
+				STATUS_CODE.CREATED,
+				ticket
 			);
+		} catch (error) {
+			console.log(error);
+			throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Lỗi hệ thống');
 		}
-
-		// 8. Gửi thông báo đến người tạo vấn đề
-		await this.notificationService.createNotification({
-			account_id: user_id,
-			text: `Tạo vấn đề mới: ${description || 'Không có mô tả'}`,
-			type: NotificationType.TICKET,
-		});
-
-		return get_error_response(
-			ERROR_CODES.SUCCESS,
-			STATUS_CODE.CREATED,
-			ticket
-		);
 	}
 
 	// Nhân viên xác nhận xử lý vấn đề
