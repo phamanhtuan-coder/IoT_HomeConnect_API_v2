@@ -7,11 +7,11 @@ export const ROLE = {
 
 
 export const TICKET_TYPE = {
-    LOST_DEVICE: -1,
-    LOST_ACCOUNT: -2,
-    FRANCHISE: 0,
-    SUPPORT: 2,
+    LOST_DEVICE: 2,
     SHARE_PERMISSION: 3,
+    FRANCHISE: 4,
+    LOST_ACCOUNT: 5,
+    LOCK_DEVICE: 6,
 } as const;
 
 

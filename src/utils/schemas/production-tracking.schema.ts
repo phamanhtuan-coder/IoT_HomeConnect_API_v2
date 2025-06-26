@@ -37,7 +37,7 @@ export const UpdateProductionSchema = z.object({
             StageSerialStage.PENDING,
             StageSerialStage.ASSEMBLY,
             StageSerialStage.QC,
-            StageSerialStage.COMPLETED
+            StageSerialStage.COMPLETED,
         ], {
             required_error: `[${ERROR_CODES.PRODUCTION_TRACKING_STAGE_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_STAGE_REQUIRED]}`,
             invalid_type_error: `[${ERROR_CODES.PRODUCTION_TRACKING_STAGE_INVALID}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_STAGE_INVALID]}`
@@ -55,7 +55,8 @@ export const UpdateProductionSchema = z.object({
             StatusSerialStage.FIXING_LABEL,
             StatusSerialStage.FIXING_PRODUCT,
             StatusSerialStage.FIXING_ALL,
-            StatusSerialStage.FAILED
+            StatusSerialStage.FAILED,
+            StatusSerialStage.COMPLETED_PACKAGING
         ], {
             required_error: `[${ERROR_CODES.PRODUCTION_TRACKING_STATUS_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_STATUS_REQUIRED]}`,
             invalid_type_error: `[${ERROR_CODES.PRODUCTION_TRACKING_STATUS_INVALID}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_STATUS_INVALID]}`

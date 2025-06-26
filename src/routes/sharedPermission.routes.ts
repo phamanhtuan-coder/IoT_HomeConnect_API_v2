@@ -109,4 +109,10 @@ router.delete(
     asyncHandler(sharedPermissionController.revokeShareByRecipient)
 );
 
+router.get(
+    '/get-device-shared-for-customer',
+    authMiddleware,
+    asyncHandler(sharedPermissionController.getDeviceSharedForCustomer)
+);
+
 export default router;
