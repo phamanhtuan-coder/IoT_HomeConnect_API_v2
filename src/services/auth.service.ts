@@ -66,8 +66,8 @@ class AuthService {
         const response: TokenResponse = {
             accessToken,
             customer_id: account!.customer_id || undefined,
+            username: account!.username,
             userId: account!.account_id
-
         };
 
         if (rememberMe) {
