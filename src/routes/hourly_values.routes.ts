@@ -95,7 +95,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  *         description: Lỗi server
  */
 router.post(
-    '/hourly-values',
+    '/',
     authMiddleware,
     validateMiddleware(hourlyValueSchema),
     asyncHandler(hourlyValueController.createHourlyValue)
@@ -148,7 +148,7 @@ router.post(
  *         description: Lỗi server
  */
 router.get(
-    '/hourly-values/:hourlyValueId',
+    '/:hourlyValueId',
     authMiddleware,
     validateMiddleware(hourlyValueIdSchema),
     asyncHandler(hourlyValueController.getHourlyValueById)
@@ -212,7 +212,7 @@ router.get(
  *         description: Lỗi server
  */
 router.get(
-    '/hourly-values/device/:device_serial',
+    '/device/:device_serial',
     authMiddleware,
     validateMiddleware(hourlyValueFilterSchema),
     asyncHandler(hourlyValueController.getHourlyValuesByDevice)
@@ -223,7 +223,7 @@ router.get(
  * Yêu cầu xác thực và kiểm tra tham số lọc.
  */
 router.get(
-    '/hourly-values/space/:spaceId',
+    '/space/:spaceId',
     authMiddleware,
     validateMiddleware(hourlyValueFilterSchema),
     asyncHandler(hourlyValueController.getHourlyValuesBySpace)
@@ -234,7 +234,7 @@ router.get(
  * Yêu cầu xác thực và kiểm tra dữ liệu cập nhật.
  */
 router.put(
-    '/hourly-values/:hourlyValueId',
+    '/:hourlyValueId',
     authMiddleware,
     validateMiddleware(updateHourlyValueSchema),
     asyncHandler(hourlyValueController.updateHourlyValue)
@@ -245,7 +245,7 @@ router.put(
  * Yêu cầu xác thực và kiểm tra ID.
  */
 router.delete(
-    '/hourly-values/:hourlyValueId',
+    '/:hourlyValueId',
     authMiddleware,
     validateMiddleware(hourlyValueIdSchema),
     asyncHandler(hourlyValueController.deleteHourlyValue)
@@ -293,7 +293,7 @@ router.delete(
  *         description: Lỗi server
  */
 router.get(
-    '/hourly-values/statistics/:device_serial',
+    '/statistics/:device_serial',
     authMiddleware,
     asyncHandler(hourlyValueController.getStatistics)
 );

@@ -211,8 +211,10 @@ class DeviceController {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
+        const { search } = req.query as { search: string };
+
         try {
-            const devices = await this.deviceService.getDevicesByAccount(accountId);
+            const devices = await this.deviceService.getDevicesByAccount(accountId, search);
             res.json(devices);
         } catch (error) {
             next(error);

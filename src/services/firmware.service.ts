@@ -92,7 +92,7 @@ class FirmwareService {
                 data: {
                     is_mandatory: false,
                     updated_at: new Date(),
-                    logs: [...(fw.logs as any), logForDemotedFirmware]
+                    logs: [...((fw.logs as any) || []), logForDemotedFirmware]
                 },
             });
         }

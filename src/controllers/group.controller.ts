@@ -184,7 +184,9 @@ class GroupController {
                 throwError(ErrorCodes.BAD_REQUEST, 'Valid user ID is required');
             }
 
-            const groups = await this.groupService.getGroupsByUsername(username!, userId);
+            const { search } = req.query as { search: string };
+
+            const groups = await this.groupService.getGroupsByUsername(username!, userId, search);
             res.json({
                 success: true,
                 data: groups
