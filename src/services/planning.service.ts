@@ -463,6 +463,9 @@ export class PlanningService {
                     }
                 }
             });
+        }, {
+            timeout: 30000, // 30 giây
+            maxWait: 10000  // 10 giây
         });
     }
 

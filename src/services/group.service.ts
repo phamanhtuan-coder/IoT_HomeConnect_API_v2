@@ -233,7 +233,7 @@ class GroupService {
         return userGroup?.role as GroupRole || null;
     }
 
-    async getGroupsByUsername(username: string, userId: string): Promise<Group[]> {
+    async getGroupsByUsername(username: string, userId: string, search: string): Promise<Group[]> {
         const account = await this.prisma.account.findFirst({
             where: {
                 username: username,
@@ -249,7 +249,10 @@ class GroupService {
         const userGroups = await this.prisma.user_groups.findMany({
             where: {
                 account_id: userId,
-                is_deleted: false
+                is_deleted: false,
+                groups: {
+                    is_deleted: false,
+                }
             },
             include: {
                 groups: true
@@ -259,7 +262,10 @@ class GroupService {
         if (!userGroups.length) return [];
 
         return userGroups
-            .filter(ug => ug.groups && !ug.groups.is_deleted)
+            .filter(ug => ug.groups
+                && !ug.groups.is_deleted
+                && (search === undefined || ug.groups.group_name?.toLowerCase().includes(search.toLowerCase()))
+            )
             .map(ug => ({
                 group_id: ug.groups!.group_id,
                 group_name: ug.groups!.group_name,
