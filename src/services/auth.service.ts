@@ -19,12 +19,12 @@ import redisClient, { blacklistToken, isTokenBlacklisted } from '../utils/redis'
 import { ERROR_CODES } from '../contants/error';
 import { STATUS_CODE } from '../contants/status';
 import NotificationService from "./notification.service";
-
+import prisma from "../config/database";
 class AuthService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma;
     }
 
     async loginUser({

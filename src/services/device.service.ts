@@ -13,6 +13,7 @@ import {
     LEDEffectParams, LEDPresetMap, PresetInput,
     StateUpdateInput
 } from "../types/device-state";
+import prisma from "../config/database";
 
 let io: Server | null = null;
 const alertService = new AlertService();
@@ -25,7 +26,7 @@ class DeviceService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma
     }
 
     async createDevice(input: {

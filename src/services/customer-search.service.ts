@@ -3,12 +3,13 @@ import { AppError, ErrorCodes, throwError } from '../utils/errors';
 import { Device } from '../types/device';
 import { Group } from '../types/group';
 import { Prisma } from '@prisma/client';
+import prisma from "../config/database";
 
 export class CustomerSearchService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma;
     }
 
     async searchCustomer(filters: {

@@ -1,12 +1,13 @@
 import { PrismaClient } from "@prisma/client";
 import { ErrorCodes, throwError } from "../utils/errors";
 import {AlertType} from "../types/alert-type";
+import prisma from "../config/database";
 
 class AlertTypeService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma;
     }
 
     async createAlertType(data: {

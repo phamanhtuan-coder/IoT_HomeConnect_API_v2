@@ -12,6 +12,7 @@ import { ROLE, TICKET_TYPE } from '../contants/info';
 import { PermissionType } from '../types/share-request';
 import { sendEmergencyAlertEmail } from './email.service';
 import { GroupRole } from '../types/group';
+import prisma from "../config/database";
 
 const TICKET_STATUS = {
 	PENDING: 'pending',

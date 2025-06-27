@@ -1,12 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
 import {FirmwareUpdateHistory} from "../types/firmware-update-history";
+import prisma from "../config/database";
 
 class FirmwareUpdateHistoryService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma
     }
 
     async createFirmwareUpdateHistory(input: {

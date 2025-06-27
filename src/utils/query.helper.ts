@@ -1,10 +1,11 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import prisma from "../config/database";
 
 class QueryHelper {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma
     }
 
     // Hàm chạy truy vấn SELECT, trả về dữ liệu

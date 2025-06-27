@@ -5,6 +5,7 @@ import sseController from '../controllers/sse.controller';
 import { ERROR_CODES, ERROR_MESSAGES } from '../contants/error';
 import { STATUS_CODE } from '../contants/status';
 import DeviceService from './device.service';
+import prisma from "../config/database";
 
 function errorResponse(errorCode: ErrorCodes, message: string, data: any[] = []) {
     return {
@@ -19,7 +20,7 @@ export class ProductionTrackingService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma
     }
 
     async ApproveProductionSerial(input: ProductionTrackingApproveInput, employeeId: string): Promise<any> {

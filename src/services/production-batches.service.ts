@@ -5,12 +5,13 @@ import { ErrorCodes, throwError } from '../utils/errors';
 import {generateBatchId, generateDeviceId, generateDeviceSerialId, generateFirmwareId} from '../utils/helpers';
 import { PlanningService } from './planning.service';
 import { calculatePlanningStatus } from '../utils/helpers';
+import prisma from "../config/database";
 
 export class BatchService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma
     }
 
     async createBatch(planningId: string, data: BatchCreateInput, employeeId: string): Promise<ProductionBatch> {

@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
 import { Firmware } from "../types/firmware";
 import {generateEmployeeId, generateFirmwareId, validateVersion} from '../utils/helpers';
+import prisma from "../config/database";
 
 enum LogType {
     CREATE = 'create',
@@ -17,7 +18,7 @@ class FirmwareService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma
     }
 
     private async validateUniqueName(name: string, template_id: string, firmware_id?: string): Promise<{ success: boolean; error?: string }> {
