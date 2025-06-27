@@ -117,9 +117,16 @@ class DeviceService {
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);
     }
 
-    async getDevicesByAccount(accountId: string): Promise<Device[]> {
+    async getDevicesByAccount(accountId: string, search: string): Promise<Device[]> {
         const devices = await this.prisma.devices.findMany({
-            where: { account_id: accountId, is_deleted: false },
+            where: {
+                account_id: accountId,
+                is_deleted: false,
+                OR: [
+                    { name: { contains: search } },
+                    { serial_number: { contains: search } },
+                ]
+            },
             include: {
                 device_templates: {
                     include: {

@@ -135,6 +135,7 @@ import planningRoutes from "./planning.routes";
 import sseRoutes from './sse.routes';
 import productionBatchesRoutes from './production-batches.routes';
 import customerSearchRoutes from './customer-search.routes';
+import hourlyValueRoutes from './hourly_values.routes';
 
 
 
@@ -166,6 +167,7 @@ router.use('/planning', planningRoutes);
 router.use('/production-batches', productionBatchesRoutes);
 router.use('/sse', sseRoutes);
 router.use('/customer-search', customerSearchRoutes);
+router.use('/hourly-values', hourlyValueRoutes);
 
 
 export default router;
