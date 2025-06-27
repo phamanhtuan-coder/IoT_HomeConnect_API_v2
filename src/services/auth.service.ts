@@ -513,10 +513,12 @@ class AuthService {
         }
 
         try {
+            const { account_id, ...sanitizedData } = updateData;
+
             const customer = await this.prisma.customer.update({
                 where: { id: account?.customer?.id },
                 data: {
-                    ...updateData,
+                    ...sanitizedData,
                     updated_at: new Date()
                 }
             });
