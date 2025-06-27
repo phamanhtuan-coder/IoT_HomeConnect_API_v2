@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import {Component} from "../types/component";
 import {ErrorCodes, throwError} from "../utils/errors";
 import {generateComponentId, generateCustomerId} from "../utils/helpers";
-
+import prisma from "../config/database";
 /**
  * Dịch vụ quản lý các thành phần (components).
  */
@@ -13,7 +13,7 @@ class ComponentService {
      * Khởi tạo một instance của `ComponentService`.
      */
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma;
     }
 
     /**

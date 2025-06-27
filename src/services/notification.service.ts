@@ -4,12 +4,13 @@ import { Notification, NotificationType } from '../types/notification';
 import admin from '../config/firebase';
 import transporter from '../config/nodemailer';
 import path from 'path';
+import prisma from "../config/database";
 
 class NotificationService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma
     }
 
     async createNotification(input: {

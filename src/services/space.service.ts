@@ -1,12 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
 import {Space} from "../types/space";
+import prisma from "../config/database";
 
 class SpaceService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma
     }
 
     async createSpace(input: {

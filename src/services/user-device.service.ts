@@ -4,12 +4,13 @@ import {generateUserDeviceId} from '../utils/helpers';
 import { DeviceCache } from '../utils/device-cache';
 import { STATUS_CODE } from '../contants/status';
 import { ERROR_CODES } from '../contants/error';
+import prisma from "../config/database";
 
 export class UserDeviceService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma
     }
 
     async upsertDevice(accountId: string, deviceName: string, deviceId: string, deviceUuid: string | null, fcmToken?: string) {

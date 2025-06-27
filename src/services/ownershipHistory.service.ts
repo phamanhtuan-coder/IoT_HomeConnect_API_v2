@@ -8,13 +8,14 @@ import {generateTicketId} from "../utils/helpers";
 import { STATUS_CODE } from '../contants/status';
 import { ERROR_CODES } from '../contants/error';
 import { executeSelectData } from '../utils/sql_query';
+import prisma from "../config/database";
 
 class OwnershipHistoryService {
     private prisma: PrismaClient;
     private notificationService: NotificationService;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma;
         this.notificationService = new NotificationService();
     }
 

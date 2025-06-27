@@ -7,12 +7,13 @@ import { generateUniqueProductSlug } from '../utils/slug.helper';
 import { ERROR_CODES } from '../contants/error';
 import { STATUS_CODE } from '../contants/status';
 import queryHelper from '../utils/query.helper';
+import prisma from "../config/database";
 
 class DeviceTemplateService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma;
     }
 
     async createDeviceTemplate(input: DeviceTemplateCreateInput, createdBy: string): Promise<any> {
