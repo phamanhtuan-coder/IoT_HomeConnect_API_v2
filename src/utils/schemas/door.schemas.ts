@@ -21,8 +21,10 @@ export const DoorPrioritySchema = z.nativeEnum(DoorPriority);
  * Door serial number validation
  */
 export const DoorSerialSchema = z.object({
-    serialNumber: z.string()
-        .min(1, 'Serial number is required')
+    params: z.object({
+        serialNumber: z.string()
+            .min(1, 'Serial number is required')
+    })
 });
 
 /**
