@@ -77,7 +77,9 @@ class SharedPermissionService {
         shared_permissions.permission_id, shared_permissions.device_serial, shared_permissions.permission_type,
         devices.serial_number, shared_permissions.shared_with_user_id,
         devices.name as device_name,
+        devices.template_id,
         device_templates.name as template_device_name,
+        devices.device_id,
         categories.name as category_name
         `;
 
