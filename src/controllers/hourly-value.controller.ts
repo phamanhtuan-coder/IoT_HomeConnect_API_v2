@@ -146,7 +146,8 @@ class HourlyValueController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {device_serial, type, start_time, end_time} = req.query;
+            const {device_serial} = req.params;
+            const { type, start_time, end_time} = req.query;
             const stats = await this.hourlyValueService.getStatistics(
                 device_serial as string,
                 accountId,

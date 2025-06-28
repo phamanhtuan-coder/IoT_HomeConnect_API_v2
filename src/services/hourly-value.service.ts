@@ -374,7 +374,7 @@ class HourlyValueService {
      */
     async getStatistics(device_serial: string, accountId: string, type: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom', start_time?: Date, end_time?: Date) {
         await this.checkPermission(device_serial, accountId);
-
+    
         // Cache key for statistics
         const cacheKey = `stats:${device_serial}:${type}:${start_time?.toISOString()}:${end_time?.toISOString()}`;
         
@@ -383,55 +383,94 @@ class HourlyValueService {
         if (cached) {
             return JSON.parse(cached);
         }
-
+    
         let groupBy: string;
+        let timeColumn: string;
         switch (type) {
             case 'daily':
-                groupBy = "DATE_TRUNC('day', hour_timestamp)";
+                groupBy = "DATE(hour_timestamp)";
+                timeColumn = "DATE(hour_timestamp)";
                 break;
             case 'weekly':
-                groupBy = "DATE_TRUNC('week', hour_timestamp)";
+                groupBy = "YEARWEEK(hour_timestamp)";
+                timeColumn = "YEARWEEK(hour_timestamp)";
                 break;
             case 'monthly':
-                groupBy = "DATE_TRUNC('month', hour_timestamp)";
+                groupBy = "DATE_FORMAT(hour_timestamp, '%Y-%m-01')";
+                timeColumn = "DATE_FORMAT(hour_timestamp, '%Y-%m-01')";
                 break;
             case 'yearly':
-                groupBy = "DATE_TRUNC('year', hour_timestamp)";
+                groupBy = "YEAR(hour_timestamp)";
+                timeColumn = "YEAR(hour_timestamp)";
                 break;
             default:
-                groupBy = "DATE_TRUNC('hour', hour_timestamp)";
+                groupBy = "hour_timestamp";
+                timeColumn = "hour_timestamp";
         }
-
+    
+        // Lấy tất cả các key có trong JSON để biết cần tính trung bình cho những field nào
+        const keysQuery = await this.prisma.$queryRawUnsafe(`
+            SELECT DISTINCT 
+                JSON_UNQUOTE(JSON_EXTRACT(JSON_KEYS(avg_value), CONCAT('$[', numbers.n, ']'))) as key_name
+            FROM hourly_values
+            CROSS JOIN (
+                SELECT 0 as n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
+                UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9
+            ) numbers
+            WHERE device_serial = '${device_serial}'
+            AND is_deleted = false 
+            ${start_time ? `AND hour_timestamp >= '${start_time.toISOString()}'` : ''} 
+            ${end_time ? `AND hour_timestamp <= '${end_time.toISOString()}'` : ''}
+            AND numbers.n < JSON_LENGTH(avg_value)
+            AND JSON_UNQUOTE(JSON_EXTRACT(JSON_KEYS(avg_value), CONCAT('$[', numbers.n, ']'))) IS NOT NULL
+        `) as any;
+    
+        const keys = keysQuery.map((row: any) => row.key_name).filter(Boolean);
+    
+        if (keys.length === 0) {
+            return [];
+        }
+    
+        // Tạo dynamic query với các field JSON được extract
+        const avgFields = keys.map(key => 
+            `AVG(CAST(JSON_UNQUOTE(JSON_EXTRACT(avg_value, '$.${key}')) AS DECIMAL(10,2))) as avg_${key}`
+        ).join(', ');
+    
         const query: any[] = await this.prisma.$queryRawUnsafe(`
-            SELECT ${type !== 'custom' ? `DATE_TRUNC('${type}', hour_timestamp)` : `hour_timestamp as timestamp`},
-                jsonb_object_agg(
-                    key, CASE
-                        WHEN jsonb_typeof(avg_value - > key) = 'number' THEN AVG((avg_value ->> key)::numeric)
-                        ELSE NULL
-                    END
-                ) as avg_value,
+            SELECT 
+                ${timeColumn} as timestamp,
+                ${avgFields},
                 SUM(sample_count) as total_samples
-            FROM hourly_values, jsonb_object_keys(avg_value) as key
+            FROM hourly_values
             WHERE device_serial = '${device_serial}'
             AND is_deleted = false 
             ${start_time ? `AND hour_timestamp >= '${start_time.toISOString()}'` : ''} 
             ${end_time ? `AND hour_timestamp <= '${end_time.toISOString()}'` : ''}
             GROUP BY ${groupBy}
-            ORDER BY ${type !== 'custom' ? `DATE_TRUNC('${type}', hour_timestamp)` : 'hour_timestamp'} DESC;
+            ORDER BY ${timeColumn} DESC;
         `);
-
-        const result = query.map((row) => ({
-            timestamp: row.timestamp,
-            avg_value: row.avg_value,
-            total_samples: Number(row.total_samples),
-        }));
-
+    
+        const result = query.map((row) => {
+            // Tạo object avg_value từ các field đã tính trung bình
+            const avg_value: any = {};
+            keys.forEach(key => {
+                if (row[`avg_${key}`] !== null) {
+                    avg_value[key] = Number(row[`avg_${key}`]);
+                }
+            });
+    
+            return {
+                timestamp: row.timestamp,
+                avg_value,
+                total_samples: Number(row.total_samples),
+            };
+        });
+    
         // Cache result for 5 minutes
         await redisClient.setex(cacheKey, 300, JSON.stringify(result));
-
+    
         return result;
     }
-
     async createHourlyValue(input: {
         device_serial: string;
         space_id?: number;
@@ -583,6 +622,7 @@ class HourlyValueService {
     }
 
     private async checkPermission(device_serial: string, accountId: string): Promise<void> {
+        console.log('device_serial', device_serial);
         const device = await this.prisma.devices.findUnique({
             where: { serial_number: device_serial, is_deleted: false },
             include: { spaces: { include: { houses: true } } },
