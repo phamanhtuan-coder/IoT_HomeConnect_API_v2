@@ -23,7 +23,6 @@ export const DoorPrioritySchema = z.nativeEnum(DoorPriority);
 export const DoorSerialSchema = z.object({
     serialNumber: z.string()
         .min(1, 'Serial number is required')
-        .regex(/^DOOR_[A-Z0-9]{3,10}$/, 'Invalid door serial format. Expected: DOOR_XXX')
 });
 
 /**
@@ -76,7 +75,7 @@ export const DoorCommandSchema = z.object({
  */
 export const DoorEmergencySchema = z.object({
     door_serial_numbers: z.array(
-        z.string().regex(/^DOOR_[A-Z0-9]{3,10}$/)
+        z.string()
     ).min(1, 'At least one door serial number required'),
     action: z.enum(['open', 'close']),
     override_manual: z.boolean().optional().default(true)
@@ -87,7 +86,7 @@ export const DoorEmergencySchema = z.object({
  */
 export const DoorBulkOperationSchema = z.object({
     door_serial_numbers: z.array(
-        z.string().regex(/^DOOR_[A-Z0-9]{3,10}$/)
+        z.string()
     ).min(1).max(50, 'Maximum 50 doors per bulk operation'),
     action: DoorActionSchema,
     state: z.object({
@@ -161,7 +160,7 @@ export const DoorMaintenanceSchema = z.object({
  * Composite validation for door device registration
  */
 export const DoorDeviceRegistrationSchema = z.object({
-    serialNumber: z.string().regex(/^DOOR_[A-Z0-9]{3,10}$/),
+    serialNumber: z.string(),
     device_name: z.string().min(1).max(50),
     location: z.string().min(1).max(100),
     config: DoorConfigSchema.optional(),

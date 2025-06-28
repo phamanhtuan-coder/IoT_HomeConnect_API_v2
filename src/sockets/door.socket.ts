@@ -1,4 +1,4 @@
-// src/sockets/door.socket.ts - ESP-01 Safety & Crash Prevention
+// src/sockets/door.socket.ts - FIXED ESP COMMAND HANDLING
 import { Server, Socket } from 'socket.io';
 import prisma from '../config/database';
 import { DoorService } from '../services/door.service';
@@ -41,11 +41,12 @@ const detectDeviceType = (socket: Socket): { isESP8266: boolean; isGateway: bool
 export const setupDoorSocket = (io: Server) => {
     // Enhanced connection handling with ESP-01 safety
     io.on('connection', async (socket: Socket) => {
-        const { serialNumber, isIoTDevice, accountId, gateway_managed } = socket.handshake.query as {
+        const { serialNumber, isIoTDevice, accountId, gateway_managed, hub_managed } = socket.handshake.query as {
             serialNumber?: string;
             isIoTDevice?: string;
             accountId?: string;
             gateway_managed?: string;
+            hub_managed?: string;
         };
 
         const { isESP8266, isGateway, isESP01, deviceType } = detectDeviceType(socket);
@@ -53,47 +54,49 @@ export const setupDoorSocket = (io: Server) => {
         // ✅ HANDLE ESP DEVICES with ESP-01 specific safety
         if ((isESP8266 || isGateway || isESP01) && serialNumber && isIoTDevice === 'true' && !accountId) {
             console.log(`[DOOR] ${deviceType} Device detected - Socket ID: ${socket.id}`);
-            console.log(`[DOOR] ${deviceType} params:`, { serialNumber, isIoTDevice, gateway_managed });
+            console.log(`[DOOR] ${deviceType} params:`, { serialNumber, isIoTDevice, gateway_managed, hub_managed });
 
             try {
-                // ✅ FOR GATEWAY: No database validation needed
-                if (isGateway) {
-                    console.log(`[GATEWAY] ${serialNumber} connecting as Gateway/Hub`);
+                // ✅ FOR HUB: Detect hub_managed devices (like ESP Socket Hub)
+                if (hub_managed === 'true' || gateway_managed === 'true') {
+                    console.log(`[HUB] ${serialNumber} connecting as Hub/Gateway`);
 
                     socket.data = {
                         serialNumber,
                         isIoTDevice: true,
-                        isESP8266: false,
+                        isESP8266: true,
                         isGateway: true,
+                        isHub: hub_managed === 'true',
                         isESP01: false,
-                        deviceType,
+                        deviceType: hub_managed === 'true' ? 'ESP Hub' : deviceType,
                         gateway_managed: false,
                         connectedAt: new Date()
                     };
 
-                    socket.join(`gateway:${serialNumber}`);
-                    console.log(`[GATEWAY] ${serialNumber} joined room gateway:${serialNumber}`);
+                    socket.join(`hub:${serialNumber}`);
+                    socket.join(`device:${serialNumber}`); // Also join device room for commands
+                    console.log(`[HUB] ${serialNumber} joined rooms hub:${serialNumber} and device:${serialNumber}`);
 
                     // Enhanced welcome with safety timeout
                     setTimeout(() => {
                         try {
                             socket.emit('connection_welcome', {
                                 status: 'connected',
-                                namespace: 'main-gateway',
+                                namespace: 'main-hub',
                                 serialNumber,
                                 deviceType,
-                                gateway_managed: false,
+                                hub_managed: hub_managed === 'true',
                                 esp01_safety: true, // NEW: Safety flag
                                 timestamp: new Date().toISOString()
                             });
-                            console.log(`[GATEWAY] Welcome message sent to ${serialNumber}`);
+                            console.log(`[HUB] Welcome message sent to ${serialNumber}`);
                         } catch (error) {
-                            console.error(`[GATEWAY] Welcome send failed for ${serialNumber}:`, error);
+                            console.error(`[HUB] Welcome send failed for ${serialNumber}:`, error);
                         }
                     }, 1500); // Increased delay for ESP-01 stability
 
-                    setupGatewayEventHandlers(socket, io, serialNumber);
-                    console.log(`[GATEWAY] ${serialNumber} fully connected as Gateway/Hub`);
+                    setupHubEventHandlers(socket, io, serialNumber);
+                    console.log(`[HUB] ${serialNumber} fully connected as Hub`);
                     return;
                 }
 
@@ -144,6 +147,7 @@ export const setupDoorSocket = (io: Server) => {
                 };
 
                 socket.join(`door:${serialNumber}`);
+                socket.join(`device:${serialNumber}`); // For receiving commands
                 console.log(`[DEVICE] ${serialNumber} joined room door:${serialNumber}`);
 
                 // ✅ UPDATE DATABASE: ESP-01 safe metadata update
@@ -226,7 +230,7 @@ export const setupDoorSocket = (io: Server) => {
         }
     });
 
-    // ============= CLIENT NAMESPACE WITH ESP-01 SAFETY =============
+    // ============= CLIENT NAMESPACE WITH FIXED COMMAND HANDLING =============
     const clientNamespace = io.of('/client');
 
     clientNamespace.on('connection', async (socket: Socket) => {
@@ -240,29 +244,36 @@ export const setupDoorSocket = (io: Server) => {
 
             socket.join(`door:${serialNumber}`);
 
-            // Enhanced door command with ESP-01 safety
+            // ✅ FIXED: Enhanced door command with proper targeting
             socket.on('door_command', (commandData) => {
                 try {
-                    console.log(`[CMD] Door command from client for ${serialNumber}:`, commandData);
+                    console.log(`[CMD] Door command from client for ${serialNumber}:`, JSON.stringify(commandData, null, 2));
 
-                    // ESP-01 safe command with reduced data
-                    const safeCommand = {
-                        action: commandData.action,
+                    // ✅ FIXED: Enhanced command with action included
+                    const enhancedCommand = {
+                        action: commandData.action, // ← ENSURE ACTION IS INCLUDED
                         serialNumber: serialNumber,
                         fromClient: accountId,
                         esp01_safe: true, // Flag for ESP-01 compatibility
+                        state: commandData.state || {},
                         timestamp: new Date().toISOString()
                     };
 
-                    // Send to device with ESP-01 consideration
-                    io.emit('command', safeCommand);
+                    console.log(`[CMD] Sending enhanced command:`, JSON.stringify(enhancedCommand, null, 2));
+
+                    // ✅ FIXED: Send to specific device room instead of global
+                    io.to(`device:${serialNumber}`).emit('command', enhancedCommand);
+
+                    // Also send to hub room if device is hub-managed
+                    io.to(`hub:${serialNumber}`).emit('command', enhancedCommand);
 
                     // Client acknowledgment
                     socket.emit('door_command_sent', {
                         success: true,
                         serialNumber,
-                        command: commandData,
+                        command: enhancedCommand,
                         esp01_compatible: true,
+                        sent_to_rooms: [`device:${serialNumber}`, `hub:${serialNumber}`],
                         timestamp: new Date().toISOString()
                     });
 
@@ -285,8 +296,104 @@ export const setupDoorSocket = (io: Server) => {
         }
     });
 
-    console.log('[INIT] Door socket setup completed with ESP-01 safety features');
+    console.log('[INIT] Door socket setup completed with FIXED command handling');
 };
+
+// ============= HUB EVENT HANDLERS (For ESP Socket Hub) =============
+function setupHubEventHandlers(socket: Socket, io: Server, hubId: string) {
+    const clientNamespace = io.of('/client');
+
+    console.log(`[HUB] Setting up Hub handlers for ${hubId}`);
+
+    socket.on('device_online', async (data) => {
+        try {
+            console.log(`[HUB] Device online from ${hubId}:`, data);
+
+            socket.emit('device_online_ack', {
+                status: 'received',
+                deviceType: 'ESP Hub',
+                esp01_support: true,
+                timestamp: new Date().toISOString()
+            });
+
+            clientNamespace.emit('device_connect', {
+                serialNumber: hubId,
+                deviceType: 'ESP HUB CONTROLLER',
+                connectionType: 'hub',
+                hub_managed: true,
+                capabilities: ['command_forwarding', 'esp01_bridge'],
+                timestamp: new Date().toISOString()
+            });
+
+            console.log(`[HUB] Device online processed for ${hubId}`);
+        } catch (error) {
+            console.error(`[HUB] Error in device_online for ${hubId}:`, error);
+        }
+    });
+
+    socket.on('command_response', (data) => {
+        try {
+            console.log(`[HUB] Command response from ${hubId}:`, data);
+
+            if (data.deviceId || data.serialNumber) {
+                const targetSerial = data.deviceId || data.serialNumber;
+                clientNamespace.to(`door:${targetSerial}`).emit('door_command_response', {
+                    serialNumber: targetSerial,
+                    ...data,
+                    deviceType: 'ESP Hub',
+                    hub_processed: true,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        } catch (error) {
+            console.error(`[HUB] Error in command_response for ${hubId}:`, error);
+        }
+    });
+
+    socket.on('deviceStatus', (data) => {
+        try {
+            console.log(`[HUB] Device status from ${hubId}:`, data);
+
+            if (data.deviceId || data.serialNumber) {
+                const targetSerial = data.deviceId || data.serialNumber;
+                clientNamespace.to(`door:${targetSerial}`).emit('door_status', {
+                    ...data,
+                    deviceType: 'ESP Hub',
+                    connectionType: 'hub',
+                    timestamp: new Date().toISOString()
+                });
+            }
+        } catch (error) {
+            console.error(`[HUB] Error in deviceStatus for ${hubId}:`, error);
+        }
+    });
+
+    socket.on('welcome_ack', (data) => {
+        try {
+            console.log(`[HUB] Welcome ack from ${hubId}:`, data);
+        } catch (error) {
+            console.error(`[HUB] Error in welcome_ack for ${hubId}:`, error);
+        }
+    });
+
+    socket.on('disconnect', async (reason) => {
+        console.log(`[HUB] Hub ${hubId} disconnected. Reason: ${reason}`);
+
+        try {
+            clientNamespace.emit('device_disconnect', {
+                serialNumber: hubId,
+                deviceType: 'ESP Hub',
+                reason: reason,
+                impact: 'Gateway functionality lost',
+                timestamp: new Date().toISOString()
+            });
+
+            console.log(`[HUB] Cleanup completed for disconnected hub ${hubId}`);
+        } catch (error) {
+            console.error(`[HUB] Error in disconnect for ${hubId}:`, error);
+        }
+    });
+}
 
 // ============= ESP-01 SPECIFIC EVENT HANDLERS =============
 function setupESP01EventHandlers(socket: Socket, io: Server, serialNumber: string, device: any) {
@@ -410,115 +517,6 @@ function setupESP01EventHandlers(socket: Socket, io: Server, serialNumber: strin
     });
 }
 
-// ============= GATEWAY EVENT HANDLERS (Enhanced for ESP-01) =============
-function setupGatewayEventHandlers(socket: Socket, io: Server, gatewayId: string) {
-    const clientNamespace = io.of('/client');
-
-    socket.on('device_online', async (data) => {
-        try {
-            console.log(`[GATEWAY] Device online from ${gatewayId}:`, data);
-
-            socket.emit('device_online_ack', {
-                status: 'received',
-                deviceType: 'ESP Gateway',
-                esp01_support: true, // Gateway supports ESP-01 devices
-                timestamp: new Date().toISOString()
-            });
-
-            // Enhanced gateway notification with ESP-01 info
-            clientNamespace.emit('gateway_online', {
-                gatewayId,
-                managed_doors: data.managed_doors || [],
-                esp01_capable: true,
-                gateway_type: 'ESP8266_ESP01_BRIDGE',
-                timestamp: new Date().toISOString()
-            });
-
-            console.log(`[GATEWAY] Device online processed for ${gatewayId}`);
-        } catch (error) {
-            console.error(`[GATEWAY] Error in device_online for ${gatewayId}:`, error);
-        }
-    });
-
-    // [Rest of gateway handlers remain the same but with enhanced ESP-01 support]
-    socket.on('welcome_ack', (data) => {
-        try {
-            console.log(`[GATEWAY] Welcome ack from ${gatewayId}:`, data);
-            console.log(`[GATEWAY] Gateway ready for ESP-01 management`);
-        } catch (error) {
-            console.error(`[GATEWAY] Error in welcome_ack for ${gatewayId}:`, error);
-        }
-    });
-
-    socket.on('command_response', (data) => {
-        try {
-            console.log(`[GATEWAY] Command response from ${gatewayId}:`, data);
-
-            if (data.deviceId || data.serialNumber) {
-                const targetSerial = data.deviceId || data.serialNumber;
-                clientNamespace.to(`door:${targetSerial}`).emit('door_command_response', {
-                    serialNumber: targetSerial,
-                    ...data,
-                    deviceType: 'ESP Gateway',
-                    gateway_processed: true,
-                    esp01_via_gateway: true,
-                    timestamp: new Date().toISOString()
-                });
-            }
-        } catch (error) {
-            console.error(`[GATEWAY] Error in command_response for ${gatewayId}:`, error);
-        }
-    });
-
-    socket.on('deviceStatus', (data) => {
-        try {
-            console.log(`[GATEWAY] Device status from ${gatewayId}:`, data);
-
-            if (data.deviceId || data.serialNumber) {
-                const targetSerial = data.deviceId || data.serialNumber;
-                clientNamespace.to(`door:${targetSerial}`).emit('door_status', {
-                    ...data,
-                    deviceType: 'ESP Gateway',
-                    connectionType: 'gateway',
-                    esp01_via_gateway: true,
-                    timestamp: new Date().toISOString()
-                });
-            }
-        } catch (error) {
-            console.error(`[GATEWAY] Error in deviceStatus for ${gatewayId}:`, error);
-        }
-    });
-
-    socket.on('heartbeat', (data) => {
-        try {
-            console.log(`[GATEWAY] Heartbeat from ${gatewayId}:`, data);
-            socket.emit('heartbeat_ack', {
-                received: true,
-                deviceType: 'ESP Gateway',
-                esp01_support: true,
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error(`[GATEWAY] Error in heartbeat for ${gatewayId}:`, error);
-        }
-    });
-
-    socket.on('disconnect', async (reason) => {
-        console.log(`[GATEWAY] Gateway ${gatewayId} disconnected. Reason: ${reason}`);
-
-        try {
-            clientNamespace.emit('gateway_disconnect', {
-                gatewayId,
-                impact: 'ESP-01 controllers may lose connectivity',
-                esp01_affected: true,
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error(`[GATEWAY] Error in disconnect for ${gatewayId}:`, error);
-        }
-    });
-}
-
 // ============= STANDARD DEVICE EVENT HANDLERS =============
 function setupDeviceEventHandlers(socket: Socket, io: Server, serialNumber: string, device: any) {
     const clientNamespace = io.of('/client');
@@ -576,9 +574,6 @@ function setupDeviceEventHandlers(socket: Socket, io: Server, serialNumber: stri
             console.error(`[DEVICE] Error in deviceStatus for ${serialNumber}:`, error);
         }
     });
-
-    // Missing code fragment for setupDeviceEventHandlers disconnect handler
-// This goes in the disconnect event handler for standard ESP8266 devices
 
     socket.on('disconnect', async (reason) => {
         console.log(`[DEVICE] Device ${serialNumber} disconnected. Reason: ${reason}`);
