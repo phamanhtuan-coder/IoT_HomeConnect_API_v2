@@ -1,6 +1,7 @@
+// src/sockets/handlers/door.handlers.ts
 import { Namespace, Socket } from 'socket.io';
-import { PrismaClient } from '@prisma/client';
-import { DoorState, DoorSocketEvents, DoorCommandData, DoorSensorData, DoorStatusResponse } from '../../types/door.types';
+import prisma from '../../config/database';
+import { DoorStatusResponse } from '../../types/door.types';
 import { DoorService } from '../../services/door.service';
 import AlertService from '../../services/alert.service';
 import NotificationService from '../../services/notification.service';
@@ -11,99 +12,25 @@ const doorService = new DoorService();
 const alertService = new AlertService();
 const notificationService = new NotificationService();
 
-export const handleDoorSensorData = async (
-    socket: Socket,
-    clientNamespace: Namespace,
-    data: DoorSensorData,
-    prisma: PrismaClient
-) => {
-    const { serialNumber } = data;
-
-    try {
-        await doorService.processDoorSensorData(data);
-
-        clientNamespace.to(`door:${serialNumber}`).emit('door_sensor_data', {
-            ...data,
-            timestamp: new Date().toISOString()
-        });
-
-        if (data.door_state === DoorState.ERROR) {
-            const prismaDevice = await prisma.devices.findFirst({
-                where: { serial_number: serialNumber },
-                include: { account: true }
-            });
-
-            if (prismaDevice?.account_id) {
-                // Cast the Prisma device to Device interface with proper type casting for all fields
-                const device: Device = {
-                    device_id: prismaDevice.device_id,
-                    serial_number: prismaDevice.serial_number,
-                    template_id: prismaDevice.template_id,
-                    space_id: prismaDevice.space_id,
-                    account_id: prismaDevice.account_id,
-                    group_id: prismaDevice.group_id,
-                    hub_id: prismaDevice.hub_id,
-                    firmware_id: prismaDevice.firmware_id,
-                    name: prismaDevice.name,
-                    power_status: prismaDevice.power_status,
-                    attribute: prismaDevice.attribute as Record<string, any> | null,
-                    wifi_ssid: prismaDevice.wifi_ssid,
-                    wifi_password: prismaDevice.wifi_password,
-                    current_value: prismaDevice.current_value as Record<string, any> | null,
-                    link_status: prismaDevice.link_status,
-                    last_reset_at: prismaDevice.last_reset_at,
-                    lock_status: prismaDevice.lock_status,
-                    locked_at: prismaDevice.locked_at,
-                    created_at: prismaDevice.created_at,
-                    updated_at: prismaDevice.updated_at,
-                    is_deleted: prismaDevice.is_deleted,
-                    device_type_id: null,
-                    device_type_name: undefined,
-                    device_template_name: undefined,
-                    device_template_status: undefined,
-                    device_base_capabilities: null,
-                    capabilities: null
-                };
-
-                await alertService.createAlert(device, 3, 'Door error detected');
-                await notificationService.createNotification({
-                    account_id: prismaDevice.account_id,
-                    text: `Error detected on door ${device.name || serialNumber}`,
-                    type: NotificationType.ALERT
-                });
-            }
-        }
-
-    } catch (error) {
-        console.error(`Door sensor data error for ${serialNumber}:`, error);
-        socket.emit('error', {
-            code: 'SENSOR_DATA_ERROR',
-            message: 'Failed to process sensor data'
-        });
-    }
-};
-
 export const handleDoorStatus = async (
     socket: Socket,
     clientNamespace: Namespace,
-    data: DoorStatusResponse,
-    prisma: PrismaClient
+    data: DoorStatusResponse
 ) => {
     const { serialNumber } = data;
 
     try {
         clientNamespace.to(`door:${serialNumber}`).emit('door_status', {
             ...data,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
         });
 
         console.log(`Door ${serialNumber} status updated:`, data);
-
     } catch (error) {
         console.error(`Door status update error for ${serialNumber}:`, error);
         socket.emit('error', {
             code: 'STATUS_UPDATE_ERROR',
-            message: 'Failed to update door status'
+            message: 'Failed to update door status',
         });
     }
 };
@@ -125,11 +52,10 @@ export const handleDoorCommandResponse = async (
     try {
         clientNamespace.to(`door:${serialNumber}`).emit('door_command_response', {
             ...data,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
         });
 
         console.log(`Door ${serialNumber} command response:`, data);
-
     } catch (error) {
         console.error(`Door command response error for ${serialNumber}:`, error);
     }
@@ -143,62 +69,59 @@ export const handleDoorError = async (
         error: string;
         code: number;
         timestamp: string;
-    },
-    prisma: PrismaClient
+    }
 ) => {
     const { serialNumber } = data;
 
     try {
         const prismaDevice = await prisma.devices.findFirst({
             where: { serial_number: serialNumber },
-            include: { account: true }
+            include: { account: true },
         });
 
-        if (prismaDevice?.account_id) {
-            // Cast the Prisma device to Device interface with proper type casting for all fields
-            const device: Device = {
-                device_id: prismaDevice.device_id,
-                serial_number: prismaDevice.serial_number,
-                template_id: prismaDevice.template_id,
-                space_id: prismaDevice.space_id,
-                account_id: prismaDevice.account_id,
-                group_id: prismaDevice.group_id,
-                hub_id: prismaDevice.hub_id,
-                firmware_id: prismaDevice.firmware_id,
-                name: prismaDevice.name,
-                power_status: prismaDevice.power_status,
-                attribute: prismaDevice.attribute as Record<string, any> | null,
-                wifi_ssid: prismaDevice.wifi_ssid,
-                wifi_password: prismaDevice.wifi_password,
-                current_value: prismaDevice.current_value as Record<string, any> | null,
-                link_status: prismaDevice.link_status,
-                last_reset_at: prismaDevice.last_reset_at,
-                lock_status: prismaDevice.lock_status,
-                locked_at: prismaDevice.locked_at,
-                created_at: prismaDevice.created_at,
-                updated_at: prismaDevice.updated_at,
-                is_deleted: prismaDevice.is_deleted,
-                device_type_id: null,
-                device_type_name: undefined,
-                device_template_name: undefined,
-                device_template_status: undefined,
-                device_base_capabilities: null,
-                capabilities: null
-            };
+        if (!prismaDevice) return;
 
-            await alertService.createAlert(device, data.code, `Door error: ${data.error}`);
-            await notificationService.createNotification({
-                account_id: prismaDevice.account_id,
-                text: `ERROR: ${device.name || serialNumber} - ${data.error}`,
-                type: NotificationType.ALERT
-            });
+        const device: Device = {
+            device_id: prismaDevice.device_id,
+            serial_number: prismaDevice.serial_number,
+            template_id: prismaDevice.template_id,
+            space_id: prismaDevice.space_id,
+            account_id: prismaDevice.account_id,
+            group_id: prismaDevice.group_id,
+            hub_id: prismaDevice.hub_id,
+            firmware_id: prismaDevice.firmware_id,
+            name: prismaDevice.name,
+            power_status: prismaDevice.power_status,
+            attribute: prismaDevice.attribute as Record<string, any> | null,
+            wifi_ssid: prismaDevice.wifi_ssid,
+            wifi_password: prismaDevice.wifi_password,
+            current_value: prismaDevice.current_value as Record<string, any> | null,
+            link_status: prismaDevice.link_status,
+            last_reset_at: prismaDevice.last_reset_at,
+            lock_status: prismaDevice.lock_status,
+            locked_at: prismaDevice.locked_at,
+            created_at: prismaDevice.created_at,
+            updated_at: prismaDevice.updated_at,
+            is_deleted: prismaDevice.is_deleted,
+            device_type_id: null,
+            device_type_name: undefined,
+            device_template_name: undefined,
+            device_template_status: undefined,
+            device_base_capabilities: null,
+            capabilities: null,
+        };
 
-            clientNamespace.emit('door_error', {
-                ...data,
-                timestamp: new Date().toISOString()
-            });
-        }
+        await alertService.createAlert(device, data.code, `Door error: ${data.error}`);
+        await notificationService.createNotification({
+            account_id: prismaDevice.account_id,
+            text: `ERROR: ${device.name || serialNumber} - ${data.error}`,
+            type: NotificationType.ALERT,
+        });
 
+        clientNamespace.emit('door_error', {
+            ...data,
+            timestamp: new Date().toISOString(),
+        });
     } catch (error) {
         console.error(`Door error handling error for ${serialNumber}:`, error);
     }
@@ -209,21 +132,19 @@ export const handleDoorEmergency = async (
     clientNamespace: Namespace,
     data: {
         serialNumber: string;
-        type: 'obstruction' | 'motor_failure' | 'sensor_failure';
+        type: 'obstruction' | 'motor_failure' | 'sensor_failure' | 'fire';
         message: string;
-    },
-    prisma: PrismaClient
+    }
 ) => {
     const { serialNumber } = data;
 
     try {
         const prismaDevice = await prisma.devices.findFirst({
             where: { serial_number: serialNumber },
-            include: { account: true }
+            include: { account: true },
         });
 
         if (prismaDevice?.account_id) {
-            // Cast the Prisma device to Device interface with proper type casting for all fields
             const device: Device = {
                 device_id: prismaDevice.device_id,
                 serial_number: prismaDevice.serial_number,
@@ -251,22 +172,23 @@ export const handleDoorEmergency = async (
                 device_template_name: undefined,
                 device_template_status: undefined,
                 device_base_capabilities: null,
-                capabilities: null
+                capabilities: null,
             };
 
-            await alertService.createAlert(device, 3, `Door emergency: ${data.type} - ${data.message}`);
+            // Xử lý trường hợp cháy
+            const alertMessage = data.type === 'fire' ? 'Fire emergency: Door opened' : `Door emergency: ${data.type} - ${data.message}`;
+            await alertService.createAlert(device, 3, alertMessage);
             await notificationService.createNotification({
                 account_id: prismaDevice.account_id,
-                text: `EMERGENCY: ${device.name || serialNumber} - ${data.message}`,
-                type: NotificationType.ALERT
+                text: `EMERGENCY: ${device.name || serialNumber} - ${alertMessage}`,
+                type: NotificationType.ALERT,
             });
 
             clientNamespace.emit('door_emergency', {
                 ...data,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             });
         }
-
     } catch (error) {
         console.error(`Door emergency handling error for ${serialNumber}:`, error);
     }
@@ -289,8 +211,8 @@ export const handleDoorCalibration = async (
             await doorService.updateDoorConfig(
                 serialNumber,
                 {
-                    servo_open_angle: data.angles.open,
-                    servo_close_angle: data.angles.close
+                    servo_open_angle: 90, // Chỉ sử dụng 90°
+                    servo_close_angle: 0, // Chỉ sử dụng 0°
                 },
                 'system'
             );
@@ -298,9 +220,8 @@ export const handleDoorCalibration = async (
 
         clientNamespace.to(`door:${serialNumber}`).emit('door_calibration_result', {
             ...data,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
         });
-
     } catch (error) {
         console.error(`Door calibration handling error for ${serialNumber}:`, error);
     }
@@ -322,9 +243,8 @@ export const handleDoorTest = async (
     try {
         clientNamespace.to(`door:${serialNumber}`).emit('door_test_result', {
             ...data,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
         });
-
     } catch (error) {
         console.error(`Door test handling error for ${serialNumber}:`, error);
     }
@@ -337,30 +257,58 @@ export const handleDoorMaintenance = async (
         serialNumber: string;
         maintenance_type: string;
         details: any;
-    },
-    prisma: PrismaClient
+    }
 ) => {
     const { serialNumber } = data;
 
     try {
         const device = await prisma.devices.findFirst({
             where: { serial_number: serialNumber },
-            include: { account: true }
+            include: { account: true },
         });
 
         if (device?.account_id) {
+            const deviceData: Device = {
+                device_id: device.device_id,
+                serial_number: device.serial_number,
+                template_id: device.template_id,
+                space_id: device.space_id,
+                account_id: device.account_id,
+                group_id: device.group_id,
+                hub_id: device.hub_id,
+                firmware_id: device.firmware_id,
+                name: device.name,
+                power_status: device.power_status,
+                attribute: device.attribute as Record<string, any> | null,
+                wifi_ssid: device.wifi_ssid,
+                wifi_password: device.wifi_password,
+                current_value: device.current_value as Record<string, any> | null,
+                link_status: device.link_status,
+                last_reset_at: device.last_reset_at,
+                lock_status: device.lock_status,
+                locked_at: device.locked_at,
+                created_at: device.created_at,
+                updated_at: device.updated_at,
+                is_deleted: device.is_deleted,
+                device_type_id: null,
+                device_type_name: undefined,
+                device_template_name: undefined,
+                device_template_status: undefined,
+                device_base_capabilities: null,
+                capabilities: null,
+            };
+
             await notificationService.createNotification({
                 account_id: device.account_id,
-                text: `Maintenance alert for ${device.name || serialNumber}: ${data.maintenance_type}`,
-                type: NotificationType.SYSTEM
+                text: `Maintenance alert for ${deviceData.name || serialNumber}: ${data.maintenance_type}`,
+                type: NotificationType.SYSTEM,
             });
 
             clientNamespace.to(`door:${serialNumber}`).emit('door_maintenance_alert', {
                 ...data,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             });
         }
-
     } catch (error) {
         console.error(`Door maintenance handling error for ${serialNumber}:`, error);
     }
@@ -368,8 +316,7 @@ export const handleDoorMaintenance = async (
 
 export const validateDoorAccess = async (
     serialNumber: string,
-    accountId: string,
-    prisma: PrismaClient
+    accountId: string
 ): Promise<boolean> => {
     try {
         const device = await prisma.devices.findFirst({
@@ -377,10 +324,10 @@ export const validateDoorAccess = async (
             include: {
                 spaces: {
                     include: {
-                        houses: true
-                    }
-                }
-            }
+                        houses: true,
+                    },
+                },
+            },
         });
 
         if (!device) return false;
@@ -392,8 +339,8 @@ export const validateDoorAccess = async (
                 where: {
                     group_id: device.group_id,
                     account_id: accountId,
-                    is_deleted: false
-                }
+                    is_deleted: false,
+                },
             });
             if (groupMember) return true;
         }
@@ -402,12 +349,11 @@ export const validateDoorAccess = async (
             where: {
                 device_serial: serialNumber,
                 shared_with_user_id: accountId,
-                is_deleted: false
-            }
+                is_deleted: false,
+            },
         });
 
         return !!sharedPermission;
-
     } catch (error) {
         console.error('Door access validation error:', error);
         return false;

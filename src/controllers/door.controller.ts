@@ -136,7 +136,6 @@ export class DoorController {
             res.json({
                 success: true,
                 doors,
-                count: doors.length,
                 filters,
                 timestamp: new Date().toISOString()
             });

@@ -1,5 +1,5 @@
-// src/services/door?.service.ts
-import { PrismaClient } from '@prisma/client';
+// src/services/door.service.ts
+import prisma from '../config/database';
 import { ErrorCodes, throwError } from "../utils/errors";
 import { Server } from 'socket.io';
 import {
@@ -12,6 +12,7 @@ import {
     EmergencyDoorOperation
 } from '../types/door.types';
 import { Device } from '../types/device';
+import {PrismaClient} from "@prisma/client";
 
 let io: Server | null = null;
 
@@ -21,9 +22,54 @@ export function setSocketInstance(socket: Server) {
 
 export class DoorService {
     private prisma: PrismaClient;
+    private readonly maxRetries = 3;
+    private readonly retryDelay = 1000; // Base delay in ms
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma;
+    }
+
+    /**
+     * Generic retry wrapper for database operations
+     */
+    private async withRetry<T>(
+        operation: () => Promise<T>,
+        context: string = 'database operation'
+    ): Promise<T> {
+        for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+            try {
+                return await operation();
+            } catch (error: any) {
+                const isConnectionError = this.isConnectionError(error);
+
+                if (!isConnectionError || attempt === this.maxRetries) {
+                    console.error(`❌ ${context} failed after ${attempt} attempts:`, error);
+                    throw error;
+                }
+
+                const delay = this.retryDelay * Math.pow(2, attempt - 1); // Exponential backoff
+                console.warn(`⚠️ ${context} failed (attempt ${attempt}/${this.maxRetries}), retrying in ${delay}ms...`);
+                await this.sleep(delay);
+            }
+        }
+        throw new Error(`${context} failed after ${this.maxRetries} attempts`);
+    }
+
+    /**
+     * Check if error is a connection-related error
+     */
+    private isConnectionError(error: any): boolean {
+        return error.code === 'P2024' ||
+            error.message?.includes('connection') ||
+            error.message?.includes('timeout') ||
+            error.message?.includes('pool');
+    }
+
+    /**
+     * Sleep utility for retry delays
+     */
+    private sleep(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     /**
@@ -55,58 +101,54 @@ export class DoorService {
         };
     }
 
-    /**
-     * Toggle trạng thái cửa
-     */
     async toggleDoor(
         serialNumber: string,
         powerStatus: boolean,
         accountId: string,
         force: boolean = false,
-        timeout: number = 5000
+        timeout: number = 30000
     ): Promise<Device> {
-        const door = await this.getDoorBySerial(serialNumber, accountId);
-        if (!door) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
+        return this.withRetry(async () => {
+            const door = await this.getDoorBySerial(serialNumber, accountId);
+            if (!door) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
 
-        const currentAttribute = (door?.attribute as Record<string, any>) || {};
-        if (!force && currentAttribute.is_moving) {
-            throwError(ErrorCodes.CONFLICT, 'Cửa đang di chuyển. Sử dụng force=true để ghi đè.');
-        }
-
-        const newState = {
-            ...currentAttribute,
-            power_status: powerStatus,
-            door_state: powerStatus ? DoorState.OPENING : DoorState.CLOSING,
-            target_state: powerStatus ? DoorState.OPEN : DoorState.CLOSED,
-            last_command: powerStatus ? 'OPEN' : 'CLOSE',
-            command_timeout: timeout
-        };
-
-        const updatedDevice = await this.prisma.devices.update({
-            where: { serial_number: serialNumber },
-            data: {
-                attribute: newState,
-                power_status: powerStatus,
-                updated_at: new Date()
+            const currentAttribute = (door?.attribute as Record<string, any>) || {};
+            if (!force && currentAttribute.is_moving) {
+                throwError(ErrorCodes.CONFLICT, 'Cửa đang di chuyển. Sử dụng force=true để ghi đè.');
             }
-        });
 
-        if (io) {
-            io.of("/door").to(`door:${serialNumber}`).emit('command', {
-                action: DoorAction.TOGGLE,
-                state: { power_status: powerStatus },
-                timeout,
-                force,
-                timestamp: new Date().toISOString()
+            const newState = {
+                ...currentAttribute,
+                power_status: powerStatus,
+                door_state: powerStatus ? DoorState.OPEN : DoorState.CLOSED, // Đơn giản hóa trạng thái
+                servo_angle: powerStatus ? 90 : 0, // Servo 90° (mở) hoặc 0° (đóng)
+                last_command: powerStatus ? 'OPEN' : 'CLOSE',
+                command_timeout: timeout,
+            };
+
+            const updatedDevice = await this.prisma.devices.update({
+                where: { serial_number: serialNumber },
+                data: {
+                    attribute: newState,
+                    power_status: powerStatus,
+                    updated_at: new Date(),
+                },
             });
-        }
 
-        return this.mapPrismaDeviceToDevice(updatedDevice);
+            if (io) {
+                io.of('/door').to(`door:${serialNumber}`).emit('command', {
+                    action: DoorAction.TOGGLE,
+                    state: { power_status: powerStatus, target_angle: powerStatus ? 90 : 0 },
+                    timeout,
+                    force,
+                    timestamp: new Date().toISOString(),
+                });
+            }
+
+            return this.mapPrismaDeviceToDevice(updatedDevice);
+        }, `toggleDoor for ${serialNumber}`);
     }
 
-    /**
-     * Thực hiện thao tác khẩn cấp trên nhiều cửa
-     */
     async executeEmergencyDoorOperation(
         operation: EmergencyDoorOperation,
         accountId: string
@@ -114,28 +156,49 @@ export class DoorService {
         const results: string[] = [];
         const errors: any[] = [];
 
-        for (const doorSerial of operation.affected_doors) {
-            try {
-                await this.toggleDoor(
-                    doorSerial,
-                    operation.action === 'open_all',
-                    accountId,
-                    operation.override_manual,
-                    10000
-                );
-                results.push(doorSerial);
-            } catch (error: any) {
-                errors.push({ door: doorSerial, error: error.message });
+        const batchSize = 3;
+        for (let i = 0; i < operation.affected_doors.length; i += batchSize) {
+            const batch = operation.affected_doors.slice(i, i + batchSize);
+
+            await Promise.allSettled(
+                batch.map(async (doorSerial) => {
+                    try {
+                        // Xử lý lệnh khẩn cấp (mở tất cả hoặc đóng tất cả)
+                        await this.toggleDoor(
+                            doorSerial,
+                            operation.action === 'open_all',
+                            accountId,
+                            operation.override_manual,
+                            10000
+                        );
+                        results.push(doorSerial);
+
+                        // Gửi sự kiện khẩn cấp (bao gồm cả cháy)
+                        if (io && operation.action === 'open_all') {
+                            io.of('/door').to(`door:${doorSerial}`).emit('door_emergency', {
+                                serialNumber: doorSerial,
+                                type:  operation.trigger_source,
+                                message:  'Emergency operation',
+                                timestamp: new Date().toISOString(),
+                            });
+                        }
+                    } catch (error: any) {
+                        errors.push({ door: doorSerial, error: error.message });
+                    }
+                })
+            );
+
+            if (i + batchSize < operation.affected_doors.length) {
+                await this.sleep(500);
             }
         }
 
-
         if (io) {
-            io.of("/door").emit('emergency_operation', {
+            io.of('/door').emit('emergency_operation', {
                 ...operation,
                 affected_doors: results,
                 errors,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             });
         }
 
@@ -143,141 +206,207 @@ export class DoorService {
     }
 
     /**
-     * Xử lý dữ liệu cảm biến từ cửa
+     * Process sensor data with enhanced retry and connection management
+     */
+    /**
+     * Process sensor data without transaction
      */
     async processDoorSensorData(sensorData: DoorSensorData): Promise<void> {
-        const door = await this.prisma.devices.findFirst({
-            where: { serial_number: sensorData.serialNumber, is_deleted: false }
-        });
-        if (!door) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
-
-        const currentAttribute = (door?.attribute as Record<string, any>) || {};
-        const stateUpdate = {
-            ...currentAttribute,
-            door_state: sensorData.door_state,
-            servo_angle: sensorData.servo_angle,
-            is_moving: sensorData.is_moving,
-            obstacle_detected: sensorData.obstacle_detected || false,
-            manual_override: sensorData.manual_override || false,
-            signal_strength: sensorData.signal_strength,
-            battery_level: sensorData.battery_level,
-            last_seen: sensorData.timestamp
-        };
-
-        await this.prisma.devices.update({
-            where: { serial_number: sensorData.serialNumber },
-            data: {
-                attribute: stateUpdate,
-                updated_at: new Date()
-            }
-        });
-
-        if (io) {
-            io.of("/door").to(`door:${sensorData.serialNumber}`).emit('sensor_data', {
-                ...sensorData,
-                timestamp: new Date().toISOString()
+        return this.withRetry(async () => {
+            const door = await this.prisma.devices.findFirst({
+                where: { serial_number: sensorData.serialNumber, is_deleted: false }
             });
-        }
+
+            if (!door) {
+                throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
+            }
+
+            const currentAttribute = (door?.attribute as Record<string, any>) || {};
+            const stateUpdate = {
+                ...currentAttribute,
+                door_state: sensorData.door_state,
+                servo_angle: sensorData.servo_angle,
+                is_moving: sensorData.is_moving,
+                obstacle_detected: sensorData.obstacle_detected || false,
+                manual_override: sensorData.manual_override || false,
+                signal_strength: sensorData.signal_strength,
+                battery_level: sensorData.battery_level,
+                last_seen: sensorData.timestamp
+            };
+
+            await this.prisma.devices.update({
+                where: { serial_number: sensorData.serialNumber },
+                data: {
+                    attribute: stateUpdate,
+                    updated_at: new Date()
+                }
+            });
+
+            if (io) {
+                io.of("/door").to(`door:${sensorData.serialNumber}`).emit('sensor_data', {
+                    ...sensorData,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        }, `processDoorSensorData for ${sensorData.serialNumber}`);
     }
 
     /**
-     * Cập nhật cấu hình cửa
+     * Update door config with retry logic
      */
     async updateDoorConfig(
         serialNumber: string,
         config: Partial<DoorConfig>,
         accountId: string
     ): Promise<Device> {
-        const door = await this.getDoorBySerial(serialNumber, accountId);
-        if (!door) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
+        return this.withRetry(async () => {
+            const door = await this.getDoorBySerial(serialNumber, accountId);
+            if (!door) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
 
-        this.validateDoorConfig(config);
+            this.validateDoorConfig(config);
 
-        const currentAttribute = (door?.attribute as Record<string, any>) || {};
-        const updatedAttribute = {
-            ...currentAttribute,
-            config: {
-                ...currentAttribute.config,
-                ...config
-            }
-        };
+            const currentAttribute = (door?.attribute as Record<string, any>) || {};
+            const updatedAttribute = {
+                ...currentAttribute,
+                config: {
+                    ...currentAttribute.config,
+                    ...config
+                }
+            };
 
-        const updatedDevice = await this.prisma.devices.update({
-            where: { serial_number: serialNumber },
-            data: {
-                attribute: updatedAttribute,
-                updated_at: new Date()
-            }
-        });
-
-        if (io) {
-            io.of("/door").to(`door:${serialNumber}`).emit('config_update', {
-                serialNumber,
-                config,
-                timestamp: new Date().toISOString()
+            const updatedDevice = await this.prisma.devices.update({
+                where: { serial_number: serialNumber },
+                data: {
+                    attribute: updatedAttribute,
+                    updated_at: new Date()
+                }
             });
-        }
 
-        return this.mapPrismaDeviceToDevice(updatedDevice);
+            if (io) {
+                io.of("/door").to(`door:${serialNumber}`).emit('config_update', {
+                    serialNumber,
+                    config,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            return this.mapPrismaDeviceToDevice(updatedDevice);
+        }, `updateDoorConfig for ${serialNumber}`);
     }
 
     /**
-     * Lấy thông tin cửa theo serial number
+     * Get door by serial with optimized query
      */
     async getDoorBySerial(serialNumber: string, accountId: string): Promise<Device | null> {
-        const device = await this.prisma.devices.findFirst({
-            where: {
-                serial_number: serialNumber,
+        return this.withRetry(async () => {
+            const device = await this.prisma.devices.findFirst({
+                where: {
+                    serial_number: serialNumber,
+                    is_deleted: false,
+                    OR: [
+                        { account_id: accountId },
+                        {
+                            spaces: {
+                                houses: {
+                                    groups: {
+                                        user_groups: { some: { account_id: accountId, is_deleted: false } }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            shared_permissions: {
+                                some: {
+                                    shared_with_user_id: accountId,
+                                    is_deleted: false
+                                }
+                            }
+                        }
+                    ]
+                }
+            });
+
+            return device ? this.mapPrismaDeviceToDevice(device) : null;
+        }, `getDoorBySerial for ${serialNumber}`);
+    }
+
+
+    /**
+     * Get user doors with pagination and optimized queries
+     */
+    async getUserDoors(
+        accountId: string,
+        filters: any,
+        page: number = 1,
+        limit: number = 50
+    ): Promise<{ doors: Device[]; total: number }> {
+        return this.withRetry(async () => {
+            const skip = (page - 1) * limit;
+
+            const whereClause: any = {
                 is_deleted: false,
                 OR: [
                     { account_id: accountId },
                     {
                         spaces: {
                             houses: {
-                                groups: {
+                                group: {
                                     user_groups: { some: { account_id: accountId, is_deleted: false } }
                                 }
                             }
                         }
-                    },
-                    { shared_permissions: { some: { shared_with_user_id: accountId, is_deleted: false } } }
-                ]
-            }
-        });
-
-        return device ? this.mapPrismaDeviceToDevice(device) : null;
-    }
-
-    /**
-     * Lấy danh sách cửa của người dùng
-     */
-    async getUserDoors(accountId: string, filters: any): Promise<Device[]> {
-        const whereClause: any = {
-            is_deleted: false,
-            OR: [
-                { account_id: accountId },
-                {
-                    spaces: {
-                        houses: {
-                            group: {
-                                user_groups: { some: { account_id: accountId, is_deleted: false } }
-                            }
-                        }
                     }
-                }
-            ]
-        };
+                ]
+            };
 
-        if (filters.state) whereClause.attribute = { path: ['door_state'], equals: filters.state };
-        if (filters.is_moving !== undefined) whereClause.attribute = { path: ['is_moving'], equals: filters.is_moving };
+            if (filters.state) {
+                whereClause.attribute = { path: ['door_state'], equals: filters.state };
+            }
+            if (filters.is_moving !== undefined) {
+                whereClause.attribute = { path: ['is_moving'], equals: filters.is_moving };
+            }
 
-        const doors = await this.prisma.devices.findMany({ where: whereClause });
-        return doors.map(this.mapPrismaDeviceToDevice);
+            const [doors, total] = await Promise.all([
+                this.prisma.devices.findMany({
+                    where: whereClause,
+                    skip,
+                    take: limit,
+                    orderBy: { updated_at: 'desc' }
+                }),
+                this.prisma.devices.count({ where: whereClause })
+            ]);
+
+            return {
+                doors: doors.map(this.mapPrismaDeviceToDevice),
+                total
+            };
+        }, `getUserDoors for ${accountId}`);
     }
 
+    /**
+     * Send command to door with better error handling
+     */
+    async sendDoorCommand(
+        serialNumber: string,
+        command: DoorCommandData,
+        accountId: string
+    ): Promise<void> {
+        // Validate access first (lightweight operation)
+        const door = await this.getDoorBySerial(serialNumber, accountId);
+        if (!door) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
+
+        // Send command via socket (no database operation)
+        if (io) {
+            io.of("/door").to(`door:${serialNumber}`).emit('command', {
+                ...command,
+                fromClient: accountId,
+                timestamp: new Date().toISOString()
+            });
+        }
+    }
 
     /**
-     * Xác thực cấu hình cửa
+     * Validate door configuration
      */
     private validateDoorConfig(config: Partial<DoorConfig>): void {
         if (config.servo_open_angle !== undefined && (config.servo_open_angle < 0 || config.servo_open_angle > 180)) {

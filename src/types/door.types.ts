@@ -118,10 +118,11 @@ export interface DoorCapabilities {
  * Emergency door operation
  */
 export interface EmergencyDoorOperation {
-    trigger_source: 'fire_alarm' | 'security_alert' | 'manual' | 'system';
+    trigger_source: 'fire_alarm' | 'security_alert' | 'manual' | 'system' | 'fire';
     affected_doors: string[];
     action: 'open_all' | 'close_all' | 'selective';
     override_manual: boolean;
+    emergency_type?: 'fire' | 'security' | 'maintenance' | 'other';
     timestamp: string;
 }
 
