@@ -19,11 +19,6 @@ export class DoorController {
     constructor() {
         this.doorService = new DoorService();
     }
-
-    setSocketInstance(socket: Server) {
-        this.io = socket;
-    }
-
     toggleDoor = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Người dùng chưa xác thực');

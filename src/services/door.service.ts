@@ -16,10 +16,6 @@ import {PrismaClient} from "@prisma/client";
 
 let io: Server | null = null;
 
-export function setSocketInstance(socket: Server) {
-    io = socket;
-}
-
 export class DoorService {
     private prisma: PrismaClient;
     private readonly maxRetries = 3;
