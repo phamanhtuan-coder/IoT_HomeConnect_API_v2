@@ -2,7 +2,6 @@
 // Cấu hình Redis cho testing
 
 // Thay đổi IP và port theo máy chủ Redis của bạn
-export const TEST_REDIS_URL = 'redis://default:vSXGQOnAukNlDWEAKmlYVvxbvLvKjtUY@hopper.proxy.rlwy.net:39314';
 
 // Hoặc nếu Redis chạy trên localhost với port khác
 // export const TEST_REDIS_URL = 'redis://localhost:6380';
