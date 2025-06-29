@@ -202,5 +202,9 @@ export const initApp = (): { app: Application; io: Server; httpServer: any } => 
     // Error handling middleware luôn phải ở cuối
     app.use(errorMiddleware);
 
+    (BigInt.prototype as any).toJSON = function() {
+        return Number(this);
+    };
+    
     return {app, io, httpServer};
 };
