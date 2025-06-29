@@ -3,7 +3,7 @@ import { ErrorCodes, get_error_response, throwError } from '../utils/errors';
 import {DeviceTemplateCreateInput, DeviceTemplateUpdateInput, ApproveDeviceTemplateInput } from "../utils/schemas/device-template.schema";
 import {DeviceTemplate} from "../types/device-template";
 import { generateTemplateId} from "../utils/helpers";
-import { generateUniqueProductSlug } from '../helpers/extension.helper';
+import { generateUniqueProductSlug } from '../utils/slug.helper';
 import { ERROR_CODES } from '../contants/error';
 import { STATUS_CODE } from '../contants/status';
 import queryHelper from '../utils/query.helper';

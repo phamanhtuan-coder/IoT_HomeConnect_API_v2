@@ -122,10 +122,6 @@ class DeviceService {
             where: {
                 account_id: accountId,
                 is_deleted: false,
-                OR: [
-                    { name: { contains: search } },
-                    { serial_number: { contains: search } },
-                ]
             },
             include: {
                 device_templates: {
@@ -142,8 +138,16 @@ class DeviceService {
             },
         });
 
-        return devices.map((device) => ({
-            ...this.mapPrismaDeviceToAuthDevice(device),
+        const searchValue = search?.toLowerCase().trim();
+        const filteredDevices = searchValue
+        ? devices.filter(device =>
+            device.name?.toLowerCase().includes(searchValue) ||
+            device.serial_number?.toLowerCase().includes(searchValue)
+            )
+        : devices;
+
+        return filteredDevices.map((device) => ({
+            ...this.mapPrismaDeviceToAuthDevice(device),    
             device_type_id: device.device_templates?.device_type_id ?? null,
             device_type_name: device.device_templates?.categories?.name ?? null,
             device_template_name: device.device_templates?.name ?? null,
