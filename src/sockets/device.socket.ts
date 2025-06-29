@@ -186,6 +186,7 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
             socket.on('alarm_trigger', (data) => {
                 console.log(`🚨 FIRE ALARM TRIGGERED from ${serialNumber} (${clientType}):`, data);
 
+
                 // Broadcast emergency alert to all clients
                 clientNamespace.emit('emergency_alert', {
                     serialNumber,
