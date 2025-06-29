@@ -136,6 +136,8 @@ import sseRoutes from './sse.routes';
 import productionBatchesRoutes from './production-batches.routes';
 import customerSearchRoutes from './customer-search.routes';
 import hourlyValueRoutes from './hourly_values.routes';
+import statisticRoutes from './statistic.routes';
+import doorRoutes from './door.routes';
 
 
 
@@ -168,8 +170,8 @@ router.use('/production-batches', productionBatchesRoutes);
 router.use('/sse', sseRoutes);
 router.use('/customer-search', customerSearchRoutes);
 router.use('/hourly-values', hourlyValueRoutes);
+router.use('/statistic', statisticRoutes);
+router.use('/doors', doorRoutes);  // Add door routes
 
 
 export default router;
-
-

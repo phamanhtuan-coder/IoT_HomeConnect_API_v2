@@ -8167,6 +8167,446 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Door",
+      "item": [
+        {
+          "name": "Toggle Door",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Door toggled successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"power_status\": true,\n  \"force\": false,\n  \"timeout\": 5000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/DOOR_ABC123/toggle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "DOOR_ABC123",
+                "toggle"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Door Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Door status retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.door_state).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/doors/DOOR_ABC123/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "DOOR_ABC123",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Door Config",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Door config updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"config\": {\n    \"servo_open_angle\": 90,\n    \"servo_close_angle\": 0,\n    \"movement_duration\": 1000,\n    \"auto_close_delay\": 30000,\n    \"obstacle_detection\": true,\n    \"manual_override_enabled\": true,\n    \"emergency_mode\": false,\n    \"max_retry_attempts\": 3\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/DOOR_ABC123/config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "DOOR_ABC123",
+                "config"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Emergency Door Operation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Emergency operation executed successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"door_serial_numbers\": [\"DOOR_ABC123\", \"DOOR_XYZ789\"],\n  \"action\": \"open\",\n  \"override_manual\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/emergency",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "emergency"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Door Operation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Bulk operation executed successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"door_serial_numbers\": [\"DOOR_ABC123\", \"DOOR_XYZ789\"],\n  \"action\": \"toggle_door\",\n  \"state\": {\n    \"power_status\": true,\n    \"target_angle\": 90\n  },\n  \"priority\": \"normal\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "bulk"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Doors",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('User doors retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.doors).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/doors?state=closed&is_moving=false&has_errors=false",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors"
+              ],
+              "query": [
+                {
+                  "key": "state",
+                  "value": "closed"
+                },
+                {
+                  "key": "is_moving",
+                  "value": "false"
+                },
+                {
+                  "key": "has_errors",
+                  "value": "false"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Calibrate Door",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Door calibration started successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"angles\": {\n    \"open\": 90,\n    \"close\": 0\n  },\n  \"save_to_eeprom\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/DOOR_ABC123/calibrate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "DOOR_ABC123",
+                "calibrate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test Door",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Door test started successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"test_type\": \"movement\",\n  \"repeat_count\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/DOOR_ABC123/test",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "DOOR_ABC123",
+                "test"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Perform Maintenance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Maintenance operation started successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"maintenance_type\": \"calibrate\",\n  \"backup_config\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/DOOR_ABC123/maintenance",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "DOOR_ABC123",
+                "maintenance"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
