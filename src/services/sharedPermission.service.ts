@@ -8,6 +8,20 @@ import { sendEmergencyAlertEmail } from './email.service';
 import { executeSelectData } from '../utils/sql_query';
 import prisma from "../config/database";
 
+// Import the Filter interface from sql_query.ts
+interface FilterCondition {
+    field: string;
+    condition: string;
+    value: any;
+}
+
+interface FilterGroup {
+    logic: 'AND' | 'OR';
+    filters: (FilterCondition | FilterGroup)[];
+}
+
+type Filter = FilterCondition | FilterGroup;
+
 class SharedPermissionService {
     private prisma: PrismaClient;
 
@@ -15,29 +29,64 @@ class SharedPermissionService {
         this.prisma = prisma
     }
 
-    async getDeviceSharedForCustomer(accountId: string) {
+    async getDeviceSharedForCustomer(accountId: string, search: string) {
         const account = await this.prisma.account.findUnique({
             where: { account_id: accountId }
         });
 
-        const filter = {
-            field: "shared_permissions.shared_with_user_id",
-            condition: "=",
-            value: account!.account_id
-        }
+        const filters: Filter[] = [
+            {
+                logic: "OR" as const,
+                filters: [
+                    {
+                        field: "shared_permissions.shared_with_user_id",
+                        condition: "=",
+                        value: account!.account_id
+                    }
+                ]
+            },
+            {
+                logic: "OR" as const,
+                filters: [
+                    {
+                        field: "devices.name",
+                        condition: "contains",
+                        value: `${search ? search : ''}`
+                    },
+                    {
+                        field: "devices.serial_number",
+                        condition: "contains",
+                        value: `${search ? search : ''}`
+                    },
+                    {
+                        field: "device_templates.name",
+                        condition: "contains",
+                        value: `${search ? search : ''}`
+                    },
+                    {
+                        field: "categories.name",
+                        condition: "contains",
+                        value: `${search ? search : ''}`
+                    }
+                ]
+            }
+        ]
         if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
 
         const get_attr = `
-        shared_permissions.device_serial, shared_permissions.permission_type, shared_permissions.shared_with_user_id,
+        shared_permissions.permission_id, shared_permissions.device_serial, shared_permissions.permission_type,
+        devices.serial_number, shared_permissions.shared_with_user_id,
         devices.name as device_name,
+        devices.template_id,
         device_templates.name as template_device_name,
+        devices.device_id,
         categories.name as category_name
         `;
 
         const get_table = "shared_permissions"
 
         let query_join = `
-            LEFT JOIN devices ON shared_permissions.device_serial = devices.device_id
+            LEFT JOIN devices ON shared_permissions.device_serial = devices.serial_number
             LEFT JOIN device_templates ON devices.template_id = device_templates.template_id
             LEFT JOIN categories ON device_templates.device_type_id = categories.category_id
         `;
@@ -46,7 +95,7 @@ class SharedPermissionService {
             table: get_table,
             strGetColumn: get_attr,
             queryJoin: query_join,
-            filter: filter,
+            filter: filters,
             idSpecial: "permission_id",
             isDeleteBoolean: true,
         });

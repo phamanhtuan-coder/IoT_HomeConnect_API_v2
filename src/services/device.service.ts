@@ -117,9 +117,12 @@ class DeviceService {
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);
     }
 
-    async getDevicesByAccount(accountId: string): Promise<Device[]> {
+    async getDevicesByAccount(accountId: string, search: string): Promise<Device[]> {
         const devices = await this.prisma.devices.findMany({
-            where: { account_id: accountId, is_deleted: false },
+            where: {
+                account_id: accountId,
+                is_deleted: false,
+            },
             include: {
                 device_templates: {
                     include: {
@@ -135,8 +138,16 @@ class DeviceService {
             },
         });
 
-        return devices.map((device) => ({
-            ...this.mapPrismaDeviceToAuthDevice(device),
+        const searchValue = search?.toLowerCase().trim();
+        const filteredDevices = searchValue
+        ? devices.filter(device =>
+            device.name?.toLowerCase().includes(searchValue) ||
+            device.serial_number?.toLowerCase().includes(searchValue)
+            )
+        : devices;
+
+        return filteredDevices.map((device) => ({
+            ...this.mapPrismaDeviceToAuthDevice(device),    
             device_type_id: device.device_templates?.device_type_id ?? null,
             device_type_name: device.device_templates?.categories?.name ?? null,
             device_template_name: device.device_templates?.name ?? null,
