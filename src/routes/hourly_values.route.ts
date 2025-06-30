@@ -174,7 +174,7 @@ router.get(
  *         name: device_serial
  *         required: true
  *         type: string
- *         description: Số serial c���a thiết bị
+ *         description: Số serial của thiết bị
  *       - in: query
  *         name: from_date
  *         type: string
@@ -257,45 +257,180 @@ router.delete(
  * /api/hourly-values/statistics/{device_serial}:
  *   get:
  *     tags:
- *       - Hourly Values
+ *       - Hourly Value
  *     summary: Lấy thống kê giá trị theo thiết bị
- *     description: |
- *       Lấy thống kê các giá trị theo giờ của một thiết bị
- *       (giá trị trung bình, cao nhất, thấp nhất).
- *       Yêu cầu xác thực (User hoặc Employee Token).
+ *     description: Lấy thống kê tổng hợp các giá trị hourly của một thiết bị
  *     security:
- *       - UserBearer: []
- *       - EmployeeBearer: []
+ *       - Bearer: []
  *     parameters:
  *       - in: path
  *         name: device_serial
  *         required: true
  *         type: string
- *         description: Số serial của thiết bị
+ *         description: Serial number của thiết bị
+ *       - in: query
+ *         name: type
+ *         required: true
+ *         type: string
+ *         enum: [daily, weekly, monthly, yearly, custom]
+ *         description: Loại thống kê theo thời gian
+ *       - in: query
+ *         name: start_time
+ *         type: string
+ *         format: date-time
+ *         description: Thời gian bắt đầu (cho custom)
+ *       - in: query
+ *         name: end_time
+ *         type: string
+ *         format: date-time
+ *         description: Thời gian kết thúc (cho custom)
  *     responses:
  *       200:
- *         description: Trả về thống kê giá trị
- *         schema:
- *           type: object
- *           properties:
- *             avg:
- *               type: object
- *               description: Giá trị trung bình của các thông số
- *             max:
- *               type: object
- *               description: Giá trị cao nhất của các thông số
- *             min:
- *               type: object
- *               description: Giá trị thấp nhất của các thông số
+ *         description: Thành công
  *       401:
- *         description: Token không hợp lệ hoặc đã hết hạn
- *       500:
- *         description: Lỗi server
+ *         description: Chưa xác thực
+ *       403:
+ *         description: Không có quyền truy cập
+ *       404:
+ *         description: Không tìm thấy thiết bị
  */
 router.get(
     '/statistics/:device_serial',
     authMiddleware,
     asyncHandler(hourlyValueController.getStatistics)
+);
+
+/**
+ * Lấy thống kê theo space
+ * @swagger
+ * /api/hourly-values/space/{spaceId}/statistics:
+ *   get:
+ *     tags:
+ *       - Hourly Value
+ *     summary: Lấy thống kê giá trị theo space
+ *     description: Lấy thống kê tổng hợp các giá trị hourly của tất cả thiết bị trong space
+ *     security:
+ *       - Bearer: []
+ *     parameters:
+ *       - in: path
+ *         name: spaceId
+ *         required: true
+ *         type: number
+ *         description: ID của space cần lấy thống kê
+ *       - in: query
+ *         name: type
+ *         required: true
+ *         type: string
+ *         enum: [daily, weekly, monthly, yearly, custom]
+ *         description: Loại thống kê theo thời gian
+ *       - in: query
+ *         name: start_time
+ *         type: string
+ *         format: date-time
+ *         description: Thời gian bắt đầu (cho custom)
+ *       - in: query
+ *         name: end_time
+ *         type: string
+ *         format: date-time
+ *         description: Thời gian kết thúc (cho custom)
+ *     responses:
+ *       200:
+ *         description: Thành công
+ *       401:
+ *         description: Chưa xác thực
+ *       403:
+ *         description: Không có quyền truy cập space
+ *       404:
+ *         description: Không tìm thấy space
+ */
+router.get(
+    '/space/:spaceId/statistics',
+    authMiddleware,
+    asyncHandler(hourlyValueController.getStatisticsBySpace)
+);
+
+/**
+ * Lấy danh sách thiết bị trong space
+ * @swagger
+ * /api/hourly-values/space/{spaceId}/devices:
+ *   get:
+ *     tags:
+ *       - Hourly Value
+ *     summary: Lấy danh sách thiết bị trong space
+ *     description: Lấy danh sách tất cả thiết bị trong space để chọn xem thống kê
+ *     security:
+ *       - Bearer: []
+ *     parameters:
+ *       - in: path
+ *         name: spaceId
+ *         required: true
+ *         type: number
+ *         description: ID của space
+ *     responses:
+ *       200:
+ *         description: Danh sách thiết bị
+ *       401:
+ *         description: Chưa xác thực
+ *       403:
+ *         description: Không có quyền truy cập space
+ *       404:
+ *         description: Không tìm thấy space
+ */
+router.get(
+    '/space/:spaceId/devices',
+    authMiddleware,
+    asyncHandler(hourlyValueController.getDevicesInSpace)
+);
+
+/**
+ * Lấy hourly values theo space
+ * @swagger
+ * /api/hourly-values/space/{spaceId}:
+ *   get:
+ *     tags:
+ *       - Hourly Value
+ *     summary: Lấy hourly values theo space
+ *     description: Lấy danh sách hourly values trong một space
+ *     security:
+ *       - Bearer: []
+ *     parameters:
+ *       - in: path
+ *         name: spaceId
+ *         required: true
+ *         type: number
+ *         description: ID của space
+ *       - in: query
+ *         name: start_time
+ *         type: string
+ *         format: date-time
+ *         description: Thời gian bắt đầu
+ *       - in: query
+ *         name: end_time
+ *         type: string
+ *         format: date-time
+ *         description: Thời gian kết thúc
+ *       - in: query
+ *         name: page
+ *         type: number
+ *         description: Số trang
+ *       - in: query
+ *         name: limit
+ *         type: number
+ *         description: Số item per page
+ *     responses:
+ *       200:
+ *         description: Danh sách hourly values
+ *       401:
+ *         description: Chưa xác thực
+ *       403:
+ *         description: Không có quyền truy cập space
+ *       404:
+ *         description: Không tìm thấy space
+ */
+router.get(
+    '/space/:spaceId',
+    authMiddleware,
+    asyncHandler(hourlyValueController.getHourlyValuesBySpace)
 );
 
 export default router;

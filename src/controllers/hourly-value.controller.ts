@@ -157,27 +157,83 @@ class HourlyValueController {
             );
 
             // Create a chart for visualization
-            const chart = {
-                type: 'line',
-                data: {
-                    labels: stats.map((s) => new Date(s.timestamp).toISOString()),
-                    datasets: Object.keys(stats[0]?.avg_value || {}).map((key) => ({
-                        label: key,
-                        data: stats.map((s) => s.avg_value[key] || null),
-                        borderColor: this.getChartColor(key),
-                        fill: false,
-                    })),
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        x: {type: 'time', time: {unit: type === 'custom' ? 'hour' : type}},
-                        y: {beginAtZero: true},
-                    },
-                },
-            };
+            // const chart = {
+            //     type: 'line',
+            //     data: {
+            //         labels: stats.map((s) => new Date(s.timestamp).toISOString()),
+            //         datasets: Object.keys(stats[0]?.avg_value || {}).map((key) => ({
+            //             label: key,
+            //             data: stats.map((s) => s.avg_value[key] || null),
+            //             borderColor: this.getChartColor(key),
+            //             fill: false,
+            //         })),
+            //     },
+            //     options: {
+            //         responsive: true,
+            //         scales: {
+            //             x: {type: 'time', time: {unit: type === 'custom' ? 'hour' : type}},
+            //             y: {beginAtZero: true},
+            //         },
+            //     },
+            // };
 
-            res.json({stats, chart});
+            res.status(200).json({
+                success: true,
+                data: stats
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Lấy thống kê giá trị theo space
+     * @param req Request Express với space ID và các tham số thống kê trong query
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    getStatisticsBySpace = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { spaceId } = req.params;
+            const { type, start_time, end_time } = req.query;
+            const stats = await this.hourlyValueService.getStatisticsBySpace(
+                parseInt(spaceId as string),
+                accountId,
+                type as 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom',
+                start_time ? new Date(start_time as string) : undefined,
+                end_time ? new Date(end_time as string) : undefined
+            );
+
+            res.status(200).json({
+                success: true,
+                data: stats
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Lấy danh sách thiết bị trong space
+     */
+    getDevicesInSpace = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { spaceId } = req.params;
+            const devices = await this.hourlyValueService.getDevicesInSpace(
+                parseInt(spaceId as string),
+                accountId
+            );
+
+            res.status(200).json({
+                success: true,
+                data: devices
+            });
         } catch (error) {
             next(error);
         }

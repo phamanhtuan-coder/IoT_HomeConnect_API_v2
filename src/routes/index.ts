@@ -135,7 +135,7 @@ import planningRoutes from "./planning.routes";
 import sseRoutes from './sse.routes';
 import productionBatchesRoutes from './production-batches.routes';
 import customerSearchRoutes from './customer-search.routes';
-import hourlyValueRoutes from './hourly_values.routes';
+import hourlyValueRoutes from './hourly_values.route';
 import statisticRoutes from './statistic.routes';
 import doorRoutes from './door.routes';
 
