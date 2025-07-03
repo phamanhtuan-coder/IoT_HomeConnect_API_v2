@@ -3,12 +3,13 @@ import { PrismaClient } from '@prisma/client';
 import { PlanningCreateInput, PlanningApprovalInput, Planning, PlanningStatus, BatchCreateInput } from '../types/planning';
 import { ErrorCodes, throwError } from '../utils/errors';
 import { generatePlanningId, calculatePlanningStatus, generateBatchId, generateDeviceSerialId } from '../utils/helpers';
+import prisma from "../config/database";
 
 export class PlanningService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma
     }
 
     async createPlanning(data: PlanningCreateInput, employeeId: string): Promise<any> {
@@ -462,6 +463,9 @@ export class PlanningService {
                     }
                 }
             });
+        }, {
+            timeout: 30000, // 30 giây
+            maxWait: 10000  // 10 giây
         });
     }
 

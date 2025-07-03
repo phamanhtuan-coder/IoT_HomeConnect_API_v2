@@ -155,7 +155,7 @@ export async function executeSelectData(params: SelectDataParams): Promise<Selec
     `;
 
     console.log('queryGetIdTable', queryGetIdTable)
-
+    
     const idResult = await QueryHelper.queryRaw<Record<string, any>>(queryGetIdTable);
 
     let resultIds;
@@ -185,8 +185,9 @@ export async function executeSelectData(params: SelectDataParams): Promise<Selec
         FROM ${table}
         ${queryJoin || ''}
         WHERE ${whereCondition}
-        ${buildSort}
+        ${buildSort ? buildSort : `ORDER BY ${table}.created_at DESC`}
     `;
+
     console.log('queryPrimary', queryPrimary)
 
     let data = await QueryHelper.queryRaw(queryPrimary);

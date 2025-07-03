@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("AIVEN_URL")
+  url      = env("DATABASE_URL")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -133,7 +133,7 @@ model attribute_group {
   id         Int         @id @default(autoincrement())
   name       String?     @db.VarChar(500)
   created_at DateTime?   @default(now()) @db.Timestamp(0)
-  updated_at DateTime?   @updatedAt @db.Timestamp(0)
+  updated_at DateTime?   @default(dbgenerated("(now())")) @db.Timestamp(0)
   deleted_at DateTime?   @db.Timestamp(0)
   attribute  attribute[]
 }
@@ -287,7 +287,7 @@ model detail_export {
   quantity             Int?
   note                 String?                @db.VarChar(500)
   created_at           DateTime?              @default(now()) @db.Timestamp(0)
-  updated_at           DateTime?              @updatedAt @db.Timestamp(0)
+  updated_at           DateTime?              @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at           DateTime?              @db.Timestamp(0)
   batch_product_detail batch_product_detail[]
   export_warehouse     export_warehouse       @relation(fields: [export_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "detail_export_ibfk_1")
@@ -546,7 +546,7 @@ model import_warehouse {
   note              String?         @db.VarChar(500)
   status            Int?
   created_at        DateTime?       @default(now()) @db.Timestamp(0)
-  updated_at        DateTime?       @updatedAt @db.Timestamp(0)
+  updated_at        DateTime?       @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at        DateTime?       @db.Timestamp(0)
   detail_import     detail_import[]
   employee          employee?       @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "import_warehouse_ibfk_1")
@@ -612,7 +612,7 @@ model order {
   status                              Int?            @default(0) @db.TinyInt
   image_shipped                       String?         @db.MediumText
   created_at                          DateTime?       @default(now()) @db.Timestamp(0)
-  updated_at                          DateTime?       @updatedAt @db.Timestamp(0)
+  updated_at                          DateTime?       @default(dbgenerated("(now())")) @db.Timestamp(0)
   deleted_at                          DateTime?       @db.Timestamp(0)
   detail_export                       detail_export[]
   customer                            customer?       @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_1")
@@ -694,7 +694,7 @@ model permission {
   type            String?           @db.VarChar(500)
   show_in_menu    String?           @db.VarChar(500)
   created_at      DateTime?         @default(now()) @db.Timestamp(0)
-  updated_at      DateTime?         @updatedAt @db.Timestamp(0)
+  updated_at      DateTime?         @default(dbgenerated("(now())")) @db.Timestamp(0)
   deleted_at      DateTime?         @db.Timestamp(0)
   permission_role permission_role[]
 }
@@ -704,7 +704,7 @@ model permission_role {
   role_id       Int
   permission_id Int
   created_at    DateTime?  @default(now()) @db.Timestamp(0)
-  updated_at    DateTime?  @updatedAt @db.Timestamp(0)
+  updated_at    DateTime?  @default(dbgenerated("(now())")) @db.Timestamp(0)
   deleted_at    DateTime?  @db.Timestamp(0)
   permission    permission @relation(fields: [permission_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "permission_role_ibfk_1")
   role          role       @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "permission_role_ibfk_2")
@@ -728,7 +728,7 @@ model product {
   is_hide             Boolean?
   status              Int?                  @db.TinyInt
   created_at          DateTime?             @default(now()) @db.Timestamp(0)
-  updated_at          DateTime?             @updatedAt @db.Timestamp(0)
+  updated_at          DateTime?             @default(dbgenerated("(now())")) @db.Timestamp(0)
   deleted_at          DateTime?             @db.Timestamp(0)
   attribute_product   attribute_product[]
   blog                blog[]
@@ -829,7 +829,7 @@ model role {
   id              Int               @id @default(autoincrement())
   name            String?           @db.VarChar(500)
   created_at      DateTime?         @default(now()) @db.Timestamp(0)
-  updated_at      DateTime?         @updatedAt @db.Timestamp(0)
+  updated_at      DateTime?         @default(dbgenerated("(now())")) @db.Timestamp(0)
   deleted_at      DateTime?         @db.Timestamp(0)
   account         account[]
   notification    notification[]
@@ -1006,7 +1006,7 @@ model warehouse {
   name             String?            @db.VarChar(500)
   address          String?            @db.VarChar(500)
   created_at       DateTime?          @default(now()) @db.Timestamp(0)
-  updated_at       DateTime?          @updatedAt @db.Timestamp(0)
+  updated_at       DateTime?          @db.DateTime(0)
   deleted_at       DateTime?          @db.Timestamp(0)
   province         Int?
   district         Int?

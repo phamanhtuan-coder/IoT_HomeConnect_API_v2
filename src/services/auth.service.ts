@@ -19,12 +19,12 @@ import redisClient, { blacklistToken, isTokenBlacklisted } from '../utils/redis'
 import { ERROR_CODES } from '../contants/error';
 import { STATUS_CODE } from '../contants/status';
 import NotificationService from "./notification.service";
-
+import prisma from "../config/database";
 class AuthService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma;
     }
 
     async loginUser({
@@ -65,8 +65,9 @@ class AuthService {
 
         const response: TokenResponse = {
             accessToken,
+            customer_id: account!.customer_id || undefined,
+            username: account!.username,
             userId: account!.account_id
-
         };
 
         if (rememberMe) {
@@ -512,10 +513,12 @@ class AuthService {
         }
 
         try {
+            const { account_id, ...sanitizedData } = updateData;
+
             const customer = await this.prisma.customer.update({
                 where: { id: account?.customer?.id },
                 data: {
-                    ...updateData,
+                    ...sanitizedData,
                     updated_at: new Date()
                 }
             });
@@ -573,6 +576,7 @@ class AuthService {
 
     async getMeEmployee(userId: string) {
         try {
+            console.log('userId', userId);
             const user_employee = await this.prisma.account.findFirst({
                 where: {
                     account_id: userId,
@@ -599,7 +603,7 @@ class AuthService {
                     }
                 }
             })
-    
+            console.log('user_employee', user_employee);
             if (!user_employee?.employee) {
                 throwError(ErrorCodes.BAD_REQUEST, 'Account invalid');
             }

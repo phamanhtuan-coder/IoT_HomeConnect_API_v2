@@ -169,7 +169,7 @@ router.delete(
  *         description: Lỗi server
  */
 router.get(
-    '/:id',
+    '/detail/:id',
     authMiddleware,
     validateMiddleware(notificationIdSchema),
     asyncHandler(notificationController.getNotificationById)
@@ -263,9 +263,8 @@ router.get(
  *         description: Lỗi server
  */
 router.get(
-    '/',
+    '/admin',
     authMiddleware,
-    roleMiddleware,
     validateMiddleware(notificationFilterSchema),
     asyncHandler(notificationController.getAllNotifications)
 );

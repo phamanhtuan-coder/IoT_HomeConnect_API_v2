@@ -2,6 +2,8 @@ import { Server } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { Redis } from 'ioredis';
 import { Server as HttpServer } from 'http';
+import { setupDeviceSocket } from '../sockets/device.socket';
+import { setupDoorSocket } from '../sockets/door.socket';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -11,7 +13,7 @@ export const initializeSocket = (server: HttpServer): Server => {
             origin: '*', // Adjust for production
             methods: ['GET', 'POST'],
         },
-        path: '/device.ts',
+        path: '/socket.io',
     });
 
     // Initialize Redis clients
@@ -20,6 +22,12 @@ export const initializeSocket = (server: HttpServer): Server => {
 
     // Set up Redis adapter
     io.adapter(createAdapter(pubClient, subClient));
+
+    // Initialize socket handlers
+    setupDeviceSocket(io);
+    setupDoorSocket(io);
+
+    console.log('🔌 WebSocket server initialized with Redis adapter');
 
     return io;
 };

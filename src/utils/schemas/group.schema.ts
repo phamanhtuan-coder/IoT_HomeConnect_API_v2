@@ -26,7 +26,7 @@ export const groupIdSchema = z.object({
 export const userGroupSchema = z.object({
     body: z.object({
         groupId: z.number().positive('Group ID must be a positive number'),
-        accountId: z.string().min(1, 'Account ID is required'),
+        username: z.string().min(1, 'Username is required'),
         role: z.enum([GroupRole.OWNER, GroupRole.VICE, GroupRole.ADMIN, GroupRole.MEMBER]).optional().default(GroupRole.MEMBER),
     }),
 });

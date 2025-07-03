@@ -33,6 +33,7 @@ class TicketController {
       });
       res.status(201).json(ticket);
     } catch (error) {
+      console.log(error)
       next(error);
     }
   };

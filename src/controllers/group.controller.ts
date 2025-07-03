@@ -96,7 +96,7 @@ class GroupController {
      * Thêm người dùng vào nhóm
      */
     addUserToGroup = async (req: Request, res: Response, next: NextFunction) => {
-        const { groupId, accountId, role } = req.body;
+        const { groupId, username, role } = req.body;
 
         if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
             throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can add users');
@@ -108,7 +108,7 @@ class GroupController {
         }
 
         try {
-            const userGroup = await this.groupService.addUserToGroup(groupId, accountId, role);
+            const userGroup = await this.groupService.addUserToGroup(groupId, username, role);
             res.status(201).json(userGroup);
         } catch (error) {
             next(error);
@@ -184,7 +184,9 @@ class GroupController {
                 throwError(ErrorCodes.BAD_REQUEST, 'Valid user ID is required');
             }
 
-            const groups = await this.groupService.getGroupsByUsername(username!, userId);
+            const { search } = req.query as { search: string };
+
+            const groups = await this.groupService.getGroupsByUsername(username!, userId, search);
             res.json({
                 success: true,
                 data: groups

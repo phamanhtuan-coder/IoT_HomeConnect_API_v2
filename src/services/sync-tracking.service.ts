@@ -1,11 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { throwError, ErrorCodes } from '../utils/errors';
+import prisma from "../config/database";
 
 export class SyncTrackingService {
     private prisma: PrismaClient;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma
     }
 
     async recordLogin(accountId: string, userDeviceId:string, ipAddress: string) {

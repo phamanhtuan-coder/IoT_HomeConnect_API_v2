@@ -2,6 +2,7 @@
 import { Server } from 'socket.io';
 import { setupDeviceSocket } from './device.socket';
 import { setupCameraSocket } from './camera.socket';
+import {setupDoorSocket} from "./door.socket";
 
 export const initSocket = (io: Server) => {
     console.log('🔧 Initializing Socket.IO server...');
@@ -27,6 +28,7 @@ export const initSocket = (io: Server) => {
     });
 
     setupDeviceSocket(io);
+    setupDoorSocket(io);
     setupCameraSocket(io);
     console.log('✅ Socket.IO namespaces initialized: /device, /camera, /client');
 };

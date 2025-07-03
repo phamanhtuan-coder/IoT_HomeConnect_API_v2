@@ -5,14 +5,14 @@ import  NotificationService from "./notification.service";
 import {Device} from "../types/device";
 import {Alert} from "../types/alert";
 import {NotificationType} from "../types/notification";
-
+import prisma from "../config/database";
 
 class AlertService {
     private prisma: PrismaClient;
     private notificationService: NotificationService;
 
     constructor() {
-        this.prisma = new PrismaClient();
+        this.prisma = prisma;
         this.notificationService = new NotificationService();
     }
 

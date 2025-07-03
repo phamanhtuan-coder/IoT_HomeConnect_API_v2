@@ -1,4 +1,5 @@
 // src/server.ts
+import 'dotenv/config';
 import { initApp } from './app';
 import { initSocket } from './sockets';
 import { appConfig } from './config/app';

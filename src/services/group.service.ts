@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { ErrorCodes, throwError } from '../utils/errors';
 import DeviceService from './device.service';
 import {Group, GroupRole, UserGroup, GroupMember, GroupWithRole} from "../types/group";
+import prisma from "../config/database";
 
 class GroupService {
     private prisma: PrismaClient;
@@ -124,29 +125,29 @@ class GroupService {
         });
     }
 
-    async addUserToGroup(groupId: number, accountId: string, role: GroupRole): Promise<UserGroup> {
+    async addUserToGroup(groupId: number, username: string, role: GroupRole): Promise<UserGroup> {
         if (role === GroupRole.OWNER) {
             throwError(ErrorCodes.FORBIDDEN, 'Cannot add another owner to the group');
         }
 
-        const group = await this.prisma.groups.findUnique({
+        const group = await this.prisma.groups.findFirst({
             where: { group_id: groupId, is_deleted: false },
         });
         if (!group) throwError(ErrorCodes.NOT_FOUND, 'Group not found');
 
-        const account = await this.prisma.account.findUnique({
-            where: { account_id: accountId },
+        const account = await this.prisma.account.findFirst({
+            where: { username: username },
         });
         if (!account) throwError(ErrorCodes.NOT_FOUND, 'Account not found');
 
         const existingUserGroup = await this.prisma.user_groups.findFirst({
-            where: { group_id: groupId, account_id: accountId, is_deleted: false },
+            where: { group_id: groupId, account_id: account?.account_id, is_deleted: false },
         });
         if (existingUserGroup) throwError(ErrorCodes.CONFLICT, 'User is already a member of this group');
 
         const userGroup = await this.prisma.user_groups.create({
             data: {
-                account_id: accountId,
+                account_id: account?.account_id,
                 group_id: groupId,
                 role,
             },
@@ -232,7 +233,7 @@ class GroupService {
         return userGroup?.role as GroupRole || null;
     }
 
-    async getGroupsByUsername(username: string, userId: string): Promise<Group[]> {
+    async getGroupsByUsername(username: string, userId: string, search: string): Promise<Group[]> {
         const account = await this.prisma.account.findFirst({
             where: {
                 username: username,
@@ -248,7 +249,10 @@ class GroupService {
         const userGroups = await this.prisma.user_groups.findMany({
             where: {
                 account_id: userId,
-                is_deleted: false
+                is_deleted: false,
+                groups: {
+                    is_deleted: false,
+                }
             },
             include: {
                 groups: true
@@ -258,7 +262,10 @@ class GroupService {
         if (!userGroups.length) return [];
 
         return userGroups
-            .filter(ug => ug.groups && !ug.groups.is_deleted)
+            .filter(ug => ug.groups
+                && !ug.groups.is_deleted
+                && (search === undefined || ug.groups.group_name?.toLowerCase().includes(search.toLowerCase()))
+            )
             .map(ug => ({
                 group_id: ug.groups!.group_id,
                 group_name: ug.groups!.group_name,
