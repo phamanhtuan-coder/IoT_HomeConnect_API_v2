@@ -3,7 +3,7 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import { Redis } from 'ioredis';
 import { Server as HttpServer } from 'http';
 import { setupDeviceSocket } from '../sockets/device.socket';
-import { setupDoorSocket } from '../sockets/door.socket';
+import { setupDoorSocket } from '../sockets/hub.socket';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
