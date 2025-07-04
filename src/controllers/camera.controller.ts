@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import CameraService from '../services/camera.service';
+import {CameraService}from '../services/camera.service';
 import { ErrorCodes, throwError } from '../utils/errors';
 import axios from 'axios';
-import { PermissionType } from '../types/share-request';
 
 class CameraController {
     private cameraService: CameraService;
@@ -44,11 +43,10 @@ class CameraController {
                 throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
             }
 
-            await this.cameraService.checkCameraAccess(serialNumber, accountId, PermissionType.CONTROL);
+            await this.cameraService.checkCameraAccess(serialNumber, accountId);
 
             // Send capture command to ESP32-CAM
             const commandResponse = await this.cameraService.sendCameraCommand(serialNumber, {
-                serial_number: serialNumber,
                 action: 'capture',
                 params: { saveToSD, quality }
             });
@@ -57,7 +55,7 @@ class CameraController {
                 throwError(ErrorCodes.INTERNAL_SERVER_ERROR, "Failed to capture photo");
             }
 
-            // **FIXED: Handle the response properly based on the actual result structure**
+            // Handle the response properly based on the actual result structure
             const result = commandResponse.result || {};
             const filename = result.filename || `photo_${Date.now()}.jpg`;
             const size = result.size || 0;
@@ -85,10 +83,9 @@ class CameraController {
                 throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
             }
 
-            await this.cameraService.checkCameraAccess(serialNumber, accountId, PermissionType.CONTROL);
+            await this.cameraService.checkCameraAccess(serialNumber, accountId);
 
             const commandResponse = await this.cameraService.sendCameraCommand(serialNumber, {
-                serial_number: serialNumber,
                 action,
                 params
             });
@@ -99,7 +96,7 @@ class CameraController {
         }
     };
 
-    // Get camera status
+    // Get camera status - Updated to use existing getCameraInfo method
     getCameraStatus = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { serialNumber } = req.params;
@@ -111,18 +108,20 @@ class CameraController {
 
             await this.cameraService.checkCameraAccess(serialNumber, accountId);
 
-            const statusResponse = await this.cameraService.getCameraStatus(serialNumber);
+            const cameraInfo = await this.cameraService.getCameraInfo(serialNumber);
 
             res.json({
-                success: statusResponse.success,
-                status: statusResponse.status
+                success: true,
+                status: cameraInfo.status,
+                ip_address: cameraInfo.ip_address,
+                last_seen: cameraInfo.attribute?.last_seen
             });
         } catch (error) {
             next(error);
         }
     };
 
-    // Update camera configuration
+    // Update camera configuration - Simplified to use sendCameraCommand
     updateCameraConfig = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { serialNumber } = req.params;
@@ -133,24 +132,24 @@ class CameraController {
                 throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
             }
 
-            await this.cameraService.checkCameraAccess(serialNumber, accountId, PermissionType.CONTROL);
+            await this.cameraService.checkCameraAccess(serialNumber, accountId);
 
-            const result = await this.cameraService.updateCameraConfig(serialNumber, {
-                serial_number: serialNumber,
-                ...config
+            const result = await this.cameraService.sendCameraCommand(serialNumber, {
+                action: 'updateConfig',
+                params: config
             });
 
             res.json({
                 success: result.success,
-                message: result.message,
-                config: result.config
+                message: result.success ? 'Configuration updated successfully' : 'Failed to update configuration',
+                config: result.result
             });
         } catch (error) {
             next(error);
         }
     };
 
-    // Get list of saved photos
+    // Get list of saved photos - Simplified to use sendCameraCommand
     getPhotosList = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { serialNumber } = req.params;
@@ -163,11 +162,10 @@ class CameraController {
 
             await this.cameraService.checkCameraAccess(serialNumber, accountId);
 
-            const photosResponse = await this.cameraService.getPhotosList(
-                serialNumber,
-                Number(limit),
-                Number(offset)
-            );
+            const photosResponse = await this.cameraService.sendCameraCommand(serialNumber, {
+                action: 'getPhotosList',
+                params: { limit: Number(limit), offset: Number(offset) }
+            });
 
             res.json(photosResponse);
         } catch (error) {
@@ -175,9 +173,7 @@ class CameraController {
         }
     };
 
-    // Updated camera.controller.ts - Fixed photo download to work with new ESP32 routes
-
-// Download specific photo - FIXED to work with new ESP32 route structure
+    // Download specific photo
     downloadPhoto = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { serialNumber, filename } = req.params;
@@ -194,7 +190,7 @@ class CameraController {
                 // Get camera info first
                 const camera = await this.cameraService.getCameraInfo(serialNumber);
 
-                // **FIXED: Use new ESP32 route structure with query parameters**
+                // Use ESP32 route structure with query parameters
                 const photoUrl = thumbnail === 'true'
                     ? `http://${camera.ip_address}/thumbnail?filename=${filename}`
                     : `http://${camera.ip_address}/photo?filename=${filename}`;
@@ -216,7 +212,7 @@ class CameraController {
                     'Content-Disposition': thumbnail === 'true'
                         ? `inline; filename="thumb_${filename}"`
                         : `attachment; filename="${filename}"`,
-                    'Cache-Control': 'public, max-age=86400' // Cache for 1 day
+                    'Cache-Control': 'public, max-age=86400'
                 });
 
                 // Pipe the image data
@@ -233,7 +229,6 @@ class CameraController {
             } catch (downloadError: any) {
                 console.error('Error downloading photo:', downloadError);
 
-                // Better error handling
                 if (downloadError.code === 'ECONNREFUSED') {
                     throwError(ErrorCodes.SERVICE_UNAVAILABLE, 'Camera is offline or unreachable');
                 } else if (downloadError.response?.status === 404) {
@@ -247,7 +242,7 @@ class CameraController {
         }
     };
 
-    // **NEW: Get camera capabilities**
+    // Get camera capabilities
     getCameraCapabilities = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { serialNumber } = req.params;
@@ -270,7 +265,7 @@ class CameraController {
         }
     };
 
-    // **NEW: Get camera information**
+    // Get camera information
     getCameraInfo = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { serialNumber } = req.params;
@@ -291,8 +286,9 @@ class CameraController {
                     serialNumber: cameraInfo.serialNumber,
                     status: cameraInfo.status,
                     ip_address: cameraInfo.ip_address,
+                    public_url: cameraInfo.public_url,
                     last_seen: cameraInfo.attribute?.last_seen,
-                    capabilities: capabilities.merged_capabilities?.capabilities,
+                    capabilities: capabilities.merged_capabilities,
                     account_id: cameraInfo.account_id
                 }
             });

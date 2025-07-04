@@ -6,7 +6,9 @@ import {
     cameraStreamSchema,
     capturePhotoSchema,
     cameraControlSchema,
-    cameraConfigSchema
+    cameraConfigSchema,
+    cameraParamSchema,
+    downloadPhotoSchema
 } from '../utils/schemas/camera.schema';
 
 const router = Router();
@@ -20,10 +22,11 @@ router.get(
     cameraController.getStreamUrl
 );
 
-// **NEW: Stream proxy endpoint for MJPEG streaming**
+// Stream proxy endpoint for MJPEG streaming
 router.get(
     '/proxy/:serialNumber',
     authMiddleware,
+    validateMiddleware(cameraStreamSchema),
     cameraController.proxyStream
 );
 
@@ -47,6 +50,7 @@ router.post(
 router.get(
     '/status/:serialNumber',
     authMiddleware,
+    validateMiddleware(cameraParamSchema),
     cameraController.getCameraStatus
 );
 
@@ -62,6 +66,7 @@ router.put(
 router.get(
     '/photos/:serialNumber',
     authMiddleware,
+    validateMiddleware(cameraParamSchema),
     cameraController.getPhotosList
 );
 
@@ -69,20 +74,23 @@ router.get(
 router.get(
     '/photos/:serialNumber/:filename',
     authMiddleware,
+    validateMiddleware(downloadPhotoSchema),
     cameraController.downloadPhoto
 );
 
-// **NEW: Get camera capabilities**
+// Get camera capabilities
 router.get(
     '/capabilities/:serialNumber',
     authMiddleware,
+    validateMiddleware(cameraParamSchema),
     cameraController.getCameraCapabilities
 );
 
-// **NEW: Get camera info endpoint**
+// Get camera info endpoint
 router.get(
     '/info/:serialNumber',
     authMiddleware,
+    validateMiddleware(cameraParamSchema),
     cameraController.getCameraInfo
 );
 

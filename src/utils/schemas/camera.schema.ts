@@ -14,11 +14,13 @@ export const cameraStreamSchema = z.object({
 });
 
 export const capturePhotoSchema = z.object({
-    body: z.object({
-        serial_number: z.string({
+    params: z.object({
+        serialNumber: z.string({
             required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
             invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
         }).min(1, `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`),
+    }),
+    body: z.object({
         saveToSD: z.boolean().optional().default(true),
         quality: z.number()
             .min(5, `[${ERROR_CODES.DEVICE_ATTRIBUTE_INVALID}]Quality must be between 5 and 63`)
@@ -29,32 +31,29 @@ export const capturePhotoSchema = z.object({
 });
 
 export const cameraControlSchema = z.object({
-    body: z.object({
-        serial_number: z.string({
+    params: z.object({
+        serialNumber: z.string({
             required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
             invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
         }).min(1, `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`),
-        action: z.enum(['startStream', 'stopStream', 'toggleMotion', 'capture'], {
+    }),
+    body: z.object({
+        action: z.string({
             required_error: `[${ERROR_CODES.DEVICE_ATTRIBUTE_INVALID}]Action is required`,
             invalid_type_error: `[${ERROR_CODES.DEVICE_ATTRIBUTE_INVALID}]Invalid action`
-        }),
-        params: z.object({
-            enabled: z.boolean().optional(), // For toggleMotion
-            saveToSD: z.boolean().optional(), // For capture
-            quality: z.number()
-                .min(5, `[${ERROR_CODES.DEVICE_ATTRIBUTE_INVALID}]Quality must be between 5 and 63`)
-                .max(63, `[${ERROR_CODES.DEVICE_ATTRIBUTE_INVALID}]Quality must be between 5 and 63`)
-                .optional(), // For capture
-        }).optional(),
+        }).min(1),
+        params: z.any().optional(), // Allow any params since they vary by action
     }),
 });
 
 export const cameraConfigSchema = z.object({
-    body: z.object({
-        serial_number: z.string({
+    params: z.object({
+        serialNumber: z.string({
             required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
             invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
         }).min(1, `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`),
+    }),
+    body: z.object({
         resolution: z.enum(['QVGA', 'CIF', 'VGA', 'SVGA', 'XGA', 'SXGA', 'UXGA'], {
             errorMap: () => ({
                 message: `[${ERROR_CODES.DEVICE_ATTRIBUTE_INVALID}]Invalid resolution`
@@ -74,9 +73,34 @@ export const cameraConfigSchema = z.object({
             .max(64, `[${ERROR_CODES.DEVICE_WIFI_PASSWORD_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_WIFI_PASSWORD_INVALID]}`)
             .optional(),
     }).refine(
-        (data) => Object.keys(data).length > 1, // Ensure at least one config field besides serial_number
+        (data) => Object.keys(data).length > 0, // Ensure at least one config field
         `[${ERROR_CODES.DEVICE_ATTRIBUTE_INVALID}]At least one configuration parameter is required`
     ),
+});
+
+export const cameraParamSchema = z.object({
+    params: z.object({
+        serialNumber: z.string({
+            required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
+        }).min(1, `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`),
+    }),
+});
+
+export const downloadPhotoSchema = z.object({
+    params: z.object({
+        serialNumber: z.string({
+            required_error: `[${ERROR_CODES.DEVICE_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_REQUIRED]}`,
+            invalid_type_error: `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`
+        }).min(1, `[${ERROR_CODES.DEVICE_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.DEVICE_SERIAL_INVALID]}`),
+        filename: z.string({
+            required_error: `[${ERROR_CODES.DEVICE_ATTRIBUTE_INVALID}]Filename is required`,
+            invalid_type_error: `[${ERROR_CODES.DEVICE_ATTRIBUTE_INVALID}]Invalid filename`
+        }).min(1, `[${ERROR_CODES.DEVICE_ATTRIBUTE_INVALID}]Filename cannot be empty`),
+    }),
+    query: z.object({
+        thumbnail: z.string().optional(),
+    }),
 });
 
 export type CameraStreamInput = z.infer<typeof cameraStreamSchema>;
