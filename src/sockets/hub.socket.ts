@@ -1,14 +1,15 @@
-// src/sockets/hub.socket.ts - REFACTORED UNIFIED HUB SYSTEM
+// src/sockets/hub.socket.ts - UPDATED WITH ARDUINO UNO SYSTEM
 import { Server, Socket } from 'socket.io';
 import prisma from '../config/database';
 import { DoorService } from '../services/door.service';
 
-// Import handlers
+// Import handlers - UPDATED
 import {
     setupArduinoMegaHandlers,
     setupDoorHubHandlers,
     setupESP01EventHandlers,
-    setupDoorDeviceHandlers
+    setupDoorDeviceHandlers,
+    setupArduinoUnoDoorHandlers  // ✅ NEW: Arduino Uno system
 } from './handlers/door.handlers';
 
 import {
@@ -19,7 +20,7 @@ import {
 const doorService = new DoorService();
 
 /**
- * Detect device type with enhanced ESP-01 safety + Garden System support
+ * Detect device type with Arduino Uno system support
  */
 const detectDeviceType = (socket: Socket): {
     isESP8266: boolean;
@@ -27,6 +28,7 @@ const detectDeviceType = (socket: Socket): {
     isESP01: boolean;
     isGardenSystem: boolean;
     isArduinoMega: boolean;
+    isArduinoUnoSystem: boolean;  // ✅ NEW
     deviceType: string
 } => {
     const userAgent = socket.handshake.headers['user-agent'] || '';
@@ -58,9 +60,18 @@ const detectDeviceType = (socket: Socket): {
         query.device_type === 'mega_hub' ||
         query.hub_type === 'arduino_mega';
 
+    // ✅ NEW: Arduino Uno System Detection
+    const isArduinoUnoSystem = userAgent.includes('ESP-Master-Uno') ||
+        userAgent.includes('ESP8266-UnoSystem') ||
+        query.uno_system === 'true' ||
+        query.device_type === 'esp_master_uno' ||
+        query.system_type === 'uno_door';
+
     let deviceType = 'Unknown';
     if (isArduinoMega) {
         deviceType = 'Arduino Mega Hub';
+    } else if (isArduinoUnoSystem) {
+        deviceType = 'ESP Master Board (Uno System)';  // ✅ NEW
     } else if (isGateway) {
         deviceType = 'ESP Gateway';
     } else if (isGardenSystem) {
@@ -75,13 +86,13 @@ const detectDeviceType = (socket: Socket): {
         deviceType = 'ESP8266 Direct';
     }
 
-    return { isESP8266, isGateway, isESP01, isGardenSystem, isArduinoMega, deviceType };
+    return { isESP8266, isGateway, isESP01, isGardenSystem, isArduinoMega, isArduinoUnoSystem, deviceType };
 };
 
 export const setupHubSocket = (io: Server) => {
-    console.log('[HUB] Initializing Unified Hub Socket with handlers...');
+    console.log('[HUB] Initializing Unified Hub Socket with Arduino Uno support...');
 
-    // Enhanced connection handling with Garden System + Door System
+    // Enhanced connection handling with Arduino Uno System
     io.on('connection', async (socket: Socket) => {
         const {
             serialNumber,
@@ -91,7 +102,8 @@ export const setupHubSocket = (io: Server) => {
             hub_managed,
             system_type,
             device_type,
-            hub_type
+            hub_type,
+            uno_system  // ✅ NEW
         } = socket.handshake.query as {
             serialNumber?: string;
             isIoTDevice?: string;
@@ -101,12 +113,13 @@ export const setupHubSocket = (io: Server) => {
             system_type?: string;
             device_type?: string;
             hub_type?: string;
+            uno_system?: string;  // ✅ NEW
         };
 
-        const { isESP8266, isGateway, isESP01, isGardenSystem, isArduinoMega, deviceType } = detectDeviceType(socket);
+        const { isESP8266, isGateway, isESP01, isGardenSystem, isArduinoMega, isArduinoUnoSystem, deviceType } = detectDeviceType(socket);
 
-        // ✅ HANDLE ALL ESP/ARDUINO DEVICES with unified approach
-        if ((isESP8266 || isGateway || isESP01 || isGardenSystem || isArduinoMega) && serialNumber && isIoTDevice === 'true' && !accountId) {
+        // ✅ HANDLE ALL ESP/ARDUINO DEVICES including Arduino Uno System
+        if ((isESP8266 || isGateway || isESP01 || isGardenSystem || isArduinoMega || isArduinoUnoSystem) && serialNumber && isIoTDevice === 'true' && !accountId) {
             console.log(`[HUB] ${deviceType} Device detected - Socket ID: ${socket.id}`);
             console.log(`[HUB] ${deviceType} params:`, {
                 serialNumber,
@@ -115,10 +128,107 @@ export const setupHubSocket = (io: Server) => {
                 hub_managed,
                 system_type,
                 device_type,
-                hub_type
+                hub_type,
+                uno_system  // ✅ NEW
             });
 
             try {
+                // ✅ NEW: ARDUINO UNO DOOR SYSTEM
+                if (isArduinoUnoSystem || uno_system === 'true') {
+                    console.log(`[UNO-SYSTEM] ${serialNumber} connecting as Arduino Uno Door System`);
+
+                    const device = await Promise.race([
+                        prisma.devices.findFirst({
+                            where: { serial_number: serialNumber, is_deleted: false },
+                        }),
+                        new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error('Database timeout')), 5000)
+                        )
+                    ]).catch(err => {
+                        console.error(`[UNO-SYSTEM] Database error for ${serialNumber}:`, err);
+                        throw new Error(`Database operation failed: ${err.message}`);
+                    });
+
+                    if (!device) {
+                        console.error(`[UNO-SYSTEM] ESP Master Board ${serialNumber} not found in database`);
+                        socket.emit('connection_error', {
+                            code: 'DEVICE_NOT_FOUND',
+                            message: 'ESP Master Board not registered',
+                            uno_system: true
+                        });
+                        setTimeout(() => socket.disconnect(true), 1000);
+                        return;
+                    }
+
+                    console.log(`[UNO-SYSTEM] ESP Master Board ${serialNumber} found, account: ${(device as any).account_id}`);
+
+                    socket.data = {
+                        serialNumber,
+                        isIoTDevice: true,
+                        isESP8266: true,
+                        isGateway: false,
+                        isArduinoUnoSystem: true,
+                        deviceType: 'ESP Master Board (Uno System)',
+                        systemType: 'door',
+                        uno_system: true,
+                        servo_count: 6,
+                        connectedAt: new Date()
+                    };
+
+                    socket.join(`door:${serialNumber}`);
+                    socket.join(`device:${serialNumber}`);
+                    socket.join(`uno-system:${serialNumber}`);
+                    console.log(`[UNO-SYSTEM] ${serialNumber} joined Arduino Uno system rooms`);
+
+                    // Update database with Arduino Uno system metadata
+                    const updateData = {
+                        updated_at: new Date(),
+                        runtime_capabilities: {
+                            ...(device as any).runtime_capabilities,
+                            last_socket_connection: new Date().toISOString(),
+                            connection_type: 'uno_system',
+                            socket_connected: true,
+                            device_type: 'ESP Master Board (Uno System)',
+                            uno_system: true,
+                            servo_count: 6,
+                            arduino_uno_managed: true
+                        }
+                    };
+
+                    prisma.devices.update({
+                        where: { serial_number: serialNumber },
+                        data: updateData
+                    }).catch(err => {
+                        console.error(`[UNO-SYSTEM] Metadata update failed for ${serialNumber}:`, err);
+                    });
+
+                    setTimeout(() => {
+                        try {
+                            socket.emit('connection_welcome', {
+                                status: 'connected',
+                                namespace: 'uno-door-system',
+                                serialNumber,
+                                deviceType: 'ESP Master Board (Uno System)',
+                                link_status: (device as any).link_status,
+                                uno_system: true,
+                                servo_count: 6,
+                                arduino_uno_managed: true,
+                                safety_enabled: true,
+                                timestamp: new Date().toISOString()
+                            });
+                            console.log(`[UNO-SYSTEM] Welcome sent to ESP Master Board ${serialNumber}`);
+                        } catch (error) {
+                            console.error(`[UNO-SYSTEM] Welcome failed for ${serialNumber}:`, error);
+                        }
+                    }, 2000);
+
+                    // Setup Arduino Uno door system handlers
+                    setupArduinoUnoDoorHandlers(socket, io, serialNumber, device as any);
+
+                    console.log(`[UNO-SYSTEM] ESP Master Board ${serialNumber} fully connected to Arduino Uno system`);
+                    return;
+                }
+
                 // ✅ ARDUINO MEGA HUB: Central controller for all systems
                 if (isArduinoMega || hub_type === 'arduino_mega') {
                     console.log(`[MEGA-HUB] ${serialNumber} connecting as Arduino Mega Central Hub`);
@@ -376,6 +486,7 @@ export const setupHubSocket = (io: Server) => {
                         message: (error as Error)?.message || 'Setup failed',
                         deviceType,
                         esp01_safe: true,
+                        uno_system: isArduinoUnoSystem,  // ✅ NEW
                         timestamp: new Date().toISOString()
                     });
                 } catch (emitError) {
@@ -389,14 +500,14 @@ export const setupHubSocket = (io: Server) => {
         }
     });
 
-    // ============= CLIENT NAMESPACE WITH UNIFIED COMMAND HANDLING =============
+    // ============= CLIENT NAMESPACE WITH ARDUINO UNO SUPPORT =============
     const clientNamespace = io.of('/client');
 
     clientNamespace.on('connection', async (socket: Socket) => {
         const { serialNumber, accountId, systemType } = socket.handshake.query as {
             serialNumber?: string;
             accountId?: string;
-            systemType?: string; // 'door', 'garden', 'central'
+            systemType?: string; // 'door', 'garden', 'central', 'uno_door'  ✅ NEW
         };
 
         if (serialNumber && accountId) {
@@ -407,11 +518,14 @@ export const setupHubSocket = (io: Server) => {
                 socket.join(`garden:${serialNumber}`);
             } else if (systemType === 'central') {
                 socket.join(`mega-hub:${serialNumber}`);
+            } else if (systemType === 'uno_door') {  // ✅ NEW
+                socket.join(`door:${serialNumber}`);
+                socket.join(`uno-system:${serialNumber}`);
             } else {
                 socket.join(`door:${serialNumber}`); // Default for backward compatibility
             }
 
-            // ✅ DOOR COMMAND ROUTING: Match exact format ESP Socket Hub expects
+            // ✅ ENHANCED DOOR COMMAND ROUTING with Arduino Uno support
             socket.on('device_command', (commandData) => {
                 try {
                     console.log(`[CMD] Unified command from client for ${serialNumber}:`, JSON.stringify(commandData, null, 2));
@@ -421,7 +535,8 @@ export const setupHubSocket = (io: Server) => {
                         serialNumber: serialNumber,
                         fromClient: accountId,
                         systemType: systemType || 'door',
-                        esp01_safe: true, // ESP-01 compatibility flag như ESP code expects
+                        uno_safe: systemType === 'uno_door', // ✅ NEW: Arduino Uno compatibility flag
+                        esp01_safe: true, // ESP-01 compatibility flag
                         state: commandData.state || {},
                         timestamp: new Date().toISOString()
                     };
@@ -438,8 +553,13 @@ export const setupHubSocket = (io: Server) => {
                         // Central hub commands (Arduino Mega)
                         io.to(`mega-hub:${serialNumber}`).emit('command', enhancedCommand);
 
+                    } else if (systemType === 'uno_door') {  // ✅ NEW
+                        // Arduino Uno door system commands
+                        io.to(`device:${serialNumber}`).emit('command', enhancedCommand);
+                        io.to(`uno-system:${serialNumber}`).emit('command', enhancedCommand);
+
                     } else {
-                        // Door system commands - EXACT format ESP Socket Hub expects
+                        // Legacy door system commands
                         io.to(`device:${serialNumber}`).emit('command', enhancedCommand);
                         io.to(`hub:${serialNumber}`).emit('command', enhancedCommand);
                     }
@@ -451,6 +571,7 @@ export const setupHubSocket = (io: Server) => {
                         systemType: systemType || 'door',
                         command: enhancedCommand,
                         esp01_compatible: true,
+                        uno_compatible: systemType === 'uno_door',  // ✅ NEW
                         timestamp: new Date().toISOString()
                     });
 
@@ -468,26 +589,26 @@ export const setupHubSocket = (io: Server) => {
                 }
             });
 
-            // ✅ BACKWARD COMPATIBILITY: Keep EXACT door_command format ESP Socket Hub expects
+            // ✅ ENHANCED DOOR COMMAND with Arduino Uno support
             socket.on('door_command', (commandData) => {
                 try {
-                    console.log(`[CMD] Legacy door command for ${serialNumber}:`, JSON.stringify(commandData, null, 2));
+                    console.log(`[CMD] Door command for ${serialNumber}:`, JSON.stringify(commandData, null, 2));
 
-                    // CRITICAL: Determine target device
-                    let targetSerial = serialNumber; // Default to connected client's device
+                    let targetSerial = serialNumber;
 
-                    // If command specifies target device, use that
                     if (commandData.serialNumber && commandData.serialNumber !== serialNumber) {
                         targetSerial = commandData.serialNumber;
                         console.log(`[CMD] Command targets different device: ${targetSerial}`);
                     }
 
-                    // ESP Socket Hub expects exactly this format in parseAndExecuteEnhancedCommand()
+                    // Enhanced command format for Arduino Uno system
                     const doorCommand = {
                         action: commandData.action,
-                        serialNumber: targetSerial, // Use determined target
+                        serialNumber: targetSerial,
                         fromClient: accountId,
-                        esp01_safe: true, // Critical flag ESP Socket Hub checks
+                        esp01_safe: true, // ESP-01 compatibility flag
+                        uno_safe: systemType === 'uno_door', // ✅ NEW: Arduino Uno compatibility flag
+                        servo_count: systemType === 'uno_door' ? 6 : undefined,  // ✅ NEW
                         state: commandData.state || {},
                         timestamp: new Date().toISOString()
                     };
@@ -495,65 +616,80 @@ export const setupHubSocket = (io: Server) => {
                     console.log(`[CMD] Sending door command to target: ${targetSerial}`);
                     console.log(`[CMD] Command data:`, JSON.stringify(doorCommand, null, 2));
 
-                    // CRITICAL: Check if ESP Socket Hub is connected for the target
-                    const hubRooms = [`device:${serialNumber}`, `hub:${serialNumber}`];
-                    const targetRooms = [`device:${targetSerial}`, `hub:${targetSerial}`];
+                    // Check system availability based on type
+                    let roomsToCheck: string[] = [];
+                    let systemName = '';
 
-                    console.log(`[CMD] Checking ESP Socket Hub availability...`);
-                    console.log(`[CMD] Hub rooms: ${hubRooms.join(', ')}`);
-                    console.log(`[CMD] Target rooms: ${targetRooms.join(', ')}`);
+                    if (systemType === 'uno_door') {  // ✅ NEW
+                        roomsToCheck = [`device:${serialNumber}`, `uno-system:${serialNumber}`];
+                        systemName = 'Arduino Uno system';
+                    } else {
+                        roomsToCheck = [`device:${serialNumber}`, `hub:${serialNumber}`];
+                        systemName = 'ESP Socket Hub';
+                    }
 
-                    // Get all sockets in the hub room to check if ESP Socket Hub is connected
-                    const hubSockets = io.sockets.adapter.rooms.get(`hub:${serialNumber}`);
+                    console.log(`[CMD] Checking ${systemName} availability...`);
+                    console.log(`[CMD] Rooms: ${roomsToCheck.join(', ')}`);
+
                     const deviceSockets = io.sockets.adapter.rooms.get(`device:${serialNumber}`);
-
-                    console.log(`[CMD] Hub room ${serialNumber} has ${hubSockets?.size || 0} sockets`);
                     console.log(`[CMD] Device room ${serialNumber} has ${deviceSockets?.size || 0} sockets`);
 
-                    if (!hubSockets || hubSockets.size === 0) {
-                        console.log(`[CMD] ❌ ESP Socket Hub ${serialNumber} not connected to rooms`);
+                    if (!deviceSockets || deviceSockets.size === 0) {
+                        console.log(`[CMD] ❌ ${systemName} ${serialNumber} not connected`);
                         socket.emit('door_command_error', {
                             success: false,
-                            error: 'ESP Socket Hub not connected',
+                            error: `${systemName} not connected`,
                             serialNumber: targetSerial,
                             hubSerial: serialNumber,
+                            system_type: systemType === 'uno_door' ? 'arduino_uno' : 'esp_hub',  // ✅ NEW
                             available_rooms: Array.from(io.sockets.adapter.rooms.keys()).filter(room => room.includes(serialNumber)),
                             timestamp: new Date().toISOString()
                         });
                         return;
                     }
 
-                    // Send to ESP Socket Hub
+                    // Send to appropriate system
                     const roomsSent: string[] = [];
 
-                    // Send to the hub that manages this target device
                     if (targetSerial !== serialNumber) {
-                        // Command for a different device - broadcast to target rooms
-                        io.to(`device:${targetSerial}`).emit('command', doorCommand);
-                        io.to(`hub:${targetSerial}`).emit('command', doorCommand);
-                        roomsSent.push(`device:${targetSerial}`, `hub:${targetSerial}`);
+                        if (systemType === 'uno_door') {  // ✅ NEW
+                            io.to(`device:${targetSerial}`).emit('command', doorCommand);
+                            io.to(`uno-system:${targetSerial}`).emit('command', doorCommand);
+                            roomsSent.push(`device:${targetSerial}`, `uno-system:${targetSerial}`);
+                        } else {
+                            io.to(`device:${targetSerial}`).emit('command', doorCommand);
+                            io.to(`hub:${targetSerial}`).emit('command', doorCommand);
+                            roomsSent.push(`device:${targetSerial}`, `hub:${targetSerial}`);
+                        }
                     }
 
-                    // Also send to the connected ESP Socket Hub
-                    io.to(`device:${serialNumber}`).emit('command', doorCommand);
-                    io.to(`hub:${serialNumber}`).emit('command', doorCommand);
-                    roomsSent.push(`device:${serialNumber}`, `hub:${serialNumber}`);
+                    // Send to connected system
+                    if (systemType === 'uno_door') {  // ✅ NEW
+                        io.to(`device:${serialNumber}`).emit('command', doorCommand);
+                        io.to(`uno-system:${serialNumber}`).emit('command', doorCommand);
+                        roomsSent.push(`device:${serialNumber}`, `uno-system:${serialNumber}`);
+                    } else {
+                        io.to(`device:${serialNumber}`).emit('command', doorCommand);
+                        io.to(`hub:${serialNumber}`).emit('command', doorCommand);
+                        roomsSent.push(`device:${serialNumber}`, `hub:${serialNumber}`);
+                    }
 
                     console.log(`[CMD] ✅ Command sent to rooms: ${roomsSent.join(', ')}`);
 
-                    // Client acknowledgment
                     socket.emit('door_command_sent', {
                         success: true,
                         serialNumber: targetSerial,
                         hubSerial: serialNumber,
                         command: doorCommand,
                         esp01_compatible: true,
+                        uno_compatible: systemType === 'uno_door',  // ✅ NEW
                         sent_to_rooms: roomsSent,
-                        hub_connected: true,
+                        system_connected: true,
+                        system_type: systemType === 'uno_door' ? 'arduino_uno' : 'esp_hub',  // ✅ NEW
                         timestamp: new Date().toISOString()
                     });
 
-                    console.log(`[CMD] ✅ Door command sent - Hub: ${serialNumber}, Target: ${targetSerial}`);
+                    console.log(`[CMD] ✅ Door command sent - System: ${serialNumber}, Target: ${targetSerial}`);
                 } catch (error) {
                     console.error(`[CMD] Door command error for ${serialNumber}:`, error);
 
@@ -561,12 +697,13 @@ export const setupHubSocket = (io: Server) => {
                         success: false,
                         error: error instanceof Error ? error.message : 'Unknown error',
                         serialNumber,
+                        system_type: systemType === 'uno_door' ? 'arduino_uno' : 'esp_hub',  // ✅ NEW
                         timestamp: new Date().toISOString()
                     });
                 }
             });
 
-            // ✅ NEW: Garden specific commands
+            // ✅ GARDEN COMMANDS (unchanged)
             socket.on('garden_command', (commandData) => {
                 try {
                     console.log(`[GARDEN-CMD] Garden command for ${serialNumber}:`, commandData);
@@ -608,8 +745,9 @@ export const setupHubSocket = (io: Server) => {
         }
     });
 
-    console.log('[INIT] ✅ Unified Hub socket setup completed with refactored handlers');
+    console.log('[INIT] ✅ Unified Hub socket setup completed with Arduino Uno support');
     console.log('[INIT] 📁 Handlers loaded:');
-    console.log('[INIT]   - Door handlers: Arduino Mega, ESP Hub, ESP-01, ESP8266');
+    console.log('[INIT]   - Arduino Uno Door System: ESP Master Board + Arduino Uno R3 (6 servos)');  // ✅ NEW
+    console.log('[INIT]   - Door handlers: Arduino Mega, ESP Hub, ESP-01, ESP8266 (legacy)');
     console.log('[INIT]   - Garden handlers: Mega Garden, ESP Master, ESP07 Display');
 };

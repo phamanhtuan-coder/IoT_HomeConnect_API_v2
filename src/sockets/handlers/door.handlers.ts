@@ -1,4 +1,4 @@
-// src/sockets/handlers/door.handlers.ts
+// src/sockets/handlers/door.handlers.ts - UPDATED WITH ARDUINO UNO SYSTEM
 import { Namespace, Socket, Server } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
 import prisma from '../../config/database';
@@ -272,6 +272,210 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubId: string) 
             console.log(`[DOOR-HUB] Cleanup completed for ESP Socket Hub ${hubId}`);
         } catch (error) {
             console.error(`[DOOR-HUB] Error in disconnect for ${hubId}:`, error);
+        }
+    });
+};
+
+/**
+ * ✅ NEW: Setup Arduino Uno Door System handlers
+ * This replaces the ESP-01 + ESP Master Gateway system
+ */
+export const setupArduinoUnoDoorHandlers = (socket: Socket, io: Server, serialNumber: string, device: any) => {
+    const clientNamespace = io.of('/client');
+
+    console.log(`[UNO-DOOR] Setting up Arduino Uno door system handlers for ${serialNumber}`);
+
+    // Device online event from ESP Master Board
+    socket.on('device_online', async (data) => {
+        try {
+            console.log(`[UNO-DOOR] ESP Master Board online from ${serialNumber}:`, data);
+
+            socket.emit('device_online_ack', {
+                status: 'received',
+                deviceType: 'ESP Master Board (Uno System)',
+                uno_system: true,
+                servo_count: 6,
+                timestamp: new Date().toISOString()
+            });
+
+            clientNamespace.emit('device_connect', {
+                serialNumber,
+                deviceType: 'ESP MASTER BOARD (UNO SYSTEM)',
+                connectionType: 'uno_serial',
+                link_status: device.link_status,
+                uno_system: true,
+                servo_count: 6,
+                capabilities: ['door_control', 'status_reporting', 'uno_bridge'],
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[UNO-DOOR] Error in device_online for ${serialNumber}:`, error);
+        }
+    });
+
+    // Command response from Arduino Uno (via ESP Master)
+    socket.on('command_response', (data) => {
+        try {
+            console.log(`[UNO-DOOR] Command response from ${serialNumber}:`, data);
+
+            // Check if response is from Arduino Uno system
+            if (data.uno_processed || data.connection_type === 'uno_serial') {
+                clientNamespace.to(`door:${serialNumber}`).emit('door_command_response', {
+                    serialNumber,
+                    ...data,
+                    deviceType: 'Arduino Uno Door System',
+                    uno_processed: true,
+                    esp_master_processed: true,
+                    timestamp: new Date().toISOString()
+                });
+
+                console.log(`[UNO-DOOR] Uno system response forwarded for ${serialNumber}`);
+            }
+        } catch (error) {
+            console.error(`[UNO-DOOR] Error in command_response for ${serialNumber}:`, error);
+        }
+    });
+
+    // Device status from Arduino Uno system
+    socket.on('deviceStatus', (data) => {
+        try {
+            console.log(`[UNO-DOOR] Device status from ${serialNumber}:`, data);
+
+            clientNamespace.to(`door:${serialNumber}`).emit('door_status', {
+                ...data,
+                deviceType: 'Arduino Uno Door System',
+                connectionType: 'uno_serial',
+                servo_count: 6,
+                uno_system: true,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[UNO-DOOR] Error in deviceStatus for ${serialNumber}:`, error);
+        }
+    });
+
+    // Arduino Uno system health monitoring
+    socket.on('uno_system_health', (data) => {
+        try {
+            console.log(`[UNO-DOOR] Uno system health from ${serialNumber}:`, data);
+
+            clientNamespace.emit('uno_system_health', {
+                serialNumber,
+                ...data,
+                systemType: 'door',
+                deviceType: 'Arduino Uno Door System',
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[UNO-DOOR] Error in uno_system_health for ${serialNumber}:`, error);
+        }
+    });
+
+    // ESP Master status (bridge between MEGA and Arduino Uno)
+    socket.on('esp_master_status', (data) => {
+        try {
+            console.log(`[UNO-DOOR] ESP Master status from ${serialNumber}:`, data);
+
+            clientNamespace.to(`door:${serialNumber}`).emit('esp_master_status', {
+                serialNumber,
+                ...data,
+                deviceType: 'ESP Master Board',
+                bridge_status: true,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[UNO-DOOR] Error in esp_master_status for ${serialNumber}:`, error);
+        }
+    });
+
+    // Arduino Uno connection status
+    socket.on('uno_connection_status', (data) => {
+        try {
+            console.log(`[UNO-DOOR] Uno connection status from ${serialNumber}:`, data);
+
+            clientNamespace.to(`door:${serialNumber}`).emit('uno_connection_status', {
+                serialNumber,
+                ...data,
+                deviceType: 'Arduino Uno R3',
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[UNO-DOOR] Error in uno_connection_status for ${serialNumber}:`, error);
+        }
+    });
+
+    // Handle door commands from clients (updated for Uno system)
+    socket.on('door_command', (data) => {
+        try {
+            console.log(`[UNO-DOOR] Door command received at ESP Master ${serialNumber}:`, data);
+
+            // Process door command (forward to Arduino Uno)
+            socket.emit('door_command_ack', {
+                status: 'received',
+                command: data.action,
+                targetDevice: data.deviceId || data.serialNumber,
+                system: 'arduino_uno',
+                servo_count: 6,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[UNO-DOOR] Error in door_command for ${serialNumber}:`, error);
+        }
+    });
+
+    // Heartbeat from ESP Master Board
+    socket.on('heartbeat', (data) => {
+        try {
+            console.log(`[UNO-DOOR] Heartbeat from ESP Master ${serialNumber}:`, data);
+
+            socket.emit('heartbeat_ack', {
+                received: true,
+                deviceType: 'ESP Master Board (Uno System)',
+                uno_system: true,
+                server_time: new Date().toISOString(),
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[UNO-DOOR] Error in heartbeat for ${serialNumber}:`, error);
+        }
+    });
+
+    // Disconnect handler
+    socket.on('disconnect', async (reason) => {
+        console.log(`[UNO-DOOR] ESP Master Board ${serialNumber} disconnected. Reason: ${reason}`);
+
+        try {
+            await prisma.devices.update({
+                where: { serial_number: serialNumber },
+                data: {
+                    updated_at: new Date(),
+                    runtime_capabilities: {
+                        ...device.runtime_capabilities as any,
+                        last_socket_disconnection: new Date().toISOString(),
+                        socket_connected: false,
+                        disconnection_reason: reason,
+                        device_type: 'ESP Master Board (Uno System)',
+                        uno_system: true,
+                        last_seen: new Date().toISOString(),
+                        connection_duration: device.runtime_capabilities?.last_socket_connection ?
+                            new Date().getTime() - new Date(device.runtime_capabilities.last_socket_connection).getTime() : 0
+                    }
+                }
+            }).catch(err => {
+                console.error(`[UNO-DOOR] Database update failed on disconnect:`, err);
+            });
+
+            clientNamespace.emit('device_disconnect', {
+                serialNumber,
+                deviceType: 'ESP Master Board (Uno System)',
+                reason: reason,
+                impact: 'Arduino Uno door system lost - All 6 servo doors affected',
+                affected_doors: 'All 6 servo doors managed by Arduino Uno',
+                system_type: 'arduino_uno',
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[UNO-DOOR] Error in disconnect handler for ${serialNumber}:`, error);
         }
     });
 };
