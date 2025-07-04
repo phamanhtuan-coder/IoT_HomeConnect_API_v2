@@ -238,29 +238,30 @@ export const setupHubSocket = (io: Server) => {
                         connectedAt: new Date()
                     };
 
+                    // CRITICAL: Join rooms IMMEDIATELY before setting up handlers
                     socket.join(`hub:${serialNumber}`);
                     socket.join(`device:${serialNumber}`);
-                    console.log(`[DOOR-HUB] ${serialNumber} joined door hub rooms`);
+                    console.log(`[DOOR-HUB] ${serialNumber} joined door hub rooms: hub:${serialNumber}, device:${serialNumber}`);
 
                     // Use door hub handlers
                     setupDoorHubHandlers(socket, io, serialNumber);
 
-                    setTimeout(() => {
-                        try {
-                            socket.emit('connection_welcome', {
-                                status: 'connected',
-                                namespace: 'door-hub',
-                                serialNumber,
-                                deviceType,
-                                hub_managed: hub_managed === 'true',
-                                esp01_safety: true,
-                                timestamp: new Date().toISOString()
-                            });
-                            console.log(`[DOOR-HUB] Welcome message sent to ${serialNumber}`);
-                        } catch (error) {
-                            console.error(`[DOOR-HUB] Welcome send failed:`, error);
-                        }
-                    }, 1500);
+                    // IMMEDIATE: Send welcome without delay for ESP Socket Hub
+                    try {
+                        socket.emit('connection_welcome', {
+                            status: 'connected',
+                            namespace: 'door-hub',
+                            serialNumber,
+                            deviceType,
+                            hub_managed: hub_managed === 'true',
+                            esp01_safety: true,
+                            rooms_joined: [`hub:${serialNumber}`, `device:${serialNumber}`],
+                            timestamp: new Date().toISOString()
+                        });
+                        console.log(`[DOOR-HUB] IMMEDIATE welcome message sent to ${serialNumber}`);
+                    } catch (error) {
+                        console.error(`[DOOR-HUB] Welcome send failed:`, error);
+                    }
 
                     console.log(`[DOOR-HUB] ${serialNumber} fully connected as Door Hub`);
                     return;
@@ -472,33 +473,87 @@ export const setupHubSocket = (io: Server) => {
                 try {
                     console.log(`[CMD] Legacy door command for ${serialNumber}:`, JSON.stringify(commandData, null, 2));
 
+                    // CRITICAL: Determine target device
+                    let targetSerial = serialNumber; // Default to connected client's device
+
+                    // If command specifies target device, use that
+                    if (commandData.serialNumber && commandData.serialNumber !== serialNumber) {
+                        targetSerial = commandData.serialNumber;
+                        console.log(`[CMD] Command targets different device: ${targetSerial}`);
+                    }
+
                     // ESP Socket Hub expects exactly this format in parseAndExecuteEnhancedCommand()
                     const doorCommand = {
                         action: commandData.action,
-                        serialNumber: serialNumber,
+                        serialNumber: targetSerial, // Use determined target
                         fromClient: accountId,
                         esp01_safe: true, // Critical flag ESP Socket Hub checks
                         state: commandData.state || {},
                         timestamp: new Date().toISOString()
                     };
 
-                    console.log(`[CMD] Sending door command:`, JSON.stringify(doorCommand, null, 2));
+                    console.log(`[CMD] Sending door command to target: ${targetSerial}`);
+                    console.log(`[CMD] Command data:`, JSON.stringify(doorCommand, null, 2));
 
-                    // Send to ESP Socket Hub exactly as it expects
+                    // CRITICAL: Check if ESP Socket Hub is connected for the target
+                    const hubRooms = [`device:${serialNumber}`, `hub:${serialNumber}`];
+                    const targetRooms = [`device:${targetSerial}`, `hub:${targetSerial}`];
+
+                    console.log(`[CMD] Checking ESP Socket Hub availability...`);
+                    console.log(`[CMD] Hub rooms: ${hubRooms.join(', ')}`);
+                    console.log(`[CMD] Target rooms: ${targetRooms.join(', ')}`);
+
+                    // Get all sockets in the hub room to check if ESP Socket Hub is connected
+                    const hubSockets = io.sockets.adapter.rooms.get(`hub:${serialNumber}`);
+                    const deviceSockets = io.sockets.adapter.rooms.get(`device:${serialNumber}`);
+
+                    console.log(`[CMD] Hub room ${serialNumber} has ${hubSockets?.size || 0} sockets`);
+                    console.log(`[CMD] Device room ${serialNumber} has ${deviceSockets?.size || 0} sockets`);
+
+                    if (!hubSockets || hubSockets.size === 0) {
+                        console.log(`[CMD] ❌ ESP Socket Hub ${serialNumber} not connected to rooms`);
+                        socket.emit('door_command_error', {
+                            success: false,
+                            error: 'ESP Socket Hub not connected',
+                            serialNumber: targetSerial,
+                            hubSerial: serialNumber,
+                            available_rooms: Array.from(io.sockets.adapter.rooms.keys()).filter(room => room.includes(serialNumber)),
+                            timestamp: new Date().toISOString()
+                        });
+                        return;
+                    }
+
+                    // Send to ESP Socket Hub
+                    const roomsSent: string[] = [];
+
+                    // Send to the hub that manages this target device
+                    if (targetSerial !== serialNumber) {
+                        // Command for a different device - broadcast to target rooms
+                        io.to(`device:${targetSerial}`).emit('command', doorCommand);
+                        io.to(`hub:${targetSerial}`).emit('command', doorCommand);
+                        roomsSent.push(`device:${targetSerial}`, `hub:${targetSerial}`);
+                    }
+
+                    // Also send to the connected ESP Socket Hub
                     io.to(`device:${serialNumber}`).emit('command', doorCommand);
                     io.to(`hub:${serialNumber}`).emit('command', doorCommand);
+                    roomsSent.push(`device:${serialNumber}`, `hub:${serialNumber}`);
+
+                    console.log(`[CMD] ✅ Command sent to rooms: ${roomsSent.join(', ')}`);
 
                     // Client acknowledgment
                     socket.emit('door_command_sent', {
                         success: true,
-                        serialNumber,
+                        serialNumber: targetSerial,
+                        hubSerial: serialNumber,
                         command: doorCommand,
                         esp01_compatible: true,
-                        sent_to_rooms: [`device:${serialNumber}`, `hub:${serialNumber}`],
+                        sent_to_rooms: roomsSent,
+                        hub_connected: true,
                         timestamp: new Date().toISOString()
                     });
 
-                    console.log(`[CMD] Door command sent to ESP Socket Hub ${serialNumber}`);
+                    console.log(`[CMD] ✅ Door command sent - Hub: ${serialNumber}, Target: ${targetSerial}`);
                 } catch (error) {
                     console.error(`[CMD] Door command error for ${serialNumber}:`, error);
 
