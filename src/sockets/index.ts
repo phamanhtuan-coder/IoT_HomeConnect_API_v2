@@ -1,34 +1,59 @@
-// src/sockets/index.ts
+// src/sockets/index.ts - UPDATED FOR UNIFIED HUB SYSTEM
 import { Server } from 'socket.io';
 import { setupDeviceSocket } from './device.socket';
-import { setupCameraSocket } from './camera.socket';
-import {setupDoorSocket} from "./door.socket";
+import { setupHubSocket } from './hub.socket'; // Renamed from door.socket.ts
 
+/**
+ * Initialize all socket namespaces and handlers
+ * Now supports unified hub system for Door + Garden + Central Hub
+ */
 export const initSocket = (io: Server) => {
-    console.log('🔧 Initializing Socket.IO server...');
-    console.log(`📋 Socket.IO config: ${JSON.stringify({
-        pingInterval: io.engine.opts.pingInterval,
-        pingTimeout: io.engine.opts.pingTimeout,
-        maxHttpBufferSize: io.engine.opts.maxHttpBufferSize
-    }, null, 2)}`);
+    console.log('🚀 Initializing Socket.IO with Unified Hub System...');
 
-    // Increase pingTimeout to 30s
-    io.engine.opts.pingTimeout = 30000;
-
-    // Log middleware
-    io.use((socket, next) => {
-        console.log(`🔍 Global middleware triggered for Socket ID: ${socket.id}`);
-        console.log(`📝 Middleware details: ${JSON.stringify({
-            headers: socket.handshake.headers,
-            query: socket.handshake.query,
-            address: socket.handshake.address,
-            time: socket.handshake.time
-        }, null, 2)}`);
-        next();
-    });
-
+    // 1. Device Socket - Fire alarm, LED control, sensor devices
+    console.log('📡 Setting up Device Socket (Fire Alarm, LED, Sensors)...');
     setupDeviceSocket(io);
-    setupDoorSocket(io);
-    setupCameraSocket(io);
-    console.log('✅ Socket.IO namespaces initialized: /device, /camera, /client');
+
+    // 2. Unified Hub Socket - Door + Garden + Central Hub system (with handlers)
+    console.log('🏠 Setting up Unified Hub Socket (Door + Garden + Central Hub)...');
+    setupHubSocket(io);
+
+    console.log('✅ Socket.IO initialization completed');
+    console.log('📋 Available Systems:');
+    console.log('   - Device System: /device namespace (Fire alarms, LED controllers, Sensors)');
+    console.log('   - Unified Hub System: Main namespace (Doors, Garden, Central Hub)');
+    console.log('   - Client Apps: /client namespace (Mobile/Web applications)');
+    console.log('');
+    console.log('📁 Handler Files:');
+    console.log('   - door.handlers.ts: Arduino Mega, ESP Door Hub, ESP-01, ESP8266 door devices');
+    console.log('   - garden.handlers.ts: Mega Garden, ESP Master Garden, ESP07 Display');
+    console.log('   - device.handlers.ts: Fire alarms, sensors, LED controllers');
+    console.log('');
+    console.log('🔧 Supported Device Types:');
+    console.log('   Hub System (door.handlers.ts + garden.handlers.ts):');
+    console.log('     - Arduino Mega Hub (Central controller) → Both handlers');
+    console.log('     - ESP Socket Hub (Door gateway) → Door handlers');
+    console.log('     - ESP Master Garden (Garden controller) → Garden handlers');
+    console.log('     - ESP07 Garden Display (Garden display) → Garden handlers');
+    console.log('     - ESP-01 Door Controllers (Door devices) → Door handlers');
+    console.log('     - ESP8266 Door Controllers (Door devices) → Door handlers');
+    console.log('   Device System (device.handlers.ts):');
+    console.log('     - ESP8266 Fire Alarms');
+    console.log('     - ESP8266 LED Controllers');
+    console.log('     - ESP8266 Sensor Nodes');
+    console.log('');
+    console.log('📡 Socket Connection Examples:');
+    console.log('   Arduino Mega Hub (uses both door + garden handlers):');
+    console.log('     ?serialNumber=MEGA_HUB_GARDEN_001&isIoTDevice=true&hub_type=arduino_mega');
+    console.log('   Garden Master (uses garden handlers):');
+    console.log('     ?serialNumber=ESP_MASTER_GARDEN_001&isIoTDevice=true&system_type=garden&device_type=garden_master');
+    console.log('   Garden Display (uses garden handlers):');
+    console.log('     ?serialNumber=ESP07_GARDEN_001&isIoTDevice=true&system_type=garden&device_type=garden_display');
+    console.log('   Door Hub (uses door handlers):');
+    console.log('     ?serialNumber=ESP_SOCKET_HUB_001&isIoTDevice=true&hub_managed=true');
+    console.log('   ESP-01 Door (uses door handlers):');
+    console.log('     ?serialNumber=DOOR_DEVICE_001&isIoTDevice=true&device_type=ESP-01');
+    console.log('   Fire Alarm (uses device handlers, connects to /device namespace):');
+    console.log('     ?serialNumber=FIRE_ALARM_001&isIoTDevice=true&client_type=esp8266');
+    console.log('');
 };
