@@ -68,4 +68,12 @@ export interface Device {
     device_template_status?: string | null;
     device_base_capabilities?: any | null;
     capabilities?: any | null;
+    /**
+     * Ảnh danh mục cha của loại thiết bị, dạng base64 (nếu có)
+     */
+    device_type_parent_image?: string | null; // base64
+    /**
+     * Tên danh mục cha của loại thiết bị (nếu có)
+     */
+    device_type_parent_name?: string | null;
 }
