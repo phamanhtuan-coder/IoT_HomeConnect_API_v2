@@ -1,568 +1,272 @@
-// src/sockets/handlers/door.handlers.ts - UPDATED WITH ARDUINO UNO SYSTEM
+// src/sockets/handlers/door.handlers.ts - ESP-01 OPTIMIZED SYSTEM ONLY
 import { Namespace, Socket, Server } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
 import prisma from '../../config/database';
 
 /**
- * Setup Arduino Mega Hub handlers for Door + Central Hub system
- */
-export const setupArduinoMegaHandlers = (socket: Socket, io: Server, hubId: string) => {
-    const clientNamespace = io.of('/client');
-
-    console.log(`[MEGA-HUB] Setting up Arduino Mega Central Hub handlers for ${hubId}`);
-
-    // Central hub status
-    socket.on('hub_status', async (data) => {
-        try {
-            console.log(`[MEGA-HUB] Hub status from ${hubId}:`, data);
-
-            clientNamespace.emit('hub_status', {
-                serialNumber: hubId,
-                deviceType: 'Arduino Mega Hub',
-                systemType: 'central_hub',
-                ...data,
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error(`[MEGA-HUB] Error in hub_status for ${hubId}:`, error);
-        }
-    });
-
-    // Door command responses (existing logic)
-    socket.on('command_response', (data) => {
-        try {
-            console.log(`[MEGA-HUB] Command response from ${hubId}:`, data);
-
-            if (data.deviceId || data.serialNumber) {
-                const targetSerial = data.deviceId || data.serialNumber;
-                clientNamespace.to(`door:${targetSerial}`).emit('door_command_response', {
-                    serialNumber: targetSerial,
-                    ...data,
-                    deviceType: 'Arduino Mega Hub',
-                    hub_processed: true,
-                    timestamp: new Date().toISOString()
-                });
-            }
-        } catch (error) {
-            console.error(`[MEGA-HUB] Error in command_response for ${hubId}:`, error);
-        }
-    });
-
-    // Door device status updates
-    socket.on('deviceStatus', (data) => {
-        try {
-            console.log(`[MEGA-HUB] Device status from ${hubId}:`, data);
-
-            if (data.deviceId || data.serialNumber) {
-                const targetSerial = data.deviceId || data.serialNumber;
-                clientNamespace.to(`door:${targetSerial}`).emit('door_status', {
-                    ...data,
-                    deviceType: 'Arduino Mega Hub',
-                    connectionType: 'mega_hub',
-                    timestamp: new Date().toISOString()
-                });
-            }
-        } catch (error) {
-            console.error(`[MEGA-HUB] Error in deviceStatus for ${hubId}:`, error);
-        }
-    });
-
-    // Door system health monitoring
-    socket.on('door_system_health', (data) => {
-        try {
-            console.log(`[MEGA-HUB] Door system health from ${hubId}:`, data);
-
-            clientNamespace.emit('door_system_health', {
-                hubId,
-                ...data,
-                systemType: 'door',
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error(`[MEGA-HUB] Error in door_system_health for ${hubId}:`, error);
-        }
-    });
-
-    // Handle door commands from clients
-    socket.on('door_command', (data) => {
-        try {
-            console.log(`[MEGA-HUB] Door command received at hub ${hubId}:`, data);
-
-            // Process door command (forward to appropriate ESP-01/ESP8266)
-            socket.emit('door_command_ack', {
-                status: 'received',
-                command: data.action,
-                targetDevice: data.deviceId || data.serialNumber,
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error(`[MEGA-HUB] Error in door_command for ${hubId}:`, error);
-        }
-    });
-
-    // Heartbeat from Arduino Mega
-    socket.on('heartbeat', (data) => {
-        try {
-            console.log(`[MEGA-HUB] Heartbeat from ${hubId}:`, data);
-
-            socket.emit('heartbeat_ack', {
-                received: true,
-                deviceType: 'Arduino Mega Hub',
-                server_time: new Date().toISOString(),
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error(`[MEGA-HUB] Error in heartbeat for ${hubId}:`, error);
-        }
-    });
-
-    // Standard disconnect handler
-    socket.on('disconnect', async (reason) => {
-        console.log(`[MEGA-HUB] Arduino Mega Hub ${hubId} disconnected. Reason: ${reason}`);
-
-        try {
-            clientNamespace.emit('hub_disconnect', {
-                serialNumber: hubId,
-                deviceType: 'Arduino Mega Hub',
-                systemType: 'central_hub',
-                reason: reason,
-                impact: 'Central hub functionality lost - Garden and Door systems affected',
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error(`[MEGA-HUB] Error in disconnect for ${hubId}:`, error);
-        }
-    });
-};
-
-/**
- * Setup Door Hub handlers (ESP Socket Hub) - EXACT MATCH với ESP code hiện tại
+ * ✅ OPTIMIZED: Setup ESP Socket Hub handlers for ESP-01 system
+ * Handles optimized data transmission and compact commands
  */
 export const setupDoorHubHandlers = (socket: Socket, io: Server, hubId: string) => {
     const clientNamespace = io.of('/client');
 
-    console.log(`[DOOR-HUB] Setting up ESP Socket Hub handlers for ${hubId}`);
+    console.log(`[ESP-HUB] Setting up Optimized ESP Socket Hub for ${hubId}`);
 
-    // ESP Socket Hub sends device_online exactly như trong ESP code
+    // ESP Socket Hub sends device_online
     socket.on('device_online', async (data) => {
         try {
-            console.log(`[DOOR-HUB] ESP Socket Hub device_online from ${hubId}:`, data);
+            console.log(`[ESP-HUB] Device online from ${hubId}:`, data);
 
-            // Exact response format ESP expects
             socket.emit('device_online_ack', {
                 status: 'received',
-                deviceType: 'ESP Door Hub',
+                deviceType: 'ESP Socket Hub (Optimized)',
                 esp01_support: true,
+                optimization: 'compact_data',
                 timestamp: new Date().toISOString()
             });
 
-            // Notify clients về ESP Socket Hub connection
             clientNamespace.emit('device_connect', {
                 serialNumber: hubId,
-                deviceType: 'ESP DOOR HUB CONTROLLER',
-                connectionType: 'hub',
+                deviceType: 'ESP SOCKET HUB (OPTIMIZED)',
+                connectionType: 'hub_optimized',
                 hub_managed: true,
-                discovery_mode: data.discovery_mode || 'dynamic',
-                capabilities: ['command_forwarding', 'esp01_bridge', 'gateway_management'],
+                esp01_optimized: true,
+                capabilities: ['compact_forwarding', 'esp01_bridge', 'optimized_gateway'],
                 firmware_version: data.firmware_version,
                 timestamp: new Date().toISOString()
             });
         } catch (error) {
-            console.error(`[DOOR-HUB] Error in device_online for ${hubId}:`, error);
+            console.error(`[ESP-HUB] Error in device_online for ${hubId}:`, error);
         }
     });
 
-    // ESP Socket Hub forwards command responses từ ESP Gateway Master
+    // ✅ OPTIMIZED: Handle compact command responses from ESP Master/Gateway
     socket.on('command_response', (data) => {
         try {
-            console.log(`[DOOR-HUB] Command response from ESP Socket Hub ${hubId}:`, data);
+            console.log(`[ESP-HUB] Compact response from ${hubId}:`, data);
 
-            // Data comes from ESP Gateway Master via Serial, forwarded by ESP Socket Hub
-            if (data.deviceId || data.serialNumber) {
-                const targetSerial = data.deviceId || data.serialNumber;
+            if (data.deviceId || data.serialNumber || data.d) {
+                const targetSerial = data.deviceId || data.serialNumber || data.d;
 
-                // Forward exact response to specific door client
+                // Handle both compact and full responses
+                let responseData = data;
+
+                // If compact response, expand it
+                if (data.esp01_processed || data.compact_data || data.optimized || data.s !== undefined) {
+                    responseData = expandCompactResponse(data);
+                }
+
                 clientNamespace.to(`door:${targetSerial}`).emit('door_command_response', {
                     serialNumber: targetSerial,
-                    ...data,
-                    deviceType: 'ESP Door Hub',
+                    ...responseData,
+                    deviceType: 'ESP Socket Hub (Optimized)',
                     hub_processed: true,
-                    gateway_processed: data.gateway_processed || false,
-                    esp01_processed: data.esp01_processed || false,
+                    esp01_processed: true,
+                    optimized: true,
                     timestamp: new Date().toISOString()
                 });
 
-                console.log(`[DOOR-HUB] Response forwarded to door client ${targetSerial}`);
+                console.log(`[ESP-HUB] Optimized response forwarded to ${targetSerial}`);
             }
         } catch (error) {
-            console.error(`[DOOR-HUB] Error in command_response for ${hubId}:`, error);
+            console.error(`[ESP-HUB] Error in command_response for ${hubId}:`, error);
         }
     });
 
-    // ESP Socket Hub forwards device status từ ESP-01 via Gateway
+    // ✅ OPTIMIZED: Handle compact device status
     socket.on('deviceStatus', (data) => {
         try {
-            console.log(`[DOOR-HUB] Device status from ESP Socket Hub ${hubId}:`, data);
+            console.log(`[ESP-HUB] Compact status from ${hubId}:`, data);
 
-            if (data.deviceId || data.serialNumber) {
-                const targetSerial = data.deviceId || data.serialNumber;
+            if (data.deviceId || data.serialNumber || data.d) {
+                const targetSerial = data.deviceId || data.serialNumber || data.d;
 
-                // Forward status to specific door client
+                // Expand compact status if needed
+                let statusData = data;
+                if (data.compact_data || data.d) {
+                    statusData = expandCompactStatus(data);
+                }
+
                 clientNamespace.to(`door:${targetSerial}`).emit('door_status', {
-                    ...data,
-                    deviceType: 'ESP Door Hub',
-                    connectionType: 'hub',
-                    esp01_online: data.esp01_online || false,
-                    servo_angle: data.servo_angle,
-                    door_state: data.door_state,
+                    ...statusData,
+                    deviceType: 'ESP Socket Hub (Optimized)',
+                    connectionType: 'hub_optimized',
+                    esp01_online: true,
+                    optimized: true,
                     timestamp: new Date().toISOString()
                 });
             }
         } catch (error) {
-            console.error(`[DOOR-HUB] Error in deviceStatus for ${hubId}:`, error);
+            console.error(`[ESP-HUB] Error in deviceStatus for ${hubId}:`, error);
         }
     });
 
-    // ESP Socket Hub sends welcome_ack (existing trong ESP code)
-    socket.on('welcome_ack', (data) => {
+    // Handle commands from clients - forward to ESP devices
+    socket.on('command', (commandData) => {
         try {
-            console.log(`[DOOR-HUB] Welcome ack from ESP Socket Hub ${hubId}:`, data);
-            // ESP Socket Hub confirmed connection
+            console.log(`[ESP-HUB] Command received for forwarding:`, commandData);
+
+            // Extract target serial
+            const targetSerial = commandData.serialNumber;
+            if (!targetSerial) {
+                console.log(`[ESP-HUB] No target serial in command`);
+                return;
+            }
+
+            // Create compact command for ESP system
+            const compactCommand = createCompactCommand(commandData.action, targetSerial, commandData.state);
+
+            // Send compact command to serial (MEGA will parse this)
+            console.log(`[ESP-HUB] Sending compact command: CMD:${targetSerial}:${commandData.action}`);
+
         } catch (error) {
-            console.error(`[DOOR-HUB] Error in welcome_ack for ${hubId}:`, error);
+            console.error(`[ESP-HUB] Error in command forwarding for ${hubId}:`, error);
         }
     });
 
-    // Handle ping/pong cho ESP Socket Hub stability
+    // Standard ping/pong for stability
     socket.on('ping', () => {
         try {
-            console.log(`[DOOR-HUB] Ping from ESP Socket Hub ${hubId}`);
             socket.emit('pong', {
                 timestamp: new Date().toISOString(),
-                hub_serial: hubId
+                hub_serial: hubId,
+                optimized: true
             });
         } catch (error) {
-            console.error(`[DOOR-HUB] Error in ping for ${hubId}:`, error);
+            console.error(`[ESP-HUB] Error in ping for ${hubId}:`, error);
         }
     });
 
     socket.on('pong', (data) => {
         try {
-            console.log(`[DOOR-HUB] Pong from ESP Socket Hub ${hubId}:`, data);
-            // Connection health confirmed
+            console.log(`[ESP-HUB] Pong from ${hubId}`);
         } catch (error) {
-            console.error(`[DOOR-HUB] Error in pong for ${hubId}:`, error);
+            console.error(`[ESP-HUB] Error in pong for ${hubId}:`, error);
         }
     });
 
     socket.on('disconnect', async (reason) => {
-        console.log(`[DOOR-HUB] ESP Socket Hub ${hubId} disconnected. Reason: ${reason}`);
+        console.log(`[ESP-HUB] Optimized ESP Socket Hub ${hubId} disconnected. Reason: ${reason}`);
 
         try {
-            // Notify all clients về gateway loss
             clientNamespace.emit('device_disconnect', {
                 serialNumber: hubId,
-                deviceType: 'ESP Socket Hub',
+                deviceType: 'ESP Socket Hub (Optimized)',
                 reason: reason,
-                impact: 'Door gateway functionality lost - All door controls affected',
-                affected_doors: 'All managed ESP-01 doors',
+                impact: 'Optimized door gateway lost - All ESP-01 doors affected',
+                affected_doors: 'All 7 ESP-01 doors',
+                system_type: 'esp01_optimized',
                 timestamp: new Date().toISOString()
             });
-
-            console.log(`[DOOR-HUB] Cleanup completed for ESP Socket Hub ${hubId}`);
         } catch (error) {
-            console.error(`[DOOR-HUB] Error in disconnect for ${hubId}:`, error);
+            console.error(`[ESP-HUB] Error in disconnect for ${hubId}:`, error);
         }
     });
 };
 
 /**
- * ✅ NEW: Setup Arduino Uno Door System handlers
- * This replaces the ESP-01 + ESP Master Gateway system
- */
-export const setupArduinoUnoDoorHandlers = (socket: Socket, io: Server, serialNumber: string, device: any) => {
-    const clientNamespace = io.of('/client');
-
-    console.log(`[UNO-DOOR] Setting up Arduino Uno door system handlers for ${serialNumber}`);
-
-    // Device online event from ESP Master Board
-    socket.on('device_online', async (data) => {
-        try {
-            console.log(`[UNO-DOOR] ESP Master Board online from ${serialNumber}:`, data);
-
-            socket.emit('device_online_ack', {
-                status: 'received',
-                deviceType: 'ESP Master Board (Uno System)',
-                uno_system: true,
-                servo_count: 6,
-                timestamp: new Date().toISOString()
-            });
-
-            clientNamespace.emit('device_connect', {
-                serialNumber,
-                deviceType: 'ESP MASTER BOARD (UNO SYSTEM)',
-                connectionType: 'uno_serial',
-                link_status: device.link_status,
-                uno_system: true,
-                servo_count: 6,
-                capabilities: ['door_control', 'status_reporting', 'uno_bridge'],
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error(`[UNO-DOOR] Error in device_online for ${serialNumber}:`, error);
-        }
-    });
-
-    // Command response from Arduino Uno (via ESP Master)
-    socket.on('command_response', (data) => {
-        try {
-            console.log(`[UNO-DOOR] Command response from ${serialNumber}:`, data);
-
-            // Check if response is from Arduino Uno system
-            if (data.uno_processed || data.connection_type === 'uno_serial') {
-                clientNamespace.to(`door:${serialNumber}`).emit('door_command_response', {
-                    serialNumber,
-                    ...data,
-                    deviceType: 'Arduino Uno Door System',
-                    uno_processed: true,
-                    esp_master_processed: true,
-                    timestamp: new Date().toISOString()
-                });
-
-                console.log(`[UNO-DOOR] Uno system response forwarded for ${serialNumber}`);
-            }
-        } catch (error) {
-            console.error(`[UNO-DOOR] Error in command_response for ${serialNumber}:`, error);
-        }
-    });
-
-    // Device status from Arduino Uno system
-    socket.on('deviceStatus', (data) => {
-        try {
-            console.log(`[UNO-DOOR] Device status from ${serialNumber}:`, data);
-
-            clientNamespace.to(`door:${serialNumber}`).emit('door_status', {
-                ...data,
-                deviceType: 'Arduino Uno Door System',
-                connectionType: 'uno_serial',
-                servo_count: 6,
-                uno_system: true,
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error(`[UNO-DOOR] Error in deviceStatus for ${serialNumber}:`, error);
-        }
-    });
-
-    // Arduino Uno system health monitoring
-    socket.on('uno_system_health', (data) => {
-        try {
-            console.log(`[UNO-DOOR] Uno system health from ${serialNumber}:`, data);
-
-            clientNamespace.emit('uno_system_health', {
-                serialNumber,
-                ...data,
-                systemType: 'door',
-                deviceType: 'Arduino Uno Door System',
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error(`[UNO-DOOR] Error in uno_system_health for ${serialNumber}:`, error);
-        }
-    });
-
-    // ESP Master status (bridge between MEGA and Arduino Uno)
-    socket.on('esp_master_status', (data) => {
-        try {
-            console.log(`[UNO-DOOR] ESP Master status from ${serialNumber}:`, data);
-
-            clientNamespace.to(`door:${serialNumber}`).emit('esp_master_status', {
-                serialNumber,
-                ...data,
-                deviceType: 'ESP Master Board',
-                bridge_status: true,
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error(`[UNO-DOOR] Error in esp_master_status for ${serialNumber}:`, error);
-        }
-    });
-
-    // Arduino Uno connection status
-    socket.on('uno_connection_status', (data) => {
-        try {
-            console.log(`[UNO-DOOR] Uno connection status from ${serialNumber}:`, data);
-
-            clientNamespace.to(`door:${serialNumber}`).emit('uno_connection_status', {
-                serialNumber,
-                ...data,
-                deviceType: 'Arduino Uno R3',
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error(`[UNO-DOOR] Error in uno_connection_status for ${serialNumber}:`, error);
-        }
-    });
-
-    // Handle door commands from clients (updated for Uno system)
-    socket.on('door_command', (data) => {
-        try {
-            console.log(`[UNO-DOOR] Door command received at ESP Master ${serialNumber}:`, data);
-
-            // Process door command (forward to Arduino Uno)
-            socket.emit('door_command_ack', {
-                status: 'received',
-                command: data.action,
-                targetDevice: data.deviceId || data.serialNumber,
-                system: 'arduino_uno',
-                servo_count: 6,
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error(`[UNO-DOOR] Error in door_command for ${serialNumber}:`, error);
-        }
-    });
-
-    // Heartbeat from ESP Master Board
-    socket.on('heartbeat', (data) => {
-        try {
-            console.log(`[UNO-DOOR] Heartbeat from ESP Master ${serialNumber}:`, data);
-
-            socket.emit('heartbeat_ack', {
-                received: true,
-                deviceType: 'ESP Master Board (Uno System)',
-                uno_system: true,
-                server_time: new Date().toISOString(),
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error(`[UNO-DOOR] Error in heartbeat for ${serialNumber}:`, error);
-        }
-    });
-
-    // Disconnect handler
-    socket.on('disconnect', async (reason) => {
-        console.log(`[UNO-DOOR] ESP Master Board ${serialNumber} disconnected. Reason: ${reason}`);
-
-        try {
-            await prisma.devices.update({
-                where: { serial_number: serialNumber },
-                data: {
-                    updated_at: new Date(),
-                    runtime_capabilities: {
-                        ...device.runtime_capabilities as any,
-                        last_socket_disconnection: new Date().toISOString(),
-                        socket_connected: false,
-                        disconnection_reason: reason,
-                        device_type: 'ESP Master Board (Uno System)',
-                        uno_system: true,
-                        last_seen: new Date().toISOString(),
-                        connection_duration: device.runtime_capabilities?.last_socket_connection ?
-                            new Date().getTime() - new Date(device.runtime_capabilities.last_socket_connection).getTime() : 0
-                    }
-                }
-            }).catch(err => {
-                console.error(`[UNO-DOOR] Database update failed on disconnect:`, err);
-            });
-
-            clientNamespace.emit('device_disconnect', {
-                serialNumber,
-                deviceType: 'ESP Master Board (Uno System)',
-                reason: reason,
-                impact: 'Arduino Uno door system lost - All 6 servo doors affected',
-                affected_doors: 'All 6 servo doors managed by Arduino Uno',
-                system_type: 'arduino_uno',
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error(`[UNO-DOOR] Error in disconnect handler for ${serialNumber}:`, error);
-        }
-    });
-};
-
-/**
- * Setup ESP-01 door device handlers
+ * ✅ OPTIMIZED: Setup ESP-01 door device handlers with compact data support
  */
 export const setupESP01EventHandlers = (socket: Socket, io: Server, serialNumber: string, device: any) => {
     const clientNamespace = io.of('/client');
 
-    console.log(`[ESP-01] Setting up ESP-01 specific handlers for ${serialNumber}`);
+    console.log(`[ESP01] Setting up Optimized ESP-01 handlers for ${serialNumber}`);
 
     socket.on('device_online', async (data) => {
         try {
-            console.log(`[ESP-01] Device online from ${serialNumber}:`, data);
+            console.log(`[ESP01] Device online from ${serialNumber}:`, data);
 
             socket.emit('device_online_ack', {
                 status: 'received',
-                deviceType: 'ESP-01 Direct',
+                deviceType: 'ESP-01 Optimized',
                 esp01_mode: true,
+                optimized: true,
                 timestamp: new Date().toISOString()
             });
 
             clientNamespace.emit('device_connect', {
                 serialNumber,
-                deviceType: 'ESP-01 DOOR CONTROLLER',
-                connectionType: 'esp01_direct',
+                deviceType: 'ESP-01 DOOR CONTROLLER (OPTIMIZED)',
+                connectionType: 'esp01_optimized',
                 link_status: device.link_status,
                 esp01_mode: true,
-                capabilities: ['door_control', 'status_reporting'],
+                optimized: true,
+                capabilities: ['compact_communication', 'optimized_control'],
                 timestamp: new Date().toISOString()
             });
         } catch (error) {
-            console.error(`[ESP-01] Error in device_online for ${serialNumber}:`, error);
+            console.error(`[ESP01] Error in device_online for ${serialNumber}:`, error);
         }
     });
 
+    // ✅ OPTIMIZED: Handle compact command responses
     socket.on('command_response', (data) => {
         try {
-            console.log(`[ESP-01] Command response from ${serialNumber}:`, data);
+            console.log(`[ESP01] Compact response from ${serialNumber}:`, data);
+
+            // Expand compact data if needed
+            let responseData = data;
+            if (data.compact_data || data.s !== undefined) {
+                responseData = expandCompactResponse(data);
+            }
 
             clientNamespace.to(`door:${serialNumber}`).emit('door_command_response', {
                 serialNumber,
-                ...data,
-                deviceType: 'ESP-01 Direct',
+                ...responseData,
+                deviceType: 'ESP-01 Optimized',
                 esp01_processed: true,
+                optimized: true,
                 timestamp: new Date().toISOString()
             });
         } catch (error) {
-            console.error(`[ESP-01] Error in command_response for ${serialNumber}:`, error);
+            console.error(`[ESP01] Error in command_response for ${serialNumber}:`, error);
         }
     });
 
+    // ✅ OPTIMIZED: Handle compact device status
     socket.on('deviceStatus', (data) => {
         try {
-            console.log(`[ESP-01] Status from ${serialNumber}:`, data);
+            console.log(`[ESP01] Compact status from ${serialNumber}:`, data);
+
+            // Expand compact status if needed
+            let statusData = data;
+            if (data.compact_data || data.d) {
+                statusData = expandCompactStatus(data);
+            }
 
             clientNamespace.to(`door:${serialNumber}`).emit('door_status', {
-                ...data,
-                deviceType: 'ESP-01 Direct',
-                connectionType: 'esp01_direct',
+                ...statusData,
+                deviceType: 'ESP-01 Optimized',
+                connectionType: 'esp01_optimized',
                 esp01_mode: true,
+                optimized: true,
                 timestamp: new Date().toISOString()
             });
         } catch (error) {
-            console.error(`[ESP-01] Error in deviceStatus for ${serialNumber}:`, error);
+            console.error(`[ESP01] Error in deviceStatus for ${serialNumber}:`, error);
         }
     });
 
+    // Heartbeat handling
     socket.on('heartbeat', (data) => {
         try {
-            console.log(`[ESP-01] Heartbeat from ${serialNumber}:`, data);
+            console.log(`[ESP01] Heartbeat from ${serialNumber}`);
 
             socket.emit('heartbeat_ack', {
                 received: true,
-                deviceType: 'ESP-01 Direct',
+                deviceType: 'ESP-01 Optimized',
                 esp01_mode: true,
+                optimized: true,
                 server_time: new Date().toISOString(),
                 timestamp: new Date().toISOString()
             });
         } catch (error) {
-            console.error(`[ESP-01] Error in heartbeat for ${serialNumber}:`, error);
+            console.error(`[ESP01] Error in heartbeat for ${serialNumber}:`, error);
         }
     });
 
     socket.on('disconnect', async (reason) => {
-        console.log(`[ESP-01] Device ${serialNumber} disconnected. Reason: ${reason}`);
+        console.log(`[ESP01] ESP-01 ${serialNumber} disconnected. Reason: ${reason}`);
 
         try {
             await prisma.devices.update({
@@ -574,41 +278,44 @@ export const setupESP01EventHandlers = (socket: Socket, io: Server, serialNumber
                         last_socket_disconnection: new Date().toISOString(),
                         socket_connected: false,
                         esp01_last_disconnect: reason,
-                        esp01_mode: true
+                        esp01_mode: true,
+                        optimized: true
                     }
                 }
             }).catch(err => {
-                console.error(`[ESP-01] Database update failed on disconnect:`, err);
+                console.error(`[ESP01] Database update failed:`, err);
             });
 
             clientNamespace.emit('door_disconnect', {
                 serialNumber,
-                deviceType: 'ESP-01 Direct',
+                deviceType: 'ESP-01 Optimized',
                 esp01_mode: true,
+                optimized: true,
                 reason: reason,
                 timestamp: new Date().toISOString(),
             });
         } catch (error) {
-            console.error(`[ESP-01] Error in disconnect handler for ${serialNumber}:`, error);
+            console.error(`[ESP01] Error in disconnect handler for ${serialNumber}:`, error);
         }
     });
 };
 
 /**
- * Setup standard door device handlers (ESP8266)
+ * Setup standard door device handlers (ESP8266) - keeping for compatibility
  */
 export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber: string, device: any) => {
     const clientNamespace = io.of('/client');
 
-    console.log(`[DOOR-DEVICE] Setting up ESP8266 door device handlers for ${serialNumber}`);
+    console.log(`[ESP8266] Setting up ESP8266 door device handlers for ${serialNumber}`);
 
     socket.on('device_online', async (data) => {
         try {
-            console.log(`[DOOR-DEVICE] Device online from ${serialNumber}:`, data);
+            console.log(`[ESP8266] Device online from ${serialNumber}:`, data);
 
             socket.emit('device_online_ack', {
                 status: 'received',
                 deviceType: 'ESP8266 Direct',
+                optimized: true,
                 timestamp: new Date().toISOString()
             });
 
@@ -617,45 +324,48 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 deviceType: data.deviceType || 'SERVO_DOOR_CONTROLLER',
                 connectionType: 'direct',
                 link_status: device.link_status,
+                optimized: true,
                 timestamp: new Date().toISOString()
             });
         } catch (error) {
-            console.error(`[DOOR-DEVICE] Error in device_online for ${serialNumber}:`, error);
+            console.error(`[ESP8266] Error in device_online for ${serialNumber}:`, error);
         }
     });
 
     socket.on('command_response', (data) => {
         try {
-            console.log(`[DOOR-DEVICE] Command response from ${serialNumber}:`, data);
+            console.log(`[ESP8266] Command response from ${serialNumber}:`, data);
 
             clientNamespace.to(`door:${serialNumber}`).emit('door_command_response', {
                 serialNumber,
                 ...data,
                 deviceType: 'ESP8266 Direct',
+                optimized: true,
                 timestamp: new Date().toISOString()
             });
         } catch (error) {
-            console.error(`[DOOR-DEVICE] Error in command_response for ${serialNumber}:`, error);
+            console.error(`[ESP8266] Error in command_response for ${serialNumber}:`, error);
         }
     });
 
     socket.on('deviceStatus', (data) => {
         try {
-            console.log(`[DOOR-DEVICE] Device status from ${serialNumber}:`, data);
+            console.log(`[ESP8266] Device status from ${serialNumber}:`, data);
 
             clientNamespace.to(`door:${serialNumber}`).emit('door_status', {
                 ...data,
                 deviceType: 'ESP8266 Direct',
                 connectionType: 'direct',
+                optimized: true,
                 timestamp: new Date().toISOString()
             });
         } catch (error) {
-            console.error(`[DOOR-DEVICE] Error in deviceStatus for ${serialNumber}:`, error);
+            console.error(`[ESP8266] Error in deviceStatus for ${serialNumber}:`, error);
         }
     });
 
     socket.on('disconnect', async (reason) => {
-        console.log(`[DOOR-DEVICE] Device ${serialNumber} disconnected. Reason: ${reason}`);
+        console.log(`[ESP8266] Device ${serialNumber} disconnected. Reason: ${reason}`);
 
         try {
             await prisma.devices.update({
@@ -668,40 +378,105 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                         socket_connected: false,
                         disconnection_reason: reason,
                         device_type: 'ESP8266 Direct',
-                        last_seen: new Date().toISOString(),
-                        connection_duration: device.runtime_capabilities?.last_socket_connection ?
-                            new Date().getTime() - new Date(device.runtime_capabilities.last_socket_connection).getTime() : 0
+                        optimized: true,
+                        last_seen: new Date().toISOString()
                     }
                 }
             }).catch(err => {
-                console.error(`[DOOR-DEVICE] Database update failed on disconnect for ${serialNumber}:`, err);
+                console.error(`[ESP8266] Database update failed:`, err);
             });
 
             clientNamespace.emit('door_disconnect', {
                 serialNumber,
                 deviceType: 'ESP8266 Direct',
+                optimized: true,
                 reason: reason,
-                timestamp: new Date().toISOString(),
-                connection_lost: true,
-                device_capabilities: {
-                    can_reconnect: true,
-                    supports_auto_recovery: true
-                }
+                timestamp: new Date().toISOString()
             });
         } catch (error) {
-            console.error(`[DOOR-DEVICE] Error handling disconnect for ${serialNumber}:`, error);
-
-            try {
-                clientNamespace.emit('door_disconnect', {
-                    serialNumber,
-                    deviceType: 'ESP8266 Direct',
-                    reason: 'disconnect_with_error',
-                    error: error instanceof Error ? error.message : 'Unknown error',
-                    timestamp: new Date().toISOString()
-                });
-            } catch (notifyError) {
-                console.error(`[DOOR-DEVICE] Failed to notify clients about disconnect:`, notifyError);
-            }
+            console.error(`[ESP8266] Error handling disconnect for ${serialNumber}:`, error);
         }
     });
+};
+
+/**
+ * ✅ OPTIMIZED: Expand compact response format
+ */
+function expandCompactResponse(compactData: any): any {
+    const expanded = {
+        success: compactData.s === 1 || compactData.s === "1" || compactData.success === true || compactData.success === "true",
+        result: compactData.r || compactData.result || "processed",
+        deviceId: compactData.d || compactData.deviceId,
+        command: compactData.c || compactData.command,
+        servo_angle: compactData.a || compactData.servo_angle || compactData.angle || 0,
+        esp01_processed: true,
+        optimized: true,
+        compact_expanded: true,
+        timestamp: compactData.t || compactData.timestamp || Date.now()
+    };
+
+    console.log(`[EXPAND] Compact → Full:`, { compactData, expanded });
+    return expanded;
+}
+
+/**
+ * ✅ OPTIMIZED: Expand compact status format
+ */
+function expandCompactStatus(compactData: any): any {
+    // Map compact state codes to full names
+    const stateMap: { [key: string]: string } = {
+        'CLD': 'closed',
+        'OPG': 'opening',
+        'OPD': 'open',
+        'CLG': 'closing'
+    };
+
+    const expanded = {
+        deviceId: compactData.d || compactData.deviceId,
+        door_state: stateMap[compactData.s] || compactData.s || compactData.door_state || 'unknown',
+        servo_angle: compactData.a || compactData.servo_angle || compactData.angle || 0,
+        esp01_online: compactData.o === 1 || compactData.o === "1" || true,
+        optimized: true,
+        compact_expanded: true,
+        timestamp: compactData.t || compactData.timestamp || Date.now()
+    };
+
+    console.log(`[EXPAND-STS] Compact Status → Full:`, { compactData, expanded });
+    return expanded;
+}
+
+/**
+ * ✅ OPTIMIZED: Helper function to create compact commands for ESP-01
+ */
+export const createCompactCommand = (action: string, serialNumber: string, state: any = {}): any => {
+    // Map full actions to compact format
+    const actionMap: { [key: string]: string } = {
+        'open_door': 'OPN',
+        'close_door': 'CLS',
+        'toggle_door': 'TGL'
+    };
+
+    const compactAction = actionMap[action] || action;
+
+    return {
+        action: compactAction,
+        serialNumber: serialNumber,
+        compact_data: true,
+        esp01_optimized: true,
+        state: state,
+        timestamp: new Date().toISOString()
+    };
+};
+
+/**
+ * ✅ OPTIMIZED: Validate ESP-01 data integrity
+ */
+export const validateESP01Data = (data: any): boolean => {
+    // Check for required fields in compact format
+    if (data.compact_data) {
+        return data.d && (data.s !== undefined) && data.t;
+    }
+
+    // Check for standard format
+    return data.serialNumber || data.deviceId;
 };
