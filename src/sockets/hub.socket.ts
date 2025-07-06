@@ -28,12 +28,11 @@ const detectDeviceType = (socket: Socket): {
         userAgent.includes('Gateway') ||
         query.gateway_managed === 'true';
 
-    // ✅ SIMPLE: Match what your ESP Hub is already sending
+    // ✅ FIXED: Use query parameters properly
     const isHub = userAgent.includes('ESP-Hub-Opt') ||
         userAgent.includes('ESP_HUB_OPT') ||
         query.hub_managed === 'true' ||
         query.optimized === 'true' ||
-        // ✅ ADD: Your ESP sends "ESP-Hub-Opt/4.0.0" user-agent
         userAgent.includes('ESP-Hub-Opt/4.0.0');
 
     const isESP01 = userAgent.includes('ESP-01') ||
@@ -553,7 +552,7 @@ export const setupHubSocket = (io: Server) => {
                     console.log(`[CMD] Sending ESP-01 command to target: ${targetSerial}`);
                     console.log(`[CMD] Command data:`, JSON.stringify(doorCommand, null, 2));
 
-                    // Check system availability
+                    // ✅ FIX: Check room availability properly
                     const roomsToCheck: string[] = [];
                     let systemName = '';
 
@@ -569,20 +568,40 @@ export const setupHubSocket = (io: Server) => {
                     }
 
                     console.log(`[CMD] Checking ${systemName} availability...`);
-                    console.log(`[CMD] Rooms: ${roomsToCheck.join(', ')}`);
+                    console.log(`[CMD] Rooms to check: ${roomsToCheck.join(', ')}`);
 
+                    // ✅ FIX: Use root io instance, not clientNamespace
                     const deviceSockets = io.sockets.adapter.rooms.get(`device:${serialNumber}`);
-                    console.log(`[CMD] Device room ${serialNumber} has ${deviceSockets?.size || 0} sockets`);
+                    const hubSockets = io.sockets.adapter.rooms.get(`hub:${serialNumber}`);
+                    const espHubSockets = io.sockets.adapter.rooms.get(`esp-hub:${serialNumber}`);
 
-                    if (!deviceSockets || deviceSockets.size === 0) {
+                    console.log(`[CMD] Room sizes:`);
+                    console.log(`[CMD]   device:${serialNumber} = ${deviceSockets?.size || 0} sockets`);
+                    console.log(`[CMD]   hub:${serialNumber} = ${hubSockets?.size || 0} sockets`);
+                    console.log(`[CMD]   esp-hub:${serialNumber} = ${espHubSockets?.size || 0} sockets`);
+
+                    // ✅ FIX: Check any room has members
+                    const hasConnection = (deviceSockets && deviceSockets.size > 0) ||
+                        (hubSockets && hubSockets.size > 0) ||
+                        (espHubSockets && espHubSockets.size > 0);
+
+                    if (!hasConnection) {
                         console.log(`[CMD] ❌ ${systemName} ${serialNumber} not connected`);
+
+                        // List all available rooms for debugging
+                        const allRooms = Array.from(io.sockets.adapter.rooms.keys());
+                        const relevantRooms = allRooms.filter((room: string) =>
+                            room.includes(serialNumber) || room.includes('device:') || room.includes('hub:')
+                        );
+                        console.log(`[CMD] Available relevant rooms:`, relevantRooms);
+
                         socket.emit('door_command_error', {
                             success: false,
                             error: `${systemName} not connected`,
                             serialNumber: targetSerial,
                             hubSerial: serialNumber,
                             system_type: 'esp01_system',
-                            available_rooms: Array.from(io.sockets.adapter.rooms.keys()).filter((room: string) => room.includes(serialNumber)),
+                            available_rooms: relevantRooms,
                             timestamp: new Date().toISOString()
                         });
                         return;
@@ -596,12 +615,20 @@ export const setupHubSocket = (io: Server) => {
                         roomsSent.push(`device:${targetSerial}`);
                     }
 
-                    // Send to connected system
+                    // ✅ FIX: Send to all relevant rooms
                     if (systemType === 'hub') {
-                        io.to(`device:${serialNumber}`).emit('command', doorCommand);
-                        io.to(`hub:${serialNumber}`).emit('command', doorCommand);
-                        io.to(`esp-hub:${serialNumber}`).emit('command', doorCommand);
-                        roomsSent.push(`device:${serialNumber}`, `hub:${serialNumber}`, `esp-hub:${serialNumber}`);
+                        if (deviceSockets && deviceSockets.size > 0) {
+                            io.to(`device:${serialNumber}`).emit('command', doorCommand);
+                            roomsSent.push(`device:${serialNumber}`);
+                        }
+                        if (hubSockets && hubSockets.size > 0) {
+                            io.to(`hub:${serialNumber}`).emit('command', doorCommand);
+                            roomsSent.push(`hub:${serialNumber}`);
+                        }
+                        if (espHubSockets && espHubSockets.size > 0) {
+                            io.to(`esp-hub:${serialNumber}`).emit('command', doorCommand);
+                            roomsSent.push(`esp-hub:${serialNumber}`);
+                        }
                     } else if (systemType === 'gateway') {
                         io.to(`device:${serialNumber}`).emit('command', doorCommand);
                         io.to(`gateway:${serialNumber}`).emit('command', doorCommand);
@@ -623,6 +650,11 @@ export const setupHubSocket = (io: Server) => {
                         sent_to_rooms: roomsSent,
                         system_connected: true,
                         system_type: 'esp01_system',
+                        room_sizes: {
+                            device: deviceSockets?.size || 0,
+                            hub: hubSockets?.size || 0,
+                            esp_hub: espHubSockets?.size || 0
+                        },
                         timestamp: new Date().toISOString()
                     });
 
