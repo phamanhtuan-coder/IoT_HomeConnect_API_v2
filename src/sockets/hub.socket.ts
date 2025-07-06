@@ -28,10 +28,13 @@ const detectDeviceType = (socket: Socket): {
         userAgent.includes('Gateway') ||
         query.gateway_managed === 'true';
 
+    // ✅ SIMPLE: Match what your ESP Hub is already sending
     const isHub = userAgent.includes('ESP-Hub-Opt') ||
         userAgent.includes('ESP_HUB_OPT') ||
         query.hub_managed === 'true' ||
-        query.optimized === 'true';
+        query.optimized === 'true' ||
+        // ✅ ADD: Your ESP sends "ESP-Hub-Opt/4.0.0" user-agent
+        userAgent.includes('ESP-Hub-Opt/4.0.0');
 
     const isESP01 = userAgent.includes('ESP-01') ||
         socket.handshake.headers['x-esp-device'] === 'ESP-01' ||
