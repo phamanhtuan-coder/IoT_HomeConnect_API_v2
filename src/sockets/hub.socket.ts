@@ -86,6 +86,9 @@ export const setupHubSocket = (io: Server) => {
             systemType = 'door';
         }
 
+        // Log connection details
+        console.log(`[HUB] New connection - Socket ID: ${socket.id}, Serial: ${serialNumber}, Type: ${deviceType}`);
+
         // Handle ESP devices
         if ((isESP8266 || isGateway || isESP01 || isHub) && serialNumber && isIoTDevice === 'true' && !accountId) {
             console.log(`[HUB] ${deviceType} Device detected - Socket ID: ${socket.id}`);
@@ -255,20 +258,36 @@ export const setupHubSocket = (io: Server) => {
                 connectedAt: new Date()
             };
 
-            // Join rooms with error handling
-            try {
-                socket.join(`hub:${serialNumber}`);
-                socket.join(`device:${serialNumber}`);
-                socket.join(`esp-hub:${serialNumber}`);
-                console.log(`[ESP-HUB] ${serialNumber} joined rooms:`, Array.from(socket.rooms));
-            } catch (error) {
-                console.error(`[ESP-HUB] Room join failed for ${serialNumber}:`, error);
-                socket.emit('connection_error', {
-                    code: 'ROOM_JOIN_FAILED',
-                    message: 'Failed to join rooms',
-                    serialNumber,
-                    timestamp: new Date().toISOString()
-                });
+            // Ensure socket is connected before proceeding
+            if (!socket.connected) {
+                console.error(`[ESP-HUB] Socket ${socket.id} disconnected before setup for ${serialNumber}`);
+                return;
+            }
+
+            // Join rooms with retry logic
+            const joinRooms = async () => {
+                const rooms = [`hub:${serialNumber}`, `device:${serialNumber}`, `esp-hub:${serialNumber}`];
+                for (const room of rooms) {
+                    try {
+                        await socket.join(room);
+                        console.log(`[ESP-HUB] ${serialNumber} joined room: ${room}`);
+                    } catch (error) {
+                        console.error(`[ESP-HUB] Failed to join ${room} for ${serialNumber}:`, error);
+                        socket.emit('connection_error', {
+                            code: 'ROOM_JOIN_FAILED',
+                            message: `Failed to join room ${room}`,
+                            serialNumber,
+                            timestamp: new Date().toISOString()
+                        });
+                        return false;
+                    }
+                }
+                return true;
+            };
+
+            const roomsJoined = await joinRooms();
+            if (!roomsJoined) {
+                console.error(`[ESP-HUB] Room joining failed for ${serialNumber}, disconnecting`);
                 setTimeout(() => socket.disconnect(true), 2000);
                 return;
             }
@@ -281,11 +300,27 @@ export const setupHubSocket = (io: Server) => {
             console.log(`[ESP-HUB] hub:${serialNumber} room has ${hubRoom?.size || 0} members`);
             console.log(`[ESP-HUB] esp-hub:${serialNumber} room has ${espHubRoom?.size || 0} members`);
 
-            // Database update
-            try {
-                const device = await prisma.devices.findFirst({
-                    where: { serial_number: serialNumber, is_deleted: false }
+            if (!deviceRoom?.size || !hubRoom?.size || !espHubRoom?.size) {
+                console.error(`[ESP-HUB] Room membership verification failed for ${serialNumber}`);
+                socket.emit('connection_error', {
+                    code: 'ROOM_VERIFICATION_FAILED',
+                    message: 'Failed to verify room membership',
+                    serialNumber,
+                    timestamp: new Date().toISOString()
                 });
+                setTimeout(() => socket.disconnect(true), 2000);
+                return;
+            }
+
+            // Database update with timeout
+            try {
+                const device = await Promise.race([
+                    prisma.devices.findFirst({
+                        where: { serial_number: serialNumber, is_deleted: false }
+                    }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 5000))
+                ]);
+
                 if (!device) {
                     console.error(`[ESP-HUB] Device ${serialNumber} not found in database`);
                     socket.emit('connection_error', {
@@ -298,19 +333,22 @@ export const setupHubSocket = (io: Server) => {
                     return;
                 }
 
-                await prisma.devices.update({
-                    where: { serial_number: serialNumber },
-                    data: {
-                        updated_at: new Date(),
-                        runtime_capabilities: {
-                            last_socket_connection: new Date().toISOString(),
-                            connection_type: 'hub_optimized',
-                            socket_connected: true,
-                            device_type: 'ESP Socket Hub (Optimized)',
-                            optimized: true
+                await Promise.race([
+                    prisma.devices.update({
+                        where: { serial_number: serialNumber },
+                        data: {
+                            updated_at: new Date(),
+                            runtime_capabilities: {
+                                last_socket_connection: new Date().toISOString(),
+                                connection_type: 'hub_optimized',
+                                socket_connected: true,
+                                device_type: 'ESP Socket Hub (Optimized)',
+                                optimized: true
+                            }
                         }
-                    }
-                });
+                    }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Database update timeout')), 5000))
+                ]);
                 console.log(`[ESP-HUB] Database updated for ${serialNumber}`);
             } catch (error) {
                 console.error(`[ESP-HUB] Database update failed for ${serialNumber}:`, error);
@@ -327,7 +365,7 @@ export const setupHubSocket = (io: Server) => {
             // Setup handlers
             setupDoorHubHandlers(socket, io, serialNumber);
 
-            // Send connection_welcome immediately
+            // Send connection_welcome
             try {
                 const welcomeMsg = {
                     status: 'connected',
@@ -346,6 +384,14 @@ export const setupHubSocket = (io: Server) => {
                     console.log(`[ESP-HUB] ${serialNumber} verified connected`);
                 } else {
                     console.log(`[ESP-HUB] ${serialNumber} NOT connected after welcome`);
+                    socket.emit('connection_error', {
+                        code: 'SOCKET_DISCONNECTED',
+                        message: 'Socket disconnected after welcome',
+                        serialNumber,
+                        timestamp: new Date().toISOString()
+                    });
+                    setTimeout(() => socket.disconnect(true), 2000);
+                    return;
                 }
             } catch (error) {
                 console.error(`[ESP-HUB] Welcome failed for ${serialNumber}:`, error);
@@ -365,26 +411,30 @@ export const setupHubSocket = (io: Server) => {
                     console.log(`[ESP-HUB] Device online from ${serialNumber}:`, data);
 
                     // Re-join rooms to ensure consistency
-                    socket.join(`hub:${serialNumber}`);
-                    socket.join(`device:${serialNumber}`);
-                    socket.join(`esp-hub:${serialNumber}`);
-                    console.log(`[ESP-HUB] Re-joined rooms for ${serialNumber}:`, Array.from(socket.rooms));
+                    const rejoinSuccess = await joinRooms();
+                    if (!rejoinSuccess) {
+                        console.error(`[ESP-HUB] Re-join rooms failed for ${serialNumber}`);
+                        return;
+                    }
 
                     // Update database
-                    await prisma.devices.update({
-                        where: { serial_number: serialNumber },
-                        data: {
-                            updated_at: new Date(),
-                            runtime_capabilities: {
-                                last_socket_connection: new Date().toISOString(),
-                                connection_type: 'hub_optimized',
-                                socket_connected: true,
-                                device_type: 'ESP Socket Hub (Optimized)',
-                                firmware_version: data.firmware_version || 'unknown',
-                                optimized: true
+                    await Promise.race([
+                        prisma.devices.update({
+                            where: { serial_number: serialNumber },
+                            data: {
+                                updated_at: new Date(),
+                                runtime_capabilities: {
+                                    last_socket_connection: new Date().toISOString(),
+                                    connection_type: 'hub_optimized',
+                                    socket_connected: true,
+                                    device_type: 'ESP Socket Hub (Optimized)',
+                                    firmware_version: data.firmware_version || 'unknown',
+                                    optimized: true
+                                }
                             }
-                        }
-                    });
+                        }),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Database update timeout')), 5000))
+                    ]);
 
                     // Broadcast to clients
                     io.of('/client').emit('hub_online', {
@@ -420,6 +470,15 @@ export const setupHubSocket = (io: Server) => {
                 console.log(`[ESP-HUB] Current rooms after ACK:`, currentRooms);
             });
 
+            socket.on('disconnect', () => {
+                console.log(`[ESP-HUB] ${serialNumber} disconnected`);
+                io.of('/client').emit('hub_offline', {
+                    serialNumber,
+                    deviceType: 'ESP Socket Hub (Optimized)',
+                    timestamp: new Date().toISOString()
+                });
+            });
+
             console.log(`[ESP-HUB] ${serialNumber} setup completed`);
             return;
         }
@@ -451,9 +510,21 @@ export const setupHubSocket = (io: Server) => {
                 connectedAt: new Date()
             };
 
-            socket.join(`gateway:${serialNumber}`);
-            socket.join(`device:${serialNumber}`);
-            console.log(`[ESP-GW] ${serialNumber} joined gateway rooms`);
+            try {
+                await socket.join(`gateway:${serialNumber}`);
+                await socket.join(`device:${serialNumber}`);
+                console.log(`[ESP-GW] ${serialNumber} joined gateway rooms`);
+            } catch (error) {
+                console.error(`[ESP-GW] Room join failed for ${serialNumber}:`, error);
+                socket.emit('connection_error', {
+                    code: 'ROOM_JOIN_FAILED',
+                    message: 'Failed to join gateway rooms',
+                    serialNumber,
+                    timestamp: new Date().toISOString()
+                });
+                socket.disconnect(true);
+                return;
+            }
 
             setupDoorHubHandlers(socket, io, serialNumber);
 
@@ -498,10 +569,7 @@ export const setupHubSocket = (io: Server) => {
                 new Promise((_, reject) =>
                     setTimeout(() => reject(new Error('Database timeout')), 5000)
                 )
-            ]).catch(err => {
-                console.error(`[ESP-DEVICE] Database error for ${serialNumber}:`, err);
-                throw new Error(`Database operation failed: ${err.message}`);
-            });
+            ]);
 
             if (!device) {
                 console.error(`[ESP-DEVICE] Device ${serialNumber} not found in database`);
@@ -529,9 +597,21 @@ export const setupHubSocket = (io: Server) => {
                 esp01_mode: isESP01
             };
 
-            socket.join(`door:${serialNumber}`);
-            socket.join(`device:${serialNumber}`);
-            console.log(`[ESP-DEVICE] ${serialNumber} joined device rooms`);
+            try {
+                await socket.join(`door:${serialNumber}`);
+                await socket.join(`device:${serialNumber}`);
+                console.log(`[ESP-DEVICE] ${serialNumber} joined device rooms`);
+            } catch (error) {
+                console.error(`[ESP-DEVICE] Room join failed for ${serialNumber}:`, error);
+                socket.emit('connection_error', {
+                    code: 'ROOM_JOIN_FAILED',
+                    message: 'Failed to join device rooms',
+                    serialNumber,
+                    timestamp: new Date().toISOString()
+                });
+                setTimeout(() => socket.disconnect(true), 2000);
+                return;
+            }
 
             const updateData: any = {
                 updated_at: new Date(),
@@ -551,12 +631,17 @@ export const setupHubSocket = (io: Server) => {
                 updateData.hub_id = serialNumber;
             }
 
-            prisma.devices.update({
-                where: { serial_number: serialNumber },
-                data: updateData
-            }).catch(err => {
+            try {
+                await Promise.race([
+                    prisma.devices.update({
+                        where: { serial_number: serialNumber },
+                        data: updateData
+                    }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Database update timeout')), 5000))
+                ]);
+            } catch (err) {
                 console.error(`[ESP-DEVICE] Metadata update failed for ${serialNumber}:`, err);
-            });
+            }
 
             try {
                 socket.emit('connection_welcome', {
@@ -565,6 +650,7 @@ export const setupHubSocket = (io: Server) => {
                     serialNumber,
                     deviceType,
                     gateway_managed: gateway_managed === 'true',
+                    hub_managed: hub_managed === 'true',
                     link_status: (device as any).link_status,
                     esp01_mode: isESP01,
                     optimized: true,
@@ -609,13 +695,24 @@ export const setupHubSocket = (io: Server) => {
         if (serialNumber && accountId) {
             console.log(`[CLIENT] Client connected for ${systemType || 'door'} ${serialNumber} by user ${accountId}`);
 
-            if (systemType === 'hub') {
-                socket.join(`hub:${serialNumber}`);
-                socket.join(`esp-hub:${serialNumber}`);
-            } else if (systemType === 'gateway') {
-                socket.join(`gateway:${serialNumber}`);
-            } else {
-                socket.join(`door:${serialNumber}`);
+            try {
+                if (systemType === 'hub') {
+                    await socket.join(`hub:${serialNumber}`);
+                    await socket.join(`esp-hub:${serialNumber}`);
+                } else if (systemType === 'gateway') {
+                    await socket.join(`gateway:${serialNumber}`);
+                } else {
+                    await socket.join(`door:${serialNumber}`);
+                }
+            } catch (error) {
+                console.error(`[CLIENT] Room join failed for ${serialNumber}:`, error);
+                socket.emit('connection_error', {
+                    code: 'ROOM_JOIN_FAILED',
+                    message: 'Failed to join client rooms',
+                    serialNumber,
+                    timestamp: new Date().toISOString()
+                });
+                return;
             }
 
             socket.on('door_command', (commandData) => {
@@ -676,7 +773,7 @@ export const setupHubSocket = (io: Server) => {
                         console.log(`[CMD] ❌ ${systemName} ${serialNumber} not connected`);
                         const allRooms = Array.from(io.sockets.adapter.rooms.keys());
                         const relevantRooms = allRooms.filter((room: string) =>
-                            room.includes(serialNumber) || room.includes('device:') || room.includes('hub:'));
+                            room.includes(serialNumber) || room.includes('device:') || room.includes('hub:') || room.includes('esp-hub:'));
                         console.log(`[CMD] Available relevant rooms:`, relevantRooms);
 
                         socket.emit('door_command_error', {
