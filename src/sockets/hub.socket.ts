@@ -239,12 +239,14 @@ export const setupHubSocket = (io: Server) => {
         }
 
         // ESP Socket Hub
+// ESP Socket Hub
         if ((isHub || hub_managed === 'true' || optimized === 'true') && serialNumber && isIoTDevice === 'true') {
             console.log(`[ESP-HUB] ${serialNumber} connecting as Optimized ESP Socket Hub`);
             console.log('[ESP-HUB] Socket ID:', socket.id);
             console.log('[ESP-HUB] Headers:', socket.handshake.headers);
             console.log('[ESP-HUB] Query:', socket.handshake.query);
 
+            // Set socket data
             socket.data = {
                 serialNumber,
                 isIoTDevice: true,
@@ -258,36 +260,20 @@ export const setupHubSocket = (io: Server) => {
                 connectedAt: new Date()
             };
 
-            // Ensure socket is connected before proceeding
-            if (!socket.connected) {
-                console.error(`[ESP-HUB] Socket ${socket.id} disconnected before setup for ${serialNumber}`);
-                return;
-            }
-
-            // Join rooms with retry logic
-            const joinRooms = async () => {
-                const rooms = [`hub:${serialNumber}`, `device:${serialNumber}`, `esp-hub:${serialNumber}`];
-                for (const room of rooms) {
-                    try {
-                        await socket.join(room);
-                        console.log(`[ESP-HUB] ${serialNumber} joined room: ${room}`);
-                    } catch (error) {
-                        console.error(`[ESP-HUB] Failed to join ${room} for ${serialNumber}:`, error);
-                        socket.emit('connection_error', {
-                            code: 'ROOM_JOIN_FAILED',
-                            message: `Failed to join room ${room}`,
-                            serialNumber,
-                            timestamp: new Date().toISOString()
-                        });
-                        return false;
-                    }
-                }
-                return true;
-            };
-
-            const roomsJoined = await joinRooms();
-            if (!roomsJoined) {
-                console.error(`[ESP-HUB] Room joining failed for ${serialNumber}, disconnecting`);
+            // Join rooms with error handling
+            try {
+                await socket.join(`hub:${serialNumber}`);
+                await socket.join(`device:${serialNumber}`);
+                await socket.join(`esp-hub:${serialNumber}`);
+                console.log(`[ESP-HUB] ${serialNumber} joined rooms:`, Array.from(socket.rooms));
+            } catch (error) {
+                console.error(`[ESP-HUB] Room join failed for ${serialNumber}:`, error);
+                socket.emit('connection_error', {
+                    code: 'ROOM_JOIN_FAILED',
+                    message: 'Failed to join rooms',
+                    serialNumber,
+                    timestamp: new Date().toISOString()
+                });
                 setTimeout(() => socket.disconnect(true), 2000);
                 return;
             }
@@ -296,15 +282,11 @@ export const setupHubSocket = (io: Server) => {
             const deviceRoom = io.sockets.adapter.rooms.get(`device:${serialNumber}`);
             const hubRoom = io.sockets.adapter.rooms.get(`hub:${serialNumber}`);
             const espHubRoom = io.sockets.adapter.rooms.get(`esp-hub:${serialNumber}`);
-            console.log(`[ESP-HUB] device:${serialNumber} room has ${deviceRoom?.size || 0} members`);
-            console.log(`[ESP-HUB] hub:${serialNumber} room has ${hubRoom?.size || 0} members`);
-            console.log(`[ESP-HUB] esp-hub:${serialNumber} room has ${espHubRoom?.size || 0} members`);
-
-            if (!deviceRoom?.size || !hubRoom?.size || !espHubRoom?.size) {
+            if (!deviceRoom || !hubRoom || !espHubRoom) {
                 console.error(`[ESP-HUB] Room membership verification failed for ${serialNumber}`);
                 socket.emit('connection_error', {
                     code: 'ROOM_VERIFICATION_FAILED',
-                    message: 'Failed to verify room membership',
+                    message: 'Room membership not found',
                     serialNumber,
                     timestamp: new Date().toISOString()
                 });
@@ -312,15 +294,11 @@ export const setupHubSocket = (io: Server) => {
                 return;
             }
 
-            // Database update with timeout
+            // Database validation and update
             try {
-                const device = await Promise.race([
-                    prisma.devices.findFirst({
-                        where: { serial_number: serialNumber, is_deleted: false }
-                    }),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 5000))
-                ]);
-
+                const device = await prisma.devices.findFirst({
+                    where: { serial_number: serialNumber, is_deleted: false }
+                });
                 if (!device) {
                     console.error(`[ESP-HUB] Device ${serialNumber} not found in database`);
                     socket.emit('connection_error', {
@@ -333,28 +311,25 @@ export const setupHubSocket = (io: Server) => {
                     return;
                 }
 
-                await Promise.race([
-                    prisma.devices.update({
-                        where: { serial_number: serialNumber },
-                        data: {
-                            updated_at: new Date(),
-                            runtime_capabilities: {
-                                last_socket_connection: new Date().toISOString(),
-                                connection_type: 'hub_optimized',
-                                socket_connected: true,
-                                device_type: 'ESP Socket Hub (Optimized)',
-                                optimized: true
-                            }
+                await prisma.devices.update({
+                    where: { serial_number: serialNumber },
+                    data: {
+                        updated_at: new Date(),
+                        runtime_capabilities: {
+                            last_socket_connection: new Date().toISOString(),
+                            connection_type: 'hub_optimized',
+                            socket_connected: true,
+                            device_type: 'ESP Socket Hub (Optimized)',
+                            optimized: true
                         }
-                    }),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Database update timeout')), 5000))
-                ]);
+                    }
+                });
                 console.log(`[ESP-HUB] Database updated for ${serialNumber}`);
             } catch (error) {
-                console.error(`[ESP-HUB] Database update failed for ${serialNumber}:`, error);
+                console.error(`[ESP-HUB] Database error for ${serialNumber}:`, error);
                 socket.emit('connection_error', {
                     code: 'DATABASE_ERROR',
-                    message: 'Database update failed',
+                    message: 'Database operation failed',
                     serialNumber,
                     timestamp: new Date().toISOString()
                 });
@@ -362,121 +337,64 @@ export const setupHubSocket = (io: Server) => {
                 return;
             }
 
-            // Setup handlers
-            setupDoorHubHandlers(socket, io, serialNumber);
-
-            // Send connection_welcome
+            // Send connection_welcome event
+            const welcomeMsg = {
+                status: 'connected',
+                namespace: 'esp-hub-optimized',
+                serialNumber,
+                deviceType: 'ESP Socket Hub (Optimized)',
+                optimized: true,
+                esp01_support: true,
+                capabilities: ['esp01_gateway', 'compact_forwarding'],
+                timestamp: new Date().toISOString()
+            };
             try {
-                const welcomeMsg = {
-                    status: 'connected',
-                    namespace: 'esp-hub-optimized',
-                    serialNumber,
-                    deviceType: 'ESP Socket Hub (Optimized)',
-                    optimized: true,
-                    esp01_support: true,
-                    capabilities: ['esp01_gateway', 'compact_forwarding'],
-                    timestamp: new Date().toISOString()
-                };
                 socket.emit('connection_welcome', welcomeMsg);
                 console.log(`[ESP-HUB] Welcome sent to ${serialNumber}:`, welcomeMsg);
-
-                if (socket.connected) {
-                    console.log(`[ESP-HUB] ${serialNumber} verified connected`);
-                } else {
-                    console.log(`[ESP-HUB] ${serialNumber} NOT connected after welcome`);
-                    socket.emit('connection_error', {
-                        code: 'SOCKET_DISCONNECTED',
-                        message: 'Socket disconnected after welcome',
-                        serialNumber,
-                        timestamp: new Date().toISOString()
-                    });
-                    setTimeout(() => socket.disconnect(true), 2000);
-                    return;
-                }
             } catch (error) {
-                console.error(`[ESP-HUB] Welcome failed for ${serialNumber}:`, error);
+                console.error(`[ESP-HUB] Welcome emission failed for ${serialNumber}:`, error);
                 socket.emit('connection_error', {
-                    code: 'WELCOME_FAILED',
-                    message: 'Failed to send welcome message',
+                    code: 'WELCOME_EMIT_FAILED',
+                    message: 'Failed to send welcome event',
                     serialNumber,
                     timestamp: new Date().toISOString()
                 });
-                setTimeout(() => socket.disconnect(true), 2000);
                 return;
             }
 
-            // Handle device_online
+            // Handle device_online event
             socket.on('device_online', async (data) => {
                 try {
                     console.log(`[ESP-HUB] Device online from ${serialNumber}:`, data);
 
-                    // Re-join rooms to ensure consistency
-                    const rejoinSuccess = await joinRooms();
-                    if (!rejoinSuccess) {
-                        console.error(`[ESP-HUB] Re-join rooms failed for ${serialNumber}`);
-                        return;
-                    }
-
-                    // Update database
-                    await Promise.race([
-                        prisma.devices.update({
-                            where: { serial_number: serialNumber },
-                            data: {
-                                updated_at: new Date(),
-                                runtime_capabilities: {
-                                    last_socket_connection: new Date().toISOString(),
-                                    connection_type: 'hub_optimized',
-                                    socket_connected: true,
-                                    device_type: 'ESP Socket Hub (Optimized)',
-                                    firmware_version: data.firmware_version || 'unknown',
-                                    optimized: true
-                                }
+                    // Update database with firmware version
+                    await prisma.devices.update({
+                        where: { serial_number: serialNumber },
+                        data: {
+                            runtime_capabilities: {
+                                firmware_version: data.firmware_version || 'unknown'
                             }
-                        }),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('Database update timeout')), 5000))
-                    ]);
+                        }
+                    });
 
-                    // Broadcast to clients
+                    // Broadcast hub_online to clients
                     io.of('/client').emit('hub_online', {
-                        serialNumber: data.serialNumber || serialNumber,
-                        deviceType: data.deviceType || 'ESP Socket Hub (Optimized)',
+                        serialNumber,
+                        deviceType: 'ESP Socket Hub (Optimized)',
                         hub_managed: true,
                         optimized: true,
                         capabilities: data.capabilities || ['esp01_gateway', 'compact_forwarding'],
                         timestamp: new Date().toISOString()
                     });
 
-                    // Re-send welcome to handle retries
-                    const welcomeMsg = {
-                        status: 'connected',
-                        namespace: 'esp-hub-optimized',
-                        serialNumber,
-                        deviceType: 'ESP Socket Hub (Optimized)',
-                        optimized: true,
-                        esp01_support: true,
-                        capabilities: ['esp01_gateway', 'compact_forwarding'],
-                        timestamp: new Date().toISOString()
-                    };
-                    socket.emit('connection_welcome', welcomeMsg);
-                    console.log(`[ESP-HUB] Welcome re-sent on device_online for ${serialNumber}`);
+                    // Re-send welcome if not received
+                    if (!data.welcomeReceived) {
+                        socket.emit('connection_welcome', welcomeMsg);
+                        console.log(`[ESP-HUB] Welcome re-sent to ${serialNumber}`);
+                    }
                 } catch (error) {
-                    console.error(`[ESP-HUB] Error in device_online for ${serialNumber}:`, error);
+                    console.error(`[ESP-HUB] Error handling device_online for ${serialNumber}:`, error);
                 }
-            });
-
-            socket.on('welcome_ack', (data) => {
-                console.log(`[ESP-HUB] Welcome ACK from ${serialNumber}:`, data);
-                const currentRooms = Array.from(socket.rooms);
-                console.log(`[ESP-HUB] Current rooms after ACK:`, currentRooms);
-            });
-
-            socket.on('disconnect', () => {
-                console.log(`[ESP-HUB] ${serialNumber} disconnected`);
-                io.of('/client').emit('hub_offline', {
-                    serialNumber,
-                    deviceType: 'ESP Socket Hub (Optimized)',
-                    timestamp: new Date().toISOString()
-                });
             });
 
             console.log(`[ESP-HUB] ${serialNumber} setup completed`);
