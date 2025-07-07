@@ -5,6 +5,7 @@ import {
     setupDoorDeviceHandlers,
     setupDoorHubHandlers,
 } from './handlers/door.handlers';
+import { setupGardenSystemHandlers, setupMegaGardenHandlers } from './handlers/garden.handlers';
 
 /**
  * Detect device type for ESP-01 system only
@@ -28,7 +29,6 @@ const detectDeviceType = (socket: Socket): {
         userAgent.includes('Gateway') ||
         query.gateway_managed === 'true';
 
-    // ✅ FIXED: Use query parameters properly
     const isHub = userAgent.includes('ESP-Hub-Opt') ||
         userAgent.includes('ESP_HUB_OPT') ||
         query.hub_managed === 'true' ||
@@ -56,7 +56,6 @@ const detectDeviceType = (socket: Socket): {
 export const setupHubSocket = (io: Server) => {
     console.log('[HUB] Initializing ESP-01 Optimized Hub Socket...');
 
-    // Enhanced connection handling for ESP-01 system
     io.on('connection', async (socket: Socket) => {
         const {
             serialNumber,
@@ -78,7 +77,6 @@ export const setupHubSocket = (io: Server) => {
 
         const { isESP8266, isGateway, isESP01, isHub, deviceType } = detectDeviceType(socket);
 
-        // Determine system type
         let systemType = system_type || 'door';
         if (isHub) {
             systemType = 'hub';
@@ -88,7 +86,7 @@ export const setupHubSocket = (io: Server) => {
             systemType = 'door';
         }
 
-        // ✅ HANDLE ESP DEVICES ONLY
+        // Handle ESP devices
         if ((isESP8266 || isGateway || isESP01 || isHub) && serialNumber && isIoTDevice === 'true' && !accountId) {
             console.log(`[HUB] ${deviceType} Device detected - Socket ID: ${socket.id}`);
             console.log(`[HUB] ${deviceType} params:`, {
@@ -100,7 +98,6 @@ export const setupHubSocket = (io: Server) => {
             });
 
             try {
-                // ✅ UNIFIED DEVICE COMMAND for ESP-01 system
                 socket.on('device_command', (commandData) => {
                     try {
                         console.log(`[CMD] Unified ESP-01 command from client for ${serialNumber}:`, JSON.stringify(commandData, null, 2));
@@ -119,24 +116,17 @@ export const setupHubSocket = (io: Server) => {
 
                         console.log(`[CMD] Sending unified ESP-01 command:`, JSON.stringify(enhancedCommand, null, 2));
 
-                        // Route command to appropriate ESP system
                         if (systemType === 'hub') {
-                            // ESP Socket Hub commands
                             io.to(`device:${serialNumber}`).emit('command', enhancedCommand);
                             io.to(`hub:${serialNumber}`).emit('command', enhancedCommand);
                             io.to(`esp-hub:${serialNumber}`).emit('command', enhancedCommand);
-
                         } else if (systemType === 'gateway') {
-                            // ESP Gateway commands
                             io.to(`device:${serialNumber}`).emit('command', enhancedCommand);
                             io.to(`gateway:${serialNumber}`).emit('command', enhancedCommand);
-
                         } else {
-                            // Direct ESP device commands
                             io.to(`device:${serialNumber}`).emit('command', enhancedCommand);
                         }
 
-                        // Client acknowledgment
                         socket.emit('device_command_sent', {
                             success: true,
                             serialNumber,
@@ -150,7 +140,6 @@ export const setupHubSocket = (io: Server) => {
                         console.log(`[CMD] Unified ESP-01 command sent to ${systemType} ${serialNumber}`);
                     } catch (error) {
                         console.error(`[CMD] Unified ESP-01 command error for ${serialNumber}:`, error);
-
                         socket.emit('device_command_error', {
                             success: false,
                             error: error instanceof Error ? error.message : 'Unknown error',
@@ -161,7 +150,6 @@ export const setupHubSocket = (io: Server) => {
                     }
                 });
 
-                // ✅ ESP STATUS REQUEST - Get current status of ESP devices
                 socket.on('device_status_request', (requestData) => {
                     try {
                         console.log(`[STATUS] Status request for ${serialNumber}:`, requestData);
@@ -175,7 +163,6 @@ export const setupHubSocket = (io: Server) => {
                             timestamp: new Date().toISOString()
                         };
 
-                        // Send status request to appropriate system
                         if (systemType === 'hub') {
                             io.to(`device:${serialNumber}`).emit('status_request', statusRequest);
                             io.to(`hub:${serialNumber}`).emit('status_request', statusRequest);
@@ -192,7 +179,6 @@ export const setupHubSocket = (io: Server) => {
                     }
                 });
 
-                // ✅ ESP HEARTBEAT REQUEST - Manual heartbeat trigger
                 socket.on('heartbeat_request', (_requestData) => {
                     try {
                         console.log(`[HEARTBEAT] Heartbeat request for ${serialNumber}`);
@@ -206,7 +192,6 @@ export const setupHubSocket = (io: Server) => {
                             timestamp: new Date().toISOString()
                         };
 
-                        // Send heartbeat request
                         if (systemType === 'hub') {
                             io.to(`device:${serialNumber}`).emit('heartbeat_request', heartbeatRequest);
                             io.to(`hub:${serialNumber}`).emit('heartbeat_request', heartbeatRequest);
@@ -236,30 +221,21 @@ export const setupHubSocket = (io: Server) => {
 
             } catch (error) {
                 console.error(`[ERROR] Critical setup error for ${deviceType} ${serialNumber}:`, error);
-
-                try {
-                    socket.emit('connection_error', {
-                        code: 'SETUP_ERROR',
-                        message: (error as Error)?.message || 'Setup failed',
-                        deviceType,
-                        esp01_safe: true,
-                        optimized: true,
-                        timestamp: new Date().toISOString()
-                    });
-                } catch (emitError) {
-                    console.error(`[ERROR] Error emit failed for ${serialNumber}:`, emitError);
-                }
-
+                socket.emit('connection_error', {
+                    code: 'SETUP_ERROR',
+                    message: (error as Error)?.message || 'Setup failed',
+                    deviceType,
+                    esp01_safe: true,
+                    optimized: true,
+                    timestamp: new Date().toISOString()
+                });
                 setTimeout(() => socket.disconnect(true), 2000);
             }
 
             return;
         }
 
-        // ✅ ESP SOCKET HUB: Optimized gateway for ESP-01 doors
-// In hub.socket.ts, replace the ESP Socket Hub section starting at line 246:
-
-// ✅ ESP SOCKET HUB: Optimized gateway for ESP-01 doors
+        // ESP Socket Hub
         if ((isHub || hub_managed === 'true' || optimized === 'true') && serialNumber && isIoTDevice === 'true') {
             console.log(`[ESP-HUB] ${serialNumber} connecting as Optimized ESP Socket Hub`);
             console.log('[ESP-HUB] Socket ID:', socket.id);
@@ -279,25 +255,109 @@ export const setupHubSocket = (io: Server) => {
                 connectedAt: new Date()
             };
 
-            // ✅ FIX: Join rooms properly
+            // Join rooms
             socket.join(`hub:${serialNumber}`);
             socket.join(`device:${serialNumber}`);
             socket.join(`esp-hub:${serialNumber}`);
 
-            // ✅ ADD: Verify room joins
+            // Verify room joins
             const rooms = Array.from(socket.rooms);
             console.log(`[ESP-HUB] ${serialNumber} joined rooms:`, rooms);
 
-            // ✅ ADD: Check room members
+            // Check room members
             const deviceRoom = io.sockets.adapter.rooms.get(`device:${serialNumber}`);
+            const hubRoom = io.sockets.adapter.rooms.get(`hub:${serialNumber}`);
+            const espHubRoom = io.sockets.adapter.rooms.get(`esp-hub:${serialNumber}`);
             console.log(`[ESP-HUB] device:${serialNumber} room has ${deviceRoom?.size || 0} members`);
+            console.log(`[ESP-HUB] hub:${serialNumber} room has ${hubRoom?.size || 0} members`);
+            console.log(`[ESP-HUB] esp-hub:${serialNumber} room has ${espHubRoom?.size || 0} members`);
 
-            // Setup handlers BEFORE sending welcome
+            // Database update
+            try {
+                await prisma.devices.update({
+                    where: { serial_number: serialNumber },
+                    data: {
+                        updated_at: new Date(),
+                        runtime_capabilities: {
+                            last_socket_connection: new Date().toISOString(),
+                            connection_type: 'hub_optimized',
+                            socket_connected: true,
+                            device_type: 'ESP Socket Hub (Optimized)',
+                            optimized: true
+                        }
+                    }
+                });
+                console.log(`[ESP-HUB] Database updated for ${serialNumber}`);
+            } catch (error) {
+                console.error(`[ESP-HUB] Database update failed for ${serialNumber}:`, error);
+            }
+
+            // Setup handlers
             setupDoorHubHandlers(socket, io, serialNumber);
 
-            // ✅ FIX: Send welcome after setup with delay
-            setTimeout(() => {
+            // Send connection_welcome
+            try {
+                const welcomeMsg = {
+                    status: 'connected',
+                    namespace: 'esp-hub-optimized',
+                    serialNumber,
+                    deviceType: 'ESP Socket Hub (Optimized)',
+                    optimized: true,
+                    esp01_support: true,
+                    capabilities: ['esp01_gateway', 'compact_forwarding'],
+                    timestamp: new Date().toISOString()
+                };
+                socket.emit('connection_welcome', welcomeMsg);
+                console.log(`[ESP-HUB] Welcome sent to ${serialNumber}:`, welcomeMsg);
+
+                // Verify socket connection
+                if (socket.connected) {
+                    console.log(`[ESP-HUB] ${serialNumber} verified connected`);
+                } else {
+                    console.log(`[ESP-HUB] ${serialNumber} NOT connected after welcome`);
+                }
+            } catch (error) {
+                console.error(`[ESP-HUB] Welcome failed for ${serialNumber}:`, error);
+            }
+
+            // Handle device_online
+            socket.on('device_online', async (data) => {
                 try {
+                    console.log(`[ESP-HUB] Device online from ${serialNumber}:`, data);
+
+                    // Re-join rooms to ensure consistency
+                    socket.join(`hub:${serialNumber}`);
+                    socket.join(`device:${serialNumber}`);
+                    socket.join(`esp-hub:${serialNumber}`);
+                    console.log(`[ESP-HUB] Re-joined rooms for ${serialNumber}:`, Array.from(socket.rooms));
+
+                    // Update database
+                    await prisma.devices.update({
+                        where: { serial_number: serialNumber },
+                        data: {
+                            updated_at: new Date(),
+                            runtime_capabilities: {
+                                last_socket_connection: new Date().toISOString(),
+                                connection_type: 'hub_optimized',
+                                socket_connected: true,
+                                device_type: 'ESP Socket Hub (Optimized)',
+                                firmware_version: data.firmware_version || 'unknown',
+                                optimized: true
+                            }
+                        }
+                    });
+
+                    // Broadcast to clients
+                    io.of('/client').emit('hub_online', {
+                        serialNumber: data.serialNumber || serialNumber,
+                        deviceType: data.deviceType || 'ESP Socket Hub (Optimized)',
+                        hub_managed: true,
+                        optimized: true,
+                        capabilities: data.capabilities || ['esp01_gateway', 'compact_forwarding'],
+                        timestamp: new Date().toISOString()
+                    });
+
+                    // Send welcome again in case of retry
                     const welcomeMsg = {
                         status: 'connected',
                         namespace: 'esp-hub-optimized',
@@ -308,51 +368,24 @@ export const setupHubSocket = (io: Server) => {
                         capabilities: ['esp01_gateway', 'compact_forwarding'],
                         timestamp: new Date().toISOString()
                     };
-
                     socket.emit('connection_welcome', welcomeMsg);
-                    console.log(`[ESP-HUB] Welcome sent to ${serialNumber}:`, welcomeMsg);
-
-                    // ✅ ADD: Verify socket is still connected
-                    if (socket.connected) {
-                        console.log(`[ESP-HUB] ${serialNumber} verified connected`);
-                    } else {
-                        console.log(`[ESP-HUB] ${serialNumber} NOT connected after welcome`);
-                    }
-
+                    console.log(`[ESP-HUB] Welcome re-sent on device_online for ${serialNumber}`);
                 } catch (error) {
-                    console.error(`[ESP-HUB] Welcome failed for ${serialNumber}:`, error);
+                    console.error(`[ESP-HUB] Error in device_online for ${serialNumber}:`, error);
                 }
-            }, 1000);
-
-            // ✅ ADD: Listen for welcome acknowledgment
-            socket.on('welcome_ack', (data) => {
-                console.log(`[ESP-HUB] Welcome ACK from ${serialNumber}:`, data);
-
-                // Double-check room membership
-                const currentRooms = Array.from(socket.rooms);
-                console.log(`[ESP-HUB] Current rooms after ACK:`, currentRooms);
             });
 
-            // ✅ ADD: Handle device_online event
-            socket.on('device_online', (data) => {
-                console.log(`[ESP-HUB] Device online from ${serialNumber}:`, data);
-
-                // Broadcast to clients
-                io.of('/client').emit('hub_online', {
-                    serialNumber: data.serialNumber || serialNumber,
-                    deviceType: data.deviceType,
-                    hub_managed: true,
-                    optimized: true,
-                    capabilities: data.capabilities,
-                    timestamp: new Date().toISOString()
-                });
+            socket.on('welcome_ack', (data) => {
+                console.log(`[ESP-HUB] Welcome ACK from ${serialNumber}:`, data);
+                const currentRooms = Array.from(socket.rooms);
+                console.log(`[ESP-HUB] Current rooms after ACK:`, currentRooms);
             });
 
             console.log(`[ESP-HUB] ${serialNumber} setup completed`);
             return;
         }
 
-        // ✅ ESP GATEWAY: ESP8266 Master managing ESP-01 slaves
+        // ESP Gateway
         if (isGateway || gateway_managed === 'true') {
             if (!serialNumber) {
                 console.error('[ESP-GW] Missing serialNumber for ESP Gateway');
@@ -383,7 +416,6 @@ export const setupHubSocket = (io: Server) => {
             socket.join(`device:${serialNumber}`);
             console.log(`[ESP-GW] ${serialNumber} joined gateway rooms`);
 
-            // Use gateway handlers
             setupDoorHubHandlers(socket, io, serialNumber);
 
             setTimeout(() => {
@@ -407,7 +439,7 @@ export const setupHubSocket = (io: Server) => {
             return;
         }
 
-        // ✅ ESP-01 DIRECT: Direct ESP-01 connections
+        // ESP-01 Direct
         if (!serialNumber) {
             console.error('[ESP-DEVICE] Missing serialNumber for ESP device');
             socket.emit('connection_error', {
@@ -464,7 +496,6 @@ export const setupHubSocket = (io: Server) => {
             socket.join(`device:${serialNumber}`);
             console.log(`[ESP-DEVICE] ${serialNumber} joined device rooms`);
 
-            // Update database with device metadata
             const updateData: any = {
                 updated_at: new Date(),
                 runtime_capabilities: {
@@ -511,7 +542,6 @@ export const setupHubSocket = (io: Server) => {
                 }
             }, welcomeDelay);
 
-            // Setup device handlers based on type
             if (isESP01) {
                 setupESP01EventHandlers(socket, io, serialNumber, device as any);
             } else {
@@ -519,63 +549,51 @@ export const setupHubSocket = (io: Server) => {
             }
 
             console.log(`[ESP-DEVICE] ${deviceType} ${serialNumber} fully connected`);
-
         } catch (error) {
             console.error(`[ERROR] Critical setup error for ${deviceType} ${serialNumber}:`, error);
-
-            try {
-                socket.emit('connection_error', {
-                    code: 'SETUP_ERROR',
-                    message: (error as Error)?.message || 'Setup failed',
-                    deviceType,
-                    esp01_safe: true,
-                    optimized: true,
-                    timestamp: new Date().toISOString()
-                });
-            } catch (emitError) {
-                console.error(`[ERROR] Error emit failed for ${serialNumber}:`, emitError);
-            }
-
+            socket.emit('connection_error', {
+                code: 'SETUP_ERROR',
+                message: (error as Error)?.message || 'Setup failed',
+                deviceType,
+                esp01_safe: true,
+                optimized: true,
+                timestamp: new Date().toISOString()
+            });
             setTimeout(() => socket.disconnect(true), 2000);
         }
     });
 
-    // ============= CLIENT NAMESPACE FOR ESP-01 SYSTEM =============
     const clientNamespace = io.of('/client');
 
     clientNamespace.on('connection', async (socket: Socket) => {
         const { serialNumber, accountId, systemType } = socket.handshake.query as {
             serialNumber?: string;
             accountId?: string;
-            systemType?: string; // 'door', 'hub', 'gateway'
+            systemType?: string;
         };
 
         if (serialNumber && accountId) {
             console.log(`[CLIENT] Client connected for ${systemType || 'door'} ${serialNumber} by user ${accountId}`);
 
-            // Join appropriate rooms based on system type
             if (systemType === 'hub') {
                 socket.join(`hub:${serialNumber}`);
                 socket.join(`esp-hub:${serialNumber}`);
             } else if (systemType === 'gateway') {
                 socket.join(`gateway:${serialNumber}`);
             } else {
-                socket.join(`door:${serialNumber}`); // Default for backward compatibility
+                socket.join(`door:${serialNumber}`);
             }
 
-            // ✅ ESP-01 OPTIMIZED DOOR COMMAND
             socket.on('door_command', (commandData) => {
                 try {
                     console.log(`[CMD] ESP-01 door command for ${serialNumber}:`, JSON.stringify(commandData, null, 2));
 
                     let targetSerial = serialNumber;
-
                     if (commandData.serialNumber && commandData.serialNumber !== serialNumber) {
                         targetSerial = commandData.serialNumber;
                         console.log(`[CMD] Command targets different device: ${targetSerial}`);
                     }
 
-                    // Enhanced command format for ESP-01 system
                     const doorCommand = {
                         action: commandData.action,
                         serialNumber: targetSerial,
@@ -590,7 +608,6 @@ export const setupHubSocket = (io: Server) => {
                     console.log(`[CMD] Sending ESP-01 command to target: ${targetSerial}`);
                     console.log(`[CMD] Command data:`, JSON.stringify(doorCommand, null, 2));
 
-                    // ✅ FIX: Check room availability properly
                     const roomsToCheck: string[] = [];
                     let systemName = '';
 
@@ -608,7 +625,6 @@ export const setupHubSocket = (io: Server) => {
                     console.log(`[CMD] Checking ${systemName} availability...`);
                     console.log(`[CMD] Rooms to check: ${roomsToCheck.join(', ')}`);
 
-                    // ✅ FIX: Use root io instance, not clientNamespace
                     const deviceSockets = io.sockets.adapter.rooms.get(`device:${serialNumber}`);
                     const hubSockets = io.sockets.adapter.rooms.get(`hub:${serialNumber}`);
                     const espHubSockets = io.sockets.adapter.rooms.get(`esp-hub:${serialNumber}`);
@@ -618,19 +634,15 @@ export const setupHubSocket = (io: Server) => {
                     console.log(`[CMD]   hub:${serialNumber} = ${hubSockets?.size || 0} sockets`);
                     console.log(`[CMD]   esp-hub:${serialNumber} = ${espHubSockets?.size || 0} sockets`);
 
-                    // ✅ FIX: Check any room has members
                     const hasConnection = (deviceSockets && deviceSockets.size > 0) ||
                         (hubSockets && hubSockets.size > 0) ||
                         (espHubSockets && espHubSockets.size > 0);
 
                     if (!hasConnection) {
                         console.log(`[CMD] ❌ ${systemName} ${serialNumber} not connected`);
-
-                        // List all available rooms for debugging
                         const allRooms = Array.from(io.sockets.adapter.rooms.keys());
                         const relevantRooms = allRooms.filter((room: string) =>
-                            room.includes(serialNumber) || room.includes('device:') || room.includes('hub:')
-                        );
+                            room.includes(serialNumber) || room.includes('device:') || room.includes('hub:'));
                         console.log(`[CMD] Available relevant rooms:`, relevantRooms);
 
                         socket.emit('door_command_error', {
@@ -645,15 +657,12 @@ export const setupHubSocket = (io: Server) => {
                         return;
                     }
 
-                    // Send to appropriate system
                     const roomsSent: string[] = [];
-
                     if (targetSerial !== serialNumber) {
                         io.to(`device:${targetSerial}`).emit('command', doorCommand);
                         roomsSent.push(`device:${targetSerial}`);
                     }
 
-                    // ✅ FIX: Send to all relevant rooms
                     if (systemType === 'hub') {
                         if (deviceSockets && deviceSockets.size > 0) {
                             io.to(`device:${serialNumber}`).emit('command', doorCommand);
@@ -699,7 +708,6 @@ export const setupHubSocket = (io: Server) => {
                     console.log(`[CMD] ✅ ESP-01 door command sent - System: ${serialNumber}, Target: ${targetSerial}`);
                 } catch (error) {
                     console.error(`[CMD] ESP-01 door command error for ${serialNumber}:`, error);
-
                     socket.emit('door_command_error', {
                         success: false,
                         error: error instanceof Error ? error.message : 'Unknown error',
@@ -710,7 +718,6 @@ export const setupHubSocket = (io: Server) => {
                 }
             });
 
-            // ✅ ESP SYSTEM HEALTH CHECK - Monitor system health
             socket.on('system_health_check', (requestData) => {
                 try {
                     console.log(`[HEALTH] System health check for ${serialNumber}`);
@@ -721,11 +728,10 @@ export const setupHubSocket = (io: Server) => {
                         fromClient: accountId,
                         esp01_safe: true,
                         optimized: true,
-                        check_type: requestData.check_type || 'full', // 'full', 'quick', 'connection'
+                        check_type: requestData.check_type || 'full',
                         timestamp: new Date().toISOString()
                     };
 
-                    // Send health check to appropriate system
                     if (systemType === 'hub') {
                         io.to(`device:${serialNumber}`).emit('health_check', healthRequest);
                         io.to(`hub:${serialNumber}`).emit('health_check', healthRequest);
@@ -748,7 +754,6 @@ export const setupHubSocket = (io: Server) => {
                     console.log(`[HEALTH] Health check sent to ${systemType || 'device'} ${serialNumber}`);
                 } catch (error) {
                     console.error(`[HEALTH] Health check error for ${serialNumber}:`, error);
-
                     socket.emit('system_health_check_error', {
                         success: false,
                         error: error instanceof Error ? error.message : 'Health check failed',
@@ -758,7 +763,6 @@ export const setupHubSocket = (io: Server) => {
                 }
             });
 
-            // ✅ ESP FIRMWARE INFO REQUEST - Get firmware version and capabilities
             socket.on('firmware_info_request', (_requestData) => {
                 try {
                     console.log(`[FIRMWARE] Firmware info request for ${serialNumber}`);
@@ -772,7 +776,6 @@ export const setupHubSocket = (io: Server) => {
                         timestamp: new Date().toISOString()
                     };
 
-                    // Send firmware info request
                     if (systemType === 'hub') {
                         io.to(`device:${serialNumber}`).emit('firmware_info_request', firmwareRequest);
                         io.to(`hub:${serialNumber}`).emit('firmware_info_request', firmwareRequest);
@@ -789,12 +792,10 @@ export const setupHubSocket = (io: Server) => {
                 }
             });
 
-            // ✅ ESP SYSTEM RESTART - Safe restart command
             socket.on('system_restart', (requestData) => {
                 try {
                     console.log(`[RESTART] System restart request for ${serialNumber}`);
 
-                    // Validate restart authorization
                     if (!requestData.confirm || requestData.confirm !== 'CONFIRM_RESTART') {
                         socket.emit('system_restart_error', {
                             success: false,
@@ -811,12 +812,11 @@ export const setupHubSocket = (io: Server) => {
                         fromClient: accountId,
                         esp01_safe: true,
                         optimized: true,
-                        restart_type: requestData.restart_type || 'soft', // 'soft', 'hard'
-                        delay_ms: requestData.delay_ms || 5000, // 5 second delay
+                        restart_type: requestData.restart_type || 'soft',
+                        delay_ms: requestData.delay_ms || 5000,
                         timestamp: new Date().toISOString()
                     };
 
-                    // Send restart command with delay
                     setTimeout(() => {
                         if (systemType === 'hub') {
                             io.to(`device:${serialNumber}`).emit('system_restart', restartRequest);
@@ -827,7 +827,7 @@ export const setupHubSocket = (io: Server) => {
                         } else {
                             io.to(`device:${serialNumber}`).emit('system_restart', restartRequest);
                         }
-                    }, 2000); // 2 second delay before sending
+                    }, 2000);
 
                     socket.emit('system_restart_initiated', {
                         success: true,
@@ -841,7 +841,6 @@ export const setupHubSocket = (io: Server) => {
                     console.log(`[RESTART] System restart initiated for ${systemType || 'device'} ${serialNumber}`);
                 } catch (error) {
                     console.error(`[RESTART] System restart error for ${serialNumber}:`, error);
-
                     socket.emit('system_restart_error', {
                         success: false,
                         error: error instanceof Error ? error.message : 'Restart failed',
@@ -851,11 +850,8 @@ export const setupHubSocket = (io: Server) => {
                 }
             });
 
-            // ✅ CLIENT DISCONNECT HANDLER
             socket.on('disconnect', () => {
                 console.log(`[CLIENT] Client disconnected from ${systemType || 'device'} ${serialNumber} (user: ${accountId})`);
-
-                // Notify other clients about disconnection
                 socket.broadcast.emit('client_disconnected', {
                     serialNumber,
                     systemType: systemType || 'device',
@@ -864,10 +860,8 @@ export const setupHubSocket = (io: Server) => {
                 });
             });
 
-            // ✅ ERROR HANDLER for client socket
             socket.on('error', (error) => {
                 console.error(`[CLIENT] Socket error for ${serialNumber} (user: ${accountId}):`, error);
-
                 socket.emit('socket_error', {
                     error: error.message || 'Socket error occurred',
                     serialNumber,
@@ -876,7 +870,6 @@ export const setupHubSocket = (io: Server) => {
                 });
             });
 
-            // ✅ CLIENT PING/PONG for connection health
             socket.on('ping', () => {
                 socket.emit('pong', {
                     serialNumber,
@@ -888,9 +881,6 @@ export const setupHubSocket = (io: Server) => {
         }
     });
 
-    // ============= SERVER HEALTH MONITORING =============
-
-    // Monitor overall system health
     setInterval(() => {
         const connectedDevices = io.sockets.adapter.rooms;
         const deviceCount = Array.from(connectedDevices.keys()).filter((room: string) => room.startsWith('device:')).length;
@@ -899,7 +889,6 @@ export const setupHubSocket = (io: Server) => {
 
         console.log(`[MONITOR] System Health - Devices: ${deviceCount}, Hubs: ${hubCount}, Gateways: ${gatewayCount}`);
 
-        // Emit system health to all clients
         io.of('/client').emit('system_health_update', {
             connected_devices: deviceCount,
             connected_hubs: hubCount,
@@ -908,21 +897,15 @@ export const setupHubSocket = (io: Server) => {
             system_status: 'healthy',
             timestamp: new Date().toISOString()
         });
-    }, 30000); // Every 30 seconds
-
-    // ============= GRACEFUL SHUTDOWN HANDLER =============
+    }, 30000);
 
     process.on('SIGTERM', () => {
         console.log('[SHUTDOWN] Received SIGTERM, gracefully shutting down ESP-01 Hub Socket...');
-
-        // Notify all connected devices about shutdown
         io.emit('server_shutdown', {
             message: 'Server is shutting down gracefully',
             reconnect_expected: true,
             timestamp: new Date().toISOString()
         });
-
-        // Close all connections after 5 seconds
         setTimeout(() => {
             io.close(() => {
                 console.log('[SHUTDOWN] ESP-01 Hub Socket closed successfully');
@@ -933,15 +916,11 @@ export const setupHubSocket = (io: Server) => {
 
     process.on('SIGINT', () => {
         console.log('[SHUTDOWN] Received SIGINT, gracefully shutting down ESP-01 Hub Socket...');
-
-        // Notify all connected devices about shutdown
         io.emit('server_shutdown', {
             message: 'Server is shutting down gracefully',
             reconnect_expected: true,
             timestamp: new Date().toISOString()
         });
-
-        // Close all connections after 3 seconds
         setTimeout(() => {
             io.close(() => {
                 console.log('[SHUTDOWN] ESP-01 Hub Socket closed successfully');
@@ -949,8 +928,6 @@ export const setupHubSocket = (io: Server) => {
             });
         }, 3000);
     });
-
-    // ============= FINAL INITIALIZATION LOG =============
 
     console.log('[INIT] ✅ ESP-01 Optimized Hub socket setup completed');
     console.log('[INIT] 📡 WebSocket Server Ready');
