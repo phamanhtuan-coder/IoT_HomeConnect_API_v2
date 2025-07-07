@@ -255,16 +255,25 @@ export const setupHubSocket = (io: Server) => {
                 connectedAt: new Date()
             };
 
-            // Join rooms
-            socket.join(`hub:${serialNumber}`);
-            socket.join(`device:${serialNumber}`);
-            socket.join(`esp-hub:${serialNumber}`);
+            // Join rooms with error handling
+            try {
+                socket.join(`hub:${serialNumber}`);
+                socket.join(`device:${serialNumber}`);
+                socket.join(`esp-hub:${serialNumber}`);
+                console.log(`[ESP-HUB] ${serialNumber} joined rooms:`, Array.from(socket.rooms));
+            } catch (error) {
+                console.error(`[ESP-HUB] Room join failed for ${serialNumber}:`, error);
+                socket.emit('connection_error', {
+                    code: 'ROOM_JOIN_FAILED',
+                    message: 'Failed to join rooms',
+                    serialNumber,
+                    timestamp: new Date().toISOString()
+                });
+                setTimeout(() => socket.disconnect(true), 2000);
+                return;
+            }
 
-            // Verify room joins
-            const rooms = Array.from(socket.rooms);
-            console.log(`[ESP-HUB] ${serialNumber} joined rooms:`, rooms);
-
-            // Check room members
+            // Verify room membership
             const deviceRoom = io.sockets.adapter.rooms.get(`device:${serialNumber}`);
             const hubRoom = io.sockets.adapter.rooms.get(`hub:${serialNumber}`);
             const espHubRoom = io.sockets.adapter.rooms.get(`esp-hub:${serialNumber}`);
@@ -274,6 +283,21 @@ export const setupHubSocket = (io: Server) => {
 
             // Database update
             try {
+                const device = await prisma.devices.findFirst({
+                    where: { serial_number: serialNumber, is_deleted: false }
+                });
+                if (!device) {
+                    console.error(`[ESP-HUB] Device ${serialNumber} not found in database`);
+                    socket.emit('connection_error', {
+                        code: 'DEVICE_NOT_FOUND',
+                        message: 'Device not registered',
+                        serialNumber,
+                        timestamp: new Date().toISOString()
+                    });
+                    setTimeout(() => socket.disconnect(true), 1000);
+                    return;
+                }
+
                 await prisma.devices.update({
                     where: { serial_number: serialNumber },
                     data: {
@@ -290,12 +314,20 @@ export const setupHubSocket = (io: Server) => {
                 console.log(`[ESP-HUB] Database updated for ${serialNumber}`);
             } catch (error) {
                 console.error(`[ESP-HUB] Database update failed for ${serialNumber}:`, error);
+                socket.emit('connection_error', {
+                    code: 'DATABASE_ERROR',
+                    message: 'Database update failed',
+                    serialNumber,
+                    timestamp: new Date().toISOString()
+                });
+                setTimeout(() => socket.disconnect(true), 2000);
+                return;
             }
 
             // Setup handlers
             setupDoorHubHandlers(socket, io, serialNumber);
 
-            // Send connection_welcome
+            // Send connection_welcome immediately
             try {
                 const welcomeMsg = {
                     status: 'connected',
@@ -310,7 +342,6 @@ export const setupHubSocket = (io: Server) => {
                 socket.emit('connection_welcome', welcomeMsg);
                 console.log(`[ESP-HUB] Welcome sent to ${serialNumber}:`, welcomeMsg);
 
-                // Verify socket connection
                 if (socket.connected) {
                     console.log(`[ESP-HUB] ${serialNumber} verified connected`);
                 } else {
@@ -318,6 +349,14 @@ export const setupHubSocket = (io: Server) => {
                 }
             } catch (error) {
                 console.error(`[ESP-HUB] Welcome failed for ${serialNumber}:`, error);
+                socket.emit('connection_error', {
+                    code: 'WELCOME_FAILED',
+                    message: 'Failed to send welcome message',
+                    serialNumber,
+                    timestamp: new Date().toISOString()
+                });
+                setTimeout(() => socket.disconnect(true), 2000);
+                return;
             }
 
             // Handle device_online
@@ -357,7 +396,7 @@ export const setupHubSocket = (io: Server) => {
                         timestamp: new Date().toISOString()
                     });
 
-                    // Send welcome again in case of retry
+                    // Re-send welcome to handle retries
                     const welcomeMsg = {
                         status: 'connected',
                         namespace: 'esp-hub-optimized',
@@ -418,22 +457,20 @@ export const setupHubSocket = (io: Server) => {
 
             setupDoorHubHandlers(socket, io, serialNumber);
 
-            setTimeout(() => {
-                try {
-                    socket.emit('connection_welcome', {
-                        status: 'connected',
-                        namespace: 'esp-gateway',
-                        serialNumber,
-                        deviceType: 'ESP Gateway',
-                        gateway_managed: true,
-                        esp01_slaves: 7,
-                        timestamp: new Date().toISOString()
-                    });
-                    console.log(`[ESP-GW] Welcome sent to ${serialNumber}`);
-                } catch (error) {
-                    console.error(`[ESP-GW] Welcome failed for ${serialNumber}:`, error);
-                }
-            }, 1500);
+            try {
+                socket.emit('connection_welcome', {
+                    status: 'connected',
+                    namespace: 'esp-gateway',
+                    serialNumber,
+                    deviceType: 'ESP Gateway',
+                    gateway_managed: true,
+                    esp01_slaves: 7,
+                    timestamp: new Date().toISOString()
+                });
+                console.log(`[ESP-GW] Welcome sent to ${serialNumber}`);
+            } catch (error) {
+                console.error(`[ESP-GW] Welcome failed for ${serialNumber}:`, error);
+            }
 
             console.log(`[ESP-GW] ${serialNumber} fully connected as Gateway`);
             return;
@@ -521,26 +558,23 @@ export const setupHubSocket = (io: Server) => {
                 console.error(`[ESP-DEVICE] Metadata update failed for ${serialNumber}:`, err);
             });
 
-            const welcomeDelay = isESP01 ? 3000 : 2000;
-            setTimeout(() => {
-                try {
-                    socket.emit('connection_welcome', {
-                        status: 'connected',
-                        namespace: isESP01 ? 'esp01-door' : 'esp8266-door',
-                        serialNumber,
-                        deviceType,
-                        gateway_managed: gateway_managed === 'true',
-                        link_status: (device as any).link_status,
-                        esp01_mode: isESP01,
-                        optimized: true,
-                        safety_enabled: true,
-                        timestamp: new Date().toISOString()
-                    });
-                    console.log(`[ESP-DEVICE] Welcome sent to ${deviceType} ${serialNumber}`);
-                } catch (error) {
-                    console.error(`[ESP-DEVICE] Welcome failed for ${serialNumber}:`, error);
-                }
-            }, welcomeDelay);
+            try {
+                socket.emit('connection_welcome', {
+                    status: 'connected',
+                    namespace: isESP01 ? 'esp01-door' : 'esp8266-door',
+                    serialNumber,
+                    deviceType,
+                    gateway_managed: gateway_managed === 'true',
+                    link_status: (device as any).link_status,
+                    esp01_mode: isESP01,
+                    optimized: true,
+                    safety_enabled: true,
+                    timestamp: new Date().toISOString()
+                });
+                console.log(`[ESP-DEVICE] Welcome sent to ${deviceType} ${serialNumber}`);
+            } catch (error) {
+                console.error(`[ESP-DEVICE] Welcome failed for ${serialNumber}:`, error);
+            }
 
             if (isESP01) {
                 setupESP01EventHandlers(socket, io, serialNumber, device as any);
