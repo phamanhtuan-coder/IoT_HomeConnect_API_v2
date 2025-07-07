@@ -239,7 +239,6 @@ export const setupHubSocket = (io: Server) => {
         }
 
         // ESP Socket Hub
-// ESP Socket Hub
         if ((isHub || hub_managed === 'true' || optimized === 'true') && serialNumber && isIoTDevice === 'true') {
             console.log(`[ESP-HUB] ${serialNumber} connecting as Optimized ESP Socket Hub`);
             console.log('[ESP-HUB] Socket ID:', socket.id);
@@ -337,31 +336,6 @@ export const setupHubSocket = (io: Server) => {
                 return;
             }
 
-            // Send connection_welcome event
-            const welcomeMsg = {
-                status: 'connected',
-                namespace: 'esp-hub-optimized',
-                serialNumber,
-                deviceType: 'ESP Socket Hub (Optimized)',
-                optimized: true,
-                esp01_support: true,
-                capabilities: ['esp01_gateway', 'compact_forwarding'],
-                timestamp: new Date().toISOString()
-            };
-            try {
-                socket.emit('connection_welcome', welcomeMsg);
-                console.log(`[ESP-HUB] Welcome sent to ${serialNumber}:`, welcomeMsg);
-            } catch (error) {
-                console.error(`[ESP-HUB] Welcome emission failed for ${serialNumber}:`, error);
-                socket.emit('connection_error', {
-                    code: 'WELCOME_EMIT_FAILED',
-                    message: 'Failed to send welcome event',
-                    serialNumber,
-                    timestamp: new Date().toISOString()
-                });
-                return;
-            }
-
             // Handle device_online event
             socket.on('device_online', async (data) => {
                 try {
@@ -372,7 +346,11 @@ export const setupHubSocket = (io: Server) => {
                         where: { serial_number: serialNumber },
                         data: {
                             runtime_capabilities: {
-                                firmware_version: data.firmware_version || 'unknown'
+                                firmware_version: data.firmware_version || 'unknown',
+                                last_socket_connection: new Date().toISOString(),
+                                socket_connected: true,
+                                device_type: 'ESP Socket Hub (Optimized)',
+                                optimized: true
                             }
                         }
                     });
@@ -387,13 +365,23 @@ export const setupHubSocket = (io: Server) => {
                         timestamp: new Date().toISOString()
                     });
 
-                    // Re-send welcome if not received
-                    if (!data.welcomeReceived) {
-                        socket.emit('connection_welcome', welcomeMsg);
-                        console.log(`[ESP-HUB] Welcome re-sent to ${serialNumber}`);
-                    }
+                    // Send acknowledgment to device
+                    socket.emit('device_online_ack', {
+                        status: 'connected',
+                        serialNumber,
+                        deviceType: 'ESP Socket Hub (Optimized)',
+                        optimized: true,
+                        timestamp: new Date().toISOString()
+                    });
+                    console.log(`[ESP-HUB] Device online acknowledged for ${serialNumber}`);
                 } catch (error) {
                     console.error(`[ESP-HUB] Error handling device_online for ${serialNumber}:`, error);
+                    socket.emit('connection_error', {
+                        code: 'DEVICE_ONLINE_ERROR',
+                        message: 'Failed to process device_online',
+                        serialNumber,
+                        timestamp: new Date().toISOString()
+                    });
                 }
             });
 
@@ -446,20 +434,43 @@ export const setupHubSocket = (io: Server) => {
 
             setupDoorHubHandlers(socket, io, serialNumber);
 
-            try {
-                socket.emit('connection_welcome', {
-                    status: 'connected',
-                    namespace: 'esp-gateway',
-                    serialNumber,
-                    deviceType: 'ESP Gateway',
-                    gateway_managed: true,
-                    esp01_slaves: 7,
-                    timestamp: new Date().toISOString()
-                });
-                console.log(`[ESP-GW] Welcome sent to ${serialNumber}`);
-            } catch (error) {
-                console.error(`[ESP-GW] Welcome failed for ${serialNumber}:`, error);
-            }
+            // Handle device_online for gateway
+            socket.on('device_online', async (data) => {
+                try {
+                    console.log(`[ESP-GW] Device online from ${serialNumber}:`, data);
+
+                    await prisma.devices.update({
+                        where: { serial_number: serialNumber },
+                        data: {
+                            runtime_capabilities: {
+                                firmware_version: data.firmware_version || 'unknown',
+                                last_socket_connection: new Date().toISOString(),
+                                socket_connected: true,
+                                device_type: 'ESP Gateway',
+                                optimized: true
+                            }
+                        }
+                    });
+
+                    io.of('/client').emit('gateway_online', {
+                        serialNumber,
+                        deviceType: 'ESP Gateway',
+                        gateway_managed: true,
+                        capabilities: data.capabilities || ['esp01_gateway'],
+                        timestamp: new Date().toISOString()
+                    });
+
+                    socket.emit('device_online_ack', {
+                        status: 'connected',
+                        serialNumber,
+                        deviceType: 'ESP Gateway',
+                        timestamp: new Date().toISOString()
+                    });
+                    console.log(`[ESP-GW] Device online acknowledged for ${serialNumber}`);
+                } catch (error) {
+                    console.error(`[ESP-GW] Error handling device_online for ${serialNumber}:`, error);
+                }
+            });
 
             console.log(`[ESP-GW] ${serialNumber} fully connected as Gateway`);
             return;
@@ -561,24 +572,48 @@ export const setupHubSocket = (io: Server) => {
                 console.error(`[ESP-DEVICE] Metadata update failed for ${serialNumber}:`, err);
             }
 
-            try {
-                socket.emit('connection_welcome', {
-                    status: 'connected',
-                    namespace: isESP01 ? 'esp01-door' : 'esp8266-door',
-                    serialNumber,
-                    deviceType,
-                    gateway_managed: gateway_managed === 'true',
-                    hub_managed: hub_managed === 'true',
-                    link_status: (device as any).link_status,
-                    esp01_mode: isESP01,
-                    optimized: true,
-                    safety_enabled: true,
-                    timestamp: new Date().toISOString()
-                });
-                console.log(`[ESP-DEVICE] Welcome sent to ${deviceType} ${serialNumber}`);
-            } catch (error) {
-                console.error(`[ESP-DEVICE] Welcome failed for ${serialNumber}:`, error);
-            }
+            // Handle device_online for ESP-01 Direct
+            socket.on('device_online', async (data) => {
+                try {
+                    console.log(`[ESP-DEVICE] Device online from ${serialNumber}:`, data);
+
+                    await prisma.devices.update({
+                        where: { serial_number: serialNumber },
+                        data: {
+                            runtime_capabilities: {
+                                firmware_version: data.firmware_version || 'unknown',
+                                last_socket_connection: new Date().toISOString(),
+                                socket_connected: true,
+                                device_type: deviceType,
+                                esp01_mode: isESP01,
+                                optimized: true
+                            }
+                        }
+                    });
+
+                    io.of('/client').emit('device_online', {
+                        serialNumber,
+                        deviceType,
+                        gateway_managed: gateway_managed === 'true',
+                        hub_managed: hub_managed === 'true',
+                        link_status: (device as any).link_status,
+                        esp01_mode: isESP01,
+                        optimized: true,
+                        timestamp: new Date().toISOString()
+                    });
+
+                    socket.emit('device_online_ack', {
+                        status: 'connected',
+                        serialNumber,
+                        deviceType,
+                        optimized: true,
+                        timestamp: new Date().toISOString()
+                    });
+                    console.log(`[ESP-DEVICE] Device online acknowledged for ${serialNumber}`);
+                } catch (error) {
+                    console.error(`[ESP-DEVICE] Error handling device_online for ${serialNumber}:`, error);
+                }
+            });
 
             if (isESP01) {
                 setupESP01EventHandlers(socket, io, serialNumber, device as any);
