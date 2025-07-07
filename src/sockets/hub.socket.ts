@@ -257,19 +257,14 @@ export const setupHubSocket = (io: Server) => {
         }
 
         // ✅ ESP SOCKET HUB: Optimized gateway for ESP-01 doors
-        if (isHub || hub_managed === 'true' || optimized === 'true') {
-            if (!serialNumber) {
-                console.error('[ESP-HUB] Missing serialNumber for ESP Socket Hub');
-                socket.emit('connection_error', {
-                    code: 'MISSING_SERIAL_NUMBER',
-                    message: 'Serial number is required for ESP Socket Hub',
-                    timestamp: new Date().toISOString()
-                });
-                socket.disconnect(true);
-                return;
-            }
+// In hub.socket.ts, replace the ESP Socket Hub section starting at line 246:
 
+// ✅ ESP SOCKET HUB: Optimized gateway for ESP-01 doors
+        if ((isHub || hub_managed === 'true' || optimized === 'true') && serialNumber && isIoTDevice === 'true') {
             console.log(`[ESP-HUB] ${serialNumber} connecting as Optimized ESP Socket Hub`);
+            console.log('[ESP-HUB] Socket ID:', socket.id);
+            console.log('[ESP-HUB] Headers:', socket.handshake.headers);
+            console.log('[ESP-HUB] Query:', socket.handshake.query);
 
             socket.data = {
                 serialNumber,
@@ -284,17 +279,26 @@ export const setupHubSocket = (io: Server) => {
                 connectedAt: new Date()
             };
 
+            // ✅ FIX: Join rooms properly
             socket.join(`hub:${serialNumber}`);
             socket.join(`device:${serialNumber}`);
             socket.join(`esp-hub:${serialNumber}`);
-            console.log(`[ESP-HUB] ${serialNumber} joined hub rooms`);
 
-            // Use optimized hub handlers
+            // ✅ ADD: Verify room joins
+            const rooms = Array.from(socket.rooms);
+            console.log(`[ESP-HUB] ${serialNumber} joined rooms:`, rooms);
+
+            // ✅ ADD: Check room members
+            const deviceRoom = io.sockets.adapter.rooms.get(`device:${serialNumber}`);
+            console.log(`[ESP-HUB] device:${serialNumber} room has ${deviceRoom?.size || 0} members`);
+
+            // Setup handlers BEFORE sending welcome
             setupDoorHubHandlers(socket, io, serialNumber);
 
+            // ✅ FIX: Send welcome after setup with delay
             setTimeout(() => {
                 try {
-                    socket.emit('connection_welcome', {
+                    const welcomeMsg = {
                         status: 'connected',
                         namespace: 'esp-hub-optimized',
                         serialNumber,
@@ -303,14 +307,48 @@ export const setupHubSocket = (io: Server) => {
                         esp01_support: true,
                         capabilities: ['esp01_gateway', 'compact_forwarding'],
                         timestamp: new Date().toISOString()
-                    });
-                    console.log(`[ESP-HUB] Welcome sent to ${serialNumber}`);
+                    };
+
+                    socket.emit('connection_welcome', welcomeMsg);
+                    console.log(`[ESP-HUB] Welcome sent to ${serialNumber}:`, welcomeMsg);
+
+                    // ✅ ADD: Verify socket is still connected
+                    if (socket.connected) {
+                        console.log(`[ESP-HUB] ${serialNumber} verified connected`);
+                    } else {
+                        console.log(`[ESP-HUB] ${serialNumber} NOT connected after welcome`);
+                    }
+
                 } catch (error) {
                     console.error(`[ESP-HUB] Welcome failed for ${serialNumber}:`, error);
                 }
             }, 1000);
 
-            console.log(`[ESP-HUB] ${serialNumber} fully connected as Optimized Hub`);
+            // ✅ ADD: Listen for welcome acknowledgment
+            socket.on('welcome_ack', (data) => {
+                console.log(`[ESP-HUB] Welcome ACK from ${serialNumber}:`, data);
+
+                // Double-check room membership
+                const currentRooms = Array.from(socket.rooms);
+                console.log(`[ESP-HUB] Current rooms after ACK:`, currentRooms);
+            });
+
+            // ✅ ADD: Handle device_online event
+            socket.on('device_online', (data) => {
+                console.log(`[ESP-HUB] Device online from ${serialNumber}:`, data);
+
+                // Broadcast to clients
+                io.of('/client').emit('hub_online', {
+                    serialNumber: data.serialNumber || serialNumber,
+                    deviceType: data.deviceType,
+                    hub_managed: true,
+                    optimized: true,
+                    capabilities: data.capabilities,
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            console.log(`[ESP-HUB] ${serialNumber} setup completed`);
             return;
         }
 
