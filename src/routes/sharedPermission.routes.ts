@@ -115,4 +115,10 @@ router.get(
     asyncHandler(sharedPermissionController.getDeviceSharedForCustomer)
 );
 
+router.get(
+    '/get-shared-users/:serialNumber',
+    authMiddleware,
+    asyncHandler(sharedPermissionController.getSharedUsersBySerialNumber)
+);
+
 export default router;

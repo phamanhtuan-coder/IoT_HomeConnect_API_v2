@@ -29,7 +29,7 @@ export const RejectProductionSchema = z.object({
 // Schema cho việc cập nhật trạng thái sản phẩm
 export const UpdateProductionSchema = z.object({
     body: z.object({
-        device_serial: z.string({
+        serial_number: z.string({
             required_error: `[${ERROR_CODES.PRODUCTION_TRACKING_SERIAL_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_SERIAL_REQUIRED]}`,
             invalid_type_error: `[${ERROR_CODES.PRODUCTION_TRACKING_SERIAL_INVALID}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_SERIAL_INVALID]}`
         }),
