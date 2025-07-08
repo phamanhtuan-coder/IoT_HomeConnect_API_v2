@@ -3,7 +3,9 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import { Redis } from 'ioredis';
 import { Server as HttpServer } from 'http';
 import { setupDeviceSocket } from '../sockets/device.socket';
-import { setupDoorSocket } from '../sockets/door.socket';
+import { setupHubSocket } from '../sockets/hub.socket';
+import { CameraSocket } from '../sockets/camera.socket';
+import { setSocketInstance } from '../services/camera.service';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -25,9 +27,14 @@ export const initializeSocket = (server: HttpServer): Server => {
 
     // Initialize socket handlers
     setupDeviceSocket(io);
-    setupDoorSocket(io);
+    setupHubSocket(io);
+
+    // Initialize camera socket and pass socket instance to service
+    new CameraSocket(io);
+    setSocketInstance(io);
 
     console.log('🔌 WebSocket server initialized with Redis adapter');
+    console.log('📷 Camera socket namespace initialized');
 
     return io;
 };

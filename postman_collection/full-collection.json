@@ -8607,6 +8607,521 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Camera",
+      "item": [
+        {
+          "name": "Get Stream URL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Stream URL retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.streamUrl).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/camera/stream/:serialNumber?token={{streamToken}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "stream",
+                ":serialNumber"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "{{streamToken}}"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "serialNumber",
+                  "value": "CAM123"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Stream Proxy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Stream proxy response successful', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('multipart/x-mixed-replace');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/camera/proxy/:serialNumber",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "proxy",
+                ":serialNumber"
+              ],
+              "variable": [
+                {
+                  "key": "serialNumber",
+                  "value": "CAM123"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Capture Photo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Photo captured successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.filename).to.exist;",
+                  "  pm.expect(response.downloadUrl).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial_number\": \"CAM123\",\n  \"saveToSD\": true,\n  \"quality\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/camera/capture/:serialNumber",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "capture",
+                ":serialNumber"
+              ],
+              "variable": [
+                {
+                  "key": "serialNumber",
+                  "value": "CAM123"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Control Camera",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Camera control successful', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial_number\": \"CAM123\",\n  \"action\": \"startStream\",\n  \"params\": {\n    \"enabled\": true,\n    \"saveToSD\": true,\n    \"quality\": 10\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/camera/control/:serialNumber",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "control",
+                ":serialNumber"
+              ],
+              "variable": [
+                {
+                  "key": "serialNumber",
+                  "value": "CAM123"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Camera Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Camera status retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.status).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/camera/status/:serialNumber",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "status",
+                ":serialNumber"
+              ],
+              "variable": [
+                {
+                  "key": "serialNumber",
+                  "value": "CAM123"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Camera Config",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Camera config updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.config).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serial_number\": \"CAM123\",\n  \"resolution\": \"VGA\",\n  \"quality\": 10,\n  \"motionDetection\": true,\n  \"wifi_ssid\": \"MyWiFi\",\n  \"wifi_password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/camera/config/:serialNumber",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "config",
+                ":serialNumber"
+              ],
+              "variable": [
+                {
+                  "key": "serialNumber",
+                  "value": "CAM123"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Photos List",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Photos list retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.photos).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/camera/photos/:serialNumber",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "photos",
+                ":serialNumber"
+              ],
+              "variable": [
+                {
+                  "key": "serialNumber",
+                  "value": "CAM123"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download Photo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Photo downloaded successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.equal('image/jpeg');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/camera/photos/:serialNumber/:filename",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "photos",
+                ":serialNumber",
+                ":filename"
+              ],
+              "variable": [
+                {
+                  "key": "serialNumber",
+                  "value": "CAM123"
+                },
+                {
+                  "key": "filename",
+                  "value": "photo_123.jpg"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Camera Capabilities",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Camera capabilities retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.capabilities).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/camera/capabilities/:serialNumber",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "capabilities",
+                ":serialNumber"
+              ],
+              "variable": [
+                {
+                  "key": "serialNumber",
+                  "value": "CAM123"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Camera Info",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Camera info retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.info).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/camera/info/:serialNumber",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "info",
+                ":serialNumber"
+              ],
+              "variable": [
+                {
+                  "key": "serialNumber",
+                  "value": "CAM123"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

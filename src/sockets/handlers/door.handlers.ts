@@ -1,361 +1,482 @@
-// src/sockets/handlers/door.handlers.ts
-import { Namespace, Socket } from 'socket.io';
+// src/sockets/handlers/door.handlers.ts - ESP-01 OPTIMIZED SYSTEM ONLY
+import { Namespace, Socket, Server } from 'socket.io';
+import { PrismaClient } from '@prisma/client';
 import prisma from '../../config/database';
-import { DoorStatusResponse } from '../../types/door.types';
-import { DoorService } from '../../services/door.service';
-import AlertService from '../../services/alert.service';
-import NotificationService from '../../services/notification.service';
-import { NotificationType } from '../../types/notification';
-import { Device } from '../../types/device';
 
-const doorService = new DoorService();
-const alertService = new AlertService();
-const notificationService = new NotificationService();
+/**
+ * ✅ OPTIMIZED: Setup ESP Socket Hub handlers for ESP-01 system
+ * Handles optimized data transmission and compact commands
+ */
+export const setupDoorHubHandlers = (socket: Socket, io: Server, hubId: string) => {
+    const clientNamespace = io.of('/client');
 
-export const handleDoorStatus = async (
-    socket: Socket,
-    clientNamespace: Namespace,
-    data: DoorStatusResponse
-) => {
-    const { serialNumber } = data;
+    console.log(`[ESP-HUB] Setting up Optimized ESP Socket Hub for ${hubId}`);
 
-    try {
-        clientNamespace.to(`door:${serialNumber}`).emit('door_status', {
-            ...data,
-            timestamp: new Date().toISOString(),
-        });
+    // ESP Socket Hub sends device_online
+    socket.on('device_online', async (data) => {
+        try {
+            console.log(`[ESP-HUB] Device online from ${hubId}:`, data);
 
-        console.log(`Door ${serialNumber} status updated:`, data);
-    } catch (error) {
-        console.error(`Door status update error for ${serialNumber}:`, error);
-        socket.emit('error', {
-            code: 'STATUS_UPDATE_ERROR',
-            message: 'Failed to update door status',
-        });
-    }
-};
-
-export const handleDoorCommandResponse = async (
-    socket: Socket,
-    clientNamespace: Namespace,
-    data: {
-        serialNumber: string;
-        command: string;
-        success: boolean;
-        result?: any;
-        error?: string;
-        timestamp: string;
-    }
-) => {
-    const { serialNumber } = data;
-
-    try {
-        clientNamespace.to(`door:${serialNumber}`).emit('door_command_response', {
-            ...data,
-            timestamp: new Date().toISOString(),
-        });
-
-        console.log(`Door ${serialNumber} command response:`, data);
-    } catch (error) {
-        console.error(`Door command response error for ${serialNumber}:`, error);
-    }
-};
-
-export const handleDoorError = async (
-    socket: Socket,
-    clientNamespace: Namespace,
-    data: {
-        serialNumber: string;
-        error: string;
-        code: number;
-        timestamp: string;
-    }
-) => {
-    const { serialNumber } = data;
-
-    try {
-        const prismaDevice = await prisma.devices.findFirst({
-            where: { serial_number: serialNumber },
-            include: { account: true },
-        });
-
-        if (!prismaDevice) return;
-
-        const device: Device = {
-            device_id: prismaDevice.device_id,
-            serial_number: prismaDevice.serial_number,
-            template_id: prismaDevice.template_id,
-            space_id: prismaDevice.space_id,
-            account_id: prismaDevice.account_id,
-            group_id: prismaDevice.group_id,
-            hub_id: prismaDevice.hub_id,
-            firmware_id: prismaDevice.firmware_id,
-            name: prismaDevice.name,
-            power_status: prismaDevice.power_status,
-            attribute: prismaDevice.attribute as Record<string, any> | null,
-            wifi_ssid: prismaDevice.wifi_ssid,
-            wifi_password: prismaDevice.wifi_password,
-            current_value: prismaDevice.current_value as Record<string, any> | null,
-            link_status: prismaDevice.link_status,
-            last_reset_at: prismaDevice.last_reset_at,
-            lock_status: prismaDevice.lock_status,
-            locked_at: prismaDevice.locked_at,
-            created_at: prismaDevice.created_at,
-            updated_at: prismaDevice.updated_at,
-            is_deleted: prismaDevice.is_deleted,
-            device_type_id: null,
-            device_type_name: undefined,
-            device_template_name: undefined,
-            device_template_status: undefined,
-            device_base_capabilities: null,
-            capabilities: null,
-        };
-
-        await alertService.createAlert(device, data.code, `Door error: ${data.error}`);
-        await notificationService.createNotification({
-            account_id: prismaDevice.account_id,
-            text: `ERROR: ${device.name || serialNumber} - ${data.error}`,
-            type: NotificationType.ALERT,
-        });
-
-        clientNamespace.emit('door_error', {
-            ...data,
-            timestamp: new Date().toISOString(),
-        });
-    } catch (error) {
-        console.error(`Door error handling error for ${serialNumber}:`, error);
-    }
-};
-
-export const handleDoorEmergency = async (
-    socket: Socket,
-    clientNamespace: Namespace,
-    data: {
-        serialNumber: string;
-        type: 'obstruction' | 'motor_failure' | 'sensor_failure' | 'fire';
-        message: string;
-    }
-) => {
-    const { serialNumber } = data;
-
-    try {
-        const prismaDevice = await prisma.devices.findFirst({
-            where: { serial_number: serialNumber },
-            include: { account: true },
-        });
-
-        if (prismaDevice?.account_id) {
-            const device: Device = {
-                device_id: prismaDevice.device_id,
-                serial_number: prismaDevice.serial_number,
-                template_id: prismaDevice.template_id,
-                space_id: prismaDevice.space_id,
-                account_id: prismaDevice.account_id,
-                group_id: prismaDevice.group_id,
-                hub_id: prismaDevice.hub_id,
-                firmware_id: prismaDevice.firmware_id,
-                name: prismaDevice.name,
-                power_status: prismaDevice.power_status,
-                attribute: prismaDevice.attribute as Record<string, any> | null,
-                wifi_ssid: prismaDevice.wifi_ssid,
-                wifi_password: prismaDevice.wifi_password,
-                current_value: prismaDevice.current_value as Record<string, any> | null,
-                link_status: prismaDevice.link_status,
-                last_reset_at: prismaDevice.last_reset_at,
-                lock_status: prismaDevice.lock_status,
-                locked_at: prismaDevice.locked_at,
-                created_at: prismaDevice.created_at,
-                updated_at: prismaDevice.updated_at,
-                is_deleted: prismaDevice.is_deleted,
-                device_type_id: null,
-                device_type_name: undefined,
-                device_template_name: undefined,
-                device_template_status: undefined,
-                device_base_capabilities: null,
-                capabilities: null,
-            };
-
-            // Xử lý trường hợp cháy
-            const alertMessage = data.type === 'fire' ? 'Fire emergency: Door opened' : `Door emergency: ${data.type} - ${data.message}`;
-            await alertService.createAlert(device, 3, alertMessage);
-            await notificationService.createNotification({
-                account_id: prismaDevice.account_id,
-                text: `EMERGENCY: ${device.name || serialNumber} - ${alertMessage}`,
-                type: NotificationType.ALERT,
+            socket.emit('device_online_ack', {
+                status: 'received',
+                deviceType: 'ESP Socket Hub (Optimized)',
+                esp01_support: true,
+                optimization: 'compact_data',
+                timestamp: new Date().toISOString()
             });
 
-            clientNamespace.emit('door_emergency', {
-                ...data,
-                timestamp: new Date().toISOString(),
+            clientNamespace.emit('device_connect', {
+                serialNumber: hubId,
+                deviceType: 'ESP SOCKET HUB (OPTIMIZED)',
+                connectionType: 'hub_optimized',
+                hub_managed: true,
+                esp01_optimized: true,
+                capabilities: ['compact_forwarding', 'esp01_bridge', 'optimized_gateway'],
+                firmware_version: data.firmware_version,
+                timestamp: new Date().toISOString()
             });
+        } catch (error) {
+            console.error(`[ESP-HUB] Error in device_online for ${hubId}:`, error);
         }
-    } catch (error) {
-        console.error(`Door emergency handling error for ${serialNumber}:`, error);
-    }
+    });
+
+    // ✅ OPTIMIZED: Handle compact command responses from ESP Master/Gateway
+    socket.on('command_response', (data) => {
+        try {
+            console.log(`[ESP-HUB] Compact response from ${hubId}:`, data);
+
+            if (data.deviceId || data.serialNumber || data.d) {
+                const targetSerial = data.deviceId || data.serialNumber || data.d;
+
+                // Handle both compact and full responses
+                let responseData = data;
+
+                // If compact response, expand it
+                if (data.esp01_processed || data.compact_data || data.optimized || data.s !== undefined) {
+                    responseData = expandCompactResponse(data);
+                }
+
+                clientNamespace.to(`door:${targetSerial}`).emit('door_command_response', {
+                    serialNumber: targetSerial,
+                    ...responseData,
+                    deviceType: 'ESP Socket Hub (Optimized)',
+                    hub_processed: true,
+                    esp01_processed: true,
+                    optimized: true,
+                    timestamp: new Date().toISOString()
+                });
+
+                console.log(`[ESP-HUB] Optimized response forwarded to ${targetSerial}`);
+            }
+        } catch (error) {
+            console.error(`[ESP-HUB] Error in command_response for ${hubId}:`, error);
+        }
+    });
+
+    // ✅ OPTIMIZED: Handle compact device status
+    socket.on('deviceStatus', (data) => {
+        try {
+            console.log(`[ESP-HUB] Compact status from ${hubId}:`, data);
+
+            if (data.deviceId || data.serialNumber || data.d) {
+                const targetSerial = data.deviceId || data.serialNumber || data.d;
+
+                // Expand compact status if needed
+                let statusData = data;
+                if (data.compact_data || data.d) {
+                    statusData = expandCompactStatus(data);
+                }
+
+                clientNamespace.to(`door:${targetSerial}`).emit('door_status', {
+                    ...statusData,
+                    deviceType: 'ESP Socket Hub (Optimized)',
+                    connectionType: 'hub_optimized',
+                    esp01_online: true,
+                    optimized: true,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        } catch (error) {
+            console.error(`[ESP-HUB] Error in deviceStatus for ${hubId}:`, error);
+        }
+    });
+
+    // Handle commands from clients - forward to ESP devices
+    socket.on('command', (commandData) => {
+        try {
+            console.log(`[ESP-HUB] Command received for forwarding:`, commandData);
+
+            // Extract target serial
+            const targetSerial = commandData.serialNumber;
+            if (!targetSerial) {
+                console.log(`[ESP-HUB] No target serial in command`);
+                return;
+            }
+
+            // Create compact command for ESP system
+            const compactCommand = createCompactCommand(commandData.action, targetSerial, commandData.state);
+
+            // Send compact command to serial (MEGA will parse this)
+            console.log(`[ESP-HUB] Sending compact command: CMD:${targetSerial}:${commandData.action}`);
+
+        } catch (error) {
+            console.error(`[ESP-HUB] Error in command forwarding for ${hubId}:`, error);
+        }
+    });
+
+    // Standard ping/pong for stability
+    socket.on('ping', () => {
+        try {
+            socket.emit('pong', {
+                timestamp: new Date().toISOString(),
+                hub_serial: hubId,
+                optimized: true
+            });
+        } catch (error) {
+            console.error(`[ESP-HUB] Error in ping for ${hubId}:`, error);
+        }
+    });
+
+    socket.on('pong', (data) => {
+        try {
+            console.log(`[ESP-HUB] Pong from ${hubId}`);
+        } catch (error) {
+            console.error(`[ESP-HUB] Error in pong for ${hubId}:`, error);
+        }
+    });
+
+    socket.on('disconnect', async (reason) => {
+        console.log(`[ESP-HUB] Optimized ESP Socket Hub ${hubId} disconnected. Reason: ${reason}`);
+
+        try {
+            clientNamespace.emit('device_disconnect', {
+                serialNumber: hubId,
+                deviceType: 'ESP Socket Hub (Optimized)',
+                reason: reason,
+                impact: 'Optimized door gateway lost - All ESP-01 doors affected',
+                affected_doors: 'All 7 ESP-01 doors',
+                system_type: 'esp01_optimized',
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[ESP-HUB] Error in disconnect for ${hubId}:`, error);
+        }
+    });
 };
 
-export const handleDoorCalibration = async (
-    socket: Socket,
-    clientNamespace: Namespace,
-    data: {
-        serialNumber: string;
-        success: boolean;
-        angles?: { open: number; close: number };
-        error?: string;
-    }
-) => {
-    const { serialNumber } = data;
+/**
+ * ✅ OPTIMIZED: Setup ESP-01 door device handlers with compact data support
+ */
+export const setupESP01EventHandlers = (socket: Socket, io: Server, serialNumber: string, device: any) => {
+    const clientNamespace = io.of('/client');
 
-    try {
-        if (data.success && data.angles) {
-            await doorService.updateDoorConfig(
+    console.log(`[ESP01] Setting up Optimized ESP-01 handlers for ${serialNumber}`);
+
+    socket.on('device_online', async (data) => {
+        try {
+            console.log(`[ESP01] Device online from ${serialNumber}:`, data);
+
+            socket.emit('device_online_ack', {
+                status: 'received',
+                deviceType: 'ESP-01 Optimized',
+                esp01_mode: true,
+                optimized: true,
+                timestamp: new Date().toISOString()
+            });
+
+            clientNamespace.emit('device_connect', {
                 serialNumber,
-                {
-                    servo_open_angle: 90, // Chỉ sử dụng 90°
-                    servo_close_angle: 0, // Chỉ sử dụng 0°
-                },
-                'system'
-            );
-        }
-
-        clientNamespace.to(`door:${serialNumber}`).emit('door_calibration_result', {
-            ...data,
-            timestamp: new Date().toISOString(),
-        });
-    } catch (error) {
-        console.error(`Door calibration handling error for ${serialNumber}:`, error);
-    }
-};
-
-export const handleDoorTest = async (
-    socket: Socket,
-    clientNamespace: Namespace,
-    data: {
-        serialNumber: string;
-        test_type: string;
-        results: any;
-        success: boolean;
-        error?: string;
-    }
-) => {
-    const { serialNumber } = data;
-
-    try {
-        clientNamespace.to(`door:${serialNumber}`).emit('door_test_result', {
-            ...data,
-            timestamp: new Date().toISOString(),
-        });
-    } catch (error) {
-        console.error(`Door test handling error for ${serialNumber}:`, error);
-    }
-};
-
-export const handleDoorMaintenance = async (
-    socket: Socket,
-    clientNamespace: Namespace,
-    data: {
-        serialNumber: string;
-        maintenance_type: string;
-        details: any;
-    }
-) => {
-    const { serialNumber } = data;
-
-    try {
-        const device = await prisma.devices.findFirst({
-            where: { serial_number: serialNumber },
-            include: { account: true },
-        });
-
-        if (device?.account_id) {
-            const deviceData: Device = {
-                device_id: device.device_id,
-                serial_number: device.serial_number,
-                template_id: device.template_id,
-                space_id: device.space_id,
-                account_id: device.account_id,
-                group_id: device.group_id,
-                hub_id: device.hub_id,
-                firmware_id: device.firmware_id,
-                name: device.name,
-                power_status: device.power_status,
-                attribute: device.attribute as Record<string, any> | null,
-                wifi_ssid: device.wifi_ssid,
-                wifi_password: device.wifi_password,
-                current_value: device.current_value as Record<string, any> | null,
+                deviceType: 'ESP-01 DOOR CONTROLLER (OPTIMIZED)',
+                connectionType: 'esp01_optimized',
                 link_status: device.link_status,
-                last_reset_at: device.last_reset_at,
-                lock_status: device.lock_status,
-                locked_at: device.locked_at,
-                created_at: device.created_at,
-                updated_at: device.updated_at,
-                is_deleted: device.is_deleted,
-                device_type_id: null,
-                device_type_name: undefined,
-                device_template_name: undefined,
-                device_template_status: undefined,
-                device_base_capabilities: null,
-                capabilities: null,
-            };
+                esp01_mode: true,
+                optimized: true,
+                capabilities: ['compact_communication', 'optimized_control'],
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[ESP01] Error in device_online for ${serialNumber}:`, error);
+        }
+    });
 
-            await notificationService.createNotification({
-                account_id: device.account_id,
-                text: `Maintenance alert for ${deviceData.name || serialNumber}: ${data.maintenance_type}`,
-                type: NotificationType.SYSTEM,
+    // ✅ OPTIMIZED: Handle compact command responses
+    socket.on('command_response', (data) => {
+        try {
+            console.log(`[ESP01] Compact response from ${serialNumber}:`, data);
+
+            // Expand compact data if needed
+            let responseData = data;
+            if (data.compact_data || data.s !== undefined) {
+                responseData = expandCompactResponse(data);
+            }
+
+            clientNamespace.to(`door:${serialNumber}`).emit('door_command_response', {
+                serialNumber,
+                ...responseData,
+                deviceType: 'ESP-01 Optimized',
+                esp01_processed: true,
+                optimized: true,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[ESP01] Error in command_response for ${serialNumber}:`, error);
+        }
+    });
+
+    // ✅ OPTIMIZED: Handle compact device status
+    socket.on('deviceStatus', (data) => {
+        try {
+            console.log(`[ESP01] Compact status from ${serialNumber}:`, data);
+
+            // Expand compact status if needed
+            let statusData = data;
+            if (data.compact_data || data.d) {
+                statusData = expandCompactStatus(data);
+            }
+
+            clientNamespace.to(`door:${serialNumber}`).emit('door_status', {
+                ...statusData,
+                deviceType: 'ESP-01 Optimized',
+                connectionType: 'esp01_optimized',
+                esp01_mode: true,
+                optimized: true,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[ESP01] Error in deviceStatus for ${serialNumber}:`, error);
+        }
+    });
+
+    // Heartbeat handling
+    socket.on('heartbeat', (data) => {
+        try {
+            console.log(`[ESP01] Heartbeat from ${serialNumber}`);
+
+            socket.emit('heartbeat_ack', {
+                received: true,
+                deviceType: 'ESP-01 Optimized',
+                esp01_mode: true,
+                optimized: true,
+                server_time: new Date().toISOString(),
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[ESP01] Error in heartbeat for ${serialNumber}:`, error);
+        }
+    });
+
+    socket.on('disconnect', async (reason) => {
+        console.log(`[ESP01] ESP-01 ${serialNumber} disconnected. Reason: ${reason}`);
+
+        try {
+            await prisma.devices.update({
+                where: { serial_number: serialNumber },
+                data: {
+                    updated_at: new Date(),
+                    runtime_capabilities: {
+                        ...device.runtime_capabilities as any,
+                        last_socket_disconnection: new Date().toISOString(),
+                        socket_connected: false,
+                        esp01_last_disconnect: reason,
+                        esp01_mode: true,
+                        optimized: true
+                    }
+                }
+            }).catch(err => {
+                console.error(`[ESP01] Database update failed:`, err);
             });
 
-            clientNamespace.to(`door:${serialNumber}`).emit('door_maintenance_alert', {
-                ...data,
+            clientNamespace.emit('door_disconnect', {
+                serialNumber,
+                deviceType: 'ESP-01 Optimized',
+                esp01_mode: true,
+                optimized: true,
+                reason: reason,
                 timestamp: new Date().toISOString(),
             });
+        } catch (error) {
+            console.error(`[ESP01] Error in disconnect handler for ${serialNumber}:`, error);
         }
-    } catch (error) {
-        console.error(`Door maintenance handling error for ${serialNumber}:`, error);
-    }
+    });
 };
 
-export const validateDoorAccess = async (
-    serialNumber: string,
-    accountId: string
-): Promise<boolean> => {
-    try {
-        const device = await prisma.devices.findFirst({
-            where: { serial_number: serialNumber, is_deleted: false },
-            include: {
-                spaces: {
-                    include: {
-                        houses: true,
-                    },
-                },
-            },
-        });
+/**
+ * Setup standard door device handlers (ESP8266) - keeping for compatibility
+ */
+export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber: string, device: any) => {
+    const clientNamespace = io.of('/client');
 
-        if (!device) return false;
+    console.log(`[ESP8266] Setting up ESP8266 door device handlers for ${serialNumber}`);
 
-        if (device.account_id === accountId) return true;
+    socket.on('device_online', async (data) => {
+        try {
+            console.log(`[ESP8266] Device online from ${serialNumber}:`, data);
 
-        if (device.group_id) {
-            const groupMember = await prisma.user_groups.findFirst({
-                where: {
-                    group_id: device.group_id,
-                    account_id: accountId,
-                    is_deleted: false,
-                },
+            socket.emit('device_online_ack', {
+                status: 'received',
+                deviceType: 'ESP8266 Direct',
+                optimized: true,
+                timestamp: new Date().toISOString()
             });
-            if (groupMember) return true;
+
+            clientNamespace.emit('device_connect', {
+                serialNumber,
+                deviceType: data.deviceType || 'SERVO_DOOR_CONTROLLER',
+                connectionType: 'direct',
+                link_status: device.link_status,
+                optimized: true,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[ESP8266] Error in device_online for ${serialNumber}:`, error);
         }
+    });
 
-        const sharedPermission = await prisma.shared_permissions.findFirst({
-            where: {
-                device_serial: serialNumber,
-                shared_with_user_id: accountId,
-                is_deleted: false,
-            },
-        });
+    socket.on('command_response', (data) => {
+        try {
+            console.log(`[ESP8266] Command response from ${serialNumber}:`, data);
 
-        return !!sharedPermission;
-    } catch (error) {
-        console.error('Door access validation error:', error);
-        return false;
+            clientNamespace.to(`door:${serialNumber}`).emit('door_command_response', {
+                serialNumber,
+                ...data,
+                deviceType: 'ESP8266 Direct',
+                optimized: true,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[ESP8266] Error in command_response for ${serialNumber}:`, error);
+        }
+    });
+
+    socket.on('deviceStatus', (data) => {
+        try {
+            console.log(`[ESP8266] Device status from ${serialNumber}:`, data);
+
+            clientNamespace.to(`door:${serialNumber}`).emit('door_status', {
+                ...data,
+                deviceType: 'ESP8266 Direct',
+                connectionType: 'direct',
+                optimized: true,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[ESP8266] Error in deviceStatus for ${serialNumber}:`, error);
+        }
+    });
+
+    socket.on('disconnect', async (reason) => {
+        console.log(`[ESP8266] Device ${serialNumber} disconnected. Reason: ${reason}`);
+
+        try {
+            await prisma.devices.update({
+                where: {serial_number: serialNumber},
+                data: {
+                    updated_at: new Date(),
+                    runtime_capabilities: {
+                        ...device.runtime_capabilities as any,
+                        last_socket_disconnection: new Date().toISOString(),
+                        socket_connected: false,
+                        disconnection_reason: reason,
+                        device_type: 'ESP8266 Direct',
+                        optimized: true,
+                        last_seen: new Date().toISOString()
+                    }
+                }
+            }).catch(err => {
+                console.error(`[ESP8266] Database update failed:`, err);
+            });
+
+            clientNamespace.emit('door_disconnect', {
+                serialNumber,
+                deviceType: 'ESP8266 Direct',
+                optimized: true,
+                reason: reason,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[ESP8266] Error handling disconnect for ${serialNumber}:`, error);
+        }
+    });
+};
+
+/**
+ * ✅ OPTIMIZED: Expand compact response format
+ */
+function expandCompactResponse(compactData: any): any {
+    const expanded = {
+        success: compactData.s === 1 || compactData.s === "1" || compactData.success === true || compactData.success === "true",
+        result: compactData.r || compactData.result || "processed",
+        deviceId: compactData.d || compactData.deviceId,
+        command: compactData.c || compactData.command,
+        servo_angle: compactData.a || compactData.servo_angle || compactData.angle || 0,
+        esp01_processed: true,
+        optimized: true,
+        compact_expanded: true,
+        timestamp: compactData.t || compactData.timestamp || Date.now()
+    };
+
+    console.log(`[EXPAND] Compact → Full:`, { compactData, expanded });
+    return expanded;
+}
+
+/**
+ * ✅ OPTIMIZED: Expand compact status format
+ */
+function expandCompactStatus(compactData: any): any {
+    // Map compact state codes to full names
+    const stateMap: { [key: string]: string } = {
+        'CLD': 'closed',
+        'OPG': 'opening',
+        'OPD': 'open',
+        'CLG': 'closing'
+    };
+
+    const expanded = {
+        deviceId: compactData.d || compactData.deviceId,
+        door_state: stateMap[compactData.s] || compactData.s || compactData.door_state || 'unknown',
+        servo_angle: compactData.a || compactData.servo_angle || compactData.angle || 0,
+        esp01_online: compactData.o === 1 || compactData.o === "1" || true,
+        optimized: true,
+        compact_expanded: true,
+        timestamp: compactData.t || compactData.timestamp || Date.now()
+    };
+
+    console.log(`[EXPAND-STS] Compact Status → Full:`, { compactData, expanded });
+    return expanded;
+}
+
+/**
+ * ✅ OPTIMIZED: Helper function to create compact commands for ESP-01
+ */
+export const createCompactCommand = (action: string, serialNumber: string, state: any = {}): any => {
+    // Map full actions to compact format
+    const actionMap: { [key: string]: string } = {
+        'open_door': 'OPN',
+        'close_door': 'CLS',
+        'toggle_door': 'TGL'
+    };
+
+    const compactAction = actionMap[action] || action;
+
+    return {
+        action: compactAction,
+        serialNumber: serialNumber,
+        compact_data: true,
+        esp01_optimized: true,
+        state: state,
+        timestamp: new Date().toISOString()
+    };
+};
+
+/**
+ * ✅ OPTIMIZED: Validate ESP-01 data integrity
+ */
+export const validateESP01Data = (data: any): boolean => {
+    // Check for required fields in compact format
+    if (data.compact_data) {
+        return data.d && (data.s !== undefined) && data.t;
     }
+
+    // Check for standard format
+    return data.serialNumber || data.deviceId;
 };

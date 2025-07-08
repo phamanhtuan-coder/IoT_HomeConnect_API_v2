@@ -10,3 +10,4 @@ node_modules
 /prisma/migrations/migration_lock.toml
 /dist/
 /node_modules/
+/src/__tests__/
