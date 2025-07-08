@@ -266,8 +266,8 @@ let error_list: { device_serial: string | null; error: string }[] = [];
     }
 
     async UpdateProductionSerial(input: ProductionTrackingSerialUpdateInput, employeeId: string) {
-        const { device_serial, stage, status } = input;
-        const serial_number = device_serial
+        const { serial_number, stage, status } = input;
+        
         const production = await this.prisma.production_tracking.findFirst({
             where: { device_serial: serial_number, is_deleted: false },
             include: {
@@ -283,7 +283,6 @@ let error_list: { device_serial: string | null; error: string }[] = [];
         if(!production) {
             return errorResponse(ErrorCodes.PRODUCTION_NOT_FOUND, 'Không tìm thấy mã vạch thiết bị');
         }
-
 
         if (production.stage !== stage) {
             return errorResponse(ErrorCodes.BAD_REQUEST, 'Giai đoạn không giống nhau');
@@ -320,8 +319,8 @@ let error_list: { device_serial: string | null; error: string }[] = [];
                 // Tạo thiết bị mới
                 const newDevice = await new DeviceService().createDevice({
                     templateId: production.production_batches.template_id,
-                    serial_number: device_serial,
-                    name: device_serial,
+                    serial_number: serial_number,
+                    name: serial_number,
                 });
                 
                 if (!newDevice) {
@@ -331,7 +330,7 @@ let error_list: { device_serial: string | null; error: string }[] = [];
                 // Gửi SSE update
                 sseController.sendProductionUpdate({
                     type: 'update_status',
-                    device_serial: device_serial,
+                    device_serial: serial_number,
                     stage: StageSerialStage.ASSEMBLY,
                     status: StatusSerialStage.FIRMWARE_UPLOAD,
                     stage_logs: stageLogList
@@ -360,7 +359,7 @@ let error_list: { device_serial: string | null; error: string }[] = [];
 
                 sseController.sendProductionUpdate({
                     type: 'update_status',
-                    device_serial: device_serial,
+                    device_serial: serial_number,
                     stage: StageSerialStage.ASSEMBLY,
                     status: StatusSerialStage.FIRMWARE_UPLOADING,
                     stage_logs: stageLogList
@@ -390,7 +389,7 @@ let error_list: { device_serial: string | null; error: string }[] = [];
 
                 sseController.sendProductionUpdate({
                     type: 'update_stage',
-                    device_serial: device_serial,
+                    device_serial: serial_number,
                     stage: StageSerialStage.QC,
                     status: StatusSerialStage.FIRMWARE_UPLOADED,
                     stage_logs: stageLogList
@@ -420,7 +419,7 @@ let error_list: { device_serial: string | null; error: string }[] = [];
                 
                 sseController.sendProductionUpdate({
                     type: 'update_stage',
-                    device_serial: device_serial,
+                    device_serial: serial_number,
                     stage: StageSerialStage.ASSEMBLY,
                     status: StatusSerialStage.FIXING_PRODUCT,
                     stage_logs: stageLogList
@@ -455,7 +454,7 @@ let error_list: { device_serial: string | null; error: string }[] = [];
 
                 sseController.sendProductionUpdate({
                     type: 'update_stage',
-                    device_serial: device_serial,
+                    device_serial: serial_number,
                     stage: StageSerialStage.QC,
                     status: StatusSerialStage.TESTING,
                     stage_logs: stageLogList
@@ -489,7 +488,7 @@ let error_list: { device_serial: string | null; error: string }[] = [];
 
                 sseController.sendProductionUpdate({
                     type: 'update_stage',
-                    device_serial: device_serial,
+                    device_serial: serial_number,
                     stage: StageSerialStage.COMPLETED,
                     status: StatusSerialStage.PENDING_PACKAGING,
                     stage_logs: stageLogList
@@ -523,7 +522,7 @@ let error_list: { device_serial: string | null; error: string }[] = [];
                 
                 sseController.sendProductionUpdate({
                     type: 'update_status',
-                    device_serial: device_serial,
+                    device_serial: serial_number,
                     stage: stage,
                     status: StatusSerialStage.COMPLETED_PACKAGING,
                     stage_logs: stageLogList
