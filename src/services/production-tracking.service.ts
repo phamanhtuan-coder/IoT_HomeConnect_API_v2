@@ -267,9 +267,9 @@ let error_list: { device_serial: string | null; error: string }[] = [];
 
     async UpdateProductionSerial(input: ProductionTrackingSerialUpdateInput, employeeId: string) {
         const { device_serial, stage, status } = input;
-
+        const serial_number = device_serial
         const production = await this.prisma.production_tracking.findFirst({
-            where: { device_serial: device_serial, is_deleted: false },
+            where: { device_serial: serial_number, is_deleted: false },
             include: {
                 production_batches: {
                     select: {
