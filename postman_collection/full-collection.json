@@ -8169,446 +8169,6 @@
       ]
     },
     {
-      "name": "Door",
-      "item": [
-        {
-          "name": "Toggle Door",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Door toggled successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"power_status\": true,\n  \"force\": false,\n  \"timeout\": 5000\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/doors/DOOR_ABC123/toggle",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "doors",
-                "DOOR_ABC123",
-                "toggle"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Door Status",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Door status retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.door_state).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/doors/DOOR_ABC123/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "doors",
-                "DOOR_ABC123",
-                "status"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update Door Config",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Door config updated successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"config\": {\n    \"servo_open_angle\": 90,\n    \"servo_close_angle\": 0,\n    \"movement_duration\": 1000,\n    \"auto_close_delay\": 30000,\n    \"obstacle_detection\": true,\n    \"manual_override_enabled\": true,\n    \"emergency_mode\": false,\n    \"max_retry_attempts\": 3\n  }\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/doors/DOOR_ABC123/config",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "doors",
-                "DOOR_ABC123",
-                "config"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Emergency Door Operation",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Emergency operation executed successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"door_serial_numbers\": [\"DOOR_ABC123\", \"DOOR_XYZ789\"],\n  \"action\": \"open\",\n  \"override_manual\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/doors/emergency",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "doors",
-                "emergency"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Bulk Door Operation",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Bulk operation executed successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"door_serial_numbers\": [\"DOOR_ABC123\", \"DOOR_XYZ789\"],\n  \"action\": \"toggle_door\",\n  \"state\": {\n    \"power_status\": true,\n    \"target_angle\": 90\n  },\n  \"priority\": \"normal\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/doors/bulk",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "doors",
-                "bulk"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get User Doors",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('User doors retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.doors).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/doors?state=closed&is_moving=false&has_errors=false",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "doors"
-              ],
-              "query": [
-                {
-                  "key": "state",
-                  "value": "closed"
-                },
-                {
-                  "key": "is_moving",
-                  "value": "false"
-                },
-                {
-                  "key": "has_errors",
-                  "value": "false"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Calibrate Door",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Door calibration started successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"angles\": {\n    \"open\": 90,\n    \"close\": 0\n  },\n  \"save_to_eeprom\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/doors/DOOR_ABC123/calibrate",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "doors",
-                "DOOR_ABC123",
-                "calibrate"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Test Door",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Door test started successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"test_type\": \"movement\",\n  \"repeat_count\": 1\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/doors/DOOR_ABC123/test",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "doors",
-                "DOOR_ABC123",
-                "test"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Perform Maintenance",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Maintenance operation started successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"maintenance_type\": \"calibrate\",\n  \"backup_config\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/doors/DOOR_ABC123/maintenance",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "doors",
-                "DOOR_ABC123",
-                "maintenance"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
       "name": "Camera",
       "item": [
         {
@@ -9116,6 +8676,1335 @@
                   "key": "serialNumber",
                   "value": "CAM123"
                 }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Door",
+      "item": [
+        {
+          "name": "Toggle Door",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Door toggled successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"power_status\": true,\n  \"force\": false,\n  \"timeout\": 5000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/DOOR_ABC123/toggle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "DOOR_ABC123",
+                "toggle"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Door Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Door status retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.door_state).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/doors/DOOR_ABC123/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "DOOR_ABC123",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Door Config",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Door config updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"config\": {\n    \"servo_open_angle\": 90,\n    \"servo_close_angle\": 0,\n    \"movement_duration\": 1000,\n    \"auto_close_delay\": 30000,\n    \"obstacle_detection\": true,\n    \"manual_override_enabled\": true,\n    \"emergency_mode\": false,\n    \"max_retry_attempts\": 3\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/DOOR_ABC123/config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "DOOR_ABC123",
+                "config"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Emergency Door Operation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Emergency operation executed successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"door_serial_numbers\": [\"DOOR_ABC123\", \"DOOR_XYZ789\"],\n  \"action\": \"open\",\n  \"override_manual\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/emergency",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "emergency"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Door Operation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Bulk operation executed successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"door_serial_numbers\": [\"DOOR_ABC123\", \"DOOR_XYZ789\"],\n  \"action\": \"toggle_door\",\n  \"state\": {\n    \"power_status\": true,\n    \"target_angle\": 90\n  },\n  \"priority\": \"normal\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "bulk"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Doors",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('User doors retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.doors).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/doors?state=closed&is_moving=false&has_errors=false",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors"
+              ],
+              "query": [
+                {
+                  "key": "state",
+                  "value": "closed"
+                },
+                {
+                  "key": "is_moving",
+                  "value": "false"
+                },
+                {
+                  "key": "has_errors",
+                  "value": "false"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Calibrate Door",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Door calibration started successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"angles\": {\n    \"open\": 90,\n    \"close\": 0\n  },\n  \"save_to_eeprom\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/DOOR_ABC123/calibrate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "DOOR_ABC123",
+                "calibrate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test Door",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Door test started successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"test_type\": \"movement\",\n  \"repeat_count\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/DOOR_ABC123/test",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "DOOR_ABC123",
+                "test"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Perform Maintenance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Maintenance operation started successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"maintenance_type\": \"calibrate\",\n  \"backup_config\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/DOOR_ABC123/maintenance",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "DOOR_ABC123",
+                "maintenance"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Garden Hub",
+      "item": [
+        {
+          "name": "Get Relay Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Relay status retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.relays).to.be.an('array');",
+                  "  pm.expect(response.data.hub_serial).to.equal('MEGA_HUB_GARDEN_001');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/relays",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "relays"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Available Relays",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Available relays retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/relays/available",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "relays",
+                "available"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Toggle Relay - Fan",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Relay toggled successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.device_name).to.equal('Fan');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"power_status\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/relays/RELAY27JUN2501FAN001CONTROL001/toggle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "relays",
+                "RELAY27JUN2501FAN001CONTROL001",
+                "toggle"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Toggle Relay - Alarm",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Alarm relay toggled successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.device_name).to.equal('Alarm');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"power_status\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/relays/RELAY27JUN2501ALARM01CONTROL01/toggle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "relays",
+                "RELAY27JUN2501ALARM01CONTROL01",
+                "toggle"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Toggle Relay - Light1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Light1 relay toggled successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.device_name).to.equal('Light1');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"power_status\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/relays/RELAY27JUN2501LIGHT007CONTROL1/toggle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "relays",
+                "RELAY27JUN2501LIGHT007CONTROL1",
+                "toggle"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Toggle Relay - Light2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Light2 relay toggled successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.device_name).to.equal('Light2');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"power_status\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/relays/RELAY27JUN2501LIGHT008CONTROL1/toggle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "relays",
+                "RELAY27JUN2501LIGHT008CONTROL1",
+                "toggle"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Relay Control - Turn On All Lights",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Bulk relay operation executed successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.results).to.be.an('array');",
+                  "  pm.expect(response.data.bulk_operation).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"relay_commands\": [\n    {\n      \"relay_serial\": \"RELAY27JUN2501LIGHT007CONTROL1\",\n      \"action\": \"ON\"\n    },\n    {\n      \"relay_serial\": \"RELAY27JUN2501LIGHT008CONTROL1\",\n      \"action\": \"ON\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/relays/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "relays",
+                "bulk"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Relay Control - Toggle Multiple Relays",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Bulk relay toggle executed successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.results).to.be.an('array');",
+                  "  pm.expect(response.data.results.length).to.equal(3);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"relay_commands\": [\n    {\n      \"relay_serial\": \"RELAY27JUN2501FAN001CONTROL001\",\n      \"action\": \"TOGGLE\"\n    },\n    {\n      \"relay_serial\": \"RELAY27JUN2501LIGHT007CONTROL1\",\n      \"action\": \"TOGGLE\"\n    },\n    {\n      \"relay_serial\": \"RELAY27JUN2501LIGHT008CONTROL1\",\n      \"action\": \"TOGGLE\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/relays/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "relays",
+                "bulk"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Control Garden Pump - Start",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Garden pump started successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.action).to.equal('PUMP_START');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"START\",\n  \"reason\": \"Manual watering started\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/pump",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "pump"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Control Garden Pump - Stop",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Garden pump stopped successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.action).to.equal('PUMP_STOP');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"STOP\",\n  \"reason\": \"Manual watering stopped\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/pump",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "pump"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Control RGB LED - Test Mode",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('RGB LED test mode activated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.action).to.equal('RGB_TEST');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"TEST\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/rgb",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "rgb"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Control RGB LED - Auto Mode",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('RGB LED auto mode activated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.action).to.equal('RGB_AUTO');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"AUTO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/rgb",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "rgb"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Control RGB LED - Manual Red",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('RGB LED manual red color set successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.action).to.equal('RGB_MANUAL');",
+                  "  pm.expect(response.data.color.red).to.equal(255);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"MANUAL\",\n  \"color\": {\n    \"red\": 255,\n    \"green\": 0,\n    \"blue\": 0\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/rgb",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "rgb"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Control RGB LED - Manual Green",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('RGB LED manual green color set successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.action).to.equal('RGB_MANUAL');",
+                  "  pm.expect(response.data.color.green).to.equal(255);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"MANUAL\",\n  \"color\": {\n    \"red\": 0,\n    \"green\": 255,\n    \"blue\": 0\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/rgb",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "rgb"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Control RGB LED - Manual Blue",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('RGB LED manual blue color set successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.action).to.equal('RGB_MANUAL');",
+                  "  pm.expect(response.data.color.blue).to.equal(255);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"MANUAL\",\n  \"color\": {\n    \"red\": 0,\n    \"green\": 0,\n    \"blue\": 255\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/rgb",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "rgb"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Emergency Alarm - Activate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Emergency alarm activated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.action).to.equal('ALARM_ACTIVATE');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"ACTIVATE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/emergency/alarm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "emergency",
+                "alarm"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Emergency Alarm - Deactivate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Emergency alarm deactivated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.action).to.equal('ALARM_DEACTIVATE');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DEACTIVATE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/emergency/alarm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "emergency",
+                "alarm"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Emergency Alarm - Reset Override",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Emergency alarm override reset successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.data.action).to.equal('ALARM_RESET_OVERRIDE');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"RESET_OVERRIDE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/garden-hub/emergency/alarm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "garden-hub",
+                "emergency",
+                "alarm"
               ]
             }
           },

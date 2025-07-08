@@ -136,9 +136,10 @@ import sseRoutes from './sse.routes';
 import productionBatchesRoutes from './production-batches.routes';
 import customerSearchRoutes from './customer-search.routes';
 import hourlyValueRoutes from './hourly_values.route';
-// import cameraRoutes from "./camera.routes";
 import statisticRoutes from './statistic.routes';
 import doorRoutes from './door.routes';
+import cameraRoutes from "./camera.routes";
+import gardenHubRoutes from "./gardenHubRoutes";
 
 
 
@@ -173,8 +174,8 @@ router.use('/customer-search', customerSearchRoutes);
 router.use('/hourly-values', hourlyValueRoutes);
 router.use('/statistic', statisticRoutes);
 router.use('/doors', doorRoutes);  // Add door routes
+router.use('/cameras', cameraRoutes);  // Add camera routes
+router.use('/garden-hubs', gardenHubRoutes);  // Add garden hub routes
 
 
 export default router;
-
-
