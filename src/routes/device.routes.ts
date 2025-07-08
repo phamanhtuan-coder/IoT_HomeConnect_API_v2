@@ -438,8 +438,6 @@ router.put(
     asyncHandler(deviceController.updateDeviceSpace)
 );
 
-
-
 /**
  * Update device state (unified)
  * @swagger

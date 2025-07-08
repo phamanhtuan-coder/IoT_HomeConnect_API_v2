@@ -126,7 +126,11 @@ class DeviceService {
             include: {
                 device_templates: {
                     include: {
-                        categories: true  // Include category information
+                        categories: {
+                            include: {
+                                categories: true
+                            }
+                        }
                     }
                 },
                 spaces: {
@@ -150,6 +154,8 @@ class DeviceService {
             ...this.mapPrismaDeviceToAuthDevice(device),    
             device_type_id: device.device_templates?.device_type_id ?? null,
             device_type_name: device.device_templates?.categories?.name ?? null,
+            device_type_parent_name: device.device_templates?.categories?.categories?.name ?? null,
+            device_type_parent_image: device.device_templates?.categories?.categories?.image ? `data:image/png;base64,${device.device_templates?.categories?.categories?.image}` : null,
             device_template_name: device.device_templates?.name ?? null,
             device_template_status: device.device_templates?.status ?? null,
             device_base_capabilities: device.device_templates?.base_capabilities ?? null
@@ -477,7 +483,8 @@ class DeviceService {
 
         const baseCapabilities = device!.device_templates?.base_capabilities || {};
         const runtimeCapabilities = device!.runtime_capabilities || {};
-
+        console.log("baseCapabilities", baseCapabilities)
+        console.log("runtimeCapabilities", runtimeCapabilities)
         return {
             base: baseCapabilities,
             runtime: runtimeCapabilities,
@@ -515,6 +522,7 @@ class DeviceService {
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
 
         const capabilities = await this.getDeviceCapabilities(serial_number);
+        console.log("capabilities", capabilities)
         this.validateStateUpdate(stateUpdate, capabilities);
 
         const currentState = (device!.attribute as DeviceState) || {};
@@ -567,6 +575,7 @@ class DeviceService {
         if (stateUpdate.color !== undefined && !deviceCapabilities.includes('RGB_CONTROL')) {
             throwError(ErrorCodes.FORBIDDEN, 'Device does not support color control');
         }
+        console.log("deviceCapabilities", deviceCapabilities)
 
         if (stateUpdate.brightness !== undefined && !deviceCapabilities.includes('BRIGHTNESS_CONTROL')) {
             throwError(ErrorCodes.FORBIDDEN, 'Device does not support brightness control');

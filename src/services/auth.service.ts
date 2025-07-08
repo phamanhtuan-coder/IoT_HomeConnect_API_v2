@@ -39,6 +39,8 @@ class AuthService {
         const account = await this.prisma.account.findFirst({ where: { username } });
         if (!account) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Account not found');
 
+        if (account?.employee_id) throwError(ErrorCodes.INVALID_CREDENTIALS, 'Tài khoản không hợp lệ');
+
         if (!account!.password) {
             throwError(ErrorCodes.INVALID_CREDENTIALS, 'Account password not set');
         } else {

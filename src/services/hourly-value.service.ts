@@ -496,6 +496,164 @@ class HourlyValueService {
     
         return result;
     }
+
+    /**
+     * Get statistics by space với cache optimization
+     */
+    async getStatisticsBySpace(space_id: number, accountId: string, type: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom', start_time?: Date, end_time?: Date) {
+        // Check permission for space
+        const space = await this.prisma.spaces.findUnique({
+            where: { space_id, is_deleted: false },
+            include: { houses: true },
+        });
+        if (!space) throwError(ErrorCodes.NOT_FOUND, 'Space not found');
+        console.log('space', space)
+
+        const groupId = space!.houses?.group_id;
+        if (groupId) {
+            const userGroup = await this.prisma.user_groups.findFirst({
+                where: { group_id: groupId, account_id: accountId, is_deleted: false },
+            });
+            if (!userGroup) throwError(ErrorCodes.FORBIDDEN, 'No permission to access this space');
+        }
+
+        // Cache key for space statistics
+        const cacheKey = `space_stats:${space_id}:${type}:${start_time?.toISOString()}:${end_time?.toISOString()}`;
+        
+        // Try to get from cache first
+        const cached = await redisClient.get(cacheKey);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+
+        let groupBy: string;
+        let timeColumn: string;
+        switch (type) {
+            case 'daily':
+                groupBy = "DATE(hour_timestamp)";
+                timeColumn = "DATE(hour_timestamp)";
+                break;
+            case 'weekly':
+                groupBy = "YEARWEEK(hour_timestamp)";
+                timeColumn = "YEARWEEK(hour_timestamp)";
+                break;
+            case 'monthly':
+                groupBy = "DATE_FORMAT(hour_timestamp, '%Y-%m-01')";
+                timeColumn = "DATE_FORMAT(hour_timestamp, '%Y-%m-01')";
+                break;
+            case 'yearly':
+                groupBy = "YEAR(hour_timestamp)";
+                timeColumn = "YEAR(hour_timestamp)";
+                break;
+            default:
+                groupBy = "hour_timestamp";
+                timeColumn = "hour_timestamp";
+        }
+
+        // Lấy tất cả các key có trong JSON để biết cần tính trung bình cho những field nào
+        const keysQuery = await this.prisma.$queryRawUnsafe(`
+            SELECT DISTINCT 
+                JSON_UNQUOTE(JSON_EXTRACT(JSON_KEYS(avg_value), CONCAT('$[', numbers.n, ']'))) as key_name
+            FROM hourly_values
+            CROSS JOIN (
+                SELECT 0 as n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
+                UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9
+            ) numbers
+            WHERE space_id = ${space_id}
+            AND is_deleted = false 
+            ${start_time ? `AND hour_timestamp >= '${start_time.toISOString()}'` : ''} 
+            ${end_time ? `AND hour_timestamp <= '${end_time.toISOString()}'` : ''}
+            AND numbers.n < JSON_LENGTH(avg_value)
+            AND JSON_UNQUOTE(JSON_EXTRACT(JSON_KEYS(avg_value), CONCAT('$[', numbers.n, ']'))) IS NOT NULL
+        `) as any;
+
+        const keys = keysQuery.map((row: any) => row.key_name).filter(Boolean);
+
+        if (keys.length === 0) {
+            return [];
+        }
+
+        // Tạo dynamic query với các field JSON được extract
+        const avgFields = keys.map(key => 
+            `AVG(CAST(JSON_UNQUOTE(JSON_EXTRACT(avg_value, '$.${key}')) AS DECIMAL(10,2))) as avg_${key}`
+        ).join(', ');
+
+        const query: any[] = await this.prisma.$queryRawUnsafe(`
+            SELECT 
+                ${timeColumn} as timestamp,
+                ${avgFields},
+                SUM(sample_count) as total_samples,
+                COUNT(DISTINCT device_serial) as active_devices
+            FROM hourly_values
+            WHERE space_id = ${space_id}
+            AND is_deleted = false 
+            ${start_time ? `AND hour_timestamp >= '${start_time.toISOString()}'` : ''} 
+            ${end_time ? `AND hour_timestamp <= '${end_time.toISOString()}'` : ''}
+            GROUP BY ${groupBy}
+            ORDER BY ${timeColumn} DESC;
+        `);
+
+        const result = query.map((row) => {
+            // Tạo object avg_value từ các field đã tính trung bình
+            const avg_value: any = {};
+            keys.forEach(key => {
+                if (row[`avg_${key}`] !== null) {
+                    avg_value[key] = Number(row[`avg_${key}`]);
+                }
+            });
+
+            return {
+                timestamp: row.timestamp,
+                avg_value,
+                total_samples: Number(row.total_samples),
+                active_devices: Number(row.active_devices),
+            };
+        });
+
+        // Cache result for 5 minutes
+        await redisClient.setex(cacheKey, 300, JSON.stringify(result));
+
+        return result;
+    }
+
+    /**
+     * Get devices in space for statistics dropdown
+     */
+    async getDevicesInSpace(space_id: number, accountId: string) {
+        // Check permission for space
+        const space = await this.prisma.spaces.findUnique({
+            where: { space_id, is_deleted: false },
+            include: { houses: true },
+        });
+        if (!space) throwError(ErrorCodes.NOT_FOUND, 'Space not found');
+
+        const groupId = space!.houses?.group_id;
+        if (groupId) {
+            const userGroup = await this.prisma.user_groups.findFirst({
+                where: { group_id: groupId, account_id: accountId, is_deleted: false },
+            });
+            if (!userGroup) throwError(ErrorCodes.FORBIDDEN, 'No permission to access this space');
+        }
+
+        // Get devices in space
+        const devices = await this.prisma.devices.findMany({
+            where: {
+                space_id,
+                is_deleted: false
+            },
+            select: {
+                serial_number: true,
+                name: true,
+                // type: true,
+                // is_online: true,
+                // last_seen: true
+            },
+            orderBy: { name: 'asc' }
+        });
+
+        return devices;
+    }
+
     async createHourlyValue(input: {
         device_serial: string;
         space_id?: number;
@@ -580,10 +738,11 @@ class HourlyValueService {
             where: { space_id, is_deleted: false },
             include: { houses: true },
         });
+        console.log('space', space)
         if (!space) throwError(ErrorCodes.NOT_FOUND, 'Space not found');
 
         const groupId = space!.houses?.group_id;
-        console.log('groupId', groupId)
+        
         if (groupId) {
             const userGroup = await this.prisma.user_groups.findFirst({
                 where: { group_id: groupId, account_id: accountId, is_deleted: false },
