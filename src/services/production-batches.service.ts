@@ -248,6 +248,7 @@ export class BatchService {
             },
             select: {
                 production_batch_id: true,
+                template_id: true,
                 quantity: true,
             }
         });
