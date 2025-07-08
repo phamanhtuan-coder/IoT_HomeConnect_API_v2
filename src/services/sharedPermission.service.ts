@@ -102,6 +102,40 @@ class SharedPermissionService {
 
         return result;
     }
+
+    async getSharedUsersBySerialNumber(serialNumber: string) {
+        const filters: Filter = {
+            field: "shared_permissions.device_serial",
+            condition: "=",
+            value: serialNumber
+        }
+        const get_attr = `
+        shared_permissions.permission_id, shared_permissions.device_serial, shared_permissions.permission_type,
+        shared_permissions.shared_with_user_id,
+        CONCAT(customer.surname, ' ', customer.lastname) as customer_name,
+        customer.email as customer_email,
+        customer.image as customer_image
+        `;
+
+        const get_table = "shared_permissions"
+
+        let query_join = `
+            LEFT JOIN devices ON shared_permissions.device_serial = devices.serial_number
+            LEFT JOIN account ON shared_permissions.shared_with_user_id = account.account_id
+            LEFT JOIN customer ON account.customer_id = customer.id
+        `;
+
+        const sharedUsers = executeSelectData({
+            table: get_table,
+            strGetColumn: get_attr,
+            queryJoin: query_join,
+            idSpecial: "permission_id",
+            isDeleteBoolean: true,
+            filter: filters,
+        });
+
+        return sharedUsers;
+    }
     
     async revokeShareDevice(permissionId: number, requesterId: string, requesterRole: GroupRole): Promise<void> {
         const permission = await this.prisma.shared_permissions.findUnique({
