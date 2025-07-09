@@ -14,6 +14,7 @@ import {
     DoorQueryFiltersSchema,
     DoorMaintenanceSchema
 } from '../utils/schemas/door.schemas';
+import z from 'zod';
 
 const router = Router();
 const doorController = new DoorController();
@@ -28,6 +29,60 @@ router.post(
     validateMiddleware(DoorSerialSchema),
     validateMiddleware(DoorToggleSchema),
     asyncHandler(doorController.toggleDoor)
+);
+
+// Enhanced door routes for all door types
+
+// NEW: Configure door (servo angles, rolling rounds, PIR settings)
+router.put(
+    '/:serialNumber/configure',
+    authMiddleware,
+    validateMiddleware(DoorSerialSchema),
+    validateMiddleware(z.object({
+        door_type: z.enum(['SERVO', 'ROLLING', 'SLIDING']).optional(),
+        // Servo config
+        open_angle: z.number().min(0).max(180).optional(),
+        close_angle: z.number().min(0).max(180).optional(),
+        // Rolling/Sliding config
+        open_rounds: z.number().min(1).max(10).optional(),
+        closed_rounds: z.number().min(0).max(5).optional(),
+        // Sliding specific
+        pir_enabled: z.boolean().optional()
+    })),
+    asyncHandler(doorController.configureDoor)
+);
+
+// NEW: Toggle PIR for sliding doors
+router.post(
+    '/:serialNumber/pir/toggle',
+    authMiddleware,
+    validateMiddleware(DoorSerialSchema),
+    asyncHandler(doorController.togglePIR)
+);
+
+// Enhanced calibration route
+router.post(
+    '/:serialNumber/calibrate',
+    authMiddleware,
+    validateMiddleware(DoorSerialSchema),
+    validateMiddleware(z.object({
+        door_type: z.enum(['SERVO', 'ROLLING', 'SLIDING']).optional(),
+        // Servo calibration
+        openAngle: z.number().min(0).max(180).optional(),
+        closeAngle: z.number().min(0).max(180).optional(),
+        // Rolling/Sliding calibration
+        openRounds: z.number().min(1).max(10).optional(),
+        save_to_eeprom: z.boolean().optional().default(true)
+    })),
+    asyncHandler(doorController.calibrateDoor)
+);
+
+// NEW: Get door capabilities based on type
+router.get(
+    '/:serialNumber/capabilities',
+    authMiddleware,
+    validateMiddleware(DoorSerialSchema),
+    asyncHandler(doorController.getDoorCapabilities)
 );
 
 router.get(

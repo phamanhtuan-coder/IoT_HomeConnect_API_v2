@@ -1,4 +1,4 @@
-// src/controllers/door.controller.ts
+// src/controllers/door.controller.ts - Enhanced for all door types
 import { Request, Response, NextFunction } from 'express';
 import { DoorService } from '../services/door.service';
 import { throwError, ErrorCodes } from '../utils/errors';
@@ -19,9 +19,10 @@ export class DoorController {
     constructor() {
         this.doorService = new DoorService();
     }
+
     toggleDoor = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Người dùng chưa xác thực');
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
             const { serialNumber } = req.params;
@@ -33,7 +34,7 @@ export class DoorController {
                 success: true,
                 door,
                 action: power_status ? 'OPEN' : 'CLOSE',
-                message: `Lệnh ${power_status ? 'mở' : 'đóng'} cửa đã được gửi thành công`,
+                message: `Door ${power_status ? 'open' : 'close'} command sent`,
                 timestamp: new Date().toISOString()
             });
         } catch (error) {
@@ -43,20 +44,25 @@ export class DoorController {
 
     getDoorStatus = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Người dùng chưa xác thực');
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
             const { serialNumber } = req.params;
             const door = await this.doorService.getDoorBySerial(serialNumber, accountId);
-            if (!door) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
+            if (!door) throwError(ErrorCodes.NOT_FOUND, 'Door not found');
 
             const doorState = (door?.attribute as Record<string, any>) || {};
+            const doorType = doorState.runtime_capabilities?.door_type || "SERVO";
+
             res.json({
                 success: true,
                 door_state: {
                     door_state: doorState.door_state || DoorState.CLOSED,
+                    door_type: doorType,
                     is_moving: doorState.is_moving || false,
-                    servo_angle: doorState.servo_angle || 0
+                    servo_angle: doorState.servo_angle || 0,
+                    current_rounds: doorState.current_rounds || 0,
+                    pir_enabled: doorState.config?.pir_enabled || false
                 },
                 timestamp: new Date().toISOString()
             });
@@ -67,7 +73,7 @@ export class DoorController {
 
     updateDoorConfig = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Người dùng chưa xác thực');
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
             const { serialNumber } = req.params;
@@ -78,7 +84,98 @@ export class DoorController {
             res.json({
                 success: true,
                 door: updatedDoor,
-                message: 'Cấu hình cửa đã được cập nhật thành công',
+                message: 'Door configuration updated',
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    // NEW: Configure door based on type
+    configureDoor = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { serialNumber } = req.params;
+            const config = req.body;
+
+            const result = await this.doorService.configureDoor(serialNumber, config, accountId);
+
+            res.json({
+                success: result.success,
+                message: result.message,
+                config,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    // NEW: Toggle PIR for sliding doors
+    togglePIR = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { serialNumber } = req.params;
+
+            const result = await this.doorService.togglePIR(serialNumber, accountId);
+
+            res.json({
+                success: result.success,
+                message: result.message,
+                pir_enabled: result.pir_enabled,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    // NEW: Get door capabilities
+    getDoorCapabilities = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { serialNumber } = req.params;
+            const door = await this.doorService.getDoorBySerial(serialNumber, accountId);
+            if (!door) throwError(ErrorCodes.NOT_FOUND, 'Door not found');
+
+            const doorState = (door?.attribute as Record<string, any>) || {};
+            const doorType = doorState.runtime_capabilities?.door_type || "SERVO";
+
+            let capabilities;
+            if (doorType === "SERVO") {
+                capabilities = {
+                    door_type: "SERVO",
+                    configurable: ["servo_open_angle", "servo_close_angle"],
+                    angle_range: { min: 0, max: 180 },
+                    features: ["position_control", "angle_feedback", "eeprom_storage"]
+                };
+            } else if (doorType === "ROLLING") {
+                capabilities = {
+                    door_type: "ROLLING",
+                    configurable: ["open_rounds", "closed_rounds"],
+                    rounds_range: { min: 1, max: 10 },
+                    features: ["rounds_control", "rfid_access", "manual_buttons", "eeprom_storage"]
+                };
+            } else if (doorType === "SLIDING") {
+                capabilities = {
+                    door_type: "SLIDING",
+                    configurable: ["open_rounds", "closed_rounds", "pir_enabled"],
+                    rounds_range: { min: 1, max: 10 },
+                    features: ["rounds_control", "pir_motion_detection", "auto_close", "manual_button", "eeprom_storage"]
+                };
+            }
+
+            res.json({
+                success: true,
+                serialNumber,
+                capabilities,
                 timestamp: new Date().toISOString()
             });
         } catch (error) {
@@ -88,7 +185,7 @@ export class DoorController {
 
     emergencyDoorOperation = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Người dùng chưa xác thực');
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
             const { door_serial_numbers, action, override_manual = true }: DoorEmergencyRequest = req.body;
@@ -107,7 +204,7 @@ export class DoorController {
                 success: result.success,
                 affected_doors: result.affected_doors,
                 errors: result.errors,
-                message: `Thao tác khẩn cấp ${action} đã hoàn tất`,
+                message: `Emergency ${action} operation completed`,
                 timestamp: new Date().toISOString()
             });
         } catch (error) {
@@ -117,13 +214,14 @@ export class DoorController {
 
     getUserDoors = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Người dùng chưa xác thực');
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
             const filters = {
                 state: req.query.state as DoorState,
                 is_moving: req.query.is_moving === 'true',
-                has_errors: req.query.has_errors === 'true'
+                has_errors: req.query.has_errors === 'true',
+                door_type: req.query.door_type as string
             };
 
             const doors = await this.doorService.getUserDoors(accountId, filters);
@@ -141,24 +239,13 @@ export class DoorController {
 
     bulkDoorOperation = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Người dùng chưa xác thực');
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
             const { door_serial_numbers, action, state = { power_status: true }, priority = DoorPriority.NORMAL }: DoorBulkOperationRequest = req.body;
 
-            interface DoorOperationResult {
-                serialNumber: string;
-                success: boolean;
-                door: any;  // Replace 'any' with actual Device type if available
-            }
-
-            interface DoorOperationError {
-                serialNumber: string;
-                error: string;
-            }
-
-            const results: DoorOperationResult[] = [];
-            const errors: DoorOperationError[] = [];
+            const results: any[] = [];
+            const errors: any[] = [];
 
             for (const serialNumber of door_serial_numbers) {
                 try {
@@ -189,30 +276,21 @@ export class DoorController {
         }
     };
 
+    // Enhanced calibration for all door types
     calibrateDoor = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Người dùng chưa xác thực');
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
             const { serialNumber } = req.params;
-            const { angles, save_to_eeprom = true } = req.body;
+            const calibrationData = req.body;
 
-            const door = await this.doorService.getDoorBySerial(serialNumber, accountId);
-            if (!door) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
-
-            if (this.io) {
-                this.io.of("/door").to(`door:${serialNumber}`).emit('calibrate', {
-                    serialNumber,
-                    angles,
-                    save_to_eeprom,
-                    fromClient: accountId,
-                    timestamp: new Date().toISOString()
-                });
-            }
+            const result = await this.doorService.calibrateDoor(serialNumber, calibrationData, accountId);
 
             res.json({
-                success: true,
-                message: 'Lệnh hiệu chỉnh đã được gửi',
+                success: result.success,
+                message: result.message,
+                calibration_data: calibrationData,
                 timestamp: new Date().toISOString()
             });
         } catch (error) {
@@ -222,28 +300,19 @@ export class DoorController {
 
     testDoor = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Người dùng chưa xác thực');
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
             const { serialNumber } = req.params;
             const { test_type = 'movement', repeat_count = 1 } = req.body;
 
-            const door = await this.doorService.getDoorBySerial(serialNumber, accountId);
-            if (!door) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
-
-            if (this.io) {
-                this.io.of("/door").to(`door:${serialNumber}`).emit('test', {
-                    serialNumber,
-                    test_type,
-                    repeat_count,
-                    fromClient: accountId,
-                    timestamp: new Date().toISOString()
-                });
-            }
+            const result = await this.doorService.testDoor(serialNumber, test_type, accountId);
 
             res.json({
-                success: true,
-                message: `Lệnh kiểm tra cửa (${test_type}) đã được gửi`,
+                success: result.success,
+                message: result.message,
+                test_type,
+                repeat_count,
                 timestamp: new Date().toISOString()
             });
         } catch (error) {
@@ -251,20 +320,20 @@ export class DoorController {
         }
     };
 
-
     performMaintenance = async (req: Request, res: Response, next: NextFunction) => {
         const accountId = req.user?.userId || req.user?.employeeId;
-        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Người dùng chưa xác thực');
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
             const { serialNumber } = req.params;
             const { maintenance_type, notify_completion = true } = req.body;
 
             const door = await this.doorService.getDoorBySerial(serialNumber, accountId);
-            if (!door) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
+            if (!door) throwError(ErrorCodes.NOT_FOUND, 'Door not found');
 
             if (this.io) {
-                this.io.of("/door").to(`door:${serialNumber}`).emit('maintenance', {
+                this.io.of("/client").to(`door:${serialNumber}`).emit('door_command', {
+                    action: 'maintenance',
                     serialNumber,
                     maintenance_type,
                     notify_completion,
@@ -275,7 +344,7 @@ export class DoorController {
 
             res.json({
                 success: true,
-                message: `Lệnh bảo trì (${maintenance_type}) đã được gửi`,
+                message: `Maintenance command (${maintenance_type}) sent`,
                 timestamp: new Date().toISOString()
             });
         } catch (error) {

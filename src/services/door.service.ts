@@ -96,6 +96,8 @@ export class DoorService {
         };
     }
 
+    // Enhanced door service methods for all door types
+
     async toggleDoor(
         serialNumber: string,
         powerStatus: boolean,
@@ -105,21 +107,33 @@ export class DoorService {
     ): Promise<Device> {
         return this.withRetry(async () => {
             const door = await this.getDoorBySerial(serialNumber, accountId);
-            if (!door) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
+            if (!door) throwError(ErrorCodes.NOT_FOUND, 'Door not found');
 
             const currentAttribute = (door?.attribute as Record<string, any>) || {};
             if (!force && currentAttribute.is_moving) {
-                throwError(ErrorCodes.CONFLICT, 'Cửa đang di chuyển. Sử dụng force=true để ghi đè.');
+                throwError(ErrorCodes.CONFLICT, 'Door is moving. Use force=true to override.');
             }
 
-            const newState = {
+            // Get door type from runtime capabilities or default to SERVO
+            const doorType = currentAttribute.runtime_capabilities?.door_type || "SERVO";
+
+            const newState: any = {
                 ...currentAttribute,
                 power_status: powerStatus,
                 door_state: powerStatus ? DoorState.OPEN : DoorState.CLOSED,
-                servo_angle: powerStatus ? 180 : 0, // ESP-01 servo angles: 0° closed, 180° open
                 last_command: powerStatus ? 'OPEN' : 'CLOSE',
                 command_timeout: timeout,
+                door_type: doorType
             };
+
+            // Set appropriate angle/rounds based on door type
+            if (doorType === "SERVO") {
+                newState.servo_angle = powerStatus ? 180 : 0;
+            } else if (doorType === "ROLLING" || doorType === "SLIDING") {
+                newState.current_rounds = powerStatus ?
+                    (currentAttribute.config?.open_rounds || 2) :
+                    (currentAttribute.config?.closed_rounds || 0);
+            }
 
             const updatedDevice = await this.prisma.devices.update({
                 where: { serial_number: serialNumber },
@@ -130,28 +144,156 @@ export class DoorService {
                 },
             });
 
-            // Send to /client namespace with correct rooms and format
+            // Send appropriate command based on door type
             if (io) {
                 const command = {
                     action: powerStatus ? "open_door" : "close_door",
                     serialNumber: serialNumber,
                     fromClient: accountId,
+                    door_type: doorType,
                     esp01_safe: true,
                     state: {
                         power_status: powerStatus,
-                        target_angle: powerStatus ? 180 : 0
+                        target_angle: doorType === "SERVO" ? (powerStatus ? 180 : 0) : undefined,
+                        target_rounds: (doorType === "ROLLING" || doorType === "SLIDING") ?
+                            (powerStatus ? (newState.current_rounds || 0) : 0) : undefined
                     },
                     timestamp: new Date().toISOString()
                 };
 
-                console.log(`[DOOR] Sending command to ESP Hub for ${serialNumber}:`, command);
-
-                // Emit to /client namespace, targeting door-specific room
+                console.log(`[DOOR] Sending ${doorType} command to ${serialNumber}:`, command);
                 io.of('/client').to(`door:${serialNumber}`).emit('door_command', command);
             }
 
             return this.mapPrismaDeviceToDevice(updatedDevice);
         }, `toggleDoor for ${serialNumber}`);
+    }
+
+// NEW: Configure door based on type
+    async configureDoor(
+        serialNumber: string,
+        config: any,
+        accountId: string
+    ): Promise<{ success: boolean; message: string }> {
+        const door = await this.getDoorBySerial(serialNumber, accountId);
+        if (!door) throwError(ErrorCodes.NOT_FOUND, 'Door not found');
+
+        const currentAttribute = (door?.attribute as Record<string, any>) || {};
+        const doorType = currentAttribute.runtime_capabilities?.door_type || "SERVO";
+
+        // Validate config based on door type
+        if (doorType === "SERVO") {
+            if (config.open_angle < 0 || config.open_angle > 180 ||
+                config.close_angle < 0 || config.close_angle > 180) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Servo angles must be 0-180 degrees');
+            }
+        } else if (doorType === "ROLLING" || doorType === "SLIDING") {
+            if (config.open_rounds < 1 || config.open_rounds > 10) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Open rounds must be 1-10');
+            }
+            if (doorType === "SLIDING" && typeof config.pir_enabled !== 'boolean') {
+                throwError(ErrorCodes.BAD_REQUEST, 'PIR enabled must be boolean for sliding doors');
+            }
+        }
+
+        // Send config command
+        if (io) {
+            const configCommand = {
+                action: doorType === "SLIDING" && config.hasOwnProperty('pir_enabled') ? "toggle_pir" : "configure_door",
+                serialNumber: serialNumber,
+                fromClient: accountId,
+                door_type: doorType,
+                esp01_safe: true,
+                config: config,
+                timestamp: new Date().toISOString()
+            };
+
+            io.of('/client').to(`door:${serialNumber}`).emit('door_command', configCommand);
+        }
+
+        return {
+            success: true,
+            message: `Configuration sent to ${doorType} door ${serialNumber}`
+        };
+    }
+
+// NEW: Toggle PIR for sliding doors
+    async togglePIR(
+        serialNumber: string,
+        accountId: string
+    ): Promise<{ success: boolean; message: string; pir_enabled?: boolean }> {
+        const door = await this.getDoorBySerial(serialNumber, accountId);
+        if (!door) throwError(ErrorCodes.NOT_FOUND, 'Door not found');
+
+        const currentAttribute = (door?.attribute as Record<string, any>) || {};
+        const doorType = currentAttribute.runtime_capabilities?.door_type || "SERVO";
+
+        if (doorType !== "SLIDING") {
+            throwError(ErrorCodes.BAD_REQUEST, 'PIR control only available for sliding doors');
+        }
+
+        if (io) {
+            const pirCommand = {
+                action: "toggle_pir",
+                serialNumber: serialNumber,
+                fromClient: accountId,
+                door_type: "SLIDING",
+                esp01_safe: true,
+                timestamp: new Date().toISOString()
+            };
+
+            io.of('/client').to(`door:${serialNumber}`).emit('door_command', pirCommand);
+        }
+
+        return {
+            success: true,
+            message: `PIR toggle command sent to sliding door ${serialNumber}`
+        };
+    }
+
+// Enhanced calibration for all door types
+    async calibrateDoor(
+        serialNumber: string,
+        calibrationData: any,
+        accountId: string
+    ): Promise<{ success: boolean; message: string }> {
+        const door = await this.getDoorBySerial(serialNumber, accountId);
+        if (!door) throwError(ErrorCodes.NOT_FOUND, 'Door not found');
+
+        const currentAttribute = (door?.attribute as Record<string, any>) || {};
+        const doorType = currentAttribute.runtime_capabilities?.door_type || "SERVO";
+
+        // Validate calibration data based on door type
+        if (doorType === "SERVO") {
+            const { openAngle, closeAngle } = calibrationData;
+            if (openAngle < 0 || openAngle > 180 || closeAngle < 0 || closeAngle > 180) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Servo angles must be 0-180 degrees');
+            }
+        } else if (doorType === "ROLLING" || doorType === "SLIDING") {
+            const { openRounds } = calibrationData;
+            if (openRounds < 1 || openRounds > 10) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Open rounds must be 1-10');
+            }
+        }
+
+        if (io) {
+            const calibrateCommand = {
+                action: "calibrate_door",
+                serialNumber: serialNumber,
+                fromClient: accountId,
+                door_type: doorType,
+                esp01_safe: true,
+                ...calibrationData,
+                timestamp: new Date().toISOString()
+            };
+
+            io.of('/client').to(`door:${serialNumber}`).emit('door_command', calibrateCommand);
+        }
+
+        return {
+            success: true,
+            message: `Calibration command sent to ${doorType} door ${serialNumber}`
+        };
     }
 
     async executeEmergencyDoorOperation(
@@ -449,41 +591,7 @@ export class DoorService {
         };
     }
 
-    async calibrateDoor(
-        serialNumber: string,
-        openAngle: number,
-        closeAngle: number,
-        accountId: string
-    ): Promise<{ success: boolean; message: string }> {
-        const door = await this.getDoorBySerial(serialNumber, accountId);
-        if (!door) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
 
-        // Validate angles
-        if (openAngle < 0 || openAngle > 180 || closeAngle < 0 || closeAngle > 180) {
-            throwError(ErrorCodes.BAD_REQUEST, 'Servo angles must be between 0 and 180 degrees');
-        }
-
-        if (io) {
-            const calibrateCommand = {
-                action: "calibrate_door",
-                serialNumber: serialNumber,
-                fromClient: accountId,
-                esp01_safe: true,
-                open_angle: openAngle,
-                close_angle: closeAngle,
-                timestamp: new Date().toISOString()
-            };
-
-            console.log(`[DOOR] Sending calibration command to ESP Hub for ${serialNumber}:`, calibrateCommand);
-
-            io.of('/client').to(`door:${serialNumber}`).emit('door_command', calibrateCommand);
-        }
-
-        return {
-            success: true,
-            message: `Calibration command sent to door ${serialNumber}`
-        };
-    }
 
     private validateDoorConfig(config: Partial<DoorConfig>): void {
         if (config.servo_open_angle !== undefined && (config.servo_open_angle < 0 || config.servo_open_angle > 180)) {
