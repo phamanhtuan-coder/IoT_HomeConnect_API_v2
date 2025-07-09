@@ -1,4 +1,3 @@
-// src/services/door.service.ts - FIXED NAMESPACE HANDLING
 import prisma from '../config/database';
 import { ErrorCodes, throwError } from "../utils/errors";
 import { Server } from 'socket.io';
@@ -131,13 +130,13 @@ export class DoorService {
                 },
             });
 
-            // ✅ FIXED: Send to main namespace with correct rooms and format
+            // Send to /client namespace with correct rooms and format
             if (io) {
                 const command = {
-                    action: powerStatus ? "open_door" : "close_door", // String actions for ESP Hub
+                    action: powerStatus ? "open_door" : "close_door",
                     serialNumber: serialNumber,
                     fromClient: accountId,
-                    esp01_safe: true, // ESP-01 compatibility flag
+                    esp01_safe: true,
                     state: {
                         power_status: powerStatus,
                         target_angle: powerStatus ? 180 : 0
@@ -147,9 +146,8 @@ export class DoorService {
 
                 console.log(`[DOOR] Sending command to ESP Hub for ${serialNumber}:`, command);
 
-                // Send to both device and hub rooms in main namespace
-                io.to(`device:${serialNumber}`).emit('command', command);
-                io.to(`hub:${serialNumber}`).emit('command', command);
+                // Emit to /client namespace, targeting door-specific room
+                io.of('/client').to(`door:${serialNumber}`).emit('door_command', command);
             }
 
             return this.mapPrismaDeviceToDevice(updatedDevice);
@@ -170,7 +168,6 @@ export class DoorService {
             await Promise.allSettled(
                 batch.map(async (doorSerial) => {
                     try {
-                        // Xử lý lệnh khẩn cấp (mở tất cả hoặc đóng tất cả)
                         await this.toggleDoor(
                             doorSerial,
                             operation.action === 'open_all',
@@ -180,7 +177,7 @@ export class DoorService {
                         );
                         results.push(doorSerial);
 
-                        // ✅ FIXED: Send emergency event to main namespace
+                        // Send emergency event to /client namespace
                         if (io && operation.action === 'open_all') {
                             const emergencyCommand = {
                                 action: "emergency_open",
@@ -192,8 +189,7 @@ export class DoorService {
                                 timestamp: new Date().toISOString()
                             };
 
-                            io.to(`device:${doorSerial}`).emit('command', emergencyCommand);
-                            io.to(`hub:${doorSerial}`).emit('command', emergencyCommand);
+                            io.of('/client').to(`door:${doorSerial}`).emit('door_command', emergencyCommand);
                         }
                     } catch (error: any) {
                         errors.push({ door: doorSerial, error: error.message });
@@ -206,7 +202,7 @@ export class DoorService {
             }
         }
 
-        // ✅ FIXED: Broadcast emergency operation to client namespace
+        // Broadcast emergency operation to /client namespace
         if (io) {
             const clientNamespace = io.of('/client');
             clientNamespace.emit('emergency_operation', {
@@ -220,9 +216,6 @@ export class DoorService {
         return { success: errors.length === 0, affected_doors: results, errors };
     }
 
-    /**
-     * Process sensor data with enhanced retry and connection management
-     */
     async processDoorSensorData(sensorData: DoorSensorData): Promise<void> {
         return this.withRetry(async () => {
             const door = await this.prisma.devices.findFirst({
@@ -254,7 +247,7 @@ export class DoorService {
                 }
             });
 
-            // ✅ FIXED: Send sensor data to client namespace
+            // Send sensor data to /client namespace
             if (io) {
                 const clientNamespace = io.of('/client');
                 clientNamespace.to(`door:${sensorData.serialNumber}`).emit('sensor_data', {
@@ -265,9 +258,6 @@ export class DoorService {
         }, `processDoorSensorData for ${sensorData.serialNumber}`);
     }
 
-    /**
-     * Update door config with retry logic
-     */
     async updateDoorConfig(
         serialNumber: string,
         config: Partial<DoorConfig>,
@@ -296,7 +286,7 @@ export class DoorService {
                 }
             });
 
-            // ✅ FIXED: Send config update to main namespace
+            // Send config update to /client namespace
             if (io) {
                 const configCommand = {
                     action: "update_config",
@@ -307,8 +297,7 @@ export class DoorService {
                     timestamp: new Date().toISOString()
                 };
 
-                io.to(`device:${serialNumber}`).emit('command', configCommand);
-                io.to(`hub:${serialNumber}`).emit('command', configCommand);
+                io.of('/client').to(`door:${serialNumber}`).emit('door_command', configCommand);
 
                 // Also notify clients
                 const clientNamespace = io.of('/client');
@@ -323,9 +312,6 @@ export class DoorService {
         }, `updateDoorConfig for ${serialNumber}`);
     }
 
-    /**
-     * Get door by serial with optimized query
-     */
     async getDoorBySerial(serialNumber: string, accountId: string): Promise<Device | null> {
         return this.withRetry(async () => {
             const device = await this.prisma.devices.findFirst({
@@ -359,9 +345,6 @@ export class DoorService {
         }, `getDoorBySerial for ${serialNumber}`);
     }
 
-    /**
-     * Get user doors with pagination and optimized queries
-     */
     async getUserDoors(
         accountId: string,
         filters: any,
@@ -411,19 +394,16 @@ export class DoorService {
         }, `getUserDoors for ${accountId}`);
     }
 
-    /**
-     * Send command to door with better error handling
-     */
     async sendDoorCommand(
         serialNumber: string,
         command: DoorCommandData,
         accountId: string
     ): Promise<void> {
-        // Validate access first (lightweight operation)
+        // Validate access first
         const door = await this.getDoorBySerial(serialNumber, accountId);
         if (!door) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
 
-        // ✅ FIXED: Send command to main namespace with ESP-01 compatible format
+        // Send command to /client namespace
         if (io) {
             const espCommand = {
                 action: command.action,
@@ -436,14 +416,10 @@ export class DoorService {
 
             console.log(`[DOOR] Sending direct command to ESP Hub for ${serialNumber}:`, espCommand);
 
-            io.to(`device:${serialNumber}`).emit('command', espCommand);
-            io.to(`hub:${serialNumber}`).emit('command', espCommand);
+            io.of('/client').to(`door:${serialNumber}`).emit('door_command', espCommand);
         }
     }
 
-    /**
-     * Test door functionality
-     */
     async testDoor(
         serialNumber: string,
         testType: string,
@@ -464,8 +440,7 @@ export class DoorService {
 
             console.log(`[DOOR] Sending test command to ESP Hub for ${serialNumber}:`, testCommand);
 
-            io.to(`device:${serialNumber}`).emit('command', testCommand);
-            io.to(`hub:${serialNumber}`).emit('command', testCommand);
+            io.of('/client').to(`door:${serialNumber}`).emit('door_command', testCommand);
         }
 
         return {
@@ -474,9 +449,6 @@ export class DoorService {
         };
     }
 
-    /**
-     * Calibrate door servo
-     */
     async calibrateDoor(
         serialNumber: string,
         openAngle: number,
@@ -504,8 +476,7 @@ export class DoorService {
 
             console.log(`[DOOR] Sending calibration command to ESP Hub for ${serialNumber}:`, calibrateCommand);
 
-            io.to(`device:${serialNumber}`).emit('command', calibrateCommand);
-            io.to(`hub:${serialNumber}`).emit('command', calibrateCommand);
+            io.of('/client').to(`door:${serialNumber}`).emit('door_command', calibrateCommand);
         }
 
         return {
@@ -514,9 +485,6 @@ export class DoorService {
         };
     }
 
-    /**
-     * Validate door configuration
-     */
     private validateDoorConfig(config: Partial<DoorConfig>): void {
         if (config.servo_open_angle !== undefined && (config.servo_open_angle < 0 || config.servo_open_angle > 180)) {
             throwError(ErrorCodes.BAD_REQUEST, 'Góc mở servo phải từ 0 đến 180 độ');

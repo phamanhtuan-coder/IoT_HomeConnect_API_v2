@@ -26,7 +26,7 @@ const modules = [
     'ticket-type','ticket','hourly-value',
     'component','template-component','device-template',
     'production-batches','production-tracking',
-    'planning','camera','door'
+    'planning','camera','door','gardenHub'
 ];
 
 const items: any[] = [];
