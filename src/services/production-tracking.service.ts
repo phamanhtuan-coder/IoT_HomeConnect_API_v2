@@ -297,9 +297,9 @@ let error_list: { device_serial: string | null; error: string }[] = [];
         let newStage = stage;
         if (stage === StageSerialStage.ASSEMBLY) {
             if (status === StatusSerialStage.IN_PROGRESS) {
-                if (production.status !== StatusSerialStage.IN_PROGRESS) {
-                    return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: Đang sản xuất');
-                }
+                // if (production.status !== StatusSerialStage.IN_PROGRESS) {
+                //     return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: Đang sản xuất');
+                // }
 
                 stageLog = {
                     ...stageLog,
@@ -339,9 +339,9 @@ let error_list: { device_serial: string | null; error: string }[] = [];
                     stage_logs: stageLogList
                 });
             } else if (status === StatusSerialStage.FIRMWARE_UPLOAD) {
-                if (production.status !== StatusSerialStage.FIRMWARE_UPLOAD) {
-                    return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: Đã chờ nạp firmware');
-                }
+                // if (production.status !== StatusSerialStage.FIRMWARE_UPLOAD) {
+                //     return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: Đã chờ nạp firmware');
+                // }
 
                 stageLog = {
                     ...stageLog,
