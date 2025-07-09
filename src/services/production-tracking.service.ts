@@ -266,6 +266,9 @@ let error_list: { device_serial: string | null; error: string }[] = [];
     }
 
     async UpdateProductionSerial(input: ProductionTrackingSerialUpdateInput, employeeId: string) {
+        try {
+            
+        
         const { device_serial, stage, status } = input;
         
         const production = await this.prisma.production_tracking.findFirst({
@@ -550,6 +553,14 @@ let error_list: { device_serial: string | null; error: string }[] = [];
             success: true,
             errorCode: null,
             message: 'Cập nhật giai đoạn thành công'
+            }
+        } catch (error) {
+            console.log(error)
+            return {
+                success: false,
+                errorCode: null,
+                message: 'Cập nhật giai đoạn thất bại'
+            }
         }
     }
 
