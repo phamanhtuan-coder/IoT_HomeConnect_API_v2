@@ -136,7 +136,7 @@ export interface ProductionTrackingCancelInput {
 }
 
 export interface ProductionTrackingSerialUpdateInput {
-    serial_number: string;
+    device_serial: string;
     stage: string;
     status: string;
 }
