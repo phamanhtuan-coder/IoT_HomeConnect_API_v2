@@ -8169,8 +8169,98 @@
       ]
     },
     {
-      "name": "Camera",
+      "name": "Camera Management",
       "item": [
+        {
+          "name": "Get Camera Info",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Camera info retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.camera).to.exist;",
+                  "  pm.expect(response.camera.serialNumber).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/camera/{{cameraSerial}}/info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "{{cameraSerial}}",
+                "info"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Stream Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Stream token generated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.streamUrl).to.exist;",
+                  "  pm.expect(response.token).to.exist;",
+                  "});",
+                  "",
+                  "// Save token for other requests",
+                  "if (response.token) {",
+                  "  pm.collectionVariables.set('streamToken', response.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/camera/{{cameraSerial}}/stream/token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "{{cameraSerial}}",
+                "stream",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        },
         {
           "name": "Get Stream URL",
           "event": [
@@ -8178,10 +8268,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Stream URL retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.streamUrl).to.exist;",
+                  "pm.test('Stream URL accessible', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -8198,25 +8286,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/camera/stream/:serialNumber?token={{streamToken}}",
+              "raw": "{{baseUrl}}/camera/stream/{{cameraSerial}}?token={{streamToken}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "camera",
                 "stream",
-                ":serialNumber"
+                "{{cameraSerial}}"
               ],
               "query": [
                 {
                   "key": "token",
                   "value": "{{streamToken}}"
-                }
-              ],
-              "variable": [
-                {
-                  "key": "serialNumber",
-                  "value": "CAM123"
                 }
               ]
             }
@@ -8224,15 +8306,16 @@
           "response": []
         },
         {
-          "name": "Stream Proxy",
+          "name": "Start RTMP Stream",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Stream proxy response successful', () => {",
+                  "const response = pm.response.json();",
+                  "pm.test('RTMP stream started successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('multipart/x-mixed-replace');",
+                  "  pm.expect(response.success).to.be.true;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -8240,7 +8323,7 @@
             }
           ],
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [
               {
                 "key": "Authorization",
@@ -8249,20 +8332,68 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/camera/proxy/:serialNumber",
+              "raw": "{{baseUrl}}/camera/{{cameraSerial}}/stream/start",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "camera",
-                "proxy",
-                ":serialNumber"
-              ],
-              "variable": [
-                {
-                  "key": "serialNumber",
-                  "value": "CAM123"
+                "{{cameraSerial}}",
+                "stream",
+                "start"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Camera Command",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Camera command sent successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"startStream\",\n  \"params\": {\n    \"enabled\": true,\n    \"quality\": 10,\n    \"resolution\": \"VGA\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
                 }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/camera/{{cameraSerial}}/command",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "{{cameraSerial}}",
+                "command"
               ]
             }
           },
@@ -8278,8 +8409,7 @@
                   "const response = pm.response.json();",
                   "pm.test('Photo captured successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.filename).to.exist;",
-                  "  pm.expect(response.downloadUrl).to.exist;",
+                  "  pm.expect(response.success).to.be.true;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -8301,7 +8431,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"serial_number\": \"CAM123\",\n  \"saveToSD\": true,\n  \"quality\": 10\n}",
+              "raw": "{\n  \"action\": \"capturePhoto\",\n  \"params\": {\n    \"saveToSD\": true,\n    \"quality\": 10,\n    \"filename\": \"photo_{{$timestamp}}.jpg\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -8309,34 +8439,28 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/camera/capture/:serialNumber",
+              "raw": "{{baseUrl}}/camera/{{cameraSerial}}/capture",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "camera",
-                "capture",
-                ":serialNumber"
-              ],
-              "variable": [
-                {
-                  "key": "serialNumber",
-                  "value": "CAM123"
-                }
+                "{{cameraSerial}}",
+                "capture"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "Control Camera",
+          "name": "Enable Face Detection",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.test('Camera control successful', () => {",
+                  "pm.test('Face detection toggled successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
                   "  pm.expect(response.success).to.be.true;",
                   "});"
@@ -8360,7 +8484,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"serial_number\": \"CAM123\",\n  \"action\": \"startStream\",\n  \"params\": {\n    \"enabled\": true,\n    \"saveToSD\": true,\n    \"quality\": 10\n  }\n}",
+              "raw": "{\n  \"enabled\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -8368,36 +8492,33 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/camera/control/:serialNumber",
+              "raw": "{{baseUrl}}/camera/{{cameraSerial}}/face-detection",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "camera",
-                "control",
-                ":serialNumber"
-              ],
-              "variable": [
-                {
-                  "key": "serialNumber",
-                  "value": "CAM123"
-                }
+                "{{cameraSerial}}",
+                "face-detection"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "Get Camera Status",
+          "name": "Get Camera Capabilities",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.test('Camera status retrieved successfully', () => {",
+                  "pm.test('Camera capabilities retrieved successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.status).to.exist;",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.capabilities).to.exist;",
+                  "  pm.expect(response.capabilities.base).to.exist;",
+                  "  pm.expect(response.capabilities.merged_capabilities).to.be.an('array');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -8414,37 +8535,28 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/camera/status/:serialNumber",
+              "raw": "{{baseUrl}}/camera/{{cameraSerial}}/capabilities",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "camera",
-                "status",
-                ":serialNumber"
-              ],
-              "variable": [
-                {
-                  "key": "serialNumber",
-                  "value": "CAM123"
-                }
+                "{{cameraSerial}}",
+                "capabilities"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "Update Camera Config",
+          "name": "Update Camera Status",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Camera config updated successfully', () => {",
+                  "pm.test('Camera status updated successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.config).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -8466,7 +8578,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"serial_number\": \"CAM123\",\n  \"resolution\": \"VGA\",\n  \"quality\": 10,\n  \"motionDetection\": true,\n  \"wifi_ssid\": \"MyWiFi\",\n  \"wifi_password\": \"password123\"\n}",
+              "raw": "{\n  \"status\": \"online\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -8474,227 +8586,28 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/camera/config/:serialNumber",
+              "raw": "{{baseUrl}}/camera/{{cameraSerial}}/status",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "camera",
-                "config",
-                ":serialNumber"
-              ],
-              "variable": [
-                {
-                  "key": "serialNumber",
-                  "value": "CAM123"
-                }
+                "{{cameraSerial}}",
+                "status"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "Get Photos List",
+          "name": "Stop Stream",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.test('Photos list retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.photos).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/camera/photos/:serialNumber",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "camera",
-                "photos",
-                ":serialNumber"
-              ],
-              "variable": [
-                {
-                  "key": "serialNumber",
-                  "value": "CAM123"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Download Photo",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Photo downloaded successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(pm.response.headers.get('Content-Type')).to.equal('image/jpeg');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/camera/photos/:serialNumber/:filename",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "camera",
-                "photos",
-                ":serialNumber",
-                ":filename"
-              ],
-              "variable": [
-                {
-                  "key": "serialNumber",
-                  "value": "CAM123"
-                },
-                {
-                  "key": "filename",
-                  "value": "photo_123.jpg"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Camera Capabilities",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Camera capabilities retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.capabilities).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/camera/capabilities/:serialNumber",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "camera",
-                "capabilities",
-                ":serialNumber"
-              ],
-              "variable": [
-                {
-                  "key": "serialNumber",
-                  "value": "CAM123"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Camera Info",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Camera info retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.info).to.exist;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/camera/info/:serialNumber",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "camera",
-                "info",
-                ":serialNumber"
-              ],
-              "variable": [
-                {
-                  "key": "serialNumber",
-                  "value": "CAM123"
-                }
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Door",
-      "item": [
-        {
-          "name": "Toggle Door",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Door toggled successfully', () => {",
+                  "pm.test('Stream stopped successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
                   "  pm.expect(response.success).to.be.true;",
                   "});"
@@ -8710,11 +8623,15 @@
                 "key": "Authorization",
                 "value": "Bearer {{userAccessToken}}",
                 "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"power_status\": true,\n  \"force\": false,\n  \"timeout\": 5000\n}",
+              "raw": "{\n  \"action\": \"stopStream\",\n  \"params\": {}\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -8722,13 +8639,178 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/doors/DOOR_ABC123/toggle",
+              "raw": "{{baseUrl}}/camera/{{cameraSerial}}/command",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "{{cameraSerial}}",
+                "command"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Set Camera Resolution",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Camera resolution set successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"setResolution\",\n  \"params\": {\n    \"resolution\": \"SVGA\",\n    \"quality\": 12\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/camera/{{cameraSerial}}/command",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "{{cameraSerial}}",
+                "command"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enable Motion Detection",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Motion detection toggled successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"setMotionDetection\",\n  \"params\": {\n    \"enabled\": true,\n    \"sensitivity\": 50\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/camera/{{cameraSerial}}/command",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "camera",
+                "{{cameraSerial}}",
+                "command"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Door Management",
+      "item": [
+        {
+          "name": "Toggle Door",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Door toggled successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.device).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"power_status\": true,\n  \"force\": false,\n  \"timeout\": 30000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/{{doorSerial}}/toggle",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "doors",
-                "DOOR_ABC123",
+                "{{doorSerial}}",
                 "toggle"
               ]
             }
@@ -8746,7 +8828,7 @@
                   "pm.test('Door status retrieved successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
                   "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.door_state).to.exist;",
+                  "  pm.expect(response.device).to.exist;",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -8763,28 +8845,27 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/doors/DOOR_ABC123/status",
+              "raw": "{{baseUrl}}/doors/{{doorSerial}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "doors",
-                "DOOR_ABC123",
-                "status"
+                "{{doorSerial}}"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "Update Door Config",
+          "name": "Configure Door (All Types)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.test('Door config updated successfully', () => {",
+                  "pm.test('Door configured successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
                   "  pm.expect(response.success).to.be.true;",
                   "});"
@@ -8794,17 +8875,21 @@
             }
           ],
           "request": {
-            "method": "PUT",
+            "method": "POST",
             "header": [
               {
                 "key": "Authorization",
                 "value": "Bearer {{userAccessToken}}",
                 "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"config\": {\n    \"servo_open_angle\": 90,\n    \"servo_close_angle\": 0,\n    \"movement_duration\": 1000,\n    \"auto_close_delay\": 30000,\n    \"obstacle_detection\": true,\n    \"manual_override_enabled\": true,\n    \"emergency_mode\": false,\n    \"max_retry_attempts\": 3\n  }\n}",
+              "raw": "{\n  \"open_angle\": 90,\n  \"close_angle\": 0,\n  \"open_rounds\": 3,\n  \"closed_rounds\": 0,\n  \"pir_enabled\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -8812,28 +8897,28 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/doors/DOOR_ABC123/config",
+              "raw": "{{baseUrl}}/doors/{{doorSerial}}/configure",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "doors",
-                "DOOR_ABC123",
-                "config"
+                "{{doorSerial}}",
+                "configure"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "Emergency Door Operation",
+          "name": "Toggle PIR (Sliding Doors)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.test('Emergency operation executed successfully', () => {",
+                  "pm.test('PIR toggled successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
                   "  pm.expect(response.success).to.be.true;",
                   "});"
@@ -8851,124 +8936,16 @@
                 "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"door_serial_numbers\": [\"DOOR_ABC123\", \"DOOR_XYZ789\"],\n  \"action\": \"open\",\n  \"override_manual\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
-              "raw": "{{baseUrl}}/doors/emergency",
+              "raw": "{{baseUrl}}/doors/{{doorSerial}}/pir/toggle",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "doors",
-                "emergency"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Bulk Door Operation",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Bulk operation executed successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"door_serial_numbers\": [\"DOOR_ABC123\", \"DOOR_XYZ789\"],\n  \"action\": \"toggle_door\",\n  \"state\": {\n    \"power_status\": true,\n    \"target_angle\": 90\n  },\n  \"priority\": \"normal\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/doors/bulk",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "doors",
-                "bulk"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get User Doors",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('User doors retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.doors).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/doors?state=closed&is_moving=false&has_errors=false",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "doors"
-              ],
-              "query": [
-                {
-                  "key": "state",
-                  "value": "closed"
-                },
-                {
-                  "key": "is_moving",
-                  "value": "false"
-                },
-                {
-                  "key": "has_errors",
-                  "value": "false"
-                }
+                "{{doorSerial}}",
+                "pir",
+                "toggle"
               ]
             }
           },
@@ -8998,11 +8975,15 @@
                 "key": "Authorization",
                 "value": "Bearer {{userAccessToken}}",
                 "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"angles\": {\n    \"open\": 90,\n    \"close\": 0\n  },\n  \"save_to_eeprom\": true\n}",
+              "raw": "{\n  \"openAngle\": 90,\n  \"closeAngle\": 0,\n  \"openRounds\": 3,\n  \"save_to_eeprom\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -9010,14 +8991,118 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/doors/DOOR_ABC123/calibrate",
+              "raw": "{{baseUrl}}/doors/{{doorSerial}}/calibrate",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "doors",
-                "DOOR_ABC123",
+                "{{doorSerial}}",
                 "calibrate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Door Config",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('Door config updated successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"config\": {\n    \"servo_open_angle\": 90,\n    \"servo_close_angle\": 0,\n    \"movement_duration\": 1000,\n    \"auto_close_delay\": 30000,\n    \"obstacle_detection\": true,\n    \"manual_override_enabled\": true,\n    \"emergency_mode\": false,\n    \"max_retry_attempts\": 3\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/{{doorSerial}}/config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "{{doorSerial}}",
+                "config"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Door Command",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Door command sent successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"open_door\",\n  \"state\": {\n    \"power_status\": true,\n    \"target_angle\": 90,\n    \"speed\": 50\n  },\n  \"priority\": \"normal\",\n  \"timeout\": 30000,\n  \"force\": false,\n  \"timestamp\": \"2025-07-10T12:00:00.000Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/doors/{{doorSerial}}/command",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors",
+                "{{doorSerial}}",
+                "command"
               ]
             }
           },
@@ -9051,7 +9136,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"test_type\": \"movement\",\n  \"repeat_count\": 1\n}",
+              "raw": "{\n  \"test_type\": \"movement\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -9059,13 +9144,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/doors/DOOR_ABC123/test",
+              "raw": "{{baseUrl}}/doors/{{doorSerial}}/test",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "doors",
-                "DOOR_ABC123",
+                "{{doorSerial}}",
                 "test"
               ]
             }
@@ -9073,16 +9158,17 @@
           "response": []
         },
         {
-          "name": "Perform Maintenance",
+          "name": "Emergency Door Operation",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "pm.test('Maintenance operation started successfully', () => {",
+                  "pm.test('Emergency operation executed successfully', () => {",
                   "  pm.expect(pm.response.code).to.equal(200);",
                   "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.affected_doors).to.be.an('array');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -9096,11 +9182,15 @@
                 "key": "Authorization",
                 "value": "Bearer {{userAccessToken}}",
                 "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"maintenance_type\": \"calibrate\",\n  \"backup_config\": true\n}",
+              "raw": "{\n  \"trigger_source\": \"fire_alarm\",\n  \"affected_doors\": [\"{{doorSerial}}\", \"DOOR_XYZ789\"],\n  \"action\": \"open_all\",\n  \"override_manual\": true,\n  \"emergency_type\": \"fire\",\n  \"timestamp\": \"2025-07-10T12:00:00.000Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -9108,14 +9198,71 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/doors/DOOR_ABC123/maintenance",
+              "raw": "{{baseUrl}}/doors/emergency",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "doors",
-                "DOOR_ABC123",
-                "maintenance"
+                "emergency"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Doors",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "pm.test('User doors retrieved successfully', () => {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "  pm.expect(response.success).to.be.true;",
+                  "  pm.expect(response.doors).to.be.an('array');",
+                  "  pm.expect(response.total).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/doors?state=closed&is_moving=false&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "doors"
+              ],
+              "query": [
+                {
+                  "key": "state",
+                  "value": "closed"
+                },
+                {
+                  "key": "is_moving",
+                  "value": "false"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
               ]
             }
           },
