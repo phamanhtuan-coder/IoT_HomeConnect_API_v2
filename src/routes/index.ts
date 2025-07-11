@@ -140,8 +140,7 @@ import statisticRoutes from './statistic.routes';
 import doorRoutes from './door.routes';
 import cameraRoutes from "./camera.routes";
 import gardenHubRoutes from "./gardenHubRoutes";
-
-
+import deviceCapabilitiesRoutes from './device-capabilities.routes';
 
 
 const router = Router();
@@ -163,7 +162,7 @@ router.use('/tickets', ticketRoutes);
 router.use('/ownership-history', ownershipHistoryRoutes);
 router.use('/firmware', firmwareRoutes);
 router.use('/firmware-update-history', firmwareUpdateHistoryRoutes);
-router.use('/component',componentRoutes)
+router.use('/component', componentRoutes)
 router.use('/template-components', templateComponentRoutes);
 router.use('/device-templates', deviceTemplateRoutes);
 router.use('/production-tracking', productionTrackingRoutes);
@@ -176,6 +175,7 @@ router.use('/statistic', statisticRoutes);
 router.use('/doors', doorRoutes);  // Add door routes
 router.use('/cameras', cameraRoutes);  // Add camera routes
 router.use('/garden-hubs', gardenHubRoutes);  // Add garden hub routes
+router.use('/device-capabilities', deviceCapabilitiesRoutes);
 
 
 export default router;
