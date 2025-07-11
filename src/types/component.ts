@@ -18,6 +18,9 @@ interface Component {
     updated_at?: Date | null;
     is_deleted?: boolean | null;
     status?: number | null;
+    flow_type?: string | null;
+    value?: string | null;
+    unit?: string | null;
 }
 
 interface ComponentResponse {
