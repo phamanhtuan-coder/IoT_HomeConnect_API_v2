@@ -78,7 +78,7 @@ class DeviceTemplateService {
                 } else {
                     baseCapabilities = (capabilities as any[]).filter(
                         (c): c is { id: number; key: string } => typeof c === 'object' && c !== null && 'id' in c && 'key' in c
-                      );
+                    );
                 }
             }
 
@@ -159,6 +159,7 @@ class DeviceTemplateService {
                     slug: slug,
                     name: template.name,
                     selling_price: totalComponentCost * (template.production_cost || 0),
+                    delta: 10,
                     is_hide: true,
                     status: 0,
                     created_at: new Date(),
