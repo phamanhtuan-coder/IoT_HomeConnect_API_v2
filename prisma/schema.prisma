@@ -240,6 +240,9 @@ model components {
   updated_at          DateTime?             @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted          Boolean?              @default(false)
   status              Boolean?              @default(false)
+  flow_type           String?               @db.VarChar(20)
+  value               String?               @db.VarChar(100)
+  unit                String?               @db.VarChar(100)
   template_components template_components[]
 }
 
@@ -390,6 +393,18 @@ model devices {
   @@index([production_tracking_id], map: "production_tracking_id")
 }
 
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model device_capabilities {
+  id         Int       @id @default(autoincrement())
+  keyword    String    @unique @db.VarChar(100)
+  note       String?   @db.Text
+  created_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
+  is_deleted Boolean?  @default(false)
+
+  @@index([keyword], map: "keyword")
+}
+
 model employee {
   id                               String             @id @db.VarChar(32)
   surname                          String?            @db.VarChar(500)
@@ -417,7 +432,7 @@ model employee {
 
 model export_warehouse {
   id                Int             @id @default(autoincrement())
-  export_code       String?         @db.VarChar(12)
+  export_code       String?         @db.VarChar(32)
   export_number     Int?
   employee_id       String?         @db.VarChar(32)
   export_date       DateTime?       @db.Date
@@ -449,6 +464,7 @@ model firmware {
   is_approved             Boolean?                  @default(false)
   logs                    Json?
   tested_at               DateTime?                 @db.DateTime(0)
+  runtime_capabilities    Json?                     // Sẽ chứa array of {id: number, key: string}
   devices                 devices[]
   device_templates        device_templates?         @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "firmware_ibfk_1")
   firmware_update_history firmware_update_history[]
@@ -578,6 +594,7 @@ model notification {
   text       String?   @db.VarChar(255)
   type       String?   @db.VarChar(200)
   is_read    Boolean?
+  id_reference         String?   @db.VarChar(50)
   created_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   updated_at DateTime? @default(dbgenerated("(now())")) @db.DateTime(0)
   deleted_at DateTime? @db.DateTime(0)
@@ -724,7 +741,7 @@ model product {
   category_id         Int?
   unit_id             Int?
   warrenty_time_id    Int?
-  views               Int?
+  delta               Int?
   is_hide             Boolean?
   status              Int?                  @db.TinyInt
   created_at          DateTime?             @default(now()) @db.Timestamp(0)
