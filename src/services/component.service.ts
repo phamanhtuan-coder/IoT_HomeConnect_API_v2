@@ -36,6 +36,10 @@ class ComponentService {
         unit?: string;
     }): Promise<Component> {
         const { name, supplier, unit_cost, status, flow_type, value, unit } = input;
+        
+        if(flow_type && !['input', 'output', 'both', 'input_special'].includes(flow_type)) {
+            throwError(ErrorCodes.BAD_REQUEST, 'Flow type must be input or output');
+        }
 
         const existingComponent = await this.prisma.components.findFirst({
             where: { name, is_deleted: false },

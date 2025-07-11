@@ -464,7 +464,6 @@ model firmware {
   is_approved             Boolean?                  @default(false)
   logs                    Json?
   tested_at               DateTime?                 @db.DateTime(0)
-  runtime_capabilities    Json?                     // Sẽ chứa array of {id: number, key: string}
   devices                 devices[]
   runtime_capabilities    Json?                     // Sẽ chứa array of {id: number, key: string}
   device_templates        device_templates?         @relation(fields: [template_id], references: [template_id], onDelete: NoAction, onUpdate: NoAction, map: "firmware_ibfk_1")
