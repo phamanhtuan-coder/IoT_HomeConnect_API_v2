@@ -1,8 +1,8 @@
-import {Request, Response, NextFunction} from 'express';
+import { Request, Response, NextFunction } from 'express';
 import DeviceService from '../services/device.service';
-import {ErrorCodes, throwError} from '../utils/errors';
-import {GroupRole} from "../types/group";
-import {LEDEffectInput} from "../types/device-state";
+import { ErrorCodes, throwError } from '../utils/errors';
+import { GroupRole } from "../types/group";
+import { LEDEffectInput } from "../types/device-state";
 
 class DeviceController {
     private deviceService: DeviceService;
@@ -26,7 +26,7 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const device = await this.deviceService.createDevice({...req.body, accountId});
+            const device = await this.deviceService.createDevice({ ...req.body, accountId });
             res.status(201).json(device);
         } catch (error) {
             next(error);
@@ -48,7 +48,7 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {serial_number, spaceId, name} = req.body;
+            const { serial_number, spaceId, name } = req.body;
             const device = await this.deviceService.linkDevice(serial_number, spaceId, accountId, name);
             res.json(device);
         } catch (error) {
@@ -67,7 +67,7 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-                        const {power_status, serial_number} = req.body;
+            const { power_status, serial_number } = req.body;
             const device = await this.deviceService.toggleDevice(
                 serial_number,
                 power_status,
@@ -90,7 +90,7 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-                        const {serial_number} = req.body;
+            const { serial_number } = req.body;
             const device = await this.deviceService.updateDeviceAttributes(
                 serial_number,
                 req.body,
@@ -162,7 +162,7 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-                        const {spaceId, serial_number} = req.body;
+            const { spaceId, serial_number } = req.body;
             const device = await this.deviceService.updateDeviceSpace(
                 serial_number,
                 spaceId,
@@ -189,7 +189,7 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-                        const {serial_number} = req.body;
+            const { serial_number } = req.body;
             const device = await this.deviceService.updateDeviceWifi(
                 serial_number,
                 req.body,
@@ -229,7 +229,7 @@ class DeviceController {
      */
     getDevicesByGroup = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const {groupId} = req.params;
+            const { groupId } = req.params;
             const devices = await this.deviceService.getDevicesByGroup(parseInt(groupId));
             res.json(devices);
         } catch (error) {
@@ -245,7 +245,7 @@ class DeviceController {
      */
     getDevicesByHouse = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const {houseId} = req.params;
+            const { houseId } = req.params;
             const devices = await this.deviceService.getDevicesByHouse(parseInt(houseId));
             res.json(devices);
         } catch (error) {
@@ -261,7 +261,7 @@ class DeviceController {
      */
     getDevicesBySpace = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const {spaceId} = req.params;
+            const { spaceId } = req.params;
             const devices = await this.deviceService.getDevicesBySpace(parseInt(spaceId));
             res.json(devices);
         } catch (error) {
@@ -387,7 +387,7 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-                        const {serial_number} = req.body;
+            const { serial_number } = req.body;
 
             if (!serial_number) {
                 throwError(ErrorCodes.BAD_REQUEST, 'Số seri thiết bị không hợp lệ');
@@ -416,7 +416,7 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-                        const {serial_number, capabilities} = req.body;
+            const { serial_number, capabilities } = req.body;
 
             if (!serial_number) {
                 throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
@@ -450,7 +450,7 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-                        const {serial_number} = req.body;
+            const { serial_number } = req.body;
 
             if (!serial_number) {
                 throwError(ErrorCodes.BAD_REQUEST, 'serial_number is required');
@@ -671,7 +671,7 @@ class DeviceController {
                 name: 'breathe',
                 description: 'Hiệu ứng hơi thở (mờ dần/sáng dần)',
                 params: ['color1', 'speed']
-            }, {name: 'rainbow', description: 'Chu kỳ màu cầu vồng', params: ['speed']}, {
+            }, { name: 'rainbow', description: 'Chu kỳ màu cầu vồng', params: ['speed'] }, {
                 name: 'chase',
                 description: 'Hiệu ứng đuổi theo với pixel chuyển động',
                 params: ['color1', 'speed']
@@ -683,12 +683,35 @@ class DeviceController {
                 name: 'strobe',
                 description: 'Hiệu ứng nhấp nháy nhanh',
                 params: ['color1', 'speed', 'count']
-            }, {name: 'colorWave', description: 'Hiệu ứng sóng với hai màu', params: ['color1', 'color2', 'speed']}];
+            }, { name: 'colorWave', description: 'Hiệu ứng sóng với hai màu', params: ['color1', 'color2', 'speed'] }];
 
             res.json({
                 success: true,
                 effects: effectsWithInfo,
                 available_effects: effects
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Lấy capabilities từ template và firmware, và tổng hợp
+     * GET /devices/:serialNumber/template-firmware-capabilities
+     */
+    getTemplateAndFirmwareCapabilities = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) return next({ status: 401, message: 'User not authenticated' });
+
+        try {
+            const { serial_number } = req.body;
+            if (!serial_number) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Số seri thiết bị không hợp lệ');
+            }
+            const result = await this.deviceService.getTemplateAndFirmwareCapabilities(serial_number, accountId);
+            res.json({
+                success: true,
+                ...result
             });
         } catch (error) {
             next(error);

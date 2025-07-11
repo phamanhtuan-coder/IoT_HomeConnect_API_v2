@@ -1,11 +1,11 @@
-import {Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { ErrorCodes, throwError } from "../utils/errors";
 import { Server } from "socket.io";
 import AlertService from "../services/alert.service";
-import {Device, DeviceAttributes} from "../types/device";
-import {GroupRole} from "../types/group";
-import {PermissionType} from "../types/share-request";
-import {generateComponentId, generateDeviceId} from "../utils/helpers";
+import { Device, DeviceAttributes } from "../types/device";
+import { GroupRole } from "../types/group";
+import { PermissionType } from "../types/share-request";
+import { generateComponentId, generateDeviceId } from "../utils/helpers";
 import {
     AVAILABLE_LED_EFFECTS,
     DeviceState,
@@ -144,14 +144,14 @@ class DeviceService {
 
         const searchValue = search?.toLowerCase().trim();
         const filteredDevices = searchValue
-        ? devices.filter(device =>
-            device.name?.toLowerCase().includes(searchValue) ||
-            device.serial_number?.toLowerCase().includes(searchValue)
+            ? devices.filter(device =>
+                device.name?.toLowerCase().includes(searchValue) ||
+                device.serial_number?.toLowerCase().includes(searchValue)
             )
-        : devices;
+            : devices;
 
         return filteredDevices.map((device) => ({
-            ...this.mapPrismaDeviceToAuthDevice(device),    
+            ...this.mapPrismaDeviceToAuthDevice(device),
             device_type_id: device.device_templates?.device_type_id ?? null,
             device_type_name: device.device_templates?.categories?.name ?? null,
             device_type_parent_name: device.device_templates?.categories?.categories?.name ?? null,
@@ -373,7 +373,7 @@ class DeviceService {
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);
     }
 
-    async checkDevicePermission( serial_number: string, accountId: string, requireControl: boolean): Promise<void> {
+    async checkDevicePermission(serial_number: string, accountId: string, requireControl: boolean): Promise<void> {
         const device = await this.prisma.devices.findFirst({
             where: { serial_number, is_deleted: false },
             include: { spaces: { include: { houses: true } } },
@@ -556,7 +556,7 @@ class DeviceService {
     }
 
     async getDeviceState(serial_number: string, accountId: string): Promise<DeviceState> {
-        await this.checkDevicePermission( serial_number, accountId, false);
+        await this.checkDevicePermission(serial_number, accountId, false);
 
         const device = await this.prisma.devices.findFirst({ where: { serial_number, is_deleted: false } });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
@@ -853,6 +853,55 @@ class DeviceService {
             isSensor: runtime.isSensor !== undefined ? runtime.isSensor : base.isSensor,
             isActuator: runtime.isActuator !== undefined ? runtime.isActuator : base.isActuator,
             controls: { ...base.controls, ...runtime.controls },
+        };
+    }
+
+    /**
+     * Lấy capabilities từ template và firmware, và tổng hợp
+     */
+    async getTemplateAndFirmwareCapabilities(serial_number: string, accountId: string): Promise<any> {
+        // Kiểm tra quyền truy cập thiết bị
+        await this.checkDevicePermission(serial_number, accountId, false);
+
+        const device = await this.prisma.devices.findFirst({
+            where: { serial_number, is_deleted: false },
+            include: {
+                device_templates: true,
+                firmware: true
+            }
+        });
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
+
+        function parseArray(val: any) {
+            if (Array.isArray(val)) return val;
+            if (typeof val === "string") {
+                try {
+                    const parsed = JSON.parse(val);
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch { return []; }
+            }
+            return [];
+        }
+        const base = parseArray(device?.device_templates?.base_capabilities);
+        const runtime = parseArray(device?.firmware?.runtime_capabilities);
+
+        let merged;
+        if (runtime.length > 0) {
+            const baseMap = new Map(base.map(c => [c.id, c]));
+            const mergedArr = [...base];
+            for (const r of runtime) {
+                if (!baseMap.has(r.id)) mergedArr.push(r);
+            }
+            merged = mergedArr;
+        } else {
+            merged = base;
+        }
+
+        return {
+            base,
+            runtime,
+            merged,
+            timestamp: new Date().toISOString()
         };
     }
 

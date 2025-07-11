@@ -950,4 +950,11 @@ router.put(
     asyncHandler(deviceController.updateDeviceWifi)
 );
 
+router.post(
+    '/:serialNumber/template-firmware-capabilities',
+    authMiddleware,
+    validateMiddleware(DeviceCapabilitiesSchema), // dùng chung schema validate serial_number trong body
+    asyncHandler(deviceController.getTemplateAndFirmwareCapabilities)
+);
+
 export default router;
