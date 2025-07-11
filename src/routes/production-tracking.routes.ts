@@ -31,7 +31,7 @@ router.post(
 
 router.patch(
     '/update-serial',
-    // authMiddleware,
+    authMiddleware,
     // roleMiddleware,
     // validateMiddleware(UpdateProductionSchema),
     productionTrackingController.UpdateProductionSerial
