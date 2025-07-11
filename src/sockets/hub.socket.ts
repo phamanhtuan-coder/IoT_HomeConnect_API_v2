@@ -1,10 +1,15 @@
-// src/sockets/hub.socket.simplified.ts
+// src/sockets/hub.socket.ts
 import { Server, Socket } from 'socket.io';
 import prisma from '../config/database';
-import { setupDoorHandlers, setupHubHandlers, createDoorCommand } from './handlers/door.handlers';
+import {
+    setupDoorDeviceHandlers,
+    setupDoorHubHandlers,
+    setupESP01EventHandlers,
+    createEnhancedCommand
+} from './handlers/door.handlers';
 
 export const setupHubSocket = (io: Server) => {
-    console.log('[HUB] Initializing Simplified Hub Socket...');
+    console.log('[HUB] Initializing Hub Socket...');
 
     io.on('connection', async (socket: Socket) => {
         const {
@@ -27,6 +32,9 @@ export const setupHubSocket = (io: Server) => {
         const isHub = userAgent.includes('ESP-Hub-Opt') ||
             hub_managed === 'true' ||
             optimized === 'true';
+
+        const isESP01 = userAgent.includes('ESP-01') ||
+            socket.handshake.headers['x-esp-device'] === 'ESP-01';
 
         const isDevice = userAgent.includes('ESP8266') ||
             userAgent.includes('ESP-01') ||
@@ -63,7 +71,7 @@ export const setupHubSocket = (io: Server) => {
                 console.log(`[HUB] ${serialNumber} connected successfully`);
 
                 // Setup handlers
-                setupHubHandlers(socket, io, serialNumber);
+                setupDoorHubHandlers(socket, io, serialNumber);
 
             } catch (error) {
                 console.error(`[HUB] Setup error for ${serialNumber}:`, error);
@@ -94,8 +102,9 @@ export const setupHubSocket = (io: Server) => {
                 // Set socket data
                 socket.data = {
                     serialNumber,
-                    deviceType: 'ESP_DOOR_DEVICE',
-                    isDevice: true
+                    deviceType: isESP01 ? 'ESP_01_DEVICE' : 'ESP_8266_DEVICE',
+                    isDevice: true,
+                    isESP01: isESP01
                 };
 
                 // Join rooms
@@ -104,8 +113,12 @@ export const setupHubSocket = (io: Server) => {
 
                 console.log(`[DEVICE] ${serialNumber} connected successfully`);
 
-                // Setup handlers
-                setupDoorHandlers(socket, io, serialNumber);
+                // Setup handlers based on device type
+                if (isESP01) {
+                    setupESP01EventHandlers(socket, io, serialNumber, device);
+                } else {
+                    setupDoorDeviceHandlers(socket, io, serialNumber);
+                }
 
             } catch (error) {
                 console.error(`[DEVICE] Setup error for ${serialNumber}:`, error);
@@ -126,40 +139,53 @@ export const setupHubSocket = (io: Server) => {
             accountId?: string;
         };
 
+        console.log(`[CLIENT] New client connection attempt...`);
+        console.log(`[CLIENT] Query params:`, { serialNumber, accountId });
+
         if (serialNumber && accountId) {
-            console.log(`[CLIENT] Client connected for ${serialNumber} by user ${accountId}`);
+            console.log(`[CLIENT] ✅ Client connected for ${serialNumber} by user ${accountId}`);
 
             // Join client room
             await socket.join(`door:${serialNumber}`);
+            console.log(`[CLIENT] Joined room: door:${serialNumber}`);
 
             // Handle door commands from clients
             socket.on('door_command', async (commandData) => {
                 try {
-                    console.log(`[CLIENT] Door command for ${serialNumber}:`, commandData);
+                    console.log(`[CLIENT] 📨 Door command received for ${serialNumber}:`, commandData);
 
                     const targetSerial = commandData.serialNumber || serialNumber;
 
-                    // Create simple command
-                    const doorCommand = createDoorCommand(
+                    // Create enhanced command
+                    const doorCommand = createEnhancedCommand(
                         commandData.action,
                         targetSerial,
+                        commandData.state || {},
                         commandData.door_type || "SERVO"
                     );
+
+                    console.log(`[CLIENT] 🔄 Created door command:`, doorCommand);
 
                     // Send to device or hub
                     const deviceRoom = io.sockets.adapter.rooms.get(`device:${serialNumber}`);
                     const hubRoom = io.sockets.adapter.rooms.get(`hub:${serialNumber}`);
 
+                    console.log(`[CLIENT] 🔍 Checking rooms:`, {
+                        deviceRoom: deviceRoom?.size || 0,
+                        hubRoom: hubRoom?.size || 0
+                    });
+
                     if (hubRoom && hubRoom.size > 0) {
                         // Send via hub
                         io.to(`hub:${serialNumber}`).emit('command', doorCommand);
-                        console.log(`[CLIENT] Command sent via hub to ${serialNumber}`);
+                        console.log(`[CLIENT] ✅ Command sent via hub to ${serialNumber}`);
                     } else if (deviceRoom && deviceRoom.size > 0) {
                         // Send directly to device
                         io.to(`device:${serialNumber}`).emit('command', doorCommand);
-                        console.log(`[CLIENT] Command sent directly to ${serialNumber}`);
+                        console.log(`[CLIENT] ✅ Command sent directly to ${serialNumber}`);
                     } else {
                         // Device offline
+                        console.log(`[CLIENT] ❌ Device ${targetSerial} not connected`);
                         socket.emit('door_command_error', {
                             success: false,
                             error: 'Device not connected',
@@ -176,8 +202,10 @@ export const setupHubSocket = (io: Server) => {
                         timestamp: new Date().toISOString()
                     });
 
+                    console.log(`[CLIENT] ✅ Command acknowledgment sent`);
+
                 } catch (error) {
-                    console.error(`[CLIENT] Door command error:`, error);
+                    console.error(`[CLIENT] ❌ Door command error:`, error);
                     socket.emit('door_command_error', {
                         success: false,
                         error: error instanceof Error ? error.message : 'Unknown error',
@@ -231,6 +259,10 @@ export const setupHubSocket = (io: Server) => {
             socket.on('disconnect', () => {
                 console.log(`[CLIENT] Client disconnected from ${serialNumber} (user: ${accountId})`);
             });
+        } else {
+            console.log(`[CLIENT] ❌ Invalid client connection - missing serialNumber or accountId`);
+            console.log(`[CLIENT] Received:`, { serialNumber, accountId });
+            socket.disconnect(true);
         }
     });
 
@@ -249,6 +281,6 @@ export const setupHubSocket = (io: Server) => {
         });
     }, 60000); // Every minute
 
-    console.log('[HUB] ✅ Simplified Hub Socket setup completed');
+    console.log('[HUB] ✅ Hub Socket setup completed');
     console.log('[HUB] 🎯 Ready for ESP01 door control operations!');
 };

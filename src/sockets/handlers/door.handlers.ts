@@ -2,10 +2,10 @@
 import { Socket, Server } from 'socket.io';
 import prisma from '../../config/database';
 
-export const setupDoorHandlers = (socket: Socket, io: Server, serialNumber: string) => {
+export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber: string) => {
     const clientNamespace = io.of('/client');
 
-    console.log(`[DOOR] Setting up simplified handlers for ${serialNumber}`);
+    console.log(`[DOOR] Setting up handlers for ${serialNumber}`);
 
     // Handle device online - just update basic status
     socket.on('device_online', async (data) => {
@@ -255,10 +255,10 @@ export const setupDoorHandlers = (socket: Socket, io: Server, serialNumber: stri
 };
 
 // Hub handlers for ESP Socket Hub
-export const setupHubHandlers = (socket: Socket, io: Server, hubSerial: string) => {
+export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: string) => {
     const clientNamespace = io.of('/client');
 
-    console.log(`[HUB] Setting up simplified handlers for ${hubSerial}`);
+    console.log(`[HUB] Setting up handlers for ${hubSerial}`);
 
     socket.on('device_online', async (data) => {
         try {
@@ -340,12 +340,118 @@ export const setupHubHandlers = (socket: Socket, io: Server, hubSerial: string) 
     });
 };
 
-// Utility function to create simple door commands
-export const createDoorCommand = (action: string, serialNumber: string, doorType: string = "SERVO"): any => {
+// ESP-01 Event Handlers
+export const setupESP01EventHandlers = (socket: Socket, io: Server, serialNumber: string, device: any) => {
+    const clientNamespace = io.of('/client');
+
+    console.log(`[ESP01] Setting up handlers for ${serialNumber}`);
+
+    socket.on('device_online', async (data) => {
+        try {
+            socket.emit('device_online_ack', {
+                status: 'received',
+                deviceType: 'ESP-01',
+                timestamp: new Date().toISOString()
+            });
+
+            clientNamespace.emit('device_connect', {
+                serialNumber,
+                deviceType: 'ESP-01 DOOR CONTROLLER',
+                connectionType: 'esp01_direct',
+                link_status: device.link_status,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[ESP01] Error in device_online for ${serialNumber}:`, error);
+        }
+    });
+
+    socket.on('command_response', (data) => {
+        try {
+            let responseData = data;
+            if (data.compact_data || data.s !== undefined) {
+                responseData = expandCompactResponse(data);
+            }
+
+            clientNamespace.to(`door:${serialNumber}`).emit('door_command_response', {
+                serialNumber,
+                ...responseData,
+                deviceType: 'ESP-01',
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[ESP01] Error in command_response for ${serialNumber}:`, error);
+        }
+    });
+
+    socket.on('deviceStatus', (data) => {
+        try {
+            let statusData = data;
+            if (data.compact_data || data.d) {
+                statusData = expandCompactStatus(data);
+            }
+
+            clientNamespace.to(`door:${serialNumber}`).emit('door_status', {
+                ...statusData,
+                deviceType: 'ESP-01',
+                connectionType: 'esp01_direct',
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error(`[ESP01] Error in deviceStatus for ${serialNumber}:`, error);
+        }
+    });
+
+    socket.on('disconnect', async (reason) => {
+        console.log(`[ESP01] ${serialNumber} disconnected: ${reason}`);
+
+        clientNamespace.emit('door_disconnect', {
+            serialNumber,
+            deviceType: 'ESP-01',
+            reason: reason,
+            timestamp: new Date().toISOString(),
+        });
+    });
+};
+
+// Utility functions
+function expandCompactResponse(compactData: any): any {
+    return {
+        success: compactData.s === 1 || compactData.s === "1" || compactData.success === true,
+        result: compactData.r || compactData.result || "processed",
+        deviceId: compactData.d || compactData.deviceId,
+        command: compactData.c || compactData.command,
+        servo_angle: compactData.a || compactData.servo_angle || compactData.angle || 0,
+        door_type: compactData.dt || "SERVO",
+        timestamp: compactData.t || compactData.timestamp || Date.now()
+    };
+}
+
+function expandCompactStatus(compactData: any): any {
+    const stateMap: { [key: string]: string } = {
+        'CLD': 'closed',
+        'OPG': 'opening',
+        'OPD': 'open',
+        'CLG': 'closing'
+    };
+
+    return {
+        deviceId: compactData.d || compactData.deviceId,
+        door_state: stateMap[compactData.s] || compactData.s || compactData.door_state || 'unknown',
+        servo_angle: compactData.a || compactData.servo_angle || compactData.angle || 0,
+        door_type: compactData.dt || "SERVO",
+        online: compactData.o === 1 || compactData.o === "1" || true,
+        timestamp: compactData.t || compactData.timestamp || Date.now()
+    };
+}
+
+// Enhanced command creation for all door types
+export const createEnhancedCommand = (action: string, serialNumber: string, state: any = {}, doorType: string = "SERVO"): any => {
     const actionMap: { [key: string]: string } = {
         'open_door': 'OPN',
         'close_door': 'CLS',
         'toggle_door': 'TGL',
+        'configure_door': 'CFG',
         'get_config': 'CFG'
     };
 
@@ -353,6 +459,7 @@ export const createDoorCommand = (action: string, serialNumber: string, doorType
         action: actionMap[action] || action,
         serialNumber: serialNumber,
         door_type: doorType,
+        state: state,
         timestamp: new Date().toISOString()
     };
 };
