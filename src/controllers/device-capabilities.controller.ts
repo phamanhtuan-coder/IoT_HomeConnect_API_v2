@@ -7,23 +7,25 @@ class DeviceCapabilitiesController {
             const { keyword, note } = req.body;
             const data = await deviceCapabilitiesService.create({ keyword, note });
             res.status(201).json({
+                success: true,
                 message: 'Thêm capability thành công!',
                 data
             });
         } catch (err: any) {
-            res.status(err.status || 500).json({ message: err.message || 'Lỗi server!' });
+            res.status(err.status || 500).json({ success: false, message: err.message || 'Lỗi server!' });
         }
     }
 
     async list(req: Request, res: Response, next: NextFunction) {
         try {
             const data = await deviceCapabilitiesService.list();
-            res.json({
+            res.status(200).json({
+                success: true,
                 message: 'Lấy danh sách capability thành công!',
                 data
             });
         } catch (err) {
-            next(err);
+            res.status(500).json({ success: false, message: 'Lỗi server!' });
         }
     }
 
@@ -31,12 +33,13 @@ class DeviceCapabilitiesController {
         try {
             const { id } = req.params;
             const data = await deviceCapabilitiesService.softDelete(Number(id));
-            res.json({
+            res.status(200).json({
+                success: true,
                 message: 'Xóa capability thành công!',
                 data
             });
         } catch (err: any) {
-            res.status(err.status || 500).json({ message: err.message || 'Lỗi server!' });
+            res.status(err.status || 500).json({ success: false, message: err.message || 'Lỗi server!' });
         }
     }
 }

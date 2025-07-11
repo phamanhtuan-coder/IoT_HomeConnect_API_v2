@@ -364,6 +364,7 @@ class FirmwareService {
             SELECT 
                 dt.template_id AS id,
                 dt.name AS template_name,
+                dt.base_capabilities,
                 CONCAT(
                     CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(fw.lastest_version, '.', 1), '.', -1) + 0 AS CHAR), '.',
                     CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(fw.lastest_version, '.', 2), '.', -1) + 0 AS CHAR), '.',
