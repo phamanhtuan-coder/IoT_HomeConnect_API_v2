@@ -27,6 +27,12 @@ export const DeviceTemplateCreateSchema = z.object({
         production_cost: z.number().optional(),
         status: z.string().optional(),
         components: z.array(ComponentSchema).optional().default([]), // Sửa từ "component" thành "components" để rõ ràng hơn
+        capabilities: z.array(
+            z.union([
+              z.object({ id: z.number(), key: z.string() }),
+              z.number()
+            ])
+          ).optional()
     }),
 });
 
