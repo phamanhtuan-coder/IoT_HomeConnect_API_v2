@@ -96,7 +96,76 @@ export class DoorService {
         };
     }
 
-    // Enhanced door service methods for all door types
+    /**
+     * ✅ ENHANCED: Send command through appropriate hub or directly using database query
+     */
+    private async sendDoorCommandViaSocket(
+        serialNumber: string,
+        action: string,
+        additionalData: any = {},
+        accountId: string
+    ): Promise<void> {
+        if (!io) {
+            console.log(`[DOOR_SERVICE] ❌ Socket.IO not available`);
+            return;
+        }
+
+        try {
+            // ✅ QUERY DATABASE TO FIND HUB RELATIONSHIP
+            const device = await this.prisma.devices.findFirst({
+                where: {
+                    serial_number: serialNumber,
+                    is_deleted: false
+                },
+                select: {
+                    hub_id: true,
+                    attribute: true,
+                    name: true
+                }
+            });
+
+            if (!device) {
+                console.log(`[DOOR_SERVICE] ❌ Device ${serialNumber} not found in database`);
+                return;
+            }
+
+            // Determine door type from database attribute
+            const doorAttribute = device.attribute as any || {};
+            const doorType = doorAttribute.door_type || "SERVO";
+
+            const command = {
+                action: action,
+                serialNumber: serialNumber,
+                fromClient: accountId,
+                door_type: doorType,
+                esp01_safe: true,
+                ...additionalData,
+                timestamp: new Date().toISOString()
+            };
+
+            console.log(`[DOOR_SERVICE] 📤 Sending ${doorType} command to ${serialNumber}:`, command);
+
+            if (device.hub_id) {
+                // ✅ ROUTE THROUGH HUB SYSTEM (DATABASE-DRIVEN)
+                console.log(`[DOOR_SERVICE] 🔄 Routing through hub: ${device.hub_id}`);
+
+                // Send to client namespace which will route through hub
+                const clientNamespace = io.of('/client');
+                clientNamespace.emit('door_command', command);
+
+                console.log(`[DOOR_SERVICE] ✅ Command sent via hub system to ${serialNumber}`);
+            } else {
+                // ✅ DIRECT CONNECTION (for devices not managed by hub)
+                console.log(`[DOOR_SERVICE] 📡 Sending directly to ${serialNumber}`);
+                io.to(`device:${serialNumber}`).emit('command', command);
+
+                console.log(`[DOOR_SERVICE] ✅ Command sent directly to ${serialNumber}`);
+            }
+
+        } catch (error) {
+            console.error(`[DOOR_SERVICE] ❌ Error sending command to ${serialNumber}:`, error);
+        }
+    }
 
     async toggleDoor(
         serialNumber: string,
@@ -114,8 +183,8 @@ export class DoorService {
                 throwError(ErrorCodes.CONFLICT, 'Door is moving. Use force=true to override.');
             }
 
-            // Get door type from runtime capabilities or default to SERVO
-            const doorType = currentAttribute.runtime_capabilities?.door_type || "SERVO";
+            // ✅ GET DOOR TYPE FROM DATABASE OR DEFAULT TO SERVO
+            const doorType = currentAttribute.door_type || "SERVO";
 
             const newState: any = {
                 ...currentAttribute,
@@ -144,32 +213,26 @@ export class DoorService {
                 },
             });
 
-            // Send appropriate command based on door type
-            if (io) {
-                const command = {
-                    action: powerStatus ? "open_door" : "close_door",
-                    serialNumber: serialNumber,
-                    fromClient: accountId,
-                    door_type: doorType,
-                    esp01_safe: true,
+            // ✅ SEND COMMAND VIA DATABASE-DRIVEN ROUTING
+            await this.sendDoorCommandViaSocket(
+                serialNumber,
+                powerStatus ? "open_door" : "close_door",
+                {
                     state: {
                         power_status: powerStatus,
                         target_angle: doorType === "SERVO" ? (powerStatus ? 180 : 0) : undefined,
                         target_rounds: (doorType === "ROLLING" || doorType === "SLIDING") ?
                             (powerStatus ? (newState.current_rounds || 0) : 0) : undefined
-                    },
-                    timestamp: new Date().toISOString()
-                };
-
-                console.log(`[DOOR] Sending ${doorType} command to ${serialNumber}:`, command);
-                io.of('/client').to(`door:${serialNumber}`).emit('door_command', command);
-            }
+                    }
+                },
+                accountId
+            );
 
             return this.mapPrismaDeviceToDevice(updatedDevice);
         }, `toggleDoor for ${serialNumber}`);
     }
 
-// NEW: Configure door based on type
+    // ✅ ENHANCED: Configure door based on type with database lookup
     async configureDoor(
         serialNumber: string,
         config: any,
@@ -179,7 +242,7 @@ export class DoorService {
         if (!door) throwError(ErrorCodes.NOT_FOUND, 'Door not found');
 
         const currentAttribute = (door?.attribute as Record<string, any>) || {};
-        const doorType = currentAttribute.runtime_capabilities?.door_type || "SERVO";
+        const doorType = currentAttribute.door_type || "SERVO";
 
         // Validate config based on door type
         if (doorType === "SERVO") {
@@ -196,20 +259,13 @@ export class DoorService {
             }
         }
 
-        // Send config command
-        if (io) {
-            const configCommand = {
-                action: doorType === "SLIDING" && config.hasOwnProperty('pir_enabled') ? "toggle_pir" : "configure_door",
-                serialNumber: serialNumber,
-                fromClient: accountId,
-                door_type: doorType,
-                esp01_safe: true,
-                config: config,
-                timestamp: new Date().toISOString()
-            };
-
-            io.of('/client').to(`door:${serialNumber}`).emit('door_command', configCommand);
-        }
+        // ✅ SEND CONFIG COMMAND VIA DATABASE-DRIVEN ROUTING
+        await this.sendDoorCommandViaSocket(
+            serialNumber,
+            doorType === "SLIDING" && config.hasOwnProperty('pir_enabled') ? "toggle_pir" : "configure_door",
+            { config: config },
+            accountId
+        );
 
         return {
             success: true,
@@ -217,7 +273,7 @@ export class DoorService {
         };
     }
 
-// NEW: Toggle PIR for sliding doors
+    // ✅ ENHANCED: Toggle PIR for sliding doors
     async togglePIR(
         serialNumber: string,
         accountId: string
@@ -226,24 +282,19 @@ export class DoorService {
         if (!door) throwError(ErrorCodes.NOT_FOUND, 'Door not found');
 
         const currentAttribute = (door?.attribute as Record<string, any>) || {};
-        const doorType = currentAttribute.runtime_capabilities?.door_type || "SERVO";
+        const doorType = currentAttribute.door_type || "SERVO";
 
         if (doorType !== "SLIDING") {
             throwError(ErrorCodes.BAD_REQUEST, 'PIR control only available for sliding doors');
         }
 
-        if (io) {
-            const pirCommand = {
-                action: "toggle_pir",
-                serialNumber: serialNumber,
-                fromClient: accountId,
-                door_type: "SLIDING",
-                esp01_safe: true,
-                timestamp: new Date().toISOString()
-            };
-
-            io.of('/client').to(`door:${serialNumber}`).emit('door_command', pirCommand);
-        }
+        // ✅ SEND PIR COMMAND VIA DATABASE-DRIVEN ROUTING
+        await this.sendDoorCommandViaSocket(
+            serialNumber,
+            "toggle_pir",
+            {},
+            accountId
+        );
 
         return {
             success: true,
@@ -251,7 +302,7 @@ export class DoorService {
         };
     }
 
-// Enhanced calibration for all door types
+    // ✅ ENHANCED: Calibration for all door types
     async calibrateDoor(
         serialNumber: string,
         calibrationData: any,
@@ -261,7 +312,7 @@ export class DoorService {
         if (!door) throwError(ErrorCodes.NOT_FOUND, 'Door not found');
 
         const currentAttribute = (door?.attribute as Record<string, any>) || {};
-        const doorType = currentAttribute.runtime_capabilities?.door_type || "SERVO";
+        const doorType = currentAttribute.door_type || "SERVO";
 
         // Validate calibration data based on door type
         if (doorType === "SERVO") {
@@ -276,19 +327,13 @@ export class DoorService {
             }
         }
 
-        if (io) {
-            const calibrateCommand = {
-                action: "calibrate_door",
-                serialNumber: serialNumber,
-                fromClient: accountId,
-                door_type: doorType,
-                esp01_safe: true,
-                ...calibrationData,
-                timestamp: new Date().toISOString()
-            };
-
-            io.of('/client').to(`door:${serialNumber}`).emit('door_command', calibrateCommand);
-        }
+        // ✅ SEND CALIBRATION COMMAND VIA DATABASE-DRIVEN ROUTING
+        await this.sendDoorCommandViaSocket(
+            serialNumber,
+            "calibrate_door",
+            calibrationData,
+            accountId
+        );
 
         return {
             success: true,
@@ -319,19 +364,17 @@ export class DoorService {
                         );
                         results.push(doorSerial);
 
-                        // Send emergency event to /client namespace
-                        if (io && operation.action === 'open_all') {
-                            const emergencyCommand = {
-                                action: "emergency_open",
-                                serialNumber: doorSerial,
-                                fromClient: accountId,
-                                esp01_safe: true,
-                                emergency_type: operation.trigger_source,
-                                message: 'Emergency operation',
-                                timestamp: new Date().toISOString()
-                            };
-
-                            io.of('/client').to(`door:${doorSerial}`).emit('door_command', emergencyCommand);
+                        // ✅ SEND EMERGENCY EVENT VIA DATABASE-DRIVEN ROUTING
+                        if (operation.action === 'open_all') {
+                            await this.sendDoorCommandViaSocket(
+                                doorSerial,
+                                "emergency_open",
+                                {
+                                    emergency_type: operation.trigger_source,
+                                    message: 'Emergency operation'
+                                },
+                                accountId
+                            );
                         }
                     } catch (error: any) {
                         errors.push({ door: doorSerial, error: error.message });
@@ -428,20 +471,16 @@ export class DoorService {
                 }
             });
 
-            // Send config update to /client namespace
+            // ✅ SEND CONFIG UPDATE VIA DATABASE-DRIVEN ROUTING
+            await this.sendDoorCommandViaSocket(
+                serialNumber,
+                "update_config",
+                { config: config },
+                accountId
+            );
+
+            // Also notify clients
             if (io) {
-                const configCommand = {
-                    action: "update_config",
-                    serialNumber: serialNumber,
-                    fromClient: accountId,
-                    esp01_safe: true,
-                    config: config,
-                    timestamp: new Date().toISOString()
-                };
-
-                io.of('/client').to(`door:${serialNumber}`).emit('door_command', configCommand);
-
-                // Also notify clients
                 const clientNamespace = io.of('/client');
                 clientNamespace.to(`door:${serialNumber}`).emit('config_update', {
                     serialNumber,
@@ -545,21 +584,13 @@ export class DoorService {
         const door = await this.getDoorBySerial(serialNumber, accountId);
         if (!door) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
 
-        // Send command to /client namespace
-        if (io) {
-            const espCommand = {
-                action: command.action,
-                serialNumber: serialNumber,
-                fromClient: accountId,
-                esp01_safe: true,
-                state: command.state || {},
-                timestamp: new Date().toISOString()
-            };
-
-            console.log(`[DOOR] Sending direct command to ESP Hub for ${serialNumber}:`, espCommand);
-
-            io.of('/client').to(`door:${serialNumber}`).emit('door_command', espCommand);
-        }
+        // ✅ SEND COMMAND VIA DATABASE-DRIVEN ROUTING
+        await this.sendDoorCommandViaSocket(
+            serialNumber,
+            command.action,
+            { state: command.state || {} },
+            accountId
+        );
     }
 
     async testDoor(
@@ -570,28 +601,19 @@ export class DoorService {
         const door = await this.getDoorBySerial(serialNumber, accountId);
         if (!door) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy cửa');
 
-        if (io) {
-            const testCommand = {
-                action: "test_door",
-                serialNumber: serialNumber,
-                fromClient: accountId,
-                esp01_safe: true,
-                test_type: testType,
-                timestamp: new Date().toISOString()
-            };
-
-            console.log(`[DOOR] Sending test command to ESP Hub for ${serialNumber}:`, testCommand);
-
-            io.of('/client').to(`door:${serialNumber}`).emit('door_command', testCommand);
-        }
+        // ✅ SEND TEST COMMAND VIA DATABASE-DRIVEN ROUTING
+        await this.sendDoorCommandViaSocket(
+            serialNumber,
+            "test_door",
+            { test_type: testType },
+            accountId
+        );
 
         return {
             success: true,
             message: `Test command sent to door ${serialNumber}`
         };
     }
-
-
 
     private validateDoorConfig(config: Partial<DoorConfig>): void {
         if (config.servo_open_angle !== undefined && (config.servo_open_angle < 0 || config.servo_open_angle > 180)) {
@@ -604,4 +626,10 @@ export class DoorService {
             throwError(ErrorCodes.BAD_REQUEST, 'Thời gian di chuyển phải từ 500ms đến 5000ms');
         }
     }
+}
+
+// ✅ EXPORT FUNCTION TO SET SOCKET INSTANCE
+export function setSocketInstance(socketInstance: Server) {
+    io = socketInstance;
+    console.log('[DOOR_SERVICE] Socket.IO instance set for database-driven routing');
 }

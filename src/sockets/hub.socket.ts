@@ -1,4 +1,4 @@
-// src/sockets/hub.socket.ts
+// src/sockets/hub.socket.ts - DATABASE-DRIVEN HUB MANAGEMENT
 import { Server, Socket } from 'socket.io';
 import prisma from '../config/database';
 import {
@@ -8,8 +8,30 @@ import {
     createEnhancedCommand
 } from './handlers/door.handlers';
 
+// ===== DYNAMIC HUB DEVICE REGISTRY =====
+interface HubDevice {
+    hubSerial: string;
+    hubSocket: Socket;
+    managedDevices: string[];
+    isOnline: boolean;
+    lastSeen: Date;
+}
+
+interface ManagedDevice {
+    serialNumber: string;
+    hubSerial: string;
+    isOnline: boolean;
+    lastSeen: Date;
+}
+
+// Global registries
+const hubRegistry = new Map<string, HubDevice>();
+const managedDeviceRegistry = new Map<string, ManagedDevice>();
+const socketToHub = new Map<string, string>(); // socketId -> hubSerial
+const connectedSockets = new Map<string, Socket>();
+
 export const setupHubSocket = (io: Server) => {
-    console.log('[HUB] Initializing Hub Socket...');
+    console.log('[HUB] Initializing Database-Driven Hub Socket...');
 
     io.on('connection', async (socket: Socket) => {
         const {
@@ -45,30 +67,75 @@ export const setupHubSocket = (io: Server) => {
             console.log(`[HUB] ESP Socket Hub connecting: ${serialNumber}`);
 
             try {
-                // Verify device exists
-                const device = await prisma.devices.findFirst({
+                // ✅ VERIFY HUB EXISTS IN DATABASE
+                const hubDevice = await prisma.devices.findFirst({
                     where: { serial_number: serialNumber, is_deleted: false }
                 });
 
-                if (!device) {
-                    console.error(`[HUB] Device ${serialNumber} not found`);
-                    socket.emit('connection_error', { message: 'Device not registered' });
+                if (!hubDevice) {
+                    console.error(`[HUB] Hub ${serialNumber} not found in database`);
+                    socket.emit('connection_error', { message: 'Hub not registered' });
                     socket.disconnect(true);
                     return;
                 }
+
+                // ✅ QUERY MANAGED DEVICES FROM DATABASE
+                const managedDevices = await prisma.devices.findMany({
+                    where: {
+                        hub_id: serialNumber,
+                        is_deleted: false
+                    },
+                    select: {
+                        serial_number: true,
+                        name: true,
+                        power_status: true,
+                        attribute: true
+                    }
+                });
+
+                console.log(`[HUB] Found ${managedDevices.length} managed devices for hub ${serialNumber}:`);
+                managedDevices.forEach(device => {
+                    console.log(`[HUB]   - ${device.serial_number} (${device.name})`);
+                });
+
+                // ✅ REGISTER HUB AND MANAGED DEVICES
+                const hubData: HubDevice = {
+                    hubSerial: serialNumber,
+                    hubSocket: socket,
+                    managedDevices: managedDevices.map(d => d.serial_number),
+                    isOnline: true,
+                    lastSeen: new Date()
+                };
+
+                hubRegistry.set(serialNumber, hubData);
+                socketToHub.set(socket.id, serialNumber);
+                connectedSockets.set(socket.id, socket);
+
+                // Register managed devices
+                managedDevices.forEach(device => {
+                    const deviceData: ManagedDevice = {
+                        serialNumber: device.serial_number,
+                        hubSerial: serialNumber,
+                        isOnline: true,
+                        lastSeen: new Date()
+                    };
+                    managedDeviceRegistry.set(device.serial_number, deviceData);
+                    console.log(`[HUB] Registered device ${device.serial_number} under hub ${serialNumber}`);
+                });
 
                 // Set socket data
                 socket.data = {
                     serialNumber,
                     deviceType: 'ESP_SOCKET_HUB',
-                    isHub: true
+                    isHub: true,
+                    managedDevices: managedDevices.map(d => d.serial_number)
                 };
 
                 // Join rooms
                 await socket.join(`hub:${serialNumber}`);
                 await socket.join(`device:${serialNumber}`);
 
-                console.log(`[HUB] ${serialNumber} connected successfully`);
+                console.log(`[HUB] ${serialNumber} connected successfully with ${managedDevices.length} managed devices`);
 
                 // Setup handlers
                 setupDoorHubHandlers(socket, io, serialNumber);
@@ -87,14 +154,28 @@ export const setupHubSocket = (io: Server) => {
             console.log(`[DEVICE] ESP Device connecting: ${serialNumber}`);
 
             try {
-                // Verify device exists
+                // ✅ VERIFY DEVICE EXISTS AND CHECK HUB RELATIONSHIP
                 const device = await prisma.devices.findFirst({
-                    where: { serial_number: serialNumber, is_deleted: false }
+                    where: { serial_number: serialNumber, is_deleted: false },
+                    include: {
+                        hub: true // Include hub information if it exists
+                    }
                 });
 
                 if (!device) {
-                    console.error(`[DEVICE] Device ${serialNumber} not found`);
+                    console.error(`[DEVICE] Device ${serialNumber} not found in database`);
                     socket.emit('connection_error', { message: 'Device not registered' });
+                    socket.disconnect(true);
+                    return;
+                }
+
+                // Check if device is hub-managed
+                if (device.hub_id) {
+                    console.log(`[DEVICE] ${serialNumber} is managed by hub ${device.hub_id} - should connect via hub`);
+                    socket.emit('connection_error', {
+                        message: 'Device is hub-managed, connect via hub',
+                        hub_id: device.hub_id
+                    });
                     socket.disconnect(true);
                     return;
                 }
@@ -111,7 +192,7 @@ export const setupHubSocket = (io: Server) => {
                 await socket.join(`door:${serialNumber}`);
                 await socket.join(`device:${serialNumber}`);
 
-                console.log(`[DEVICE] ${serialNumber} connected successfully`);
+                console.log(`[DEVICE] ${serialNumber} connected successfully (direct connection)`);
 
                 // Setup handlers based on device type
                 if (isESP01) {
@@ -156,49 +237,66 @@ export const setupHubSocket = (io: Server) => {
 
                     const targetSerial = commandData.serialNumber || serialNumber;
 
-                    // Create enhanced command
-                    const doorCommand = createEnhancedCommand(
-                        commandData.action,
-                        targetSerial,
-                        commandData.state || {},
-                        commandData.door_type || "SERVO"
-                    );
+                    // ✅ DYNAMIC HUB LOOKUP FROM DATABASE
+                    const isHubManaged = await isDeviceManagedByHub(targetSerial);
+                    let routedViaHub = false;
 
-                    console.log(`[CLIENT] 🔄 Created door command:`, doorCommand);
+                    if (isHubManaged.managed) {
+                        const hubSerial = isHubManaged.hubSerial;
+                        const hub = hubRegistry.get(hubSerial!);
 
-                    // Send to device or hub
-                    const deviceRoom = io.sockets.adapter.rooms.get(`device:${serialNumber}`);
-                    const hubRoom = io.sockets.adapter.rooms.get(`hub:${serialNumber}`);
+                        if (hub && hub.isOnline) {
+                            // Create enhanced command
+                            const doorCommand = createEnhancedCommand(
+                                commandData.action,
+                                targetSerial,
+                                commandData.state || {},
+                                commandData.door_type || "SERVO"
+                            );
 
-                    console.log(`[CLIENT] 🔍 Checking rooms:`, {
-                        deviceRoom: deviceRoom?.size || 0,
-                        hubRoom: hubRoom?.size || 0
-                    });
+                            console.log(`[CLIENT] 🔄 Created door command via hub ${hubSerial}:`, doorCommand);
 
-                    if (hubRoom && hubRoom.size > 0) {
-                        // Send via hub
-                        io.to(`hub:${serialNumber}`).emit('command', doorCommand);
-                        console.log(`[CLIENT] ✅ Command sent via hub to ${serialNumber}`);
-                    } else if (deviceRoom && deviceRoom.size > 0) {
-                        // Send directly to device
-                        io.to(`device:${serialNumber}`).emit('command', doorCommand);
-                        console.log(`[CLIENT] ✅ Command sent directly to ${serialNumber}`);
-                    } else {
-                        // Device offline
-                        console.log(`[CLIENT] ❌ Device ${targetSerial} not connected`);
-                        socket.emit('door_command_error', {
-                            success: false,
-                            error: 'Device not connected',
-                            serialNumber: targetSerial
-                        });
-                        return;
+                            // Send via hub
+                            io.to(`hub:${hubSerial}`).emit('command', doorCommand);
+                            console.log(`[CLIENT] ✅ Command sent via hub ${hubSerial} to ${targetSerial}`);
+                            routedViaHub = true;
+                        } else {
+                            console.log(`[CLIENT] ❌ Hub ${hubSerial} not connected or offline`);
+                        }
+                    }
+
+                    if (!routedViaHub) {
+                        // Try direct connection
+                        const deviceRoom = io.sockets.adapter.rooms.get(`device:${targetSerial}`);
+
+                        if (deviceRoom && deviceRoom.size > 0) {
+                            const doorCommand = createEnhancedCommand(
+                                commandData.action,
+                                targetSerial,
+                                commandData.state || {},
+                                commandData.door_type || "SERVO"
+                            );
+
+                            io.to(`device:${targetSerial}`).emit('command', doorCommand);
+                            console.log(`[CLIENT] ✅ Command sent directly to ${targetSerial}`);
+                        } else {
+                            console.log(`[CLIENT] ❌ Device ${targetSerial} not connected`);
+                            socket.emit('door_command_error', {
+                                success: false,
+                                error: 'Device not connected',
+                                serialNumber: targetSerial,
+                                hub_managed: isHubManaged.managed,
+                                hub_serial: isHubManaged.hubSerial
+                            });
+                            return;
+                        }
                     }
 
                     // Acknowledge command sent
                     socket.emit('door_command_sent', {
                         success: true,
                         serialNumber: targetSerial,
-                        command: doorCommand,
+                        routed_via: routedViaHub ? isHubManaged.hubSerial : 'direct',
                         timestamp: new Date().toISOString()
                     });
 
@@ -215,7 +313,7 @@ export const setupHubSocket = (io: Server) => {
             });
 
             // Handle status requests
-            socket.on('door_status_request', (requestData) => {
+            socket.on('door_status_request', async (requestData) => {
                 try {
                     const targetSerial = requestData.serialNumber || serialNumber;
 
@@ -225,18 +323,23 @@ export const setupHubSocket = (io: Server) => {
                         timestamp: new Date().toISOString()
                     };
 
-                    // Send to device or hub
-                    io.to(`device:${serialNumber}`).emit('status_request', statusRequest);
-                    io.to(`hub:${serialNumber}`).emit('status_request', statusRequest);
+                    // Check if device is hub-managed
+                    const isHubManaged = await isDeviceManagedByHub(targetSerial);
 
-                    console.log(`[CLIENT] Status request sent for ${targetSerial}`);
+                    if (isHubManaged.managed && isHubManaged.hubSerial) {
+                        io.to(`hub:${isHubManaged.hubSerial}`).emit('status_request', statusRequest);
+                        console.log(`[CLIENT] Status request sent via hub ${isHubManaged.hubSerial} for ${targetSerial}`);
+                    } else {
+                        io.to(`device:${targetSerial}`).emit('status_request', statusRequest);
+                        console.log(`[CLIENT] Status request sent directly to ${targetSerial}`);
+                    }
                 } catch (error) {
                     console.error(`[CLIENT] Status request error:`, error);
                 }
             });
 
             // Handle config requests
-            socket.on('door_config_request', (requestData) => {
+            socket.on('door_config_request', async (requestData) => {
                 try {
                     const targetSerial = requestData.serialNumber || serialNumber;
 
@@ -246,11 +349,16 @@ export const setupHubSocket = (io: Server) => {
                         timestamp: new Date().toISOString()
                     };
 
-                    // Send to device or hub
-                    io.to(`device:${serialNumber}`).emit('command', configRequest);
-                    io.to(`hub:${serialNumber}`).emit('command', configRequest);
+                    // Check if device is hub-managed
+                    const isHubManaged = await isDeviceManagedByHub(targetSerial);
 
-                    console.log(`[CLIENT] Config request sent for ${targetSerial}`);
+                    if (isHubManaged.managed && isHubManaged.hubSerial) {
+                        io.to(`hub:${isHubManaged.hubSerial}`).emit('command', configRequest);
+                        console.log(`[CLIENT] Config request sent via hub ${isHubManaged.hubSerial} for ${targetSerial}`);
+                    } else {
+                        io.to(`device:${targetSerial}`).emit('command', configRequest);
+                        console.log(`[CLIENT] Config request sent directly to ${targetSerial}`);
+                    }
                 } catch (error) {
                     console.error(`[CLIENT] Config request error:`, error);
                 }
@@ -277,10 +385,141 @@ export const setupHubSocket = (io: Server) => {
         io.of('/client').emit('system_status', {
             connected_devices: deviceCount,
             connected_hubs: hubCount,
+            total_managed_devices: managedDeviceRegistry.size,
             timestamp: new Date().toISOString()
         });
     }, 60000); // Every minute
 
-    console.log('[HUB] ✅ Hub Socket setup completed');
-    console.log('[HUB] 🎯 Ready for ESP01 door control operations!');
+    console.log('[HUB] ✅ Database-Driven Hub Socket setup completed');
+    console.log('[HUB] 🎯 Ready for dynamic ESP01 door control operations!');
 };
+
+// ===== DATABASE-DRIVEN HELPER FUNCTIONS =====
+
+/**
+ * ✅ Check if device is managed by a hub using database query
+ */
+async function isDeviceManagedByHub(deviceSerial: string): Promise<{managed: boolean, hubSerial?: string}> {
+    try {
+        const device = await prisma.devices.findFirst({
+            where: {
+                serial_number: deviceSerial,
+                is_deleted: false
+            },
+            select: {
+                hub_id: true
+            }
+        });
+
+        if (device && device.hub_id) {
+            return {
+                managed: true,
+                hubSerial: device.hub_id
+            };
+        }
+
+        return { managed: false };
+    } catch (error) {
+        console.error(`[HUB] Error checking hub relationship for ${deviceSerial}:`, error);
+        return { managed: false };
+    }
+}
+
+/**
+ * ✅ Get all devices managed by a specific hub
+ */
+export async function getHubManagedDevices(hubSerial: string): Promise<string[]> {
+    try {
+        const devices = await prisma.devices.findMany({
+            where: {
+                hub_id: hubSerial,
+                is_deleted: false
+            },
+            select: {
+                serial_number: true
+            }
+        });
+
+        return devices.map(d => d.serial_number);
+    } catch (error) {
+        console.error(`[HUB] Error getting managed devices for hub ${hubSerial}:`, error);
+        return [];
+    }
+}
+
+/**
+ * ✅ Update hub online status in database
+ */
+export async function updateHubStatus(hubSerial: string, isOnline: boolean): Promise<void> {
+    try {
+        await prisma.devices.update({
+            where: { serial_number: hubSerial },
+            data: {
+                link_status: isOnline ? 'linked' : 'unlinked',
+                updated_at: new Date(),
+                attribute: {
+                    device_type: 'ESP_SOCKET_HUB',
+                    status: isOnline ? 'online' : 'offline',
+                    last_seen: new Date().toISOString(),
+                    managed_devices_count: isOnline ? await getHubManagedDevices(hubSerial).then(devices => devices.length) : 0
+                }
+            }
+        });
+
+        console.log(`[HUB] Updated hub ${hubSerial} status: ${isOnline ? 'online' : 'offline'}`);
+    } catch (error) {
+        console.error(`[HUB] Error updating hub status for ${hubSerial}:`, error);
+    }
+}
+
+/**
+ * ✅ Get hub status information
+ */
+export function getHubStatus(): { hubs: HubDevice[], devices: ManagedDevice[] } {
+    return {
+        hubs: Array.from(hubRegistry.values()),
+        devices: Array.from(managedDeviceRegistry.values())
+    };
+}
+
+/**
+ * ✅ Check if device is online (direct or via hub)
+ */
+export function isDeviceOnline(deviceSerial: string): boolean {
+    // Check direct connection
+    if (connectedSockets.has(deviceSerial)) {
+        return true;
+    }
+
+    // Check via hub
+    const managedDevice = managedDeviceRegistry.get(deviceSerial);
+    if (managedDevice && managedDevice.isOnline) {
+        const hub = hubRegistry.get(managedDevice.hubSerial);
+        return hub ? hub.isOnline : false;
+    }
+
+    return false;
+}
+
+/**
+ * ✅ Handle hub disconnection
+ */
+export function handleHubDisconnection(hubSerial: string): void {
+    const hub = hubRegistry.get(hubSerial);
+    if (hub) {
+        hub.isOnline = false;
+
+        // Mark all managed devices as offline
+        hub.managedDevices.forEach(deviceSerial => {
+            const device = managedDeviceRegistry.get(deviceSerial);
+            if (device) {
+                device.isOnline = false;
+            }
+        });
+
+        console.log(`[HUB] Hub ${hubSerial} disconnected, marked ${hub.managedDevices.length} devices as offline`);
+    }
+
+    // Update database
+    updateHubStatus(hubSerial, false);
+}
