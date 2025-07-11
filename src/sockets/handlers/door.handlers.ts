@@ -1,6 +1,7 @@
-// src/sockets/handlers/door.handlers.ts
+// src/sockets/handlers/door.handlers.ts - DATABASE-INTEGRATED HANDLERS
 import { Socket, Server } from 'socket.io';
 import prisma from '../../config/database';
+import { updateHubStatus, getHubManagedDevices, handleHubDisconnection } from '../hub.socket';
 
 export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber: string) => {
     const clientNamespace = io.of('/client');
@@ -19,13 +20,18 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 timestamp: new Date().toISOString()
             });
 
-            // Update database - only basic online status
+            // ✅ UPDATE DATABASE WITH ONLINE STATUS
             await prisma.devices.update({
                 where: { serial_number: serialNumber },
                 data: {
+                    link_status: 'linked',
                     updated_at: new Date(),
-                    // Clear runtime_capabilities - keep simple
-                    runtime_capabilities: null
+                    attribute: {
+                        device_type: "ESP01_DOOR",
+                        connection_type: "direct",
+                        status: "online",
+                        last_seen: new Date().toISOString()
+                    }
                 }
             });
 
@@ -34,6 +40,7 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 serialNumber,
                 deviceType: 'ESP01_DOOR',
                 status: 'online',
+                connectionType: 'direct',
                 timestamp: new Date().toISOString()
             });
 
@@ -72,21 +79,23 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 lastCommand = data.command || data.action || 'UNKNOWN';
             }
 
-            // Update attribute column with door state
+            // ✅ UPDATE DATABASE WITH DOOR STATE
             const doorAttribute = {
                 door_type: "SERVO",
                 door_state: doorState,
                 servo_angle: servoAngle,
                 last_command: lastCommand,
-                power_status: true,
+                power_status: doorState === 'open' || doorState === 'opening',
                 last_seen: new Date().toISOString(),
-                command_timeout: 5000
+                command_timeout: 5000,
+                connection_type: "direct"
             };
 
             await prisma.devices.update({
                 where: { serial_number: targetSerial },
                 data: {
                     attribute: doorAttribute,
+                    power_status: doorAttribute.power_status,
                     updated_at: new Date()
                 }
             });
@@ -101,7 +110,7 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 timestamp: new Date().toISOString()
             });
 
-            console.log(`[DOOR] Updated door state for ${targetSerial}: ${doorState}`);
+            console.log(`[DOOR] Updated door state in database for ${targetSerial}: ${doorState}`);
 
         } catch (error) {
             console.error(`[DOOR] Error in command_response for ${serialNumber}:`, error);
@@ -132,21 +141,23 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 servoAngle = data.servo_angle || data.angle || 0;
             }
 
-            // Update attribute with current status
+            // ✅ UPDATE DATABASE WITH CURRENT STATUS
             const doorAttribute = {
                 door_type: "SERVO",
                 door_state: doorState,
                 servo_angle: servoAngle,
                 last_command: "STATUS",
-                power_status: true,
+                power_status: doorState === 'open' || doorState === 'opening',
                 last_seen: new Date().toISOString(),
-                command_timeout: 5000
+                command_timeout: 5000,
+                connection_type: "direct"
             };
 
             await prisma.devices.update({
                 where: { serial_number: targetSerial },
                 data: {
                     attribute: doorAttribute,
+                    power_status: doorAttribute.power_status,
                     updated_at: new Date()
                 }
             });
@@ -176,7 +187,8 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 door_type: "SERVO",
                 servo_closed_angle: 0,
                 servo_open_angle: 90,
-                last_seen: new Date().toISOString()
+                last_seen: new Date().toISOString(),
+                connection_type: "direct"
             };
 
             if (data.type === 'servo_angles' || data.action === 'ANG') {
@@ -184,7 +196,7 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 configData.servo_open_angle = data.v2 || 90;
             }
 
-            // Update attribute with config
+            // ✅ UPDATE DATABASE WITH CONFIG
             await prisma.devices.update({
                 where: { serial_number: targetSerial },
                 data: {
@@ -205,12 +217,12 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
         }
     });
 
-    // Handle disconnect - just update offline status
+    // Handle disconnect - update database
     socket.on('disconnect', async (reason) => {
         console.log(`[DOOR] ${serialNumber} disconnected: ${reason}`);
 
         try {
-            // Update attribute to show offline
+            // ✅ UPDATE DATABASE TO SHOW OFFLINE
             const currentDevice = await prisma.devices.findFirst({
                 where: { serial_number: serialNumber }
             });
@@ -220,14 +232,17 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 const offlineAttribute = {
                     ...currentAttribute,
                     power_status: false,
+                    status: "offline",
                     last_seen: new Date().toISOString(),
-                    offline_reason: reason
+                    offline_reason: reason,
+                    connection_type: "direct"
                 };
 
                 await prisma.devices.update({
                     where: { serial_number: serialNumber },
                     data: {
                         attribute: offlineAttribute,
+                        link_status: 'unlinked',
                         updated_at: new Date()
                     }
                 });
@@ -254,11 +269,11 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
     });
 };
 
-// Hub handlers for ESP Socket Hub
+// ✅ ENHANCED HUB HANDLERS WITH DATABASE INTEGRATION
 export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: string) => {
     const clientNamespace = io.of('/client');
 
-    console.log(`[HUB] Setting up handlers for ${hubSerial}`);
+    console.log(`[HUB] Setting up database-integrated handlers for ${hubSerial}`);
 
     socket.on('device_online', async (data) => {
         try {
@@ -270,25 +285,52 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
                 timestamp: new Date().toISOString()
             });
 
-            // Update hub status in database
-            await prisma.devices.update({
-                where: { serial_number: hubSerial },
-                data: {
-                    attribute: {
-                        device_type: 'ESP_SOCKET_HUB',
+            // ✅ UPDATE HUB STATUS IN DATABASE
+            await updateHubStatus(hubSerial, true);
+
+            // ✅ GET AND REGISTER MANAGED DEVICES
+            const managedDevices = await getHubManagedDevices(hubSerial);
+            console.log(`[HUB] Hub ${hubSerial} managing ${managedDevices.length} devices:`, managedDevices);
+
+            // ✅ UPDATE ALL MANAGED DEVICES TO SHOW HUB CONNECTION
+            for (const deviceSerial of managedDevices) {
+                try {
+                    await prisma.devices.update({
+                        where: { serial_number: deviceSerial },
+                        data: {
+                            link_status: 'linked',
+                            updated_at: new Date(),
+                            attribute: {
+                                device_type: 'ESP01_DOOR',
+                                connection_type: 'hub_managed',
+                                hub_serial: hubSerial,
+                                status: 'online',
+                                last_seen: new Date().toISOString()
+                            }
+                        }
+                    });
+
+                    // Notify clients about device coming online via hub
+                    clientNamespace.emit('device_connect', {
+                        serialNumber: deviceSerial,
+                        deviceType: 'ESP01_DOOR',
+                        connectionType: 'hub_managed',
+                        hubSerial: hubSerial,
                         status: 'online',
-                        last_seen: new Date().toISOString(),
-                        firmware_version: data.firmware_version || 'unknown'
-                    },
-                    updated_at: new Date(),
-                    runtime_capabilities: null // Keep simple
+                        timestamp: new Date().toISOString()
+                    });
+
+                } catch (deviceError) {
+                    console.error(`[HUB] Error updating device ${deviceSerial}:`, deviceError);
                 }
-            });
+            }
 
             clientNamespace.emit('hub_online', {
                 serialNumber: hubSerial,
                 deviceType: 'ESP_SOCKET_HUB',
                 status: 'online',
+                managedDevicesCount: managedDevices.length,
+                managedDevices: managedDevices,
                 timestamp: new Date().toISOString()
             });
 
@@ -297,50 +339,221 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
         }
     });
 
-    // Forward door responses to individual door handlers
-    socket.on('door_response', (data) => {
+    // ✅ HANDLE RESPONSES FOR MANAGED DEVICES
+    socket.on('command_response', async (data) => {
         try {
             const targetSerial = data.deviceId || data.serialNumber || data.d;
-            if (targetSerial) {
-                // Emit as command_response to be handled by door handlers
-                socket.emit('command_response', data);
+
+            if (!targetSerial) {
+                console.error(`[HUB] Command response missing target serial`);
+                return;
             }
-        } catch (error) {
-            console.error(`[HUB] Error forwarding door response:`, error);
-        }
-    });
 
-    socket.on('disconnect', async (reason) => {
-        console.log(`[HUB] Hub ${hubSerial} disconnected: ${reason}`);
+            console.log(`[HUB] Command response from hub ${hubSerial} for device ${targetSerial}:`, data);
 
-        try {
+            // Parse response data (same logic as direct device)
+            let doorState = 'unknown';
+            let servoAngle = 0;
+            let lastCommand = 'UNKNOWN';
+
+            if (data.compact_data || data.s !== undefined) {
+                const stateMap: { [key: string]: string } = {
+                    'CLD': 'closed',
+                    'OPD': 'open',
+                    'CLG': 'closing',
+                    'OPG': 'opening'
+                };
+                doorState = stateMap[data.s] || 'unknown';
+                servoAngle = data.a || 0;
+                lastCommand = data.c || 'UNKNOWN';
+            } else {
+                doorState = data.door_state || 'unknown';
+                servoAngle = data.servo_angle || data.angle || 0;
+                lastCommand = data.command || data.action || 'UNKNOWN';
+            }
+
+            // ✅ UPDATE DATABASE FOR MANAGED DEVICE
+            const doorAttribute = {
+                door_type: "SERVO",
+                door_state: doorState,
+                servo_angle: servoAngle,
+                last_command: lastCommand,
+                power_status: doorState === 'open' || doorState === 'opening',
+                last_seen: new Date().toISOString(),
+                command_timeout: 5000,
+                connection_type: "hub_managed",
+                hub_serial: hubSerial
+            };
+
             await prisma.devices.update({
-                where: { serial_number: hubSerial },
+                where: { serial_number: targetSerial },
                 data: {
-                    attribute: {
-                        device_type: 'ESP_SOCKET_HUB',
-                        status: 'offline',
-                        last_seen: new Date().toISOString(),
-                        offline_reason: reason
-                    },
+                    attribute: doorAttribute,
+                    power_status: doorAttribute.power_status,
                     updated_at: new Date()
                 }
             });
 
-            clientNamespace.emit('hub_disconnect', {
-                serialNumber: hubSerial,
-                reason: reason,
-                impact: 'All connected doors may be affected',
+            // Send to clients
+            clientNamespace.to(`door:${targetSerial}`).emit('door_command_response', {
+                serialNumber: targetSerial,
+                door_state: doorState,
+                servo_angle: servoAngle,
+                last_command: lastCommand,
+                success: data.success || data.s === 1,
+                via_hub: hubSerial,
+                timestamp: new Date().toISOString()
+            });
+
+            console.log(`[HUB] Updated database for managed device ${targetSerial}: ${doorState}`);
+
+        } catch (error) {
+            console.error(`[HUB] Error processing command response:`, error);
+        }
+    });
+
+    // ✅ HANDLE STATUS UPDATES FOR MANAGED DEVICES
+    socket.on('deviceStatus', async (data) => {
+        try {
+            const targetSerial = data.deviceId || data.serialNumber || data.d;
+
+            if (!targetSerial) {
+                console.error(`[HUB] Device status missing target serial`);
+                return;
+            }
+
+            console.log(`[HUB] Device status from hub ${hubSerial} for device ${targetSerial}:`, data);
+
+            let doorState = 'unknown';
+            let servoAngle = 0;
+
+            if (data.compact_data || data.s !== undefined) {
+                const stateMap: { [key: string]: string } = {
+                    'CLD': 'closed',
+                    'OPD': 'open',
+                    'CLG': 'closing',
+                    'OPG': 'opening'
+                };
+                doorState = stateMap[data.s] || 'unknown';
+                servoAngle = data.a || 0;
+            } else {
+                doorState = data.door_state || 'unknown';
+                servoAngle = data.servo_angle || data.angle || 0;
+            }
+
+            // ✅ UPDATE DATABASE FOR MANAGED DEVICE STATUS
+            const doorAttribute = {
+                door_type: "SERVO",
+                door_state: doorState,
+                servo_angle: servoAngle,
+                last_command: "STATUS",
+                power_status: doorState === 'open' || doorState === 'opening',
+                last_seen: new Date().toISOString(),
+                command_timeout: 5000,
+                connection_type: "hub_managed",
+                hub_serial: hubSerial
+            };
+
+            await prisma.devices.update({
+                where: { serial_number: targetSerial },
+                data: {
+                    attribute: doorAttribute,
+                    power_status: doorAttribute.power_status,
+                    updated_at: new Date()
+                }
+            });
+
+            // Send to clients
+            clientNamespace.to(`door:${targetSerial}`).emit('door_status', {
+                serialNumber: targetSerial,
+                door_state: doorState,
+                servo_angle: servoAngle,
+                online: true,
+                via_hub: hubSerial,
                 timestamp: new Date().toISOString()
             });
 
         } catch (error) {
-            console.error(`[HUB] Error updating offline status for ${hubSerial}:`, error);
+            console.error(`[HUB] Error processing device status:`, error);
         }
+    });
+
+    // ✅ HANDLE HUB DISCONNECT WITH DATABASE UPDATE
+    socket.on('disconnect', async (reason) => {
+        console.log(`[HUB] Hub ${hubSerial} disconnected: ${reason}`);
+
+        try {
+            // ✅ UPDATE HUB STATUS IN DATABASE
+            await updateHubStatus(hubSerial, false);
+
+            // ✅ GET MANAGED DEVICES AND MARK THEM OFFLINE
+            const managedDevices = await getHubManagedDevices(hubSerial);
+
+            for (const deviceSerial of managedDevices) {
+                try {
+                    const currentDevice = await prisma.devices.findFirst({
+                        where: { serial_number: deviceSerial }
+                    });
+
+                    if (currentDevice) {
+                        const currentAttribute = currentDevice.attribute as any || {};
+                        const offlineAttribute = {
+                            ...currentAttribute,
+                            status: "offline",
+                            last_seen: new Date().toISOString(),
+                            offline_reason: `Hub ${hubSerial} disconnected: ${reason}`,
+                            connection_type: "hub_managed",
+                            hub_serial: hubSerial
+                        };
+
+                        await prisma.devices.update({
+                            where: { serial_number: deviceSerial },
+                            data: {
+                                attribute: offlineAttribute,
+                                link_status: 'unlinked',
+                                updated_at: new Date()
+                            }
+                        });
+
+                        // Notify clients about device going offline
+                        clientNamespace.emit('door_disconnect', {
+                            serialNumber: deviceSerial,
+                            reason: `Hub disconnected: ${reason}`,
+                            hubSerial: hubSerial,
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+                } catch (deviceError) {
+                    console.error(`[HUB] Error updating offline device ${deviceSerial}:`, deviceError);
+                }
+            }
+
+            // Handle disconnection in hub registry
+            handleHubDisconnection(hubSerial);
+
+            clientNamespace.emit('hub_disconnect', {
+                serialNumber: hubSerial,
+                reason: reason,
+                impact: `${managedDevices.length} managed devices affected`,
+                affectedDevices: managedDevices,
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error(`[HUB] Error updating offline status for hub ${hubSerial}:`, error);
+        }
+    });
+
+    // Hub ping/pong
+    socket.on('ping', () => {
+        socket.emit('pong', {
+            timestamp: new Date().toISOString(),
+            hubSerial
+        });
     });
 };
 
-// ESP-01 Event Handlers
+// ESP-01 Event Handlers (unchanged)
 export const setupESP01EventHandlers = (socket: Socket, io: Server, serialNumber: string, device: any) => {
     const clientNamespace = io.of('/client');
 
@@ -414,7 +627,7 @@ export const setupESP01EventHandlers = (socket: Socket, io: Server, serialNumber
     });
 };
 
-// Utility functions
+// Utility functions (unchanged)
 function expandCompactResponse(compactData: any): any {
     return {
         success: compactData.s === 1 || compactData.s === "1" || compactData.success === true,
