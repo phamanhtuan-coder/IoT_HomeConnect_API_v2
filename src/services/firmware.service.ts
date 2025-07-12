@@ -105,13 +105,14 @@ class FirmwareService {
         template_id: string;
         is_mandatory?: boolean;
         note?: string;
+        capabilities?: any[]; // Thêm dòng này
     }, employeeId: string): Promise<any> {
-        const { version, name, file_path, template_id, is_mandatory, note } = input;
+        const { version, name, file_path, template_id, is_mandatory, note, capabilities = [] } = input;
 
         const account = await this.prisma.account.findFirst({
-            where: { 
-                account_id: employeeId, 
-                deleted_at: null 
+            where: {
+                account_id: employeeId,
+                deleted_at: null
             },
             include: {
                 employee: {
@@ -159,11 +160,26 @@ class FirmwareService {
         const maxAttempts = 5;
         do {
             firmwareId = generateFirmwareId();
-            const idExists = await this.prisma.firmware.findFirst({ where: { firmware_id: firmwareId }});
+            const idExists = await this.prisma.firmware.findFirst({ where: { firmware_id: firmwareId } });
             if (!idExists) break;
             attempts++;
             if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
         } while (true);
+
+        // Xử lý capabilities để lưu vào runtime_capabilities
+        let runtimeCapabilities: { id: number; key: string }[] = [];
+        if (capabilities.length > 0) {
+            if (typeof capabilities[0] === 'number') {
+                // Nếu chỉ truyền id, lấy key từ DB
+                const caps = await this.prisma.device_capabilities.findMany({
+                    where: { id: { in: capabilities }, is_deleted: false }
+                });
+                runtimeCapabilities = caps.map(c => ({ id: c.id, key: c.keyword }));
+            } else {
+                // Nếu truyền object {id, key}
+                runtimeCapabilities = capabilities;
+            }
+        }
 
         const firmware = await this.prisma.firmware!.create({
             data: {
@@ -174,6 +190,7 @@ class FirmwareService {
                 template_id: template_id,
                 is_mandatory: is_mandatory,
                 note: note || null,
+                runtime_capabilities: runtimeCapabilities.length > 0 ? runtimeCapabilities : undefined,
                 // logs: [newLog]
             },
         });
@@ -258,10 +275,10 @@ class FirmwareService {
             await this.updateFirmwares(input.template_id, firmwareId, account);
         }
 
-            return {
-                success: true,
-                data: updatedFirmware
-            };
+        return {
+            success: true,
+            data: updatedFirmware
+        };
     }
 
     async deleteFirmware(firmwareId: string, employeeId: string): Promise<any> {
@@ -347,6 +364,7 @@ class FirmwareService {
             SELECT 
                 dt.template_id AS id,
                 dt.name AS template_name,
+                dt.base_capabilities,
                 CONCAT(
                     CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(fw.lastest_version, '.', 1), '.', -1) + 0 AS CHAR), '.',
                     CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(fw.lastest_version, '.', 2), '.', -1) + 0 AS CHAR), '.',
@@ -505,7 +523,7 @@ class FirmwareService {
                 tested_at: testResult ? new Date() : null,
                 is_approved: testResult ? true : false,
                 logs: [...(firmware?.logs as any), newLog],
-                },
+            },
         });
 
         return {

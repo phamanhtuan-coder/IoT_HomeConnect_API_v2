@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { DataType, PrismaClient } from "@prisma/client";
 import {Component} from "../types/component";
 import {ErrorCodes, throwError} from "../utils/errors";
 import {generateComponentId, generateCustomerId} from "../utils/helpers";
@@ -31,8 +31,40 @@ class ComponentService {
         supplier?: string;
         unit_cost?: number;
         status?: boolean;
+        flow_type?: string;
+        default_value?: string | null;
+        unit?: string | null;
+        min?: number | null;
+        max?: number | null;
+        datatype?: string | null;
+        name_display?: string | null;
     }): Promise<Component> {
-        const { name, supplier, unit_cost, status } = input;
+        let { name, supplier, unit_cost, status, flow_type, default_value, unit, min, max, datatype, name_display } = input;
+        
+        if (flow_type && !['input', 'output', 'both', 'input_special'].includes(flow_type)) {
+            throwError(ErrorCodes.BAD_REQUEST, 'Flow type must be input or output');
+
+            if (datatype && !['STRING', 'NUMBER', 'BOOLEAN'].includes(datatype)) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Datatype must be STRING, NUMBER, BOOLEAN');
+            }
+
+            if (datatype === 'NUMBER') {
+                if (!min || !max) {
+                    throwError(ErrorCodes.BAD_REQUEST, 'Giá trị nhỏ nhất hoặc giá trị lớn nhất không được để trống');
+                } else if (min && max && min > max) {
+                    throwError(ErrorCodes.BAD_REQUEST, 'Giá trị nhỏ nhất không được lớn hơn giá trị lớn nhất');
+                } else if (default_value && (isNaN(Number(default_value)) || Number(default_value) < min || Number(default_value) > max)) {
+                    throwError(ErrorCodes.BAD_REQUEST, 'Giá trị mặc định không được nhỏ hơn giá trị nhỏ nhất hoặc lớn hơn giá trị lớn nhất');
+                }
+            }
+        } else if (!flow_type) {
+            default_value = null;
+            unit = null;
+            min = null;
+            max = null;
+            datatype = null;
+            name_display = null;
+        }
 
         const existingComponent = await this.prisma.components.findFirst({
             where: { name, is_deleted: false },
@@ -59,6 +91,13 @@ class ComponentService {
                 supplier,
                 unit_cost,
                 status,
+                flow_type,
+                unit,
+                default_value,
+                min,
+                max,
+                datatype: datatype as DataType,
+                name_display,
             },
         });
 
@@ -109,6 +148,13 @@ class ComponentService {
         supplier?: string | null;
         unit_cost?: number;
         status?: boolean | null;
+        flow_type?: string;
+        default_value?: string;
+        unit?: string;
+        min?: number;
+        max?: number;
+        datatype?: string;
+        name_display?: string;
     }): Promise<Component> {
         const component = await this.prisma.components.findUnique({
             where: { component_id: componentId, is_deleted: false },
@@ -133,7 +179,14 @@ class ComponentService {
                 supplier: input.supplier,
                 unit_cost: input.unit_cost,
                 status: input.status,
+                flow_type: input.flow_type,
+                default_value: input.default_value,
+                unit: input.unit,
+                min: input.min,
+                max: input.max,
+                datatype: input.datatype as DataType,
                 updated_at: new Date(),
+                name_display: input.name_display || null,
             },
         });
 
@@ -175,6 +228,13 @@ class ComponentService {
             updated_at: component.updated_at,
             is_deleted: component.is_deleted,
             status: component.status,
+            flow_type: component.flow_type,
+            default_value: component.default_value,
+            unit: component.unit,
+            min: component.min,
+            max: component.max,
+            datatype: component.datatype as DataType,
+            name_display: component.name_display,
         };
     }
 }

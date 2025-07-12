@@ -18,6 +18,13 @@ interface Component {
     updated_at?: Date | null;
     is_deleted?: boolean | null;
     status?: number | null;
+    flow_type?: string | null;
+    default_value?: string | null;
+    datatype?: string | null;
+    unit?: string | null;
+    min?: number | null;
+    max?: number | null;
+    name_display?: string | null
 }
 
 interface ComponentResponse {

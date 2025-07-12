@@ -25,7 +25,7 @@ router.post(
     '/approve-production-serial',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(ApproveProductionSchema),
+    // validateMiddleware(ApproveProductionSchema),
     productionTrackingController.ApproveProductionSerial
 );
 
@@ -33,7 +33,7 @@ router.patch(
     '/update-serial',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(UpdateProductionSchema),
+    // validateMiddleware(UpdateProductionSchema),
     productionTrackingController.UpdateProductionSerial
 );
 
@@ -41,7 +41,7 @@ router.patch(
     '/reject-qc',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(RejectProductionSchema),
+    // validateMiddleware(RejectProductionSchema),
     productionTrackingController.RejectProductionSerial
 );
 
@@ -49,7 +49,7 @@ router.patch(
     '/cancel-production-serial',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(CancelProductionSchema),
+    // validateMiddleware(CancelProductionSchema),
     productionTrackingController.CancelProductionSerial
 );
 
@@ -57,7 +57,7 @@ router.patch(
     '/approve-tested-serial',
     authMiddleware,
     // roleMiddleware,
-    validateMiddleware(ApproveTestedSchema),
+    // validateMiddleware(ApproveTestedSchema),
     productionTrackingController.ApproveTestedSerial
 );
 
