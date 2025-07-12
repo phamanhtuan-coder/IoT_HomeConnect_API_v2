@@ -8,6 +8,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum DataType {
+  STRING
+  NUMBER
+  BOOLEAN
+  DATE
+  ENUM
+}
+
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model account {
   account_id                                                String               @id @db.VarChar(32)
@@ -240,9 +248,13 @@ model components {
   updated_at          DateTime?             @default(dbgenerated("(now())")) @db.DateTime(0)
   is_deleted          Boolean?              @default(false)
   status              Boolean?              @default(false)
+  name_display        String?               @db.VarChar(255)
+  datatype            DataType              @default(STRING)
   flow_type           String?               @db.VarChar(20)
-  value               String?               @db.VarChar(100)
+  default_value       String?               @db.VarChar(100)
   unit                String?               @db.VarChar(100)
+  min                 Int?
+  max                 Int?
   template_components template_components[]
 }
 
