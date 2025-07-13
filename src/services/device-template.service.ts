@@ -274,7 +274,6 @@ class DeviceTemplateService {
     }
 
     async updateDeviceTemplate(templateId: string, input: DeviceTemplateUpdateInput): Promise<DeviceTemplate> {
-        console.log("data cập nhật template", input);
         const template = await this.prisma.device_templates.findUnique({
             where: { template_id: templateId, is_deleted: false },
         });
