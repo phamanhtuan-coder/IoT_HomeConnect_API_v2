@@ -256,6 +256,8 @@ model components {
   min                 Int?
   max                 Int?
   template_components template_components[]
+  device_links        device_links[]        // Thêm mối quan hệ với device_links
+
 }
 
 model contact {
@@ -357,7 +359,7 @@ model device_templates {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model devices {
-  device_id               String                    @db.VarChar(32)
+  device_id               String                    @db.VarChar(32) @unique
   serial_number           String                    @unique(map: "serial_number") @db.VarChar(50)
   template_id             String                    @db.VarChar(32)
   space_id                Int?
@@ -403,6 +405,8 @@ model devices {
   @@index([space_id], map: "space_id")
   @@index([template_id], map: "template_id")
   @@index([production_tracking_id], map: "production_tracking_id")
+  input_links   device_links[] @relation("InputDevice")
+  output_links  device_links[] @relation("OutputDevice")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -1065,4 +1069,39 @@ model warrenty_time {
   updated_at DateTime? @updatedAt @db.Timestamp(0)
   deleted_at DateTime? @db.Timestamp(0)
   product    product[]
+}
+
+model device_links {
+  id                    Int               @id @default(autoincrement())
+  input_device_id       String            @db.VarChar(32)
+  output_device_id      String            @db.VarChar(32)
+  component_id          String            @db.VarChar(32)
+  // Giá trị cụ thể để kích hoạt liên kết (ví dụ: nếu input gửi giá trị = 1)
+  value_active          String    @db.VarChar(50)
+
+  // Hành động sẽ thực hiện trên output device (bật/tắt)
+  output_action         OutputAction  @default(turn_on)
+
+  // Điều kiện logic dùng để xử lý khi nhiều input liên kết cùng một output
+  logic_operator        LogicOperator  @default(AND)
+  created_at            DateTime?          @default(now()) @db.Timestamp(0)
+  updated_at            DateTime?          @updatedAt @db.DateTime(0)
+  deleted_at            DateTime?          @db.Timestamp(0)
+
+  input_device          devices   @relation("InputDevice", fields: [input_device_id], references: [device_id])
+  output_device         devices   @relation("OutputDevice", fields: [output_device_id], references: [device_id])
+  component             components @relation(fields: [component_id], references: [component_id])
+
+  @@index([output_device_id])
+  @@index([component_id])
+}
+
+enum LogicOperator {
+  AND
+  OR
+}
+
+enum OutputAction {
+  turn_on
+  turn_off
 }
