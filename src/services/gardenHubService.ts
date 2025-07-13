@@ -39,19 +39,21 @@ interface RelayStatusResult {
     error?: string;
 }
 
+// ✅ FIXED: Use correct Socket Hub Serial
+const SOCKET_HUB_SERIAL = "SERL29JUN2501JYXECBR32V8BD77RW82";
+const MEGA_GARDEN_SERIAL = "MEGA27JUN2501GARDEN_HUB_001";
+
 // Relay devices từ Arduino Mega Hub
 const GARDEN_HUB_RELAYS: RelayDevice[] = [
     { serial_number: "RELAY27JUN2501FAN001CONTROL001", device_name: "Fan", relay_pin: 30, is_on: false, can_toggle: true, fire_override: false, last_toggle: 0, status: "off" },
     { serial_number: "RELAY27JUN2501ALARM01CONTROL01", device_name: "Alarm", relay_pin: 31, is_on: false, can_toggle: true, fire_override: true, last_toggle: 0, status: "off" },
-    { serial_number: "RELAY27JUN2501RESERVED003CTRL1", device_name: "Reserved3", relay_pin: 32, is_on: false, can_toggle: true, fire_override: false, last_toggle: 0, status: "off" },
-    { serial_number: "RELAY27JUN2501RESERVED004CTRL1", device_name: "Reserved4", relay_pin: 33, is_on: false, can_toggle: true, fire_override: false, last_toggle: 0, status: "off" },
-    { serial_number: "RELAY27JUN2501RESERVED005CTRL1", device_name: "Reserved5", relay_pin: 34, is_on: false, can_toggle: true, fire_override: false, last_toggle: 0, status: "off" },
-    { serial_number: "RELAY27JUN2501RESERVED006CTRL1", device_name: "Reserved6", relay_pin: 35, is_on: false, can_toggle: true, fire_override: false, last_toggle: 0, status: "off" },
-    { serial_number: "RELAY27JUN2501LIGHT007CONTROL1", device_name: "Light1", relay_pin: 36, is_on: false, can_toggle: true, fire_override: false, last_toggle: 0, status: "off" },
-    { serial_number: "RELAY27JUN2501LIGHT008CONTROL1", device_name: "Light2", relay_pin: 37, is_on: false, can_toggle: true, fire_override: false, last_toggle: 0, status: "off" }
+    { serial_number: "RELAY27JUN2501LIGHT001CONTROL1", device_name: "Light1", relay_pin: 32, is_on: false, can_toggle: true, fire_override: false, last_toggle: 0, status: "off" },
+    { serial_number: "RELAY27JUN2501LIGHT002CONTROL1", device_name: "Light2", relay_pin: 33, is_on: false, can_toggle: true, fire_override: false, last_toggle: 0, status: "off" },
+    { serial_number: "RELAY27JUN2501PUMP002CONTROL01", device_name: "Pump2", relay_pin: 34, is_on: false, can_toggle: true, fire_override: false, last_toggle: 0, status: "off" },
+    { serial_number: "RELAY27JUN2501HEATER1CONTROL01", device_name: "Heater", relay_pin: 35, is_on: false, can_toggle: true, fire_override: false, last_toggle: 0, status: "off" },
+    { serial_number: "RELAY27JUN2501COOLER1CONTROL01", device_name: "Cooler", relay_pin: 36, is_on: false, can_toggle: true, fire_override: false, last_toggle: 0, status: "off" },
+    { serial_number: "RELAY27JUN2501RESERVE8CONTROL1", device_name: "Reserve", relay_pin: 37, is_on: false, can_toggle: true, fire_override: false, last_toggle: 0, status: "off" }
 ];
-
-const MEGA_HUB_SERIAL = "MEGA_HUB_GARDEN_001";
 
 class GardenHubService {
     private deviceService: DeviceService;
@@ -61,7 +63,7 @@ class GardenHubService {
     }
 
     /**
-     * Toggle relay state (reuse existing device toggle logic)
+     * ✅ FIXED: Toggle relay via Socket Hub
      */
     async toggleGardenRelay(
         relay_serial: string,
@@ -69,38 +71,32 @@ class GardenHubService {
         accountId: string
     ): Promise<any> {
         try {
-            // Validate relay exists
             const relay = GARDEN_HUB_RELAYS.find(r => r.serial_number === relay_serial);
             if (!relay) {
                 throwError(ErrorCodes.NOT_FOUND, `Relay device ${relay_serial} not found`);
-                return; // This will never be reached, but helps TypeScript
+                return;
             }
 
-            // Use existing device service for permission check and state update
             await this.deviceService.checkDevicePermission(relay_serial, accountId, true);
 
-            // Send command to Arduino Mega Hub via Socket
+            // ✅ FIXED: Send via Socket Hub with simple command format
             if (io) {
-                const relayCommand = {
-                    action: 'relay_command',
-                    hubSerial: MEGA_HUB_SERIAL,
-                    relaySerial: relay_serial,
-                    relayAction: power_status ? 'ON' : 'OFF',
-                    relayName: relay.device_name,
-                    fromClient: accountId,
+                const command = `CMD:${relay_serial}:${power_status ? 'ON' : 'OFF'}`;
+
+                console.log(`[GARDEN-HUB] Sending relay command via Socket Hub: ${command}`);
+
+                // Send to Socket Hub - it will forward to Mega
+                io.to(`device:${SOCKET_HUB_SERIAL}`).emit("command", {
+                    action: "relay_command",
+                    command: command,
+                    target: "mega_relay",
+                    relay_serial: relay_serial,
+                    relay_action: power_status ? 'ON' : 'OFF',
+                    from_client: accountId,
                     timestamp: new Date().toISOString()
-                };
-
-                console.log(`[GARDEN-HUB] Sending relay command to Mega Hub:`, relayCommand);
-
-                // Send to Mega Hub device namespace
-                io.of("/device").to(`device:${MEGA_HUB_SERIAL}`).emit("command", relayCommand);
-
-                // Also send to hub namespace if exists
-                io.of("/hub").to(`hub:${MEGA_HUB_SERIAL}`).emit("relay_command", relayCommand);
+                });
             }
 
-            // Update state using device service pattern
             const updatedDevice = await this.deviceService.updateDeviceState(
                 relay_serial,
                 { power_status },
@@ -112,6 +108,7 @@ class GardenHubService {
                 relay_serial,
                 device_name: relay.device_name,
                 new_state: power_status ? 'ON' : 'OFF',
+                routed_via: "socket_hub",
                 timestamp: new Date().toISOString(),
                 device: updatedDevice
             };
@@ -123,7 +120,7 @@ class GardenHubService {
     }
 
     /**
-     * Bulk relay operations
+     * ✅ FIXED: Bulk relay operations via Socket Hub
      */
     async bulkRelayControl(
         relay_commands: Array<{
@@ -150,7 +147,6 @@ class GardenHubService {
                     let targetState: boolean;
 
                     if (cmd.action === 'TOGGLE') {
-                        // Get current state from device
                         const currentState = await this.deviceService.getDeviceState(cmd.relay_serial, accountId);
                         targetState = !currentState.power_status;
                     } else {
@@ -177,6 +173,7 @@ class GardenHubService {
             return {
                 success: true,
                 bulk_operation: true,
+                routed_via: "socket_hub",
                 results,
                 timestamp: new Date().toISOString()
             };
@@ -188,7 +185,7 @@ class GardenHubService {
     }
 
     /**
-     * Special garden operations
+     * ✅ FIXED: Garden pump control via Socket Hub
      */
     async controlGardenPump(
         action: 'START' | 'STOP',
@@ -196,28 +193,31 @@ class GardenHubService {
         accountId: string
     ): Promise<any> {
         try {
-            await this.deviceService.checkDevicePermission(MEGA_HUB_SERIAL, accountId, true);
+            await this.deviceService.checkDevicePermission(SOCKET_HUB_SERIAL, accountId, true);
 
             if (io) {
-                const pumpCommand = {
-                    action: 'garden_pump',
-                    hubSerial: MEGA_HUB_SERIAL,
-                    pumpAction: action,
-                    reason,
-                    fromClient: accountId,
+                const command = `GARDEN_CMD:PUMP_${action}`;
+
+                console.log(`[GARDEN-HUB] Sending pump command via Socket Hub: ${command}`);
+
+                // Send to Socket Hub - it will forward to Mega
+                io.to(`device:${SOCKET_HUB_SERIAL}`).emit("command", {
+                    action: "garden_command",
+                    command: command,
+                    target: "mega_garden",
+                    pump_action: action,
+                    reason: reason,
+                    from_client: accountId,
                     timestamp: new Date().toISOString()
-                };
-
-                console.log(`[GARDEN-HUB] Sending pump command to Mega Hub:`, pumpCommand);
-
-                io.of("/device").to(`device:${MEGA_HUB_SERIAL}`).emit("command", pumpCommand);
+                });
             }
 
             return {
                 success: true,
                 action: `PUMP_${action}`,
                 reason,
-                hub_serial: MEGA_HUB_SERIAL,
+                routed_via: "socket_hub",
+                garden_serial: MEGA_GARDEN_SERIAL,
                 timestamp: new Date().toISOString()
             };
 
@@ -228,7 +228,7 @@ class GardenHubService {
     }
 
     /**
-     * RGB LED control for garden status
+     * ✅ FIXED: RGB LED control via Socket Hub
      */
     async controlGardenRGB(
         action: 'TEST' | 'AUTO' | 'MANUAL',
@@ -237,29 +237,32 @@ class GardenHubService {
     ): Promise<any> {
         try {
             if (accountId) {
-                await this.deviceService.checkDevicePermission(MEGA_HUB_SERIAL, accountId, true);
+                await this.deviceService.checkDevicePermission(SOCKET_HUB_SERIAL, accountId, true);
             }
 
             if (io) {
-                const rgbCommand = {
-                    action: 'garden_rgb',
-                    hubSerial: MEGA_HUB_SERIAL,
-                    rgbAction: action,
-                    color,
-                    fromClient: accountId,
+                const command = `GARDEN_CMD:RGB_${action}`;
+
+                console.log(`[GARDEN-HUB] Sending RGB command via Socket Hub: ${command}`);
+
+                // Send to Socket Hub - it will forward to Mega
+                io.to(`device:${SOCKET_HUB_SERIAL}`).emit("command", {
+                    action: "garden_command",
+                    command: command,
+                    target: "mega_garden",
+                    rgb_action: action,
+                    color: color,
+                    from_client: accountId,
                     timestamp: new Date().toISOString()
-                };
-
-                console.log(`[GARDEN-HUB] Sending RGB command to Mega Hub:`, rgbCommand);
-
-                io.of("/device").to(`device:${MEGA_HUB_SERIAL}`).emit("command", rgbCommand);
+                });
             }
 
             return {
                 success: true,
                 action: `RGB_${action}`,
                 color,
-                hub_serial: MEGA_HUB_SERIAL,
+                routed_via: "socket_hub",
+                garden_serial: MEGA_GARDEN_SERIAL,
                 timestamp: new Date().toISOString()
             };
 
@@ -270,11 +273,65 @@ class GardenHubService {
     }
 
     /**
+     * ✅ FIXED: Emergency alarm via Socket Hub
+     */
+    async emergencyAlarmControl(
+        action: 'ACTIVATE' | 'DEACTIVATE' | 'RESET_OVERRIDE',
+        accountId: string
+    ): Promise<any> {
+        try {
+            await this.deviceService.checkDevicePermission(SOCKET_HUB_SERIAL, accountId, true);
+
+            const alarmRelay = GARDEN_HUB_RELAYS.find(r => r.device_name === 'Alarm');
+            if (!alarmRelay) {
+                throwError(ErrorCodes.NOT_FOUND, 'Alarm relay not found');
+                return;
+            }
+
+            if (io) {
+                let command: string;
+
+                if (action === 'RESET_OVERRIDE') {
+                    command = `CMD:${alarmRelay.serial_number}:RESET_OVERRIDE`;
+                } else {
+                    command = `CMD:${alarmRelay.serial_number}:${action === 'ACTIVATE' ? 'ON' : 'OFF'}`;
+                }
+
+                console.log(`[GARDEN-HUB] Sending emergency alarm command via Socket Hub: ${command}`);
+
+                // Send to Socket Hub - it will forward to Mega
+                io.to(`device:${SOCKET_HUB_SERIAL}`).emit("command", {
+                    action: "emergency_alarm",
+                    command: command,
+                    target: "mega_alarm",
+                    alarm_action: action,
+                    relay_serial: alarmRelay.serial_number,
+                    from_client: accountId,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            return {
+                success: true,
+                action: `ALARM_${action}`,
+                relay_serial: alarmRelay.serial_number,
+                routed_via: "socket_hub",
+                garden_serial: MEGA_GARDEN_SERIAL,
+                timestamp: new Date().toISOString()
+            };
+
+        } catch (error) {
+            console.error(`[GARDEN-HUB] Emergency alarm control error:`, error);
+            throw error;
+        }
+    }
+
+    /**
      * Get all garden relay status
      */
     async getGardenRelayStatus(accountId: string): Promise<any> {
         try {
-            await this.deviceService.checkDevicePermission(MEGA_HUB_SERIAL, accountId, false);
+            await this.deviceService.checkDevicePermission(SOCKET_HUB_SERIAL, accountId, false);
 
             const relayStatus: RelayStatusResult[] = [];
 
@@ -303,7 +360,8 @@ class GardenHubService {
 
             return {
                 success: true,
-                hub_serial: MEGA_HUB_SERIAL,
+                socket_hub_serial: SOCKET_HUB_SERIAL,
+                garden_serial: MEGA_GARDEN_SERIAL,
                 total_relays: GARDEN_HUB_RELAYS.length,
                 relays: relayStatus,
                 timestamp: new Date().toISOString()
@@ -316,46 +374,85 @@ class GardenHubService {
     }
 
     /**
-     * Emergency fire alarm control
+     * ✅ FIXED: Automation control via Socket Hub
      */
-    async emergencyAlarmControl(
-        action: 'ACTIVATE' | 'DEACTIVATE' | 'RESET_OVERRIDE',
+    async controlAutomation(
+        automation_type: 'WATERING' | 'LIGHTING' | 'FAN',
+        enabled: boolean,
         accountId: string
     ): Promise<any> {
         try {
-            await this.deviceService.checkDevicePermission(MEGA_HUB_SERIAL, accountId, true);
-
-            const alarmRelay = GARDEN_HUB_RELAYS.find(r => r.device_name === 'Alarm');
-            if (!alarmRelay) {
-                throwError(ErrorCodes.NOT_FOUND, 'Alarm relay not found');
-                return; // This will never be reached, but helps TypeScript
-            }
+            await this.deviceService.checkDevicePermission(SOCKET_HUB_SERIAL, accountId, true);
 
             if (io) {
-                const alarmCommand = {
-                    action: 'emergency_alarm',
-                    hubSerial: MEGA_HUB_SERIAL,
-                    alarmAction: action,
-                    relaySerial: alarmRelay.serial_number,
-                    fromClient: accountId,
+                const command = `GARDEN_CMD:AUTO_${automation_type}_TOGGLE`;
+
+                console.log(`[GARDEN-HUB] Sending automation command via Socket Hub: ${command}`);
+
+                io.to(`device:${SOCKET_HUB_SERIAL}`).emit("command", {
+                    action: "garden_automation",
+                    command: command,
+                    target: "mega_garden",
+                    automation_type: automation_type,
+                    enabled: enabled,
+                    from_client: accountId,
                     timestamp: new Date().toISOString()
-                };
-
-                console.log(`[GARDEN-HUB] Sending emergency alarm command:`, alarmCommand);
-
-                io.of("/device").to(`device:${MEGA_HUB_SERIAL}`).emit("command", alarmCommand);
+                });
             }
 
             return {
                 success: true,
-                action: `ALARM_${action}`,
-                relay_serial: alarmRelay.serial_number,
-                hub_serial: MEGA_HUB_SERIAL,
+                automation_type,
+                enabled,
+                routed_via: "socket_hub",
+                garden_serial: MEGA_GARDEN_SERIAL,
                 timestamp: new Date().toISOString()
             };
 
         } catch (error) {
-            console.error(`[GARDEN-HUB] Emergency alarm control error:`, error);
+            console.error(`[GARDEN-HUB] Automation control error:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * ✅ FIXED: Set thresholds via Socket Hub
+     */
+    async setThreshold(
+        threshold_type: 'SOIL' | 'LIGHT',
+        value: number,
+        accountId: string
+    ): Promise<any> {
+        try {
+            await this.deviceService.checkDevicePermission(SOCKET_HUB_SERIAL, accountId, true);
+
+            if (io) {
+                const command = `GARDEN_CMD:SET_${threshold_type}_THRESHOLD:${value}`;
+
+                console.log(`[GARDEN-HUB] Sending threshold command via Socket Hub: ${command}`);
+
+                io.to(`device:${SOCKET_HUB_SERIAL}`).emit("command", {
+                    action: "garden_threshold",
+                    command: command,
+                    target: "mega_garden",
+                    threshold_type: threshold_type,
+                    value: value,
+                    from_client: accountId,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            return {
+                success: true,
+                threshold_type,
+                value,
+                routed_via: "socket_hub",
+                garden_serial: MEGA_GARDEN_SERIAL,
+                timestamp: new Date().toISOString()
+            };
+
+        } catch (error) {
+            console.error(`[GARDEN-HUB] Set threshold error:`, error);
             throw error;
         }
     }
@@ -376,10 +473,10 @@ class GardenHubService {
             'Alarm': 'Còi báo cháy khẩn cấp',
             'Light1': 'Đèn chiếu sáng khu vực 1',
             'Light2': 'Đèn chiếu sáng khu vực 2',
-            'Reserved3': 'Relay dự phòng 3',
-            'Reserved4': 'Relay dự phòng 4',
-            'Reserved5': 'Relay dự phòng 5',
-            'Reserved6': 'Relay dự phòng 6'
+            'Pump2': 'Máy bơm dự phòng',
+            'Heater': 'Máy sưởi',
+            'Cooler': 'Máy làm mát',
+            'Reserve': 'Thiết bị dự phòng'
         };
         return descriptions[deviceName] || 'Thiết bị không xác định';
     }
