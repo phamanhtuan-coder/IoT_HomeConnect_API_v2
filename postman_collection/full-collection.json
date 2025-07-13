@@ -8761,891 +8761,853 @@
       ]
     },
     {
-      "name": "Garden Hub",
+      "name": "Garden Hub Management",
       "item": [
         {
-          "name": "Get Relay Status",
-          "event": [
+          "name": "Relay Control",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Relay status retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.relays).to.be.an('array');",
-                  "  pm.expect(response.data.hub_serial).to.equal('MEGA_HUB_GARDEN_001');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/relays",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "garden-hub",
-                "relays"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Available Relays",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Available relays retrieved successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/relays/available",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "garden-hub",
-                "relays",
-                "available"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Toggle Relay - Fan",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Relay toggled successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.device_name).to.equal('Fan');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"power_status\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "name": "Get All Relay Status",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('Relay status retrieved successfully', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "  pm.expect(response.data.relays).to.be.an('array');",
+                      "  pm.expect(response.data.total_relays).to.be.a('number');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
                 }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/relays/RELAY27JUN2501FAN001CONTROL001/toggle",
-              "host": [
-                "{{baseUrl}}"
               ],
-              "path": [
-                "garden-hub",
-                "relays",
-                "RELAY27JUN2501FAN001CONTROL001",
-                "toggle"
-              ]
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{userAccessToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/relays",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "relays"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Available Relays",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('Available relays retrieved successfully', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "  pm.expect(response.data.relays).to.be.an('array');",
+                      "  pm.expect(response.data.total_relays).to.be.a('number');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/relays/available",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "relays",
+                    "available"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Toggle Single Relay",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('Relay toggled successfully', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "  pm.expect(response.data.relay_serial).to.exist;",
+                      "  pm.expect(response.data.new_state).to.exist;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{userAccessToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"power_status\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/relays/RELAY27JUN2501FAN001CONTROL001/toggle",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "relays",
+                    "RELAY27JUN2501FAN001CONTROL001",
+                    "toggle"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Bulk Relay Control",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('Bulk relay control completed', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "  pm.expect(response.data.results).to.be.an('array');",
+                      "  pm.expect(response.data.bulk_operation).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{userAccessToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"relay_commands\": [\n    {\n      \"relay_serial\": \"RELAY27JUN2501LIGHT001CONTROL1\",\n      \"action\": \"ON\"\n    },\n    {\n      \"relay_serial\": \"RELAY27JUN2501LIGHT002CONTROL1\",\n      \"action\": \"ON\"\n    },\n    {\n      \"relay_serial\": \"RELAY27JUN2501FAN001CONTROL001\",\n      \"action\": \"TOGGLE\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/relays/bulk",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "relays",
+                    "bulk"
+                  ]
+                }
+              },
+              "response": []
             }
-          },
-          "response": []
+          ]
         },
         {
-          "name": "Toggle Relay - Alarm",
-          "event": [
+          "name": "Garden Operations",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Alarm relay toggled successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.device_name).to.equal('Alarm');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"power_status\": false\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "name": "Control Garden Pump",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('Pump controlled successfully', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "  pm.expect(response.data.action).to.exist;",
+                      "  pm.expect(response.data.garden_serial).to.exist;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
                 }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/relays/RELAY27JUN2501ALARM01CONTROL01/toggle",
-              "host": [
-                "{{baseUrl}}"
               ],
-              "path": [
-                "garden-hub",
-                "relays",
-                "RELAY27JUN2501ALARM01CONTROL01",
-                "toggle"
-              ]
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{userAccessToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"START\",\n  \"reason\": \"Manual watering for plant care\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/pump",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "pump"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Control RGB LED",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('RGB controlled successfully', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "  pm.expect(response.data.action).to.exist;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{userAccessToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"MANUAL\",\n  \"color\": {\n    \"red\": 255,\n    \"green\": 100,\n    \"blue\": 50\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/rgb",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "rgb"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "RGB LED Test Mode",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('RGB test completed', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{userAccessToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"TEST\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/rgb",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "rgb"
+                  ]
+                }
+              },
+              "response": []
             }
-          },
-          "response": []
+          ]
         },
         {
-          "name": "Toggle Relay - Light1",
-          "event": [
+          "name": "Automation Control",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Light1 relay toggled successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.device_name).to.equal('Light1');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"power_status\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "name": "Enable Watering Automation",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('Watering automation enabled successfully', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "  pm.expect(response.data.automation_type).to.equal('WATERING');",
+                      "  pm.expect(response.data.enabled).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
                 }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/relays/RELAY27JUN2501LIGHT007CONTROL1/toggle",
-              "host": [
-                "{{baseUrl}}"
               ],
-              "path": [
-                "garden-hub",
-                "relays",
-                "RELAY27JUN2501LIGHT007CONTROL1",
-                "toggle"
-              ]
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{userAccessToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"automation_type\": \"WATERING\",\n  \"enabled\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/automation",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "automation"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Control Lighting Automation",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('Lighting automation controlled successfully', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "  pm.expect(response.data.automation_type).to.equal('LIGHTING');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{userAccessToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"automation_type\": \"LIGHTING\",\n  \"enabled\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/automation",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "automation"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Control Fan Automation",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('Fan automation controlled successfully', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "  pm.expect(response.data.automation_type).to.equal('FAN');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{userAccessToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"automation_type\": \"FAN\",\n  \"enabled\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/automation",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "automation"
+                  ]
+                }
+              },
+              "response": []
             }
-          },
-          "response": []
+          ]
         },
         {
-          "name": "Toggle Relay - Light2",
-          "event": [
+          "name": "Sensor Thresholds",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Light2 relay toggled successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.device_name).to.equal('Light2');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"power_status\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "name": "Set Soil Moisture Threshold",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('Soil threshold set successfully', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "  pm.expect(response.data.threshold_type).to.equal('SOIL');",
+                      "  pm.expect(response.data.value).to.be.a('number');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
                 }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/relays/RELAY27JUN2501LIGHT008CONTROL1/toggle",
-              "host": [
-                "{{baseUrl}}"
               ],
-              "path": [
-                "garden-hub",
-                "relays",
-                "RELAY27JUN2501LIGHT008CONTROL1",
-                "toggle"
-              ]
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{userAccessToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"threshold_type\": \"SOIL\",\n  \"value\": 30\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/threshold",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "threshold"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Set Light Sensor Threshold",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('Light threshold set successfully', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "  pm.expect(response.data.threshold_type).to.equal('LIGHT');",
+                      "  pm.expect(response.data.value).to.be.a('number');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{userAccessToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"threshold_type\": \"LIGHT\",\n  \"value\": 70\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/threshold",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "threshold"
+                  ]
+                }
+              },
+              "response": []
             }
-          },
-          "response": []
+          ]
         },
         {
-          "name": "Bulk Relay Control - Turn On All Lights",
-          "event": [
+          "name": "Emergency & System",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Bulk relay operation executed successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.results).to.be.an('array');",
-                  "  pm.expect(response.data.bulk_operation).to.be.true;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"relay_commands\": [\n    {\n      \"relay_serial\": \"RELAY27JUN2501LIGHT007CONTROL1\",\n      \"action\": \"ON\"\n    },\n    {\n      \"relay_serial\": \"RELAY27JUN2501LIGHT008CONTROL1\",\n      \"action\": \"ON\"\n    }\n  ]\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "name": "Emergency Alarm Activate",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('Emergency alarm activated successfully', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "  pm.expect(response.data.action).to.equal('ALARM_ACTIVATE');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
                 }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/relays/bulk",
-              "host": [
-                "{{baseUrl}}"
               ],
-              "path": [
-                "garden-hub",
-                "relays",
-                "bulk"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Bulk Relay Control - Toggle Multiple Relays",
-          "event": [
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{userAccessToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"ACTIVATE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/emergency/alarm",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "emergency",
+                    "alarm"
+                  ]
+                }
+              },
+              "response": []
+            },
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Bulk relay toggle executed successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.results).to.be.an('array');",
-                  "  pm.expect(response.data.results.length).to.equal(3);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"relay_commands\": [\n    {\n      \"relay_serial\": \"RELAY27JUN2501FAN001CONTROL001\",\n      \"action\": \"TOGGLE\"\n    },\n    {\n      \"relay_serial\": \"RELAY27JUN2501LIGHT007CONTROL1\",\n      \"action\": \"TOGGLE\"\n    },\n    {\n      \"relay_serial\": \"RELAY27JUN2501LIGHT008CONTROL1\",\n      \"action\": \"TOGGLE\"\n    }\n  ]\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "name": "Emergency Alarm Deactivate",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('Emergency alarm deactivated successfully', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "  pm.expect(response.data.action).to.equal('ALARM_DEACTIVATE');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
                 }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/relays/bulk",
-              "host": [
-                "{{baseUrl}}"
               ],
-              "path": [
-                "garden-hub",
-                "relays",
-                "bulk"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Control Garden Pump - Start",
-          "event": [
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{userAccessToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"DEACTIVATE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/emergency/alarm",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "emergency",
+                    "alarm"
+                  ]
+                }
+              },
+              "response": []
+            },
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Garden pump started successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.action).to.equal('PUMP_START');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"START\",\n  \"reason\": \"Manual watering started\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "name": "Get System Status",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('System status retrieved successfully', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "  pm.expect(response.data.system_info).to.exist;",
+                      "  pm.expect(response.data.relay_statistics).to.exist;",
+                      "  pm.expect(response.data.relay_status).to.be.an('array');",
+                      "  pm.expect(response.data.available_relays).to.be.an('array');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
                 }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/pump",
-              "host": [
-                "{{baseUrl}}"
               ],
-              "path": [
-                "garden-hub",
-                "pump"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Control Garden Pump - Stop",
-          "event": [
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{userAccessToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/system/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "system",
+                    "status"
+                  ]
+                }
+              },
+              "response": []
+            },
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Garden pump stopped successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.action).to.equal('PUMP_STOP');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"STOP\",\n  \"reason\": \"Manual watering stopped\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "name": "Reset Override Emergency",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.test('Emergency override reset successfully', () => {",
+                      "  pm.expect(pm.response.code).to.equal(200);",
+                      "  pm.expect(response.success).to.be.true;",
+                      "  pm.expect(response.data.action).to.equal('ALARM_RESET_OVERRIDE');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
                 }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/pump",
-              "host": [
-                "{{baseUrl}}"
               ],
-              "path": [
-                "garden-hub",
-                "pump"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Control RGB LED - Test Mode",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('RGB LED test mode activated successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.action).to.equal('RGB_TEST');",
-                  "});"
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{userAccessToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
                 ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"TEST\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"RESET_OVERRIDE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/garden-hub/emergency/alarm",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "garden-hub",
+                    "emergency",
+                    "alarm"
+                  ]
                 }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/rgb",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "garden-hub",
-                "rgb"
-              ]
+              },
+              "response": []
             }
-          },
-          "response": []
-        },
-        {
-          "name": "Control RGB LED - Auto Mode",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('RGB LED auto mode activated successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.action).to.equal('RGB_AUTO');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"AUTO\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/rgb",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "garden-hub",
-                "rgb"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Control RGB LED - Manual Red",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('RGB LED manual red color set successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.action).to.equal('RGB_MANUAL');",
-                  "  pm.expect(response.data.color.red).to.equal(255);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"MANUAL\",\n  \"color\": {\n    \"red\": 255,\n    \"green\": 0,\n    \"blue\": 0\n  }\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/rgb",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "garden-hub",
-                "rgb"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Control RGB LED - Manual Green",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('RGB LED manual green color set successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.action).to.equal('RGB_MANUAL');",
-                  "  pm.expect(response.data.color.green).to.equal(255);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"MANUAL\",\n  \"color\": {\n    \"red\": 0,\n    \"green\": 255,\n    \"blue\": 0\n  }\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/rgb",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "garden-hub",
-                "rgb"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Control RGB LED - Manual Blue",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('RGB LED manual blue color set successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.action).to.equal('RGB_MANUAL');",
-                  "  pm.expect(response.data.color.blue).to.equal(255);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"MANUAL\",\n  \"color\": {\n    \"red\": 0,\n    \"green\": 0,\n    \"blue\": 255\n  }\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/rgb",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "garden-hub",
-                "rgb"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Emergency Alarm - Activate",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Emergency alarm activated successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.action).to.equal('ALARM_ACTIVATE');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"ACTIVATE\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/emergency/alarm",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "garden-hub",
-                "emergency",
-                "alarm"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Emergency Alarm - Deactivate",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Emergency alarm deactivated successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.action).to.equal('ALARM_DEACTIVATE');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"DEACTIVATE\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/emergency/alarm",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "garden-hub",
-                "emergency",
-                "alarm"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Emergency Alarm - Reset Override",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const response = pm.response.json();",
-                  "pm.test('Emergency alarm override reset successfully', () => {",
-                  "  pm.expect(pm.response.code).to.equal(200);",
-                  "  pm.expect(response.success).to.be.true;",
-                  "  pm.expect(response.data.action).to.equal('ALARM_RESET_OVERRIDE');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{userAccessToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"RESET_OVERRIDE\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/garden-hub/emergency/alarm",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "garden-hub",
-                "emergency",
-                "alarm"
-              ]
-            }
-          },
-          "response": []
+          ]
         }
       ]
     }
