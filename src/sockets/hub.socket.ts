@@ -157,9 +157,7 @@ export const setupHubSocket = (io: Server) => {
                 // ✅ VERIFY DEVICE EXISTS AND CHECK HUB RELATIONSHIP
                 const device = await prisma.devices.findFirst({
                     where: { serial_number: serialNumber, is_deleted: false },
-                    include: {
-                        hub: true // Include hub information if it exists
-                    }
+
                 });
 
                 if (!device) {
@@ -169,7 +167,7 @@ export const setupHubSocket = (io: Server) => {
                     return;
                 }
 
-                // Check if device is hub-managed
+// Check if device is hub-managed by checking hub_id field
                 if (device.hub_id) {
                     console.log(`[DEVICE] ${serialNumber} is managed by hub ${device.hub_id} - should connect via hub`);
                     socket.emit('connection_error', {
