@@ -78,6 +78,9 @@ class DeviceService {
             if (attempts >= maxAttempts) throwError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Unable to generate unique ID');
         } while (true);
 
+        // Tổng hợp thông tin từ components trong template
+        const currentValue = await this.aggregateComponentsToCurrentValue(templateId);
+
         const device = await this.prisma.devices.create({
             data: {
                 device_id,
@@ -91,6 +94,7 @@ class DeviceService {
                 attribute,
                 wifi_ssid,
                 wifi_password,
+                current_value: currentValue,
                 link_status: "unlinked",
             },
         });
@@ -854,6 +858,76 @@ class DeviceService {
             isActuator: runtime.isActuator !== undefined ? runtime.isActuator : base.isActuator,
             controls: { ...base.controls, ...runtime.controls },
         };
+    }
+
+    /**
+     * Tổng hợp thông tin từ components trong template thành current_value
+     * @param templateId - ID của device template
+     * @returns Object chứa tổng hợp thông tin components
+     */
+    private async aggregateComponentsToCurrentValue(templateId: string): Promise<any> {
+        // Lấy tất cả components trong template
+        const templateComponents = await this.prisma.template_components.findMany({
+            where: { 
+                template_id: templateId,
+                is_deleted: false 
+            },
+            include: {
+                components: {
+                    where: { is_deleted: false }
+                }
+            }
+        });
+
+        if (!templateComponents || templateComponents.length === 0) {
+            return {};
+        }
+
+        const currentValue: any = {};
+
+        templateComponents.forEach(templateComponent => {
+            const component = templateComponent.components;
+            if (!component) return;
+
+            const quantity = templateComponent.quantity_required || 1;
+            const baseKey = component.name;
+
+            // Nếu có flow_type thì tạo entries cho current_value
+            if (component.flow_type) {
+                if (quantity === 1) {
+                    // Nếu chỉ có 1 component, không cần index
+                    currentValue[baseKey] = {
+                        flow_type: component.flow_type,
+                        value: component.default_value || null,
+                        unit: component.unit || null,
+                        datatype: component.datatype || 'STRING',
+                        name_display: component.name_display || component.name,
+                        ...(component.datatype === 'NUMBER' && {
+                            min: component.min || null,
+                            max: component.max || null
+                        })
+                    };
+                } else {
+                    // Nếu có nhiều component, tạo với index
+                    for (let i = 0; i < quantity; i++) {
+                        const indexedKey = `${i + 1}`;
+                        currentValue[indexedKey] = {
+                            flow_type: component.flow_type,
+                            value: component.default_value || null,
+                            unit: component.unit || null,
+                            datatype: component.datatype || 'STRING',
+                            name_display: `${component.name_display || component.name} ${i + 1}`,
+                            ...(component.datatype === 'NUMBER' && {
+                                min: component.min || null,
+                                max: component.max || null
+                            })
+                        };
+                    }
+                }
+            }
+        });
+
+        return currentValue;
     }
 
     private mapPrismaDeviceToAuthDevice(device: any): Device {
