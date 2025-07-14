@@ -69,6 +69,32 @@ const EmergencyAlarmSchema = z.object({
     })
 });
 
+const AutomationControlSchema = z.object({
+    body: z.object({
+        automation_type: z.enum(['WATERING', 'LIGHTING', 'FAN'], {
+            required_error: "automation_type is required",
+            invalid_type_error: "automation_type must be WATERING, LIGHTING, or FAN"
+        }),
+        enabled: z.boolean({
+            required_error: "enabled is required",
+            invalid_type_error: "enabled must be a boolean"
+        })
+    })
+});
+
+const ThresholdSchema = z.object({
+    body: z.object({
+        threshold_type: z.enum(['SOIL', 'LIGHT'], {
+            required_error: "threshold_type is required",
+            invalid_type_error: "threshold_type must be SOIL or LIGHT"
+        }),
+        value: z.number({
+            required_error: "value is required",
+            invalid_type_error: "value must be a number"
+        }).min(0, "value must be between 0 and 100").max(100, "value must be between 0 and 100")
+    })
+});
+
 const RelayParamsSchema = z.object({
     params: z.object({
         relay_serial: z.string()
@@ -135,7 +161,6 @@ const RelayParamsSchema = z.object({
 router.get(
     '/relays',
     authMiddleware,
-    groupRoleMiddleware,
     gardenHubController.getRelayStatus
 );
 
@@ -204,7 +229,6 @@ router.get(
 router.post(
     '/relays/:relay_serial/toggle',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(RelayParamsSchema),
     validateMiddleware(ToggleRelaySchema),
     gardenHubController.toggleRelay
@@ -266,7 +290,6 @@ router.post(
 router.post(
     '/relays/bulk',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(BulkRelaySchema),
     gardenHubController.bulkRelayControl
 );
@@ -314,7 +337,6 @@ router.post(
 router.post(
     '/pump',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(PumpControlSchema),
     gardenHubController.controlPump
 );
@@ -376,7 +398,6 @@ router.post(
 router.post(
     '/rgb',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(RGBControlSchema),
     gardenHubController.controlRGB
 );
@@ -419,9 +440,171 @@ router.post(
 router.post(
     '/emergency/alarm',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(EmergencyAlarmSchema),
     gardenHubController.emergencyAlarm
+);
+
+/**
+ * @swagger
+ * /api/garden-hub/automation:
+ *   post:
+ *     tags:
+ *       - Garden Hub
+ *     summary: Control automation systems
+ *     description: Enable or disable automated watering, lighting, or fan systems
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - automation_type
+ *               - enabled
+ *             properties:
+ *               automation_type:
+ *                 type: string
+ *                 enum: [WATERING, LIGHTING, FAN]
+ *                 description: Type of automation system
+ *                 example: "WATERING"
+ *               enabled:
+ *                 type: boolean
+ *                 description: Enable or disable automation
+ *                 example: true
+ *     responses:
+ *       200:
+ *         description: Automation controlled successfully
+ *       400:
+ *         description: Invalid automation type or enabled value
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: No permission to control automation
+ */
+router.post(
+    '/automation',
+    authMiddleware,
+    validateMiddleware(AutomationControlSchema),
+    gardenHubController.controlAutomation
+);
+
+/**
+ * @swagger
+ * /api/garden-hub/threshold:
+ *   post:
+ *     tags:
+ *       - Garden Hub
+ *     summary: Set sensor thresholds
+ *     description: Configure soil moisture or light sensor thresholds for automation
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - threshold_type
+ *               - value
+ *             properties:
+ *               threshold_type:
+ *                 type: string
+ *                 enum: [SOIL, LIGHT]
+ *                 description: Type of sensor threshold
+ *                 example: "SOIL"
+ *               value:
+ *                 type: number
+ *                 minimum: 0
+ *                 maximum: 100
+ *                 description: Threshold percentage (0-100)
+ *                 example: 30
+ *     responses:
+ *       200:
+ *         description: Threshold set successfully
+ *       400:
+ *         description: Invalid threshold type or value
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: No permission to set thresholds
+ */
+router.post(
+    '/threshold',
+    authMiddleware,
+    validateMiddleware(ThresholdSchema),
+    gardenHubController.setThreshold
+);
+
+/**
+ * @swagger
+ * /api/garden-hub/system/status:
+ *   get:
+ *     tags:
+ *       - Garden Hub
+ *     summary: Get complete system status
+ *     description: Retrieve comprehensive garden hub system status including relay statistics and available devices
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     responses:
+ *       200:
+ *         description: System status retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Garden hub system status retrieved successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     system_info:
+ *                       type: object
+ *                       properties:
+ *                         socket_hub_serial:
+ *                           type: string
+ *                         garden_serial:
+ *                           type: string
+ *                         timestamp:
+ *                           type: string
+ *                     relay_statistics:
+ *                       type: object
+ *                       properties:
+ *                         total_relays:
+ *                           type: number
+ *                         active_relays:
+ *                           type: number
+ *                         inactive_relays:
+ *                           type: number
+ *                         error_relays:
+ *                           type: number
+ *                     relay_status:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     available_relays:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: No permission to access system status
+ */
+router.get(
+    '/system/status',
+    authMiddleware,
+    gardenHubController.getSystemStatus
 );
 
 export default router;

@@ -25,8 +25,8 @@ const modules = [
     'firmware','firmware-update-history','ownershipHistory',
     'ticket-type','ticket','hourly-value',
     'component','template-component','device-template',
-    'production-batches','production-tracking',
-    'planning','camera','door','gardenHub'
+    'production-batches','production-tracking','door',
+    'planning','camera','gardenHub'
 ];
 
 const items: any[] = [];

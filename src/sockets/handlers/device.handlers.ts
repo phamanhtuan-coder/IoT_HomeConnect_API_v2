@@ -17,71 +17,50 @@ const ALERT_TYPES = {
     DEVICE_DISCONNECT: 3,
 };
 
-/**
- * Handle device online event with capabilities update
- * Enhanced for ESP8266 compatibility
- */
-export const handleDeviceOnline = async (
-    socket: DeviceSocket,
-    clientNamespace: Namespace,
-    data: any,
-    prisma: PrismaClient
-) => {
+export const handleDeviceOnline = async (socket: DeviceSocket, clientNamespace: Namespace, data: any, prisma: PrismaClient) => {
     const { serialNumber } = socket.data;
 
-    try {
-        const updateData: any = {
-            link_status: 'linked',
-            updated_at: new Date()
+    // ✅ Detect door type from device data
+    let doorType = "SERVO"; // default
+    if (data?.door_type) {
+        doorType = data.door_type; // Use explicit door_type
+    } else if (data?.deviceType === "ESP32_ROLLING_DOOR") {
+        doorType = "ROLLING";
+    } else if (data?.deviceType === "ESP8266_SLIDING_DOOR") {
+        doorType = "SLIDING";
+    }
+
+    const updateData: any = {
+        link_status: 'linked',
+        updated_at: new Date()
+    };
+
+    // ✅ Update capabilities and door_type
+    if (data?.capabilities || data?.door_type || data?.deviceType) {
+        updateData.runtime_capabilities = data.capabilities;
+
+        // Get current attribute and update door_type
+        const currentDevice = await prisma.devices.findFirst({
+            where: { serial_number: serialNumber }
+        });
+
+        const currentAttribute = (currentDevice?.attribute as any) || {};
+        updateData.attribute = {
+            ...currentAttribute,
+            door_type: doorType, // ✅ Update door_type
+            deviceType: data?.deviceType,
+            connection_type: data?.connection_type || "direct",
+            last_seen: new Date().toISOString()
         };
 
-        // Update runtime capabilities if provided
-        if (data?.capabilities) {
-            updateData.runtime_capabilities = data.capabilities;
-            console.log(`🔧 Updated capabilities for device ${serialNumber}:`, data.capabilities);
-        }
-
-        // ESP8266 specific: Handle firmware version if provided
-        if (data?.firmware_version) {
-            updateData.firmware_version = data.firmware_version;
-            console.log(`📡 ESP8266 firmware version ${serialNumber}: ${data.firmware_version}`);
-        }
-
-        // ESP8266 specific: Handle hardware info
-        if (data?.hardware_info) {
-            updateData.hardware_info = data.hardware_info;
-            console.log(`🔌 ESP8266 hardware info ${serialNumber}:`, data.hardware_info);
-        }
-
-        await prisma.devices.update({
-            where: { serial_number: serialNumber },
-            data: updateData,
-        });
-
-        // Broadcast device online with capabilities to all clients
-        clientNamespace.emit('device_online', {
-            serialNumber,
-            capabilities: data?.capabilities,
-            firmware_version: data?.firmware_version,
-            hardware_info: data?.hardware_info,
-            timestamp: new Date().toISOString()
-        });
-
-        console.log(`✅ Device ${serialNumber} is online with capabilities (ESP8266 compatible)`);
-
-    } catch (error) {
-        console.error(`❌ Error handling device online for ${serialNumber}:`, error);
-
-        // ESP8266 specific: Send simple error response for memory-constrained devices
-        try {
-            socket.emit('error', {
-                code: 'ONLINE_ERROR',
-                message: 'Failed to update device status'
-            });
-        } catch (emitError) {
-            console.error(`Failed to send error to ESP8266 device ${serialNumber}:`, emitError);
-        }
+        console.log(`🔧 Updated door type for ${serialNumber}: ${doorType}`);
     }
+
+    await prisma.devices.update({
+        where: { serial_number: serialNumber },
+        data: updateData,
+    });
+
 };
 
 /**

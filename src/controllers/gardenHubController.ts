@@ -185,6 +185,114 @@ class GardenHubController {
             next(error);
         }
     };
+
+    /**
+     * Control automation systems
+     */
+    controlAutomation = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { automation_type, enabled } = req.body;
+            const accountId = req.user?.accountId;
+
+            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Authentication required');
+            if (!['WATERING', 'LIGHTING', 'FAN'].includes(automation_type)) {
+                throwError(ErrorCodes.BAD_REQUEST, 'automation_type must be WATERING, LIGHTING, or FAN');
+            }
+            if (typeof enabled !== 'boolean') {
+                throwError(ErrorCodes.BAD_REQUEST, 'enabled must be a boolean value');
+            }
+
+            const result = await this.gardenHubService.controlAutomation(
+                automation_type,
+                enabled,
+                accountId
+            );
+
+            res.status(200).json({
+                success: true,
+                message: `Automation ${automation_type.toLowerCase()} ${enabled ? 'enabled' : 'disabled'} successfully`,
+                data: result
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Set sensor thresholds
+     */
+    setThreshold = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { threshold_type, value } = req.body;
+            const accountId = req.user?.accountId;
+
+            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Authentication required');
+            if (!['SOIL', 'LIGHT'].includes(threshold_type)) {
+                throwError(ErrorCodes.BAD_REQUEST, 'threshold_type must be SOIL or LIGHT');
+            }
+            if (typeof value !== 'number' || value < 0 || value > 100) {
+                throwError(ErrorCodes.BAD_REQUEST, 'value must be a number between 0 and 100');
+            }
+
+            const result = await this.gardenHubService.setThreshold(
+                threshold_type,
+                value,
+                accountId
+            );
+
+            res.status(200).json({
+                success: true,
+                message: `${threshold_type.toLowerCase()} threshold set to ${value}% successfully`,
+                data: result
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Get garden hub system status
+     */
+    getSystemStatus = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const accountId = req.user?.accountId;
+
+            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Authentication required');
+
+            // Get relay status
+            const relayStatus = await this.gardenHubService.getGardenRelayStatus(accountId);
+
+            // Get available relays info
+            const availableRelays = this.gardenHubService.getAvailableRelays();
+
+            // Calculate system statistics
+            const totalRelays = availableRelays.length;
+            const activeRelays = relayStatus.relays?.filter((r: any) => r.current_state === 'ON').length || 0;
+            const errorRelays = relayStatus.relays?.filter((r: any) => r.error).length || 0;
+
+            res.status(200).json({
+                success: true,
+                message: 'Garden hub system status retrieved successfully',
+                data: {
+                    system_info: {
+                        socket_hub_serial: relayStatus.socket_hub_serial,
+                        garden_serial: relayStatus.garden_serial,
+                        timestamp: new Date().toISOString()
+                    },
+                    relay_statistics: {
+                        total_relays: totalRelays,
+                        active_relays: activeRelays,
+                        inactive_relays: totalRelays - activeRelays - errorRelays,
+                        error_relays: errorRelays
+                    },
+                    relay_status: relayStatus.relays || [],
+                    available_relays: availableRelays
+                }
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 
 export default GardenHubController;
