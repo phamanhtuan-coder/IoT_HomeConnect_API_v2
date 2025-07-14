@@ -32,6 +32,7 @@ export const linkDeviceSchema = z.object({
     body: z.object({
         serial_number: z.string().min(1, 'Serial number is required').max(50),
         spaceId: z.number().positive('Space ID must be a positive number').optional(),
+        groupId: z.number().positive('Group ID must be a positive number').optional(),
         name: z.string().min(1, 'Device name is required').max(100),
     }),
 });

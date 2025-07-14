@@ -102,18 +102,44 @@ class DeviceService {
         return this.mapPrismaDeviceToAuthDevice(device);
     }
 
-    async linkDevice(serial_number: string, spaceId: number | null, accountId: string, name: string): Promise<Device> {
+    async linkDevice(serial_number: string, spaceId: number | null, groupId: number | null, accountId: string, name: string): Promise<Device> {
         const device = await this.prisma.devices.findUnique({ where: { serial_number, is_deleted: false } });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Không tìm thấy thiết bị");
 
+        let finalGroupId = groupId;
+
+        // Validate space and get group from space if needed
         if (spaceId) {
-            const space = await this.prisma.spaces.findUnique({ where: { space_id: spaceId, is_deleted: false } });
+            const space = await this.prisma.spaces.findUnique({
+                where: { space_id: spaceId, is_deleted: false },
+                include: { houses: { select: { group_id: true } } }
+            });
             if (!space) throwError(ErrorCodes.NOT_FOUND, "Space not found");
+
+            // If no groupId provided but space has a group, use space's group
+            if (!finalGroupId && space?.houses?.group_id) {
+                finalGroupId = space.houses.group_id;
+            }
+        }
+
+        // Validate group if provided
+        if (finalGroupId) {
+            const group = await this.prisma.groups.findFirst({
+                where: { group_id: finalGroupId, is_deleted: false }
+            });
+            if (!group) throwError(ErrorCodes.NOT_FOUND, "Group not found");
         }
 
         const updatedDevice = await this.prisma.devices.update({
             where: { serial_number },
-            data: { account_id: accountId, space_id: spaceId, name, link_status: "linked", updated_at: new Date() },
+            data: {
+                account_id: accountId,
+                space_id: spaceId,
+                group_id: finalGroupId,  // Now properly setting group_id
+                name,
+                link_status: "linked",
+                updated_at: new Date()
+            },
         });
 
         if (io) io.of("/device").to(`device:${serial_number}`).emit("device_online", { serialNumber: serial_number });
@@ -311,13 +337,17 @@ class DeviceService {
         });
         if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found");
 
-        if (device!.account_id !== accountId) throwError(ErrorCodes.FORBIDDEN, "No permission to unlink this device");
+        // Allow device owner to unlink their own device regardless of group permissions
+        if (device!.account_id !== accountId) {
+            throwError(ErrorCodes.FORBIDDEN, "Only the device owner can unlink this device");
+        }
 
         const updatedDevice = await this.prisma.devices.update({
             where: { serial_number },
             data: {
                 account_id: null,
                 space_id: null,
+                group_id: null,  // Also clear group_id when unlinking
                 link_status: "unlinked",
                 runtime_capabilities: Prisma.JsonNull,
                 updated_at: new Date(),

@@ -48,8 +48,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {serial_number, spaceId, name} = req.body;
-            const device = await this.deviceService.linkDevice(serial_number, spaceId, accountId, name);
+            const {serial_number, spaceId, groupId, name} = req.body;
+            const device = await this.deviceService.linkDevice(serial_number, spaceId, groupId, accountId, name);
             res.json(device);
         } catch (error) {
             next(error);
@@ -697,4 +697,3 @@ class DeviceController {
 }
 
 export default DeviceController;
-
