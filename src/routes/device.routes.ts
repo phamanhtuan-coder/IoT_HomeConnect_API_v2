@@ -17,6 +17,7 @@ import {
     DeviceBulkStateSchema,
     DeviceCapabilitiesSchema,
     deviceIdSchema,
+    deviceComponentsSchema,
     deviceSchema, DeviceStateQuerySchema, DeviceStateUpdateSchema, LEDEffectPresetSchema, LEDEffectSchema,
     linkDeviceSchema, QuickToggleSchema, StopLEDEffectSchema,
     toggleDeviceSchema,
@@ -161,6 +162,36 @@ router.post(
     groupRoleMiddleware,
     validateMiddleware(linkDeviceSchema),
     asyncHandler(deviceController.linkDevice)
+);
+
+/**
+ * @swagger
+ * /api/devices/account/with-components:
+ *   get:
+ *     tags:
+ *       - Device
+ *     summary: Lấy danh sách thiết bị kèm components của user
+ *     description: Lấy danh sách tất cả thiết bị của user kèm theo components từ device template
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         type: string
+ *         description: Từ khóa tìm kiếm thiết bị
+ *     responses:
+ *       200:
+ *         description: Danh sách thiết bị kèm components
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       500:
+ *         description: Lỗi server
+ */
+router.get(
+    '/account/with-components',
+    authMiddleware,
+    asyncHandler(deviceController.getDevicesByAccountWithComponents)
 );
 
 /**
@@ -892,6 +923,42 @@ router.get(
     asyncHandler(deviceController.getAvailableLEDEffects)
 );
 
+/**
+ * @swagger
+ * /api/devices/{deviceId}/components:
+ *   get:
+ *     tags:
+ *       - Device
+ *     summary: Lấy danh sách components của thiết bị
+ *     description: Lấy danh sách tất cả components thuộc về thiết bị theo device template
+ *     security:
+ *       - UserBearer: []
+ *       - EmployeeBearer: []
+ *     parameters:
+ *       - in: path
+ *         name: deviceId
+ *         required: true
+ *         type: string
+ *         description: ID của thiết bị
+ *     responses:
+ *       200:
+ *         description: Danh sách components của thiết bị
+ *       401:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ *       403:
+ *         description: Không có quyền truy cập thiết bị
+ *       404:
+ *         description: Không tìm thấy thiết bị
+ *       500:
+ *         description: Lỗi server
+ */
+router.get(
+    '/:deviceId/components',
+    authMiddleware,
+    validateMiddleware(deviceComponentsSchema),
+    asyncHandler(deviceController.getDeviceComponents)
+);
+
 // /**
 //  * Get current LED status with effect info
 //  */
@@ -948,6 +1015,13 @@ router.put(
     validateMiddleware(deviceIdSchema),
     validateMiddleware(updateWifiSchema),
     asyncHandler(deviceController.updateDeviceWifi)
+);
+
+router.put(
+    '/:serialNumber/current-value',
+    authMiddleware,
+    validateMiddleware(deviceIdSchema),
+    asyncHandler(deviceController.updateCurrentValue)
 );
 
 export default router;

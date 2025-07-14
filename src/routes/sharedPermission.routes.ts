@@ -121,4 +121,10 @@ router.get(
     asyncHandler(sharedPermissionController.getSharedUsersBySerialNumber)
 );
 
+router.post(
+    '/approve-share-permission',
+    authMiddleware,
+    asyncHandler(sharedPermissionController.approveSharePermission)
+);
+
 export default router;

@@ -48,6 +48,8 @@
  *     description: Quản lý theo dõi quá trình sản xuất
  *   - name: Production Batches
  *     description: Quản lý theo dõi các lô sản xuất
+ *   - name: Device Links
+ *     description: Quản lý liên kết giữa các thiết bị để tự động kích hoạt
  *
  *
  * @swagger
@@ -141,7 +143,7 @@ import doorRoutes from './door.routes';
 import cameraRoutes from "./camera.routes";
 import gardenHubRoutes from "./gardenHubRoutes";
 import deviceCapabilitiesRoutes from './device-capabilities.routes';
-
+import deviceLinksRoutes from './device-links.routes';
 
 const router = Router();
 
@@ -176,6 +178,7 @@ router.use('/doors', doorRoutes);  // Add door routes
 router.use('/cameras', cameraRoutes);  // Add camera routes
 router.use('/garden-hubs', gardenHubRoutes);  // Add garden hub routes
 router.use('/device-capabilities', deviceCapabilitiesRoutes);
+router.use('/device-links', deviceLinksRoutes);  // Add device links routes
 
 
 export default router;
