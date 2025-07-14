@@ -161,7 +161,6 @@ const RelayParamsSchema = z.object({
 router.get(
     '/relays',
     authMiddleware,
-    groupRoleMiddleware,
     gardenHubController.getRelayStatus
 );
 
@@ -230,7 +229,6 @@ router.get(
 router.post(
     '/relays/:relay_serial/toggle',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(RelayParamsSchema),
     validateMiddleware(ToggleRelaySchema),
     gardenHubController.toggleRelay
@@ -292,7 +290,6 @@ router.post(
 router.post(
     '/relays/bulk',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(BulkRelaySchema),
     gardenHubController.bulkRelayControl
 );
@@ -340,7 +337,6 @@ router.post(
 router.post(
     '/pump',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(PumpControlSchema),
     gardenHubController.controlPump
 );
@@ -402,7 +398,6 @@ router.post(
 router.post(
     '/rgb',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(RGBControlSchema),
     gardenHubController.controlRGB
 );
@@ -445,7 +440,6 @@ router.post(
 router.post(
     '/emergency/alarm',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(EmergencyAlarmSchema),
     gardenHubController.emergencyAlarm
 );
@@ -493,7 +487,6 @@ router.post(
 router.post(
     '/automation',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(AutomationControlSchema),
     gardenHubController.controlAutomation
 );
@@ -543,7 +536,6 @@ router.post(
 router.post(
     '/threshold',
     authMiddleware,
-    groupRoleMiddleware,
     validateMiddleware(ThresholdSchema),
     gardenHubController.setThreshold
 );
@@ -612,7 +604,6 @@ router.post(
 router.get(
     '/system/status',
     authMiddleware,
-    groupRoleMiddleware,
     gardenHubController.getSystemStatus
 );
 
