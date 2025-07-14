@@ -1,4 +1,3 @@
-// src/sockets/handlers/door.handlers.ts - DATABASE-INTEGRATED HANDLERS
 import { Socket, Server } from 'socket.io';
 import prisma from '../../config/database';
 import { updateHubStatus, getHubManagedDevices, handleHubDisconnection } from '../hub.socket';
@@ -8,7 +7,7 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
 
     console.log(`[DOOR] Setting up handlers for ${serialNumber}`);
 
-    // Handle device online - just update basic status
+    // Handle device online - update status with dynamic door type
     socket.on('device_online', async (data) => {
         try {
             console.log(`[DOOR] Device online: ${serialNumber}`);
@@ -20,14 +19,15 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 timestamp: new Date().toISOString()
             });
 
-            // ✅ UPDATE DATABASE WITH ONLINE STATUS
+            // ✅ UPDATE DATABASE WITH ONLINE STATUS AND DYNAMIC DOOR TYPE
             await prisma.devices.update({
                 where: { serial_number: serialNumber },
                 data: {
                     link_status: 'linked',
                     updated_at: new Date(),
                     attribute: {
-                        device_type: "ESP01_DOOR",
+                        device_type: data.deviceType || "ESP01_DOOR",
+                        door_type: data.door_type || (data.deviceType === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
                         connection_type: "direct",
                         status: "online",
                         last_seen: new Date().toISOString()
@@ -38,7 +38,8 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
             // Notify clients
             clientNamespace.emit('device_connect', {
                 serialNumber,
-                deviceType: 'ESP01_DOOR',
+                deviceType: data.deviceType || 'ESP01_DOOR',
+                door_type: data.door_type || (data.deviceType === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
                 status: 'online',
                 connectionType: 'direct',
                 timestamp: new Date().toISOString()
@@ -79,9 +80,9 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 lastCommand = data.command || data.action || 'UNKNOWN';
             }
 
-            // ✅ UPDATE DATABASE WITH DOOR STATE
+            // ✅ UPDATE DATABASE WITH DOOR STATE AND DYNAMIC DOOR TYPE
             const doorAttribute = {
-                door_type: "SERVO",
+                door_type: data.door_type || (data.deviceType === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
                 door_state: doorState,
                 servo_angle: servoAngle,
                 last_command: lastCommand,
@@ -106,6 +107,7 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 door_state: doorState,
                 servo_angle: servoAngle,
                 last_command: lastCommand,
+                door_type: doorAttribute.door_type,
                 success: data.success || data.s === 1,
                 timestamp: new Date().toISOString()
             });
@@ -141,9 +143,9 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 servoAngle = data.servo_angle || data.angle || 0;
             }
 
-            // ✅ UPDATE DATABASE WITH CURRENT STATUS
+            // ✅ UPDATE DATABASE WITH CURRENT STATUS AND DYNAMIC DOOR TYPE
             const doorAttribute = {
-                door_type: "SERVO",
+                door_type: data.door_type || (data.deviceType === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
                 door_state: doorState,
                 servo_angle: servoAngle,
                 last_command: "STATUS",
@@ -167,6 +169,7 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 serialNumber: targetSerial,
                 door_state: doorState,
                 servo_angle: servoAngle,
+                door_type: doorAttribute.door_type,
                 online: true,
                 timestamp: new Date().toISOString()
             });
@@ -184,7 +187,7 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
             const targetSerial = data.d || data.deviceId || data.serialNumber || serialNumber;
 
             let configData = {
-                door_type: "SERVO",
+                door_type: data.door_type || (data.deviceType === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
                 servo_closed_angle: 0,
                 servo_open_angle: 90,
                 last_seen: new Date().toISOString(),
@@ -196,7 +199,7 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 configData.servo_open_angle = data.v2 || 90;
             }
 
-            // ✅ UPDATE DATABASE WITH CONFIG
+            // ✅ UPDATE DATABASE WITH CONFIG AND DYNAMIC DOOR TYPE
             await prisma.devices.update({
                 where: { serial_number: targetSerial },
                 data: {
@@ -231,6 +234,7 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 const currentAttribute = currentDevice.attribute as any || {};
                 const offlineAttribute = {
                     ...currentAttribute,
+                    door_type: currentAttribute.door_type || (currentDevice.device_type === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
                     power_status: false,
                     status: "offline",
                     last_seen: new Date().toISOString(),
@@ -269,7 +273,6 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
     });
 };
 
-// ✅ ENHANCED HUB HANDLERS WITH DATABASE INTEGRATION
 export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: string) => {
     const clientNamespace = io.of('/client');
 
@@ -302,6 +305,7 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
                             updated_at: new Date(),
                             attribute: {
                                 device_type: 'ESP01_DOOR',
+                                door_type: data.door_type || (data.deviceType === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
                                 connection_type: 'hub_managed',
                                 hub_serial: hubSerial,
                                 status: 'online',
@@ -314,6 +318,7 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
                     clientNamespace.emit('device_connect', {
                         serialNumber: deviceSerial,
                         deviceType: 'ESP01_DOOR',
+                        door_type: data.door_type || (data.deviceType === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
                         connectionType: 'hub_managed',
                         hubSerial: hubSerial,
                         status: 'online',
@@ -351,7 +356,7 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
 
             console.log(`[HUB] Command response from hub ${hubSerial} for device ${targetSerial}:`, data);
 
-            // Parse response data (same logic as direct device)
+            // Parse response data
             let doorState = 'unknown';
             let servoAngle = 0;
             let lastCommand = 'UNKNOWN';
@@ -372,9 +377,9 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
                 lastCommand = data.command || data.action || 'UNKNOWN';
             }
 
-            // ✅ UPDATE DATABASE FOR MANAGED DEVICE
+            // ✅ UPDATE DATABASE FOR MANAGED DEVICE WITH DYNAMIC DOOR TYPE
             const doorAttribute = {
-                door_type: "SERVO",
+                door_type: data.door_type || (data.deviceType === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
                 door_state: doorState,
                 servo_angle: servoAngle,
                 last_command: lastCommand,
@@ -399,6 +404,7 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
                 serialNumber: targetSerial,
                 door_state: doorState,
                 servo_angle: servoAngle,
+                door_type: doorAttribute.door_type,
                 last_command: lastCommand,
                 success: data.success || data.s === 1,
                 via_hub: hubSerial,
@@ -441,9 +447,9 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
                 servoAngle = data.servo_angle || data.angle || 0;
             }
 
-            // ✅ UPDATE DATABASE FOR MANAGED DEVICE STATUS
+            // ✅ UPDATE DATABASE FOR MANAGED DEVICE STATUS WITH DYNAMIC DOOR TYPE
             const doorAttribute = {
-                door_type: "SERVO",
+                door_type: data.door_type || (data.deviceType === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
                 door_state: doorState,
                 servo_angle: servoAngle,
                 last_command: "STATUS",
@@ -468,6 +474,7 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
                 serialNumber: targetSerial,
                 door_state: doorState,
                 servo_angle: servoAngle,
+                door_type: doorAttribute.door_type,
                 online: true,
                 via_hub: hubSerial,
                 timestamp: new Date().toISOString()
@@ -499,6 +506,7 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
                         const currentAttribute = currentDevice.attribute as any || {};
                         const offlineAttribute = {
                             ...currentAttribute,
+                            door_type: currentAttribute.door_type || (currentDevice.device_type === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
                             status: "offline",
                             last_seen: new Date().toISOString(),
                             offline_reason: `Hub ${hubSerial} disconnected: ${reason}`,
@@ -570,6 +578,7 @@ export const setupESP01EventHandlers = (socket: Socket, io: Server, serialNumber
             clientNamespace.emit('device_connect', {
                 serialNumber,
                 deviceType: 'ESP-01 DOOR CONTROLLER',
+                door_type: data.door_type || (data.deviceType === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
                 connectionType: 'esp01_direct',
                 link_status: device.link_status,
                 timestamp: new Date().toISOString()
@@ -589,6 +598,7 @@ export const setupESP01EventHandlers = (socket: Socket, io: Server, serialNumber
             clientNamespace.to(`door:${serialNumber}`).emit('door_command_response', {
                 serialNumber,
                 ...responseData,
+                door_type: data.door_type || (data.deviceType === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
                 deviceType: 'ESP-01',
                 timestamp: new Date().toISOString()
             });
@@ -606,6 +616,7 @@ export const setupESP01EventHandlers = (socket: Socket, io: Server, serialNumber
 
             clientNamespace.to(`door:${serialNumber}`).emit('door_status', {
                 ...statusData,
+                door_type: data.door_type || (data.deviceType === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
                 deviceType: 'ESP-01',
                 connectionType: 'esp01_direct',
                 timestamp: new Date().toISOString()
@@ -635,7 +646,7 @@ function expandCompactResponse(compactData: any): any {
         deviceId: compactData.d || compactData.deviceId,
         command: compactData.c || compactData.command,
         servo_angle: compactData.a || compactData.servo_angle || compactData.angle || 0,
-        door_type: compactData.dt || "SERVO",
+        door_type: compactData.dt || (compactData.deviceType === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
         timestamp: compactData.t || compactData.timestamp || Date.now()
     };
 }
@@ -652,7 +663,7 @@ function expandCompactStatus(compactData: any): any {
         deviceId: compactData.d || compactData.deviceId,
         door_state: stateMap[compactData.s] || compactData.s || compactData.door_state || 'unknown',
         servo_angle: compactData.a || compactData.servo_angle || compactData.angle || 0,
-        door_type: compactData.dt || "SERVO",
+        door_type: compactData.dt || (compactData.deviceType === "ESP32_ROLLING_DOOR" ? "ROLLING" : "SERVO"),
         online: compactData.o === 1 || compactData.o === "1" || true,
         timestamp: compactData.t || compactData.timestamp || Date.now()
     };
