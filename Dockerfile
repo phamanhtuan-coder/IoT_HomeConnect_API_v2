@@ -32,8 +32,8 @@ COPY --from=builder /app/package*.json ./
 # Nếu dùng Prisma
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/swagger ./swagger
-# Copy email templates
-COPY --from=builder /app/dist/templates ./dist/templates
+# Copy email templates to the correct location
+COPY --from=builder /app/src/templates ./src/templates
 
 RUN npx prisma generate
 # 👈 Cần thiết nếu Prisma cần schema
