@@ -182,6 +182,24 @@ class TicketController {
       next(error);
     }
   };
+
+  /**
+   * Lấy danh sách ticket share (chia sẻ quyền) đang pending của người dùng hiện tại
+   * @param req Request Express
+   * @param res Response Express
+   * @param next Middleware tiếp theo
+   */
+  getPendingShareTicketsByUser = async (req: Request, res: Response, next: NextFunction) => {
+    const accountId = req.user?.userId || req.user?.employeeId;
+    if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+    try {
+      const tickets = await this.ticketService.getPendingShareTicketsByUser(accountId);
+      res.status(200).json(tickets);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 export default TicketController;
