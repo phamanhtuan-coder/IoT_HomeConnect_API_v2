@@ -58,8 +58,13 @@ export const setupHubSocket = (io: Server) => {
         const isESP01 = userAgent.includes('ESP-01') ||
             socket.handshake.headers['x-esp-device'] === 'ESP-01';
 
+        // ✅ IMPROVED DIRECT DEVICE DETECTION
+        const isDirectDevice = (userAgent.includes('ESP8266') || userAgent.includes('ESP32')) &&
+            !isHub && !isESP01 && isIoTDevice === 'true' && !accountId;
+
         const isDevice = userAgent.includes('ESP8266') ||
             userAgent.includes('ESP-01') ||
+            userAgent.includes('ESP32') ||
             isIoTDevice === 'true';
 
         // Handle ESP Socket Hub
@@ -149,15 +154,77 @@ export const setupHubSocket = (io: Server) => {
             return;
         }
 
-        // Handle ESP01/ESP8266 Devices
-        if (isDevice && serialNumber && isIoTDevice === 'true' && !accountId) {
+        // ✅ Handle ESP8266/ESP32 Direct Devices (Rolling/Sliding doors)
+        if (isDirectDevice && serialNumber) {
+            console.log(`[DIRECT_DEVICE] ESP Direct Device connecting: ${serialNumber}`);
+            console.log(`[DIRECT_DEVICE] User-Agent: ${userAgent}`);
+
+            try {
+                // ✅ VERIFY DEVICE EXISTS AND IS NOT HUB-MANAGED
+                const device = await prisma.devices.findFirst({
+                    where: { serial_number: serialNumber, is_deleted: false },
+                });
+
+                if (!device) {
+                    console.error(`[DIRECT_DEVICE] Device ${serialNumber} not found in database`);
+                    socket.emit('connection_error', { message: 'Device not registered' });
+                    socket.disconnect(true);
+                    return;
+                }
+
+                // ✅ CHECK IF DEVICE SHOULD BE DIRECT (not hub-managed)
+                if (device.hub_id && device.hub_id.trim() !== '') {
+                    console.log(`[DIRECT_DEVICE] ${serialNumber} is hub-managed by ${device.hub_id} - rejecting direct connection`);
+                    socket.emit('connection_error', {
+                        message: 'Device is hub-managed, connect via hub',
+                        hub_id: device.hub_id
+                    });
+                    socket.disconnect(true);
+                    return;
+                }
+
+                // ✅ DETECT DEVICE TYPE FROM USER-AGENT
+                let deviceType = 'ESP_DEVICE';
+                if (userAgent.includes('Rolling-Door') || (userAgent.includes('ESP32') && userAgent.includes('Door'))) {
+                    deviceType = 'ESP32_ROLLING_DOOR';
+                } else if (userAgent.includes('Sliding-Door') || (userAgent.includes('ESP8266') && userAgent.includes('Door'))) {
+                    deviceType = 'ESP8266_SLIDING_DOOR';
+                }
+
+                // Set socket data
+                socket.data = {
+                    serialNumber,
+                    deviceType: deviceType,
+                    isDevice: true,
+                    isDirect: true
+                };
+
+                // Join rooms
+                await socket.join(`door:${serialNumber}`);
+                await socket.join(`device:${serialNumber}`);
+
+                console.log(`[DIRECT_DEVICE] ${serialNumber} connected successfully as ${deviceType}`);
+
+                // ✅ SETUP DOOR DEVICE HANDLERS (same as rolling door)
+                setupDoorDeviceHandlers(socket, io, serialNumber);
+
+            } catch (error) {
+                console.error(`[DIRECT_DEVICE] Setup error for ${serialNumber}:`, error);
+                socket.emit('connection_error', { message: 'Setup failed' });
+                socket.disconnect(true);
+            }
+
+            return;
+        }
+
+        // Handle ESP01/ESP8266 Devices (hub-managed or special cases)
+        if (isDevice && serialNumber && isIoTDevice === 'true' && !accountId && !isDirectDevice) {
             console.log(`[DEVICE] ESP Device connecting: ${serialNumber}`);
 
             try {
                 // ✅ VERIFY DEVICE EXISTS AND CHECK HUB RELATIONSHIP
                 const device = await prisma.devices.findFirst({
                     where: { serial_number: serialNumber, is_deleted: false },
-
                 });
 
                 if (!device) {
@@ -167,8 +234,8 @@ export const setupHubSocket = (io: Server) => {
                     return;
                 }
 
-// Check if device is hub-managed by checking hub_id field
-                if (device.hub_id) {
+                // Check if device is hub-managed by checking hub_id field
+                if (device.hub_id && device.hub_id.trim() !== '') {
                     console.log(`[DEVICE] ${serialNumber} is managed by hub ${device.hub_id} - should connect via hub`);
                     socket.emit('connection_error', {
                         message: 'Device is hub-managed, connect via hub',
@@ -409,7 +476,7 @@ async function isDeviceManagedByHub(deviceSerial: string): Promise<{managed: boo
             }
         });
 
-        if (device && device.hub_id) {
+        if (device && device.hub_id && device.hub_id.trim() !== '') {
             return {
                 managed: true,
                 hubSerial: device.hub_id
@@ -502,7 +569,7 @@ export function isDeviceOnline(deviceSerial: string): boolean {
 /**
  * ✅ Handle hub disconnection
  */
-export function handleHubDisconnection(hubSerial: string): void {
+export async function handleHubDisconnection(hubSerial: string): Promise<void> {
     const hub = hubRegistry.get(hubSerial);
     if (hub) {
         hub.isOnline = false;
@@ -519,5 +586,5 @@ export function handleHubDisconnection(hubSerial: string): void {
     }
 
     // Update database
-    updateHubStatus(hubSerial, false);
+    await updateHubStatus(hubSerial, false);
 }

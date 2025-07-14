@@ -18,6 +18,7 @@ initSocket(io);
 
 // Pass Socket.IO instance to services
 setSocketInstance(io);
+setSocketInstance(io);
 setDeviceLinksSocketInstance(io);
 setDoorSocketInstance(io);
 
