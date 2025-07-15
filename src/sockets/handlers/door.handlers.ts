@@ -1,17 +1,55 @@
-// src/sockets/handlers/door.handlers.ts - DATABASE-INTEGRATED HANDLERS
 import { Socket, Server } from 'socket.io';
 import prisma from '../../config/database';
 import { updateHubStatus, getHubManagedDevices, handleHubDisconnection } from '../hub.socket';
+
+// ✅ IMPROVED DOOR TYPE DETECTION FUNCTION
+function getDoorType(data: any): string {
+    // Priority 1: Explicit door_type from device
+    if (data.door_type) {
+        return data.door_type.toUpperCase();
+    }
+
+    // Priority 2: Detect from deviceType
+    if (data.deviceType) {
+        const deviceType = data.deviceType.toUpperCase();
+        if (deviceType.includes("SLIDING") || deviceType === "ESP8266_SLIDING_DOOR") {
+            return "SLIDING";
+        }
+        if (deviceType.includes("ROLLING") || deviceType === "ESP32_ROLLING_DOOR") {
+            return "ROLLING";
+        }
+        if (deviceType.includes("ESP01") || deviceType === "ESP01_DOOR") {
+            return "SERVO";
+        }
+    }
+
+    // Priority 3: Detect from device serial pattern
+    if (data.serialNumber || data.deviceId) {
+        const serial = (data.serialNumber || data.deviceId).toUpperCase();
+        if (serial.includes("SLIDING")) {
+            return "SLIDING";
+        }
+        if (serial.includes("ROLLING")) {
+            return "ROLLING";
+        }
+    }
+
+    // Priority 4: Default fallback
+    return "SERVO";
+}
 
 export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber: string) => {
     const clientNamespace = io.of('/client');
 
     console.log(`[DOOR] Setting up handlers for ${serialNumber}`);
 
-    // Handle device online - just update basic status
+    // Handle device online - update status with dynamic door type
     socket.on('device_online', async (data) => {
         try {
-            console.log(`[DOOR] Device online: ${serialNumber}`);
+            console.log(`[DOOR] Device online: ${serialNumber}`, data);
+
+            const doorType = getDoorType(data);
+            console.log(`[DOOR] Detected door type: ${doorType} for ${serialNumber}`);
 
             // Simple acknowledgment
             socket.emit('device_online_ack', {
@@ -20,17 +58,20 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 timestamp: new Date().toISOString()
             });
 
-            // ✅ UPDATE DATABASE WITH ONLINE STATUS
+            // ✅ UPDATE DATABASE WITH ONLINE STATUS AND DETECTED DOOR TYPE
             await prisma.devices.update({
                 where: { serial_number: serialNumber },
                 data: {
                     link_status: 'linked',
                     updated_at: new Date(),
                     attribute: {
-                        device_type: "ESP01_DOOR",
+                        device_type: data.deviceType || "ESP8266_SLIDING_DOOR",
+                        door_type: doorType,
                         connection_type: "direct",
                         status: "online",
-                        last_seen: new Date().toISOString()
+                        last_seen: new Date().toISOString(),
+                        firmware_version: data.firmware_version,
+                        features: data.features
                     }
                 }
             });
@@ -38,7 +79,8 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
             // Notify clients
             clientNamespace.emit('device_connect', {
                 serialNumber,
-                deviceType: 'ESP01_DOOR',
+                deviceType: data.deviceType || 'ESP8266_SLIDING_DOOR',
+                door_type: doorType,
                 status: 'online',
                 connectionType: 'direct',
                 timestamp: new Date().toISOString()
@@ -55,6 +97,7 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
             console.log(`[DOOR] Command response from ${serialNumber}:`, data);
 
             const targetSerial = data.deviceId || data.serialNumber || data.d || serialNumber;
+            const doorType = getDoorType(data);
 
             // Parse response data
             let doorState = 'unknown';
@@ -79,9 +122,9 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 lastCommand = data.command || data.action || 'UNKNOWN';
             }
 
-            // ✅ UPDATE DATABASE WITH DOOR STATE
+            // ✅ UPDATE DATABASE WITH DOOR STATE AND DETECTED DOOR TYPE
             const doorAttribute = {
-                door_type: "SERVO",
+                door_type: doorType,
                 door_state: doorState,
                 servo_angle: servoAngle,
                 last_command: lastCommand,
@@ -106,11 +149,12 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 door_state: doorState,
                 servo_angle: servoAngle,
                 last_command: lastCommand,
+                door_type: doorType,
                 success: data.success || data.s === 1,
                 timestamp: new Date().toISOString()
             });
 
-            console.log(`[DOOR] Updated door state in database for ${targetSerial}: ${doorState}`);
+            console.log(`[DOOR] Updated door state in database for ${targetSerial}: ${doorState} (${doorType})`);
 
         } catch (error) {
             console.error(`[DOOR] Error in command_response for ${serialNumber}:`, error);
@@ -123,6 +167,7 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
             console.log(`[DOOR] Status update from ${serialNumber}:`, data);
 
             const targetSerial = data.deviceId || data.serialNumber || data.d || serialNumber;
+            const doorType = getDoorType(data);
 
             let doorState = 'unknown';
             let servoAngle = 0;
@@ -141,9 +186,9 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 servoAngle = data.servo_angle || data.angle || 0;
             }
 
-            // ✅ UPDATE DATABASE WITH CURRENT STATUS
+            // ✅ UPDATE DATABASE WITH CURRENT STATUS AND DETECTED DOOR TYPE
             const doorAttribute = {
-                door_type: "SERVO",
+                door_type: doorType,
                 door_state: doorState,
                 servo_angle: servoAngle,
                 last_command: "STATUS",
@@ -167,6 +212,7 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 serialNumber: targetSerial,
                 door_state: doorState,
                 servo_angle: servoAngle,
+                door_type: doorType,
                 online: true,
                 timestamp: new Date().toISOString()
             });
@@ -182,9 +228,10 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
             console.log(`[DOOR] Config from ${serialNumber}:`, data);
 
             const targetSerial = data.d || data.deviceId || data.serialNumber || serialNumber;
+            const doorType = getDoorType(data);
 
             let configData = {
-                door_type: "SERVO",
+                door_type: doorType,
                 servo_closed_angle: 0,
                 servo_open_angle: 90,
                 last_seen: new Date().toISOString(),
@@ -196,7 +243,7 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
                 configData.servo_open_angle = data.v2 || 90;
             }
 
-            // ✅ UPDATE DATABASE WITH CONFIG
+            // ✅ UPDATE DATABASE WITH CONFIG AND DETECTED DOOR TYPE
             await prisma.devices.update({
                 where: { serial_number: targetSerial },
                 data: {
@@ -229,8 +276,11 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
 
             if (currentDevice) {
                 const currentAttribute = currentDevice.attribute as any || {};
+                const doorType = currentAttribute.door_type || getDoorType({ deviceType: currentDevice.device_type });
+
                 const offlineAttribute = {
                     ...currentAttribute,
+                    door_type: doorType,
                     power_status: false,
                     status: "offline",
                     last_seen: new Date().toISOString(),
@@ -269,7 +319,6 @@ export const setupDoorDeviceHandlers = (socket: Socket, io: Server, serialNumber
     });
 };
 
-// ✅ ENHANCED HUB HANDLERS WITH DATABASE INTEGRATION
 export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: string) => {
     const clientNamespace = io.of('/client');
 
@@ -277,7 +326,10 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
 
     socket.on('device_online', async (data) => {
         try {
-            console.log(`[HUB] Hub online: ${hubSerial}`);
+            console.log(`[HUB] Hub online: ${hubSerial}`, data);
+
+            const hubDoorType = getDoorType(data);
+            console.log(`[HUB] Hub ${hubSerial} default door type: ${hubDoorType}`);
 
             socket.emit('device_online_ack', {
                 status: 'connected',
@@ -295,6 +347,15 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
             // ✅ UPDATE ALL MANAGED DEVICES TO SHOW HUB CONNECTION
             for (const deviceSerial of managedDevices) {
                 try {
+                    // Check if device has specific door type in database
+                    const existingDevice = await prisma.devices.findFirst({
+                        where: { serial_number: deviceSerial },
+                        select: { attribute: true }
+                    });
+
+                    const existingDoorType = (existingDevice?.attribute as any)?.door_type;
+                    const finalDoorType = existingDoorType || hubDoorType; // Preserve existing or use hub default
+
                     await prisma.devices.update({
                         where: { serial_number: deviceSerial },
                         data: {
@@ -302,6 +363,7 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
                             updated_at: new Date(),
                             attribute: {
                                 device_type: 'ESP01_DOOR',
+                                door_type: finalDoorType,
                                 connection_type: 'hub_managed',
                                 hub_serial: hubSerial,
                                 status: 'online',
@@ -314,11 +376,14 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
                     clientNamespace.emit('device_connect', {
                         serialNumber: deviceSerial,
                         deviceType: 'ESP01_DOOR',
+                        door_type: finalDoorType,
                         connectionType: 'hub_managed',
                         hubSerial: hubSerial,
                         status: 'online',
                         timestamp: new Date().toISOString()
                     });
+
+                    console.log(`[HUB] Device ${deviceSerial} online via hub with door type: ${finalDoorType}`);
 
                 } catch (deviceError) {
                     console.error(`[HUB] Error updating device ${deviceSerial}:`, deviceError);
@@ -351,7 +416,9 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
 
             console.log(`[HUB] Command response from hub ${hubSerial} for device ${targetSerial}:`, data);
 
-            // Parse response data (same logic as direct device)
+            const doorType = getDoorType(data);
+
+            // Parse response data
             let doorState = 'unknown';
             let servoAngle = 0;
             let lastCommand = 'UNKNOWN';
@@ -372,9 +439,9 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
                 lastCommand = data.command || data.action || 'UNKNOWN';
             }
 
-            // ✅ UPDATE DATABASE FOR MANAGED DEVICE
+            // ✅ UPDATE DATABASE FOR MANAGED DEVICE WITH DETECTED DOOR TYPE
             const doorAttribute = {
-                door_type: "SERVO",
+                door_type: doorType,
                 door_state: doorState,
                 servo_angle: servoAngle,
                 last_command: lastCommand,
@@ -399,13 +466,14 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
                 serialNumber: targetSerial,
                 door_state: doorState,
                 servo_angle: servoAngle,
+                door_type: doorType,
                 last_command: lastCommand,
                 success: data.success || data.s === 1,
                 via_hub: hubSerial,
                 timestamp: new Date().toISOString()
             });
 
-            console.log(`[HUB] Updated database for managed device ${targetSerial}: ${doorState}`);
+            console.log(`[HUB] Updated database for managed device ${targetSerial}: ${doorState} (${doorType})`);
 
         } catch (error) {
             console.error(`[HUB] Error processing command response:`, error);
@@ -424,6 +492,7 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
 
             console.log(`[HUB] Device status from hub ${hubSerial} for device ${targetSerial}:`, data);
 
+            const doorType = getDoorType(data);
             let doorState = 'unknown';
             let servoAngle = 0;
 
@@ -441,9 +510,9 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
                 servoAngle = data.servo_angle || data.angle || 0;
             }
 
-            // ✅ UPDATE DATABASE FOR MANAGED DEVICE STATUS
+            // ✅ UPDATE DATABASE FOR MANAGED DEVICE STATUS WITH DETECTED DOOR TYPE
             const doorAttribute = {
-                door_type: "SERVO",
+                door_type: doorType,
                 door_state: doorState,
                 servo_angle: servoAngle,
                 last_command: "STATUS",
@@ -468,6 +537,7 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
                 serialNumber: targetSerial,
                 door_state: doorState,
                 servo_angle: servoAngle,
+                door_type: doorType,
                 online: true,
                 via_hub: hubSerial,
                 timestamp: new Date().toISOString()
@@ -497,8 +567,11 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
 
                     if (currentDevice) {
                         const currentAttribute = currentDevice.attribute as any || {};
+                        const doorType = currentAttribute.door_type || getDoorType({ deviceType: currentDevice.device_type });
+
                         const offlineAttribute = {
                             ...currentAttribute,
+                            door_type: doorType,
                             status: "offline",
                             last_seen: new Date().toISOString(),
                             offline_reason: `Hub ${hubSerial} disconnected: ${reason}`,
@@ -553,7 +626,7 @@ export const setupDoorHubHandlers = (socket: Socket, io: Server, hubSerial: stri
     });
 };
 
-// ESP-01 Event Handlers (unchanged)
+// ESP-01 Event Handlers
 export const setupESP01EventHandlers = (socket: Socket, io: Server, serialNumber: string, device: any) => {
     const clientNamespace = io.of('/client');
 
@@ -561,6 +634,8 @@ export const setupESP01EventHandlers = (socket: Socket, io: Server, serialNumber
 
     socket.on('device_online', async (data) => {
         try {
+            const doorType = getDoorType(data);
+
             socket.emit('device_online_ack', {
                 status: 'received',
                 deviceType: 'ESP-01',
@@ -570,6 +645,7 @@ export const setupESP01EventHandlers = (socket: Socket, io: Server, serialNumber
             clientNamespace.emit('device_connect', {
                 serialNumber,
                 deviceType: 'ESP-01 DOOR CONTROLLER',
+                door_type: doorType,
                 connectionType: 'esp01_direct',
                 link_status: device.link_status,
                 timestamp: new Date().toISOString()
@@ -586,9 +662,12 @@ export const setupESP01EventHandlers = (socket: Socket, io: Server, serialNumber
                 responseData = expandCompactResponse(data);
             }
 
+            const doorType = getDoorType(data);
+
             clientNamespace.to(`door:${serialNumber}`).emit('door_command_response', {
                 serialNumber,
                 ...responseData,
+                door_type: doorType,
                 deviceType: 'ESP-01',
                 timestamp: new Date().toISOString()
             });
@@ -604,8 +683,11 @@ export const setupESP01EventHandlers = (socket: Socket, io: Server, serialNumber
                 statusData = expandCompactStatus(data);
             }
 
+            const doorType = getDoorType(data);
+
             clientNamespace.to(`door:${serialNumber}`).emit('door_status', {
                 ...statusData,
+                door_type: doorType,
                 deviceType: 'ESP-01',
                 connectionType: 'esp01_direct',
                 timestamp: new Date().toISOString()
@@ -627,7 +709,7 @@ export const setupESP01EventHandlers = (socket: Socket, io: Server, serialNumber
     });
 };
 
-// Utility functions (unchanged)
+// ✅ IMPROVED UTILITY FUNCTIONS
 function expandCompactResponse(compactData: any): any {
     return {
         success: compactData.s === 1 || compactData.s === "1" || compactData.success === true,
@@ -635,7 +717,7 @@ function expandCompactResponse(compactData: any): any {
         deviceId: compactData.d || compactData.deviceId,
         command: compactData.c || compactData.command,
         servo_angle: compactData.a || compactData.servo_angle || compactData.angle || 0,
-        door_type: compactData.dt || "SERVO",
+        door_type: getDoorType(compactData),
         timestamp: compactData.t || compactData.timestamp || Date.now()
     };
 }
@@ -652,7 +734,7 @@ function expandCompactStatus(compactData: any): any {
         deviceId: compactData.d || compactData.deviceId,
         door_state: stateMap[compactData.s] || compactData.s || compactData.door_state || 'unknown',
         servo_angle: compactData.a || compactData.servo_angle || compactData.angle || 0,
-        door_type: compactData.dt || "SERVO",
+        door_type: getDoorType(compactData),
         online: compactData.o === 1 || compactData.o === "1" || true,
         timestamp: compactData.t || compactData.timestamp || Date.now()
     };
