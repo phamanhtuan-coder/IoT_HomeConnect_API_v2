@@ -25,8 +25,8 @@ class SharedPermissionController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { permissionId } = req.params;
-            await this.sharedPermissionService.revokeShareDevice(parseInt(permissionId), accountId, req.groupRole as GroupRole);
+            const { serialNumber } = req.params;
+            await this.sharedPermissionService.revokeShareDevice(serialNumber, accountId, req.groupRole as GroupRole);
             res.status(204).send();
         } catch (error) {
             next(error);
@@ -44,8 +44,8 @@ class SharedPermissionController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { permissionId } = req.params;
-            await this.sharedPermissionService.revokeShareByRecipient(parseInt(permissionId), accountId);
+            const { serialNumber } = req.params;
+            await this.sharedPermissionService.revokeShareByRecipient(serialNumber, accountId);
             res.status(204).send();
         } catch (error) {
             next(error);
@@ -98,6 +98,7 @@ class SharedPermissionController {
             const result = await this.sharedPermissionService.approveSharePermission(ticketId, accountId, isApproved);
             res.status(200).json(result);
         } catch (error) {
+            console.log(error);
             next(error);
         }
     };
