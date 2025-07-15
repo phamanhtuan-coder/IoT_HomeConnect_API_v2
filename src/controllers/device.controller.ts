@@ -48,8 +48,8 @@ class DeviceController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const {serial_number, spaceId, name} = req.body;
-            const device = await this.deviceService.linkDevice(serial_number, spaceId, accountId, name);
+            const {serial_number, spaceId, groupId, name} = req.body;
+            const device = await this.deviceService.linkDevice(serial_number, spaceId, groupId, accountId, name);
             res.json(device);
         } catch (error) {
             next(error);
@@ -216,6 +216,26 @@ class DeviceController {
         try {
             const devices = await this.deviceService.getDevicesByAccount(accountId, search);
             res.json(devices);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Lấy danh sách thiết bị kèm components theo tài khoản
+     * @param req Request Express với query search
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    getDevicesByAccountWithComponents = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        const { search } = req.query as { search: string };
+
+        try {
+            const devicesWithComponents = await this.deviceService.getDevicesByAccountWithComponents(accountId, search);
+            res.json(devicesWithComponents);
         } catch (error) {
             next(error);
         }
@@ -652,6 +672,47 @@ class DeviceController {
     };
 
     /**
+     * Update device current_value
+     * PUT /devices/:serialNumber/current-value
+     */
+    updateCurrentValue = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        try {
+            const { serialNumber } = req.params;
+            const { current_value } = req.body;
+
+            if (!current_value) {
+                throwError(ErrorCodes.BAD_REQUEST, 'current_value is required');
+            }
+
+            // Validate current_value structure
+            if (!Array.isArray(current_value)) {
+                throwError(ErrorCodes.BAD_REQUEST, 'current_value must be an array');
+            }
+
+            // Check device permission
+            await this.deviceService.checkDevicePermission(serialNumber, accountId, true);
+
+            // Update current_value in database
+            const updatedDevice = await this.deviceService.updateDeviceCurrentValue(
+                serialNumber,
+                current_value,
+                accountId
+            );
+
+            res.json({
+                success: true,
+                data: updatedDevice,
+                message: 'Current value updated successfully'
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
      * Get available LED effects
      * GET /devices/:deviceId/led-effects
      */
@@ -694,7 +755,30 @@ class DeviceController {
             next(error);
         }
     };
+
+    /**
+     * Lấy danh sách components của thiết bị
+     * @param req Request Express với deviceId trong params
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    getDeviceComponents = async (req: Request, res: Response, next: NextFunction) => {
+        const accountId = req.user?.userId || req.user?.employeeId;
+        if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
+
+        const { deviceId } = req.params;
+
+        try {
+            const components = await this.deviceService.getDeviceComponents(deviceId, accountId);
+            res.status(200).json({
+                success: true,
+                message: 'Lấy danh sách components thành công',
+                data: components
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 
 export default DeviceController;
-

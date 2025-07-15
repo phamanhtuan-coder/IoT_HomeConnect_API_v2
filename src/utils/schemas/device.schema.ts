@@ -22,6 +22,15 @@ export const deviceIdSchema = z.object({
     }),
 });
 
+export const deviceComponentsSchema = z.object({
+    params: z.object({
+        deviceId: z.string({
+            required_error: `[${ERROR_CODES.DEVICE_ID_REQUIRED}]Device ID is required`,
+            invalid_type_error: `[${ERROR_CODES.DEVICE_ID_INVALID}]Device ID must be a string`
+        }).min(1, `[${ERROR_CODES.DEVICE_ID_INVALID}]Device ID cannot be empty`),
+    }),
+});
+
 export const serialNumberSchema = z.object({
     params: z.object({
         serialNumber: z.string().min(1, 'Serial number is required').max(50, 'Serial number too long'),
@@ -32,6 +41,7 @@ export const linkDeviceSchema = z.object({
     body: z.object({
         serial_number: z.string().min(1, 'Serial number is required').max(50),
         spaceId: z.number().positive('Space ID must be a positive number').optional(),
+        groupId: z.number().positive('Group ID must be a positive number').optional(),
         name: z.string().min(1, 'Device name is required').max(100),
     }),
 });

@@ -327,6 +327,30 @@ router.get(
 
 /**
  * @swagger
+ * /api/tickets/share-pending:
+ *   get:
+ *     tags:
+ *       - Ticket
+ *     summary: Lấy danh sách ticket share (chia sẻ quyền) đang pending của người dùng hiện tại
+ *     description: Lấy danh sách các ticket chia sẻ quyền có trạng thái pending của user hiện tại
+ *     security:
+ *       - Bearer: []
+ *     responses:
+ *       200:
+ *         description: Danh sách ticket share pending
+ *       401:
+ *         description: Không có quyền truy cập
+ *       500:
+ *         description: Lỗi server
+ */
+router.get(
+  '/share-pending',
+  authMiddleware,
+  asyncHandler(ticketController.getPendingShareTicketsByUser)
+);
+
+/**
+ * @swagger
  * /api/tickets:
  *   get:
  *     tags:
