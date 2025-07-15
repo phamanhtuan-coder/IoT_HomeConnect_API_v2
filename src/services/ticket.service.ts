@@ -442,7 +442,7 @@ class TicketService {
 	async getAllTickets(filters: any, page: number = 1, limit: number = 10, sort: string = 'created_at', order: string = 'desc'): Promise<any> {
 		const get_attr = `
 		tickets.ticket_id, tickets.device_serial, tickets.description,
-		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, tickets.is_deleted,
+		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, tickets.is_deleted, tickets.ticket_type_id,
 		ticket_types.type_name as ticket_type_name,
 		ticket_types.priority,
 		COALESCE(CONCAT_WS(' ', customer.surname, customer.lastname), 'N/A') as user_name,

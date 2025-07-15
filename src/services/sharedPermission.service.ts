@@ -137,35 +137,72 @@ class SharedPermissionService {
         return sharedUsers;
     }
     
-    async revokeShareDevice(permissionId: number, requesterId: string, requesterRole: GroupRole): Promise<void> {
-        const permission = await this.prisma.shared_permissions.findUnique({
-            where: { permission_id: permissionId, is_deleted: false },
+    async revokeShareDevice(serialNumber: string, requesterId: string, requesterRole: GroupRole): Promise<any> {
+        const account = await this.prisma.account.findUnique({
+            where: { account_id: requesterId },
+            include: {
+                customer: true
+            }
+        });
+        if (!account) {
+            throwError(ErrorCodes.NOT_FOUND, 'Người dùng không tồn tại');
+        }
+
+        const permission = await this.prisma.shared_permissions.findFirst({
+            where: { device_serial: serialNumber, is_deleted: false },
             include: { devices: true },
         });
-        if (!permission || !permission.devices) throwError(ErrorCodes.NOT_FOUND, 'Permission not found');
+        
+        if(!permission) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy quyền sử dụng thiết bị');
 
         if (permission!.devices!.account_id !== requesterId && requesterRole !== GroupRole.OWNER) {
-            throwError(ErrorCodes.FORBIDDEN, 'Only device.ts owner or group owner can revoke sharing');
+            throwError(ErrorCodes.FORBIDDEN, 'Chỉ có chủ sở hữu thiết bị hoặc chủ nhóm mới có thể hủy chia sẻ');
         }
 
         await this.prisma.shared_permissions.update({
-            where: { permission_id: permissionId },
+            where: { permission_id: permission!.permission_id },
             data: { is_deleted: true, updated_at: new Date() },
         });
+
+        return {
+            success: true,
+            message: `Đã hủy chia sẻ thiết bị ${serialNumber} thành công đối với người dùng ${account!.customer!.surname} ${account!.customer!.lastname}`,
+        }
     }
 
-    async revokeShareByRecipient(permissionId: number, recipientId: string): Promise<void> {
-        const permission = await this.prisma.shared_permissions.findUnique({
-            where: { permission_id: permissionId, is_deleted: false },
+    async revokeShareByRecipient(serialNumber: string, recipientId: string): Promise<any> {
+        const account = await this.prisma.account.findUnique({
+            where: { account_id: recipientId },
+            include: {
+                customer: true
+            }
         });
-        if (!permission || permission.shared_with_user_id !== recipientId) {
-            throwError(ErrorCodes.NOT_FOUND, 'Permission not found or access denied');
+        if (!account) {
+            throwError(ErrorCodes.NOT_FOUND, 'Người dùng không tồn tại');
+        }
+
+        const permission = await this.prisma.shared_permissions.findFirst({
+            where: { device_serial: serialNumber, shared_with_user_id: recipientId, is_deleted: false },
+        });
+        if (!permission) {
+            throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy quyền sử dụng thiết bị hoặc không có quyền truy cập');
         }
 
         await this.prisma.shared_permissions.update({
-            where: { permission_id: permissionId },
+            where: { permission_id: permission!.permission_id },
             data: { is_deleted: true, updated_at: new Date() },
         });
+
+        return {
+            success: true,
+            message: `Gỡ quyền sử dụng thiết bị thành công`,
+            data: {
+                permission_id: permission!.permission_id,
+                device_serial: serialNumber,
+                shared_with_user_id: recipientId,
+                permission_type: permission!.permission_type,
+            }
+        }
     }
 
     async approveSharePermission(ticketId: string, recipientId: string, isApproved: boolean): Promise<any> {
@@ -183,7 +220,7 @@ class SharedPermissionService {
         if (isApproved) {
             await this.prisma.tickets.update({
                 where: { ticket_id: ticketId },
-                data: { updated_at: new Date(), status: 'approved', is_deleted: true },
+                data: { updated_at: new Date(), status: 'approved' },
             });
 
             await this.prisma.shared_permissions.create({

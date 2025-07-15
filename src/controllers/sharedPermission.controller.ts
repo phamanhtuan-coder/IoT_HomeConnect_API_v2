@@ -98,6 +98,7 @@ class SharedPermissionController {
             const result = await this.sharedPermissionService.approveSharePermission(ticketId, accountId, isApproved);
             res.status(200).json(result);
         } catch (error) {
+            console.log(error);
             next(error);
         }
     };
