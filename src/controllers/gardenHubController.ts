@@ -16,9 +16,9 @@ class GardenHubController {
         try {
             const { relay_serial } = req.params;
             const { power_status } = req.body;
-            const accountId = req.user?.accountId;
+            const accountId = req.user?.userId || req.user?.employeeId;
+            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
-            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Authentication required');
             if (power_status === undefined) throwError(ErrorCodes.BAD_REQUEST, 'power_status is required');
 
             const result = await this.gardenHubService.toggleGardenRelay(
@@ -43,9 +43,9 @@ class GardenHubController {
     bulkRelayControl = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { relay_commands } = req.body;
-            const accountId = req.user?.accountId;
+            const accountId = req.user?.userId || req.user?.employeeId;
 
-            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Authentication required');
+            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
             if (!Array.isArray(relay_commands) || relay_commands.length === 0) {
                 throwError(ErrorCodes.BAD_REQUEST, 'relay_commands array is required');
             }
@@ -68,9 +68,9 @@ class GardenHubController {
     controlPump = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { action, reason } = req.body;
-            const accountId = req.user?.accountId;
+            const accountId = req.user?.userId || req.user?.employeeId;
 
-            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Authentication required');
+            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
             if (!['START', 'STOP'].includes(action)) {
                 throwError(ErrorCodes.BAD_REQUEST, 'action must be START or STOP');
             }
@@ -97,9 +97,9 @@ class GardenHubController {
     controlRGB = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { action, color } = req.body;
-            const accountId = req.user?.accountId;
+            const accountId = req.user?.userId || req.user?.employeeId;
 
-            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Authentication required');
+            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
             if (!['TEST', 'AUTO', 'MANUAL'].includes(action)) {
                 throwError(ErrorCodes.BAD_REQUEST, 'action must be TEST, AUTO, or MANUAL');
             }
@@ -125,9 +125,9 @@ class GardenHubController {
      */
     getRelayStatus = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const accountId = req.user?.accountId;
+            const accountId = req.user?.userId || req.user?.employeeId;
 
-            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Authentication required');
+            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
             const result = await this.gardenHubService.getGardenRelayStatus(accountId);
 
@@ -147,9 +147,9 @@ class GardenHubController {
     emergencyAlarm = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { action } = req.body;
-            const accountId = req.user?.accountId;
+            const accountId = req.user?.userId || req.user?.employeeId;
 
-            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Authentication required');
+            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
             if (!['ACTIVATE', 'DEACTIVATE', 'RESET_OVERRIDE'].includes(action)) {
                 throwError(ErrorCodes.BAD_REQUEST, 'action must be ACTIVATE, DEACTIVATE, or RESET_OVERRIDE');
             }
@@ -192,9 +192,9 @@ class GardenHubController {
     controlAutomation = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { automation_type, enabled } = req.body;
-            const accountId = req.user?.accountId;
+            const accountId = req.user?.userId || req.user?.employeeId;
 
-            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Authentication required');
+            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
             if (!['WATERING', 'LIGHTING', 'FAN'].includes(automation_type)) {
                 throwError(ErrorCodes.BAD_REQUEST, 'automation_type must be WATERING, LIGHTING, or FAN');
             }
@@ -224,9 +224,9 @@ class GardenHubController {
     setThreshold = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { threshold_type, value } = req.body;
-            const accountId = req.user?.accountId;
+            const accountId = req.user?.userId || req.user?.employeeId;
 
-            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Authentication required');
+            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
             if (!['SOIL', 'LIGHT'].includes(threshold_type)) {
                 throwError(ErrorCodes.BAD_REQUEST, 'threshold_type must be SOIL or LIGHT');
             }
@@ -255,9 +255,9 @@ class GardenHubController {
      */
     getSystemStatus = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const accountId = req.user?.accountId;
+            const accountId = req.user?.userId || req.user?.employeeId;
 
-            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Authentication required');
+            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
             // Get relay status
             const relayStatus = await this.gardenHubService.getGardenRelayStatus(accountId);
@@ -296,3 +296,4 @@ class GardenHubController {
 }
 
 export default GardenHubController;
+

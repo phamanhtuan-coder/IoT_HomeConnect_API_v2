@@ -50,6 +50,9 @@ interface RelayStatusResult {
 const SOCKET_HUB_SERIAL = "SERL29JUN2501JYXECBR32V8BD77RW82";
 const MEGA_GARDEN_SERIAL = "MEGA_HUB_GARDEN_10TOUCH_001";
 
+// ✅ FIXED GARDEN ACCOUNT ID - No ownership/role checks needed
+const GARDEN_SYSTEM_ACCOUNT = "ACCT12JUN2501JXH05RTHKX3MVCTK9GX";
+
 // ✅ FIXED: Updated to match Arduino Mega Hub exactly (10 relays with mixed triggers)
 const GARDEN_HUB_RELAYS: RelayDevice[] = [
     {
@@ -192,25 +195,25 @@ class GardenHubService {
     }
 
     /**
-     * ✅ Check if user can access garden hub relays (no group required)
+     * ✅ SIMPLIFIED: Garden hub access - uses fixed account, no group/ownership checks
      */
-    private async checkGardenHubAccess(accountId: string): Promise<void> {
-        if (!accountId) {
-            throwError(ErrorCodes.UNAUTHORIZED, 'Authentication required');
-        }
+    private async checkGardenHubAccess(accountId?: string): Promise<void> {
+        // Garden system uses fixed account for simplified access
+        // No need to check ownership, groups, or roles
+        console.log(`[GARDEN-HUB] Garden system access - using fixed account: ${GARDEN_SYSTEM_ACCOUNT}`);
+        console.log(`[GARDEN-HUB] Request from account: ${accountId || 'anonymous'}`);
 
-        // Garden hub relays are accessible to all authenticated users
-        // No group context required for garden hub access
-        console.log(`[GARDEN-HUB] Access granted for user: ${accountId}`);
+        // Always allow access to garden system
+        return;
     }
 
     /**
-     * ✅ FIXED: Toggle relay via Socket Hub
+     * ✅ FIXED: Toggle relay via Socket Hub - uses fixed account
      */
     async toggleGardenRelay(
         relay_serial: string,
         power_status: boolean,
-        accountId: string
+        accountId?: string
     ): Promise<any> {
         try {
             const relay = GARDEN_HUB_RELAYS.find(r => r.serial_number === relay_serial);
@@ -234,7 +237,8 @@ class GardenHubService {
                     relay_serial: relay_serial,
                     relay_action: power_status ? 'ON' : 'OFF',
                     trigger_type: relay.active_high ? 'HIGH' : 'LOW',
-                    from_client: accountId,
+                    from_client: GARDEN_SYSTEM_ACCOUNT,
+                    request_account: accountId,
                     timestamp: new Date().toISOString()
                 });
             }
@@ -251,6 +255,7 @@ class GardenHubService {
                 new_state: power_status ? 'ON' : 'OFF',
                 trigger_type: relay.active_high ? 'HIGH' : 'LOW',
                 routed_via: "socket_hub",
+                garden_account: GARDEN_SYSTEM_ACCOUNT,
                 timestamp: new Date().toISOString()
             };
 
@@ -261,14 +266,14 @@ class GardenHubService {
     }
 
     /**
-     * ✅ FIXED: Bulk relay operations via Socket Hub
+     * ✅ FIXED: Bulk relay operations via Socket Hub - uses fixed account
      */
     async bulkRelayControl(
         relay_commands: Array<{
             relay_serial: string;
             action: 'ON' | 'OFF' | 'TOGGLE';
         }>,
-        accountId: string
+        accountId?: string
     ): Promise<any> {
         try {
             await this.checkGardenHubAccess(accountId);
@@ -319,6 +324,7 @@ class GardenHubService {
                 successful_commands: results.filter(r => r.success).length,
                 failed_commands: results.filter(r => !r.success).length,
                 routed_via: "socket_hub",
+                garden_account: GARDEN_SYSTEM_ACCOUNT,
                 results,
                 timestamp: new Date().toISOString()
             };
@@ -330,12 +336,12 @@ class GardenHubService {
     }
 
     /**
-     * ✅ FIXED: Garden pump control via Socket Hub
+     * ✅ FIXED: Garden pump control via Socket Hub - uses fixed account
      */
     async controlGardenPump(
         action: 'START' | 'STOP',
         reason: string,
-        accountId: string
+        accountId?: string
     ): Promise<any> {
         try {
             await this.checkGardenHubAccess(accountId);
@@ -351,7 +357,8 @@ class GardenHubService {
                     target: "mega_garden",
                     pump_action: action,
                     reason: reason,
-                    from_client: accountId,
+                    from_client: GARDEN_SYSTEM_ACCOUNT,
+                    request_account: accountId,
                     timestamp: new Date().toISOString()
                 });
             }
@@ -371,6 +378,7 @@ class GardenHubService {
                 pump_relay: pumpRelay?.serial_number,
                 routed_via: "socket_hub",
                 garden_serial: MEGA_GARDEN_SERIAL,
+                garden_account: GARDEN_SYSTEM_ACCOUNT,
                 timestamp: new Date().toISOString()
             };
 
@@ -381,7 +389,7 @@ class GardenHubService {
     }
 
     /**
-     * ✅ FIXED: RGB LED control via Socket Hub
+     * ✅ FIXED: RGB LED control via Socket Hub - uses fixed account
      */
     async controlGardenRGB(
         action: 'TEST' | 'AUTO' | 'MANUAL',
@@ -389,9 +397,7 @@ class GardenHubService {
         accountId?: string
     ): Promise<any> {
         try {
-            if (accountId) {
-                await this.checkGardenHubAccess(accountId);
-            }
+            await this.checkGardenHubAccess(accountId);
 
             if (io) {
                 let command: string;
@@ -410,7 +416,8 @@ class GardenHubService {
                     target: "mega_garden",
                     rgb_action: action,
                     color: color,
-                    from_client: accountId,
+                    from_client: GARDEN_SYSTEM_ACCOUNT,
+                    request_account: accountId,
                     timestamp: new Date().toISOString()
                 });
             }
@@ -421,6 +428,7 @@ class GardenHubService {
                 color,
                 routed_via: "socket_hub",
                 garden_serial: MEGA_GARDEN_SERIAL,
+                garden_account: GARDEN_SYSTEM_ACCOUNT,
                 timestamp: new Date().toISOString()
             };
 
@@ -431,11 +439,11 @@ class GardenHubService {
     }
 
     /**
-     * ✅ FIXED: Emergency alarm via Socket Hub
+     * ✅ FIXED: Emergency alarm via Socket Hub - uses fixed account
      */
     async emergencyAlarmControl(
         action: 'ACTIVATE' | 'DEACTIVATE' | 'RESET_OVERRIDE',
-        accountId: string
+        accountId?: string
     ): Promise<any> {
         try {
             await this.checkGardenHubAccess(accountId);
@@ -463,7 +471,8 @@ class GardenHubService {
                     target: "mega_alarm",
                     alarm_action: action,
                     relay_serial: alarmRelay.serial_number,
-                    from_client: accountId,
+                    from_client: GARDEN_SYSTEM_ACCOUNT,
+                    request_account: accountId,
                     timestamp: new Date().toISOString()
                 });
             }
@@ -481,6 +490,7 @@ class GardenHubService {
                 relay_serial: alarmRelay.serial_number,
                 routed_via: "socket_hub",
                 garden_serial: MEGA_GARDEN_SERIAL,
+                garden_account: GARDEN_SYSTEM_ACCOUNT,
                 timestamp: new Date().toISOString()
             };
 
@@ -491,9 +501,9 @@ class GardenHubService {
     }
 
     /**
-     * ✅ Get all garden relay status
+     * ✅ Get all garden relay status - uses fixed account
      */
-    async getGardenRelayStatus(accountId: string): Promise<any> {
+    async getGardenRelayStatus(accountId?: string): Promise<any> {
         try {
             await this.checkGardenHubAccess(accountId);
 
@@ -514,6 +524,7 @@ class GardenHubService {
                 success: true,
                 socket_hub_serial: SOCKET_HUB_SERIAL,
                 garden_serial: MEGA_GARDEN_SERIAL,
+                garden_account: GARDEN_SYSTEM_ACCOUNT,
                 total_relays: GARDEN_HUB_RELAYS.length,
                 mixed_triggers: true,
                 touch_sensors: GARDEN_HUB_RELAYS.filter(r => r.local_control).length,
@@ -528,12 +539,12 @@ class GardenHubService {
     }
 
     /**
-     * ✅ FIXED: Automation control via Socket Hub
+     * ✅ FIXED: Automation control via Socket Hub - uses fixed account
      */
     async controlAutomation(
         automation_type: 'WATERING' | 'LIGHTING' | 'FAN',
         enabled: boolean,
-        accountId: string
+        accountId?: string
     ): Promise<any> {
         try {
             await this.checkGardenHubAccess(accountId);
@@ -549,7 +560,8 @@ class GardenHubService {
                     target: "mega_garden",
                     automation_type: automation_type,
                     enabled: enabled,
-                    from_client: accountId,
+                    from_client: GARDEN_SYSTEM_ACCOUNT,
+                    request_account: accountId,
                     timestamp: new Date().toISOString()
                 });
             }
@@ -560,6 +572,7 @@ class GardenHubService {
                 enabled,
                 routed_via: "socket_hub",
                 garden_serial: MEGA_GARDEN_SERIAL,
+                garden_account: GARDEN_SYSTEM_ACCOUNT,
                 timestamp: new Date().toISOString()
             };
 
@@ -570,12 +583,12 @@ class GardenHubService {
     }
 
     /**
-     * ✅ FIXED: Set thresholds via Socket Hub
+     * ✅ FIXED: Set thresholds via Socket Hub - uses fixed account
      */
     async setThreshold(
         threshold_type: 'SOIL' | 'LIGHT',
         value: number,
-        accountId: string
+        accountId?: string
     ): Promise<any> {
         try {
             await this.checkGardenHubAccess(accountId);
@@ -591,7 +604,8 @@ class GardenHubService {
                     target: "mega_garden",
                     threshold_type: threshold_type,
                     value: value,
-                    from_client: accountId,
+                    from_client: GARDEN_SYSTEM_ACCOUNT,
+                    request_account: accountId,
                     timestamp: new Date().toISOString()
                 });
             }
@@ -603,6 +617,7 @@ class GardenHubService {
                 unit: '%',
                 routed_via: "socket_hub",
                 garden_serial: MEGA_GARDEN_SERIAL,
+                garden_account: GARDEN_SYSTEM_ACCOUNT,
                 timestamp: new Date().toISOString()
             };
 

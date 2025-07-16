@@ -15,6 +15,7 @@ export interface DeviceLinkInput {
     logic_operator?: 'AND' | 'OR';
     component_id?: string;
     output_action?: 'turn_on' | 'turn_off';
+    output_value?: string; // Thêm field để set giá trị cho output
 }
 
 export interface DeviceLinkUpdate {
@@ -22,6 +23,7 @@ export interface DeviceLinkUpdate {
     logic_operator?: 'AND' | 'OR';
     component_id?: string;
     output_action?: 'turn_on' | 'turn_off';
+    output_value?: string; // Thêm field để set giá trị cho output
 }
 
 export interface DeviceLink {
@@ -32,6 +34,7 @@ export interface DeviceLink {
     value_active: string;
     logic_operator: 'AND' | 'OR';
     output_action: 'turn_on' | 'turn_off';
+    output_value?: string; // Thêm field để set giá trị cho output
     created_at: Date | null;
     updated_at: Date | null;
     deleted_at: Date | null;
@@ -39,6 +42,22 @@ export interface DeviceLink {
     output_device?: any;
     component?: any;
 }
+
+// Predefined output values (dữ liệu cứng theo yêu cầu)
+export const PREDEFINED_OUTPUT_VALUES = {
+    light_brightness: [
+        { label: 'Độ sáng thấp (25%)', value: '25' },
+        { label: 'Độ sáng trung bình (50%)', value: '50' },
+        { label: 'Độ sáng cao (75%)', value: '75' },
+        { label: 'Độ sáng tối đa (100%)', value: '100' }
+    ],
+    alert_mode: [
+        { label: 'Cảnh báo nhẹ', value: 'low_alert' },
+        { label: 'Cảnh báo trung bình', value: 'medium_alert' },
+        { label: 'Cảnh báo cao', value: 'high_alert' },
+        { label: 'Cảnh báo khẩn cấp', value: 'emergency_alert' }
+    ]
+};
 
 class DeviceLinksService {
     private prisma: PrismaClient;
@@ -93,6 +112,7 @@ class DeviceLinksService {
                 value_active: input.value_active,
                 logic_operator: input.logic_operator || 'AND',
                 output_action: input.output_action || 'turn_on',
+                output_value: input.output_value || '', // Thêm output_value
                 created_at: new Date(),
                 updated_at: new Date()
             },
@@ -265,213 +285,76 @@ class DeviceLinksService {
     }
 
     /**
-     * Xử lý logic trigger khi device value thay đổi
+     * Xử lý automation trigger cho sensorData: so sánh từng thuộc tính với value_active trong device_link
+     * Nếu đạt đủ điều kiện (AND/OR) thì trigger output
      */
-    async processDeviceLinks(deviceId: string, currentValue: any): Promise<void> {
+    async processDeviceLinks(deviceId: string, sensorData: any): Promise<void> {
         try {
-            // Lấy tất cả links có input_device_id là deviceId
-            const inputLinks = await this.prisma.device_links.findMany({
-                where: {
-                    input_device_id: deviceId,
-                    deleted_at: null
-                },
-                include: {
-                    input_device: true,
-                    output_device: true
-                }
+            console.log('sensorData', sensorData)
+            // Lấy tất cả device_links cho input_device_id này
+            const deviceLinks = await this.prisma.device_links.findMany({
+                where: { input_device_id: deviceId, deleted_at: null },
+                include: { output_device: true }
             });
 
-            if (inputLinks.length === 0) return;
+            console.log('deviceLinks', deviceLinks)
+            if (!deviceLinks.length) return;
 
-            // Group links by output device để xử lý logic AND/OR
-            const linksByOutput = new Map<string, any[]>();
-            for (const link of inputLinks) {
-                const outputId = link.output_device_id;
-                if (!linksByOutput.has(outputId)) {
-                    linksByOutput.set(outputId, []);
-                }
-                linksByOutput.get(outputId)!.push(link);
+            // Group theo output_device_id
+            const linksByOutput: { [outputId: string]: any[] } = {};
+            console.log('linksByOutput - before', linksByOutput)
+            for (const link of deviceLinks) {
+                if (!linksByOutput[link.output_device_id]) linksByOutput[link.output_device_id] = [];
+                linksByOutput[link.output_device_id].push(link);
             }
 
-            // Xử lý từng output device
-            for (const [outputDeviceId, links] of linksByOutput) {
-                await this.processOutputDeviceLinks(outputDeviceId, links, deviceId, currentValue);
-            }
-        } catch (error) {
-            console.error('Error processing device links:', error);
-        }
-    }
+            console.log('linksByOutput - result', linksByOutput)
 
-    /**
-     * Xử lý links cho một output device cụ thể
-     */
-    private async processOutputDeviceLinks(
-        outputDeviceId: string, 
-        links: any[], 
-        triggeredDeviceId: string, 
-        currentValue: any
-    ): Promise<void> {
-        // Lấy tất cả input devices cho output này
-        const allInputLinks = await this.prisma.device_links.findMany({
-            where: {
-                output_device_id: outputDeviceId,
-                deleted_at: null
-            },
-            include: {
-                input_device: {
-                    select: {
-                        device_id: true,
-                        current_value: true
+            for (const [outputDeviceId, links] of Object.entries(linksByOutput)) {
+                let shouldTrigger = true;
+                let hasOr = false;
+                let orResult = false;
+                for (const link of links) {
+                    const field = link.component_id; // component_id là tên field (ví dụ: gas, temp, humidity)
+                    const valueActive = link.value_active;
+                    const value = sensorData[field];
+                    
+                    if (link.logic_operator === 'OR') {
+                        hasOr = true;
+                        orResult = orResult || this.compareValue(value, valueActive);
+                        console.log('OrResult:', orResult)
+                    } else {
+                        // AND logic
+                        if (!this.compareValue(value, valueActive)) {
+                            shouldTrigger = false;
+                            break;
+                        }
                     }
                 }
-            }
-        });
-
-        // Kiểm tra điều kiện cho từng input
-        const conditionResults = new Map<string, boolean>();
-        
-        for (const link of allInputLinks) {
-            const inputDeviceId = link.input_device_id;
-            let valueToCheck = link.input_device?.current_value;
-            
-            // Nếu là device vừa update, dùng currentValue mới
-            if (inputDeviceId === triggeredDeviceId) {
-                valueToCheck = currentValue;
-            }
-            
-            const conditionMet = this.checkValueCondition(valueToCheck, link.value_active);
-            conditionResults.set(inputDeviceId, conditionMet);
-        }
-
-        // Áp dụng logic operator
-        const shouldTrigger = this.evaluateLogicConditions(allInputLinks, conditionResults);
-        
-        if (shouldTrigger) {
-            // Trigger output device
-            const outputLink = links[0]; // Lấy link đầu tiên để có thông tin output device
-            await this.triggerOutputDevice(outputLink);
-        }
-    }
-
-    /**
-     * Đánh giá logic conditions với AND/OR operators
-     */
-    private evaluateLogicConditions(links: any[], conditionResults: Map<string, boolean>): boolean {
-        if (links.length === 0) return false;
-        
-        // Group by logic operator
-        const andLinks: string[] = [];
-        const orLinks: string[] = [];
-        
-        for (const link of links) {
-            if (link.logic_operator === 'OR') {
-                orLinks.push(link.input_device_id);
-            } else {
-                andLinks.push(link.input_device_id);
-            }
-        }
-        
-        // Evaluate AND conditions (tất cả phải true)
-        let andResult = true;
-        if (andLinks.length > 0) {
-            andResult = andLinks.every(inputId => conditionResults.get(inputId) === true);
-        }
-        
-        // Evaluate OR conditions (ít nhất 1 phải true)
-        let orResult = false;
-        if (orLinks.length > 0) {
-            orResult = orLinks.some(inputId => conditionResults.get(inputId) === true);
-        }
-        
-        // Final result: (AND conditions) && (OR conditions || no OR conditions)
-        return andResult && (orResult || orLinks.length === 0);
-    }
-
-    /**
-     * Kiểm tra điều kiện value có match với value_active không
-     */
-    private checkValueCondition(currentValue: any, valueActive: string): boolean {
-        if (!currentValue || !Array.isArray(currentValue)) return false;
-
-        // Tìm trong current_value có instance nào có value match với valueActive
-        for (const component of currentValue) {
-            if (component.instances && Array.isArray(component.instances)) {
-                for (const instance of component.instances) {
-                    if (this.compareValues(instance.value, valueActive, component.datatype)) {
-                        return true;
-                    }
+                if ((hasOr && orResult) || (!hasOr && shouldTrigger)) {
+                    // Trigger output: lấy output_value của dòng đầu tiên (hoặc customize theo nhu cầu)
+                    await this.triggerOutputDevice(links[0]);
                 }
             }
-        }
-
-        return false;
-    }
-
-    /**
-     * So sánh values dựa trên datatype
-     */
-    private compareValues(instanceValue: any, activeValue: string, datatype: string): boolean {
-        if (datatype === 'NUMBER') {
-            const numInstance = parseFloat(instanceValue);
-            const numActive = parseFloat(activeValue);
-            
-            // Support comparison operators: >, <, >=, <=, ==
-            if (activeValue.startsWith('>=')) {
-                return numInstance >= parseFloat(activeValue.slice(2));
-            } else if (activeValue.startsWith('<=')) {
-                return numInstance <= parseFloat(activeValue.slice(2));
-            } else if (activeValue.startsWith('>')) {
-                return numInstance > parseFloat(activeValue.slice(1));
-            } else if (activeValue.startsWith('<')) {
-                return numInstance < parseFloat(activeValue.slice(1));
-            } else {
-                return numInstance === numActive;
-            }
-        } else if (datatype === 'BOOLEAN') {
-            return String(instanceValue).toLowerCase() === activeValue.toLowerCase();
-        } else {
-            // STRING comparison
-            return String(instanceValue) === activeValue;
-        }
-    }
-
-    /**
-     * Trigger output device
-     */
-    private async triggerOutputDevice(link: any): Promise<void> {
-        try {
-            const outputDevice = link.output_device;
-            const powerStatus = link.output_action === 'turn_on' ? true : false;
-            
-            // Cập nhật trạng thái thiết bị output theo output_action
-            await this.prisma.devices.update({
-                where: { device_id: outputDevice.device_id },
-                data: {
-                    power_status: powerStatus,
-                    updated_at: new Date()
-                }
-            });
-
-            // Gửi command qua socket
-            if (io) {
-                io.of("/device")
-                    .to(`device:${outputDevice.serial_number}`)
-                    .emit("command", {
-                        action: "updateState",
-                        serialNumber: outputDevice.serial_number,
-                        state: { power_status: powerStatus },
-                        triggeredBy: link.input_device.serial_number,
-                        linkId: link.id,
-                        outputAction: link.output_action,
-                        timestamp: new Date().toISOString()
-                    });
-            }
-
-            const action = link.output_action === 'turn_on' ? 'bật' : 'tắt';
-            console.log(`Device link triggered: ${link.input_device.name} -> ${action} ${outputDevice.name}`);
         } catch (error) {
-            console.error('Error triggering output device:', error);
+            console.error('❌ [DeviceLinks] Error processing device links:', error);
         }
+    }
+
+    /**
+     * So sánh giá trị sensor với value_active (hỗ trợ >, >=, <, <=, ==)
+     */
+    private compareValue(value: any, valueActive: string): boolean {
+        if (value === undefined || value === null) return false;
+        if (typeof valueActive === 'string') {
+            if (valueActive.startsWith('>=')) return value >= parseFloat(valueActive.slice(2));
+            if (valueActive.startsWith('>')) return value > parseFloat(valueActive.slice(1));
+            if (valueActive.startsWith('<=')) return value <= parseFloat(valueActive.slice(2));
+            if (valueActive.startsWith('<')) return value < parseFloat(valueActive.slice(1));
+            if (valueActive.startsWith('==')) return value == parseFloat(valueActive.slice(2));
+            return value == parseFloat(valueActive);
+        }
+        return value == valueActive;
     }
 
     /**
@@ -501,6 +384,7 @@ class DeviceLinksService {
             value_active: link.value_active,
             logic_operator: link.logic_operator,
             output_action: link.output_action || 'turn_on',
+            output_value: link.output_value || '', // Thêm output_value
             created_at: link.created_at,
             updated_at: link.updated_at,
             deleted_at: link.deleted_at,
@@ -508,6 +392,65 @@ class DeviceLinksService {
             output_device: link.output_device,
             component: link.component
         };
+    }
+
+    /**
+     * Thực hiện trigger output device (ví dụ: gửi lệnh, cập nhật trạng thái, emit socket...)
+     */
+    private async triggerOutputDevice(link: any): Promise<void> {
+        try {
+            const outputDevice = link.output_device;
+            console.log('------- Link', link)
+            if (!io || !outputDevice?.serial_number) return;
+    
+            /* 1️⃣  Chuyển output_value (string | JSON | array) → mảng string */
+            let values: (string | { action?: string, value?: string })[] = [];
+            try {
+                if (Array.isArray(link.output_value)) {
+                    values = link.output_value;                         // đã là mảng
+                } else if (typeof link.output_value === 'string') {
+                    const parsed = JSON.parse(link.output_value);       // thử parse JSON
+                    values = Array.isArray(parsed) ? parsed : [parsed];
+                }
+            } catch {
+                values = [link.output_value];                           // fallback: 1 phần tử
+            }
+            
+            console.log('values:', values)
+            /* 2️⃣  Gửi lần lượt từng sự kiện trong mảng */
+            for (const item of values) {
+                // Mặc định action = output_action; có thể ghi đè bởi item
+                let action: string = link.output_action || 'turn_on';
+                let value: string | null = null;
+                
+                // Hỗ trợ cú pháp “action:value” (VD "brightness:100")
+                if (typeof item === 'string') {
+                    if (item.includes(':')) {
+                        [action, value] = item.split(':');
+                    } else {
+                        action = item;
+                    }
+                } else if (typeof item === 'object' && item !== null && 'action' in item) {
+                    // Cho phép truyền object { action, value }
+                    action = (item as any).action || action;
+                    value = (item as any).value || null;
+                    console.log('item:', item);
+                }
+    
+                
+                io.emit('device_command', {
+                    device_serial: outputDevice.serial_number,
+                    action,
+                    value,
+                    link_id: link.id,
+                    timestamp: new Date().toISOString()
+                });
+                console.log(`✅ [TriggerOutput] Đã emit ${action} → ${outputDevice.serial_number}`);
+            }
+    
+        } catch (error) {
+            console.error('❌ [TriggerOutput] Error triggering output device:', error);
+        }
     }
 }
 
