@@ -290,6 +290,7 @@ class DeviceLinksService {
      */
     async processDeviceLinks(deviceId: string, sensorData: any): Promise<void> {
         try {
+            console.log(sensorData)
             // Lấy tất cả device_links cho input_device_id này
             const deviceLinks = await this.prisma.device_links.findMany({
                 where: { input_device_id: deviceId, deleted_at: null },
