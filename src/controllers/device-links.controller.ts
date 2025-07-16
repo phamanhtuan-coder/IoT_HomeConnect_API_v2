@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import DeviceLinksService, { DeviceLinkInput, DeviceLinkUpdate } from '../services/device-links.service';
+import DeviceLinksService, { DeviceLinkInput, DeviceLinkUpdate, PREDEFINED_OUTPUT_VALUES } from '../services/device-links.service';
 import { throwError, ErrorCodes } from '../utils/errors';
 
 class DeviceLinksController {
@@ -14,7 +14,7 @@ class DeviceLinksController {
      */
     async createDeviceLink(req: Request, res: Response): Promise<void> {
         try {
-            const { input_device_id, output_device_id, component_id, value_active, logic_operator, output_action } = req.body;
+            const { input_device_id, output_device_id, component_id, value_active, logic_operator, output_action, output_value } = req.body;
             const accountId = req.user?.userId || req.user?.employeeId;
 
             if (!accountId) {
@@ -31,7 +31,8 @@ class DeviceLinksController {
                 component_id,
                 value_active: String(value_active),
                 logic_operator: logic_operator || 'AND',
-                output_action: output_action || 'turn_on'
+                output_action: output_action || 'turn_on',
+                output_value: output_value || '' // Thêm output_value
             };
 
             const deviceLink = await this.deviceLinksService.createDeviceLink(linkInput, accountId);
@@ -115,7 +116,7 @@ class DeviceLinksController {
     async updateDeviceLink(req: Request, res: Response): Promise<void> {
         try {
             const { linkId } = req.params;
-            const { value_active, logic_operator, component_id, output_action } = req.body;
+            const { value_active, logic_operator, component_id, output_action, output_value } = req.body;
             const accountId = req.user?.userId || req.user?.employeeId;
 
             if (!accountId) {
@@ -131,6 +132,7 @@ class DeviceLinksController {
             if (logic_operator !== undefined) linkUpdate.logic_operator = logic_operator;
             if (component_id !== undefined) linkUpdate.component_id = component_id;
             if (output_action !== undefined) linkUpdate.output_action = output_action;
+            if (output_value !== undefined) linkUpdate.output_value = output_value; // Thêm output_value
 
             const updatedLink = await this.deviceLinksService.updateDeviceLink(
                 parseInt(linkId), 
@@ -216,6 +218,25 @@ class DeviceLinksController {
             res.status(200).json({
                 success: true,
                 message: "Kích hoạt liên kết thành công"
+            });
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json({
+                success: false,
+                message: error.message || "Lỗi server",
+                error: error.code || "UNKNOWN_ERROR"
+            });
+        }
+    }
+
+    /**
+     * Lấy predefined output values
+     */
+    async getPredefinedOutputValues(req: Request, res: Response): Promise<void> {
+        try {
+            res.status(200).json({
+                success: true,
+                message: "Lấy danh sách giá trị output thành công",
+                data: PREDEFINED_OUTPUT_VALUES
             });
         } catch (error: any) {
             res.status(error.statusCode || 500).json({
