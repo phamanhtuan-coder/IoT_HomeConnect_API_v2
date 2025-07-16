@@ -393,6 +393,7 @@ class DeviceLinksService {
     private async triggerOutputDevice(link: any): Promise<void> {
         try {
             const outputDevice = link.output_device;
+            console.log('------- Link', link)
             if (!io || !outputDevice?.serial_number) return;
     
             /* 1️⃣  Chuyển output_value (string | JSON | array) → mảng string */
@@ -407,13 +408,14 @@ class DeviceLinksService {
             } catch {
                 values = [link.output_value];                           // fallback: 1 phần tử
             }
-    
+            
+            console.log('values:', values)
             /* 2️⃣  Gửi lần lượt từng sự kiện trong mảng */
             for (const item of values) {
                 // Mặc định action = output_action; có thể ghi đè bởi item
                 let action: string = link.output_action || 'turn_on';
                 let value: string | null = null;
-    
+                
                 // Hỗ trợ cú pháp “action:value” (VD "brightness:100")
                 if (typeof item === 'string') {
                     if (item.includes(':')) {
