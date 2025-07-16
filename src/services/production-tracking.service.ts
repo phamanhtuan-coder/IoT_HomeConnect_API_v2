@@ -517,19 +517,19 @@ let error_list: { device_serial: string | null; error: string }[] = [];
 
                 let newLog = {
                     stage: StageSerialStage.COMPLETED,
-                    status: StatusSerialStage.COMPLETED_PACKAGING,
+                    status: StatusSerialStage.PENDING_IMPORT,
                     employee_id: employeeId,
                     started_at: new Date()
                 };
                 stageLogList.push(newLog);
 
-                newStatus = StatusSerialStage.COMPLETED_PACKAGING;
+                newStatus = StatusSerialStage.PENDING_IMPORT;
                 
                 sseController.sendProductionUpdate({
                     type: 'update_status',
                     device_serial: device_serial,
                     stage: stage,
-                    status: StatusSerialStage.COMPLETED_PACKAGING,
+                    status: StatusSerialStage.PENDING_IMPORT,
                     stage_logs: stageLogList
                 });
             } else {

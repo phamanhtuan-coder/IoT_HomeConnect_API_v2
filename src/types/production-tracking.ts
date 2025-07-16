@@ -2,7 +2,7 @@ export enum StatusSerialStage {
     PENDING = 'pending',
     IN_PROGRESS = 'in_progress',
     COMPLETED = 'completed',
-    COMPLETED_PACKAGING = 'completed_packaging',
+    PENDING_IMPORT = 'pending_import',
     PENDING_PACKAGING = 'pending_packaging',
     FIRMWARE_UPLOADED = 'firmware_uploaded', // Firmwware được tải lên
     FIRMWARE_UPLOADING = 'firmware_uploading', // Firmwware đang được tải lên
