@@ -391,30 +391,53 @@ class DeviceLinksService {
      */
     private async triggerOutputDevice(link: any): Promise<void> {
         try {
-            // Ví dụ: gửi lệnh qua socket hoặc cập nhật trạng thái thiết bị output
-            const outputDeviceId = link.output_device_id;
-            const outputValue = link.output_value;
-            const outputAction = link.output_action;
             const outputDevice = link.output_device;
-            // Log để kiểm tra
-            console.log(`\uD83D\uDD25 [TriggerOutput] Triggering output device:`, {
-                outputDeviceId,
-                outputValue,
-                outputAction,
-                outputDeviceName: outputDevice?.name
-            });
-            // Nếu có socket, emit event cho thiết bị output (ví dụ: device_command)
-            if (io && outputDevice?.serial_number) {
+            if (!io || !outputDevice?.serial_number) return;
+    
+            /* 1️⃣  Chuyển output_value (string | JSON | array) → mảng string */
+            let values: (string | { action?: string, value?: string })[] = [];
+            try {
+                if (Array.isArray(link.output_value)) {
+                    values = link.output_value;                         // đã là mảng
+                } else if (typeof link.output_value === 'string') {
+                    const parsed = JSON.parse(link.output_value);       // thử parse JSON
+                    values = Array.isArray(parsed) ? parsed : [parsed];
+                }
+            } catch {
+                values = [link.output_value];                           // fallback: 1 phần tử
+            }
+    
+            /* 2️⃣  Gửi lần lượt từng sự kiện trong mảng */
+            for (const item of values) {
+                // Mặc định action = output_action; có thể ghi đè bởi item
+                let action: string = link.output_action || 'turn_on';
+                let value: string | null = null;
+    
+                // Hỗ trợ cú pháp “action:value” (VD "brightness:100")
+                if (typeof item === 'string') {
+                    if (item.includes(':')) {
+                        [action, value] = item.split(':');
+                    } else {
+                        action = item;
+                    }
+                } else if (typeof item === 'object' && item !== null && 'action' in item) {
+                    // Cho phép truyền object { action, value }
+                    action = (item as any).action || action;
+                    value = (item as any).value || null;
+                    console.log('item:', item);
+                }
+    
+                
                 io.emit('device_command', {
                     device_serial: outputDevice.serial_number,
-                    action: outputAction,
-                    value: outputValue,
+                    action,
+                    value,
                     link_id: link.id,
                     timestamp: new Date().toISOString()
                 });
-                console.log(`\u2705 [TriggerOutput] Đã emit device_command tới thiết bị output: ${outputDevice.serial_number}`);
+                console.log(`✅ [TriggerOutput] Đã emit ${action} → ${outputDevice.serial_number}`);
             }
-            // Có thể bổ sung cập nhật trạng thái DB, gửi MQTT, ... tại đây
+    
         } catch (error) {
             console.error('❌ [TriggerOutput] Error triggering output device:', error);
         }
