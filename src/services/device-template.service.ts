@@ -268,7 +268,6 @@ class DeviceTemplateService {
                 },
             },
         });
-        console.log(templates)
         
         return templates.map((template: any) => this.mapPrismaDeviceTemplateToDeviceTemplate(template));
     }
@@ -524,8 +523,8 @@ class DeviceTemplateService {
         return {
             template_id: template.template_id,
             device_type_id: template.device_type_id ?? null,
-            category_name: template.categories.name,
-            name: template.name,
+            category_name: template.categories?.name,
+            name: template?.name,
             created_by: template.created_by ?? null,
             created_name: template.account?.employee
                 ? `${template.account.employee.surname} ${template.account.employee.lastname}`

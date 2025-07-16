@@ -15,6 +15,7 @@ export interface DeviceLinkInput {
     logic_operator?: 'AND' | 'OR';
     component_id?: string;
     output_action?: 'turn_on' | 'turn_off';
+    output_value?: string; // Thêm field để set giá trị cho output
 }
 
 export interface DeviceLinkUpdate {
@@ -22,6 +23,7 @@ export interface DeviceLinkUpdate {
     logic_operator?: 'AND' | 'OR';
     component_id?: string;
     output_action?: 'turn_on' | 'turn_off';
+    output_value?: string; // Thêm field để set giá trị cho output
 }
 
 export interface DeviceLink {
@@ -32,6 +34,7 @@ export interface DeviceLink {
     value_active: string;
     logic_operator: 'AND' | 'OR';
     output_action: 'turn_on' | 'turn_off';
+    output_value?: string; // Thêm field để set giá trị cho output
     created_at: Date | null;
     updated_at: Date | null;
     deleted_at: Date | null;
@@ -39,6 +42,22 @@ export interface DeviceLink {
     output_device?: any;
     component?: any;
 }
+
+// Predefined output values (dữ liệu cứng theo yêu cầu)
+export const PREDEFINED_OUTPUT_VALUES = {
+    light_brightness: [
+        { label: 'Độ sáng thấp (25%)', value: '25' },
+        { label: 'Độ sáng trung bình (50%)', value: '50' },
+        { label: 'Độ sáng cao (75%)', value: '75' },
+        { label: 'Độ sáng tối đa (100%)', value: '100' }
+    ],
+    alert_mode: [
+        { label: 'Cảnh báo nhẹ', value: 'low_alert' },
+        { label: 'Cảnh báo trung bình', value: 'medium_alert' },
+        { label: 'Cảnh báo cao', value: 'high_alert' },
+        { label: 'Cảnh báo khẩn cấp', value: 'emergency_alert' }
+    ]
+};
 
 class DeviceLinksService {
     private prisma: PrismaClient;
@@ -93,6 +112,7 @@ class DeviceLinksService {
                 value_active: input.value_active,
                 logic_operator: input.logic_operator || 'AND',
                 output_action: input.output_action || 'turn_on',
+                output_value: input.output_value || '', // Thêm output_value
                 created_at: new Date(),
                 updated_at: new Date()
             },
@@ -269,6 +289,9 @@ class DeviceLinksService {
      */
     async processDeviceLinks(deviceId: string, currentValue: any): Promise<void> {
         try {
+            console.log('🔍 [DeviceLinks] Processing device links for device:', deviceId);
+            console.log('📊 [DeviceLinks] Current value received:', JSON.stringify(currentValue, null, 2));
+            
             // Lấy tất cả links có input_device_id là deviceId
             const inputLinks = await this.prisma.device_links.findMany({
                 where: {
@@ -281,7 +304,25 @@ class DeviceLinksService {
                 }
             });
 
-            if (inputLinks.length === 0) return;
+            console.log(`🔗 [DeviceLinks] Found ${inputLinks.length} input links for device ${deviceId}`);
+            
+            if (inputLinks.length === 0) {
+                console.log('⚠️  [DeviceLinks] No input links found, exiting');
+                return;
+            }
+
+            // Log chi tiết từng link
+            inputLinks.forEach((link, index) => {
+                console.log(`🔗 [DeviceLinks] Link ${index + 1}:`, {
+                    id: link.id,
+                    component_id: link.component_id,
+                    value_active: link.value_active,
+                    logic_operator: link.logic_operator,
+                    output_action: link.output_action,
+                    output_value: link.output_value,
+                    output_device_name: link.output_device?.name
+                });
+            });
 
             // Group links by output device để xử lý logic AND/OR
             const linksByOutput = new Map<string, any[]>();
@@ -293,12 +334,15 @@ class DeviceLinksService {
                 linksByOutput.get(outputId)!.push(link);
             }
 
+            console.log(`🎯 [DeviceLinks] Processing ${linksByOutput.size} output devices`);
+
             // Xử lý từng output device
             for (const [outputDeviceId, links] of linksByOutput) {
+                console.log(`⚙️ [DeviceLinks] Processing output device: ${outputDeviceId}`);
                 await this.processOutputDeviceLinks(outputDeviceId, links, deviceId, currentValue);
             }
         } catch (error) {
-            console.error('Error processing device links:', error);
+            console.error('❌ [DeviceLinks] Error processing device links:', error);
         }
     }
 
@@ -311,6 +355,9 @@ class DeviceLinksService {
         triggeredDeviceId: string, 
         currentValue: any
     ): Promise<void> {
+        console.log(`🔍 [ProcessOutput] Processing links for output device: ${outputDeviceId}`);
+        console.log(`🔍 [ProcessOutput] Triggered by device: ${triggeredDeviceId}`);
+        
         // Lấy tất cả input devices cho output này
         const allInputLinks = await this.prisma.device_links.findMany({
             where: {
@@ -327,6 +374,8 @@ class DeviceLinksService {
             }
         });
 
+        console.log(`🔗 [ProcessOutput] Found ${allInputLinks.length} total input links for this output`);
+
         // Kiểm tra điều kiện cho từng input
         const conditionResults = new Map<string, boolean>();
         
@@ -337,19 +386,37 @@ class DeviceLinksService {
             // Nếu là device vừa update, dùng currentValue mới
             if (inputDeviceId === triggeredDeviceId) {
                 valueToCheck = currentValue;
+                console.log(`🔄 [ProcessOutput] Using NEW value for triggered device ${inputDeviceId}`);
+            } else {
+                console.log(`📊 [ProcessOutput] Using stored value for device ${inputDeviceId}`);
             }
+            
+            console.log(`🔍 [ProcessOutput] Checking condition for link:`, {
+                input_device_id: inputDeviceId,
+                component_id: link.component_id,
+                value_active: link.value_active,
+                valueToCheck: JSON.stringify(valueToCheck, null, 2)
+            });
             
             const conditionMet = this.checkValueCondition(valueToCheck, link.value_active);
             conditionResults.set(inputDeviceId, conditionMet);
+            
+            console.log(`✅ [ProcessOutput] Condition result for ${inputDeviceId}: ${conditionMet}`);
         }
 
         // Áp dụng logic operator
+        console.log('🔍 [ProcessOutput] Evaluating logic conditions...');
         const shouldTrigger = this.evaluateLogicConditions(allInputLinks, conditionResults);
+        
+        console.log(`🎯 [ProcessOutput] Should trigger output device: ${shouldTrigger}`);
         
         if (shouldTrigger) {
             // Trigger output device
             const outputLink = links[0]; // Lấy link đầu tiên để có thông tin output device
+            console.log(`🚀 [ProcessOutput] TRIGGERING output device: ${outputLink.output_device?.name}`);
             await this.triggerOutputDevice(outputLink);
+        } else {
+            console.log(`⏸️ [ProcessOutput] Conditions not met, NOT triggering output device`);
         }
     }
 
@@ -391,19 +458,48 @@ class DeviceLinksService {
      * Kiểm tra điều kiện value có match với value_active không
      */
     private checkValueCondition(currentValue: any, valueActive: string): boolean {
-        if (!currentValue || !Array.isArray(currentValue)) return false;
+        console.log(`🔍 [CheckCondition] Checking value condition:`);
+        console.log(`📊 [CheckCondition] Current value:`, JSON.stringify(currentValue, null, 2));
+        console.log(`🎯 [CheckCondition] Target value active: "${valueActive}"`);
+        
+        if (!currentValue || !Array.isArray(currentValue)) {
+            console.log(`❌ [CheckCondition] Invalid current value - not an array`);
+            return false;
+        }
 
         // Tìm trong current_value có instance nào có value match với valueActive
-        for (const component of currentValue) {
+        for (let i = 0; i < currentValue.length; i++) {
+            const component = currentValue[i];
+            console.log(`🔍 [CheckCondition] Checking component ${i}:`, {
+                component_id: component.component_id,
+                name: component.name,
+                datatype: component.datatype,
+                instances_count: component.instances?.length || 0
+            });
+            
             if (component.instances && Array.isArray(component.instances)) {
-                for (const instance of component.instances) {
-                    if (this.compareValues(instance.value, valueActive, component.datatype)) {
+                for (let j = 0; j < component.instances.length; j++) {
+                    const instance = component.instances[j];
+                    console.log(`🔍 [CheckCondition] Checking instance ${j}:`, {
+                        instance_id: instance.instance_id,
+                        value: instance.value,
+                        datatype: component.datatype
+                    });
+                    
+                    const comparisonResult = this.compareValues(instance.value, valueActive, component.datatype);
+                    console.log(`⚖️ [CheckCondition] Comparison result: ${comparisonResult}`);
+                    
+                    if (comparisonResult) {
+                        console.log(`✅ [CheckCondition] MATCH FOUND! Condition met.`);
                         return true;
                     }
                 }
+            } else {
+                console.log(`⚠️ [CheckCondition] Component has no instances array`);
             }
         }
 
+        console.log(`❌ [CheckCondition] NO MATCH FOUND. Condition not met.`);
         return false;
     }
 
@@ -411,27 +507,54 @@ class DeviceLinksService {
      * So sánh values dựa trên datatype
      */
     private compareValues(instanceValue: any, activeValue: string, datatype: string): boolean {
+        console.log(`🔍 [CompareValues] Comparing values:`);
+        console.log(`   - Instance value: ${instanceValue} (type: ${typeof instanceValue})`);
+        console.log(`   - Active value: "${activeValue}" (type: ${typeof activeValue})`);
+        console.log(`   - Data type: ${datatype}`);
+        
         if (datatype === 'NUMBER') {
             const numInstance = parseFloat(instanceValue);
             const numActive = parseFloat(activeValue);
             
+            console.log(`🔢 [CompareValues] NUMBER comparison:`);
+            console.log(`   - Parsed instance: ${numInstance}`);
+            console.log(`   - Parsed active: ${numActive}`);
+            
             // Support comparison operators: >, <, >=, <=, ==
             if (activeValue.startsWith('>=')) {
-                return numInstance >= parseFloat(activeValue.slice(2));
+                const threshold = parseFloat(activeValue.slice(2));
+                const result = numInstance >= threshold;
+                console.log(`   - Operator: >= ${threshold}, Result: ${result}`);
+                return result;
             } else if (activeValue.startsWith('<=')) {
-                return numInstance <= parseFloat(activeValue.slice(2));
+                const threshold = parseFloat(activeValue.slice(2));
+                const result = numInstance <= threshold;
+                console.log(`   - Operator: <= ${threshold}, Result: ${result}`);
+                return result;
             } else if (activeValue.startsWith('>')) {
-                return numInstance > parseFloat(activeValue.slice(1));
+                const threshold = parseFloat(activeValue.slice(1));
+                const result = numInstance > threshold;
+                console.log(`   - Operator: > ${threshold}, Result: ${result}`);
+                return result;
             } else if (activeValue.startsWith('<')) {
-                return numInstance < parseFloat(activeValue.slice(1));
+                const threshold = parseFloat(activeValue.slice(1));
+                const result = numInstance < threshold;
+                console.log(`   - Operator: < ${threshold}, Result: ${result}`);
+                return result;
             } else {
-                return numInstance === numActive;
+                const result = numInstance === numActive;
+                console.log(`   - Operator: === ${numActive}, Result: ${result}`);
+                return result;
             }
         } else if (datatype === 'BOOLEAN') {
-            return String(instanceValue).toLowerCase() === activeValue.toLowerCase();
+            const result = String(instanceValue).toLowerCase() === activeValue.toLowerCase();
+            console.log(`🔘 [CompareValues] BOOLEAN comparison: ${result}`);
+            return result;
         } else {
             // STRING comparison
-            return String(instanceValue) === activeValue;
+            const result = String(instanceValue) === activeValue;
+            console.log(`📝 [CompareValues] STRING comparison: ${result}`);
+            return result;
         }
     }
 
@@ -440,37 +563,206 @@ class DeviceLinksService {
      */
     private async triggerOutputDevice(link: any): Promise<void> {
         try {
+            console.log(`🚀 [TriggerOutput] Starting trigger for output device`);
+            console.log(`🔗 [TriggerOutput] Link details:`, {
+                id: link.id,
+                output_action: link.output_action,
+                output_value: link.output_value,
+                output_device_name: link.output_device?.name,
+                output_device_id: link.output_device?.device_id
+            });
+            
             const outputDevice = link.output_device;
             const powerStatus = link.output_action === 'turn_on' ? true : false;
             
-            // Cập nhật trạng thái thiết bị output theo output_action
-            await this.prisma.devices.update({
-                where: { device_id: outputDevice.device_id },
-                data: {
-                    power_status: powerStatus,
-                    updated_at: new Date()
+            console.log(`⚡ [TriggerOutput] Setting power status to: ${powerStatus}`);
+            
+            // Prepare update data với output_value nếu có
+            const updateData: any = {
+                power_status: powerStatus,
+                updated_at: new Date()
+            };
+            
+            // Nếu có output_value, cập nhật current_value của device
+            if (link.output_value && link.output_value.trim() !== '') {
+                console.log(`💡 [TriggerOutput] Processing output_value: ${link.output_value}`);
+                
+                // Tạo current_value structure cho output device
+                const outputValue = this.buildOutputValue(link.output_value, link.output_action);
+                console.log(`🏗️ [TriggerOutput] Built output value:`, JSON.stringify(outputValue, null, 2));
+                
+                if (outputValue) {
+                    updateData.current_value = outputValue;
+                    console.log(`✅ [TriggerOutput] Added current_value to update data`);
+                } else {
+                    console.log(`⚠️ [TriggerOutput] Failed to build output value`);
                 }
+            } else {
+                console.log(`📝 [TriggerOutput] No output_value specified, only updating power status`);
+            }
+            
+            console.log(`💾 [TriggerOutput] Final update data:`, JSON.stringify(updateData, null, 2));
+            
+            // Cập nhật trạng thái thiết bị output
+            const updatedDevice = await this.prisma.devices.update({
+                where: { device_id: outputDevice.device_id },
+                data: updateData
             });
+            
+            console.log(`✅ [TriggerOutput] Device updated successfully in database`);
 
-            // Gửi command qua socket
+            // Gửi command qua socket với output_value
             if (io) {
+                const socketData: any = {
+                    action: "updateState",
+                    serialNumber: outputDevice.serial_number,
+                    state: { power_status: powerStatus },
+                    triggeredBy: link.input_device.serial_number,
+                    linkId: link.id,
+                    outputAction: link.output_action,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Thêm output_value vào socket data nếu có
+                if (link.output_value && link.output_value.trim() !== '') {
+                    socketData.outputValue = link.output_value;
+                    socketData.state.outputValue = link.output_value;
+                    console.log(`📡 [TriggerOutput] Added output_value to socket data`);
+                }
+                
+                console.log(`📡 [TriggerOutput] Sending socket command:`, JSON.stringify(socketData, null, 2));
+                
                 io.of("/device")
                     .to(`device:${outputDevice.serial_number}`)
-                    .emit("command", {
-                        action: "updateState",
-                        serialNumber: outputDevice.serial_number,
-                        state: { power_status: powerStatus },
-                        triggeredBy: link.input_device.serial_number,
-                        linkId: link.id,
-                        outputAction: link.output_action,
-                        timestamp: new Date().toISOString()
-                    });
+                    .emit("command", socketData);
+                    
+                console.log(`✅ [TriggerOutput] Socket command sent to device:${outputDevice.serial_number}`);
+            } else {
+                console.log(`⚠️ [TriggerOutput] Socket.IO not available, skipping socket command`);
             }
 
             const action = link.output_action === 'turn_on' ? 'bật' : 'tắt';
-            console.log(`Device link triggered: ${link.input_device.name} -> ${action} ${outputDevice.name}`);
+            const valueText = link.output_value ? ` với giá trị ${link.output_value}` : '';
+            const successMessage = `Device link triggered: ${link.input_device.name} -> ${action} ${outputDevice.name}${valueText}`;
+            
+            console.log(`🎉 [TriggerOutput] SUCCESS: ${successMessage}`);
         } catch (error) {
-            console.error('Error triggering output device:', error);
+            console.error('❌ [TriggerOutput] Error triggering output device:', error);
+        }
+    }
+
+    /**
+     * Build output value structure based on predefined values
+     */
+    private buildOutputValue(outputValue: string, outputAction: string): any[] | null {
+        try {
+            // Tạo cấu trúc current_value cho output device
+            const timestamp = new Date().toISOString();
+            
+            // Thử parse JSON array từ frontend
+            try {
+                const outputArray = JSON.parse(outputValue);
+                if (Array.isArray(outputArray) && outputArray.length > 0) {
+                    const components: any[] = [];
+                    
+                    for (const item of outputArray) {
+                        if (item === 'alert') {
+                            // Thêm component cảnh báo
+                            components.push({
+                                component_id: 'alert_mode',
+                                name: 'Chế độ cảnh báo',
+                                datatype: 'BOOLEAN',
+                                unit: '',
+                                instances: [{
+                                    instance_id: 'alert_01',
+                                    value: true,
+                                    timestamp: timestamp
+                                }]
+                            });
+                        } else if (item === 'brightness_control') {
+                            // Thêm component độ sáng mặc định
+                            components.push({
+                                component_id: 'brightness_control',
+                                name: 'Điều khiển độ sáng',
+                                datatype: 'NUMBER',
+                                unit: 'lux',
+                                instances: [{
+                                    instance_id: 'brightness_01',
+                                    value: 100, // Giá trị mặc định
+                                    timestamp: timestamp
+                                }]
+                            });
+                        } else if (item.startsWith('brightness:')) {
+                            // Thêm component độ sáng với giá trị cụ thể
+                            const value = item.split(':')[1];
+                            components.push({
+                                component_id: 'brightness_control',
+                                name: 'Điều khiển độ sáng',
+                                datatype: 'NUMBER',
+                                unit: 'lux',
+                                instances: [{
+                                    instance_id: 'brightness_01',
+                                    value: parseInt(value) || 100,
+                                    timestamp: timestamp
+                                }]
+                            });
+                        }
+                    }
+                    
+                    if (components.length > 0) {
+                        return components;
+                    }
+                }
+            } catch (jsonError) {
+                // Không phải JSON array, xử lý như string thường
+                console.log('Output value không phải JSON array, xử lý như string:', outputValue);
+            }
+            
+            // Xử lý brightness values cũ (fallback)
+            if (['25', '50', '75', '100'].includes(outputValue)) {
+                return [{
+                    component_id: 'brightness_control',
+                    name: 'Điều khiển độ sáng',
+                    datatype: 'NUMBER',
+                    unit: '%',
+                    instances: [{
+                        instance_id: 'brightness_01',
+                        value: parseInt(outputValue),
+                        timestamp: timestamp
+                    }]
+                }];
+            }
+            
+            // Xử lý alert mode values cũ (fallback)
+            if (['low_alert', 'medium_alert', 'high_alert', 'emergency_alert'].includes(outputValue)) {
+                return [{
+                    component_id: 'alert_mode',
+                    name: 'Chế độ cảnh báo',
+                    datatype: 'STRING',
+                    unit: '',
+                    instances: [{
+                        instance_id: 'alert_01',
+                        value: outputValue,
+                        timestamp: timestamp
+                    }]
+                }];
+            }
+            
+            // Default: trả về power status
+            return [{
+                component_id: 'power_control',
+                name: 'Điều khiển nguồn',
+                datatype: 'BOOLEAN',
+                unit: '',
+                instances: [{
+                    instance_id: 'power_01',
+                    value: outputAction === 'turn_on',
+                    timestamp: timestamp
+                }]
+            }];
+        } catch (error) {
+            console.error('Error building output value:', error);
+            return null;
         }
     }
 
@@ -501,6 +793,7 @@ class DeviceLinksService {
             value_active: link.value_active,
             logic_operator: link.logic_operator,
             output_action: link.output_action || 'turn_on',
+            output_value: link.output_value || '', // Thêm output_value
             created_at: link.created_at,
             updated_at: link.updated_at,
             deleted_at: link.deleted_at,

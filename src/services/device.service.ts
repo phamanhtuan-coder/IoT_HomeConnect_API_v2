@@ -964,14 +964,13 @@ class DeviceService {
             }
         });
 
-        // Process device links after updating current value
         try {
+            // 🚀 QUAN TRỌNG: Sau khi update current_value, tự động trigger device links
             const DeviceLinksService = (await import('./device-links.service')).default;
             const deviceLinksService = new DeviceLinksService();
             await deviceLinksService.processDeviceLinks(device!.device_id, current_value);
         } catch (error) {
             console.error('Error processing device links:', error);
-            // Don't throw error here to avoid breaking the main update flow
         }
 
         return this.mapPrismaDeviceToAuthDevice(updatedDevice);

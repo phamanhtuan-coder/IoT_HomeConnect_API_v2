@@ -9,6 +9,8 @@ router.post('/', authMiddleware, (req, res) => deviceLinksController.createDevic
 
 router.get('/', authMiddleware, (req, res) => deviceLinksController.getDeviceLinks(req, res));
 
+router.get('/output-values', authMiddleware, (req, res) => deviceLinksController.getPredefinedOutputValues(req, res));
+
 router.get('/output/:outputDeviceId', authMiddleware, (req, res) => deviceLinksController.getLinksByOutputDevice(req, res));
 
 router.put('/:linkId', authMiddleware, (req, res) => deviceLinksController.updateDeviceLink(req, res));
