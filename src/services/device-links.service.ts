@@ -318,15 +318,11 @@ class DeviceLinksService {
                     const field = link.component_id; // component_id là tên field (ví dụ: gas, temp, humidity)
                     const valueActive = link.value_active;
                     const value = sensorData[field];
-                    console.log('value', value)
-                    console.log('valueActive', valueActive)
-                    console.log('field', field)
-                    console.log('link', link)
-                    console.log('sensorData', sensorData)
                     
                     if (link.logic_operator === 'OR') {
                         hasOr = true;
                         orResult = orResult || this.compareValue(value, valueActive);
+                        console.log('OrResult:', orResult)
                     } else {
                         // AND logic
                         if (!this.compareValue(value, valueActive)) {
