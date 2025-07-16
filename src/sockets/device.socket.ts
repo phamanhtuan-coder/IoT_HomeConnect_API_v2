@@ -8,6 +8,7 @@ import AlertService from '../services/alert.service';
 import NotificationService from '../services/notification.service';
 import { NotificationType } from '../types/notification';
 import HourlyValueService from '../services/hourly-value.service';
+import AutomationService from '../services/automation.service';
 import {
     handleDeviceOnline,
     handleDeviceCapabilities,
@@ -15,6 +16,7 @@ import {
     handleDeviceDisconnect,
     validateDeviceAccess
 } from './handlers/device.handlers';
+import DeviceLinksService from '../services/device-links.service';
 
 const prisma = new PrismaClient();
 const alertService = new AlertService();
@@ -53,6 +55,9 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
     // Giữ nguyên namespace /device như trong Postman
     const deviceNamespace = io.of('/device');
     const clientNamespace = io.of('/client');
+
+    // Set socket instance for automation service
+    AutomationService.setSocketInstance(io);
 
     // ============= ESP8266 CONNECTION LOGGING =============
     console.log("🔧 Device Socket setup with ESP8266 compatibility:");
@@ -176,16 +181,40 @@ export const setupDeviceSocket = (io: Server<ClientToServerEvents, ServerToClien
                 console.log(`⚙️  Device capabilities from ${serialNumber} (${clientType}):`, data);
                 handleDeviceCapabilities(socket, clientNamespace, data, prisma);
             });
-
-            socket.on('sensorData', (data) => {
+            socket.on('sensorData', async (data) => {
                 console.log(`🌡️  Sensor data from ${serialNumber} (${clientType}):`, data);
                 handleSensorData(socket, data, clientNamespace, prisma, alertService, notificationService, hourlyValueService);
+
+                // === GỌI HÀM KIỂM TRA VÀ TRIGGER AUTOMATION ===
+                try {
+                    await AutomationService.checkAndTriggerAutomation({
+                        serialNumber,
+                        gas: data.gas,
+                        temperature: data.temperature,
+                        humidity: data.humidity,
+                        smoke_level: data.smoke_level,
+                        ...data
+                    });
+                } catch (err) {
+                    console.error('Device link automation error:', err);
+                }
             });
 
             // ESP8266 Fire Alarm specific events
-            socket.on('alarm_trigger', (data) => {
+            socket.on('alarm_trigger', async (data) => {
                 console.log(`🚨 FIRE ALARM TRIGGERED from ${serialNumber} (${clientType}):`, data);
 
+                // === GỌI HÀM KIỂM TRA VÀ TRIGGER AUTOMATION ===
+                try {
+                    await AutomationService.checkAndTriggerAutomation({
+                        serialNumber,
+                        gas: data.gas_level || data.smoke_level,
+                        temperature: data.temperature,
+                        ...data
+                    });
+                } catch (err) {
+                    console.error('Device link automation error:', err);
+                }
 
                 // Broadcast emergency alert to all clients
                 clientNamespace.emit('emergency_alert', {

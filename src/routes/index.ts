@@ -144,6 +144,7 @@ import cameraRoutes from "./camera.routes";
 import gardenHubRoutes from "./gardenHubRoutes";
 import deviceCapabilitiesRoutes from './device-capabilities.routes';
 import deviceLinksRoutes from './device-links.routes';
+import automationRoutes from './automation.routes';
 
 const router = Router();
 
@@ -179,6 +180,7 @@ router.use('/cameras', cameraRoutes);  // Add camera routes
 router.use('/garden-hubs', gardenHubRoutes);  // Add garden hub routes
 router.use('/device-capabilities', deviceCapabilitiesRoutes);
 router.use('/device-links', deviceLinksRoutes);  // Add device links routes
+router.use('/automation', automationRoutes);  // Add automation routes
 
 
 export default router;
