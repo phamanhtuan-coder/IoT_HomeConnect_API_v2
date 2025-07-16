@@ -57,7 +57,6 @@ class AutomationService {
 
             // 2. Chuyển đổi sensor data thành current_value format
             const currentValue = this.convertSensorDataToCurrentValue(sensorData);
-            console.log(`📊 [Automation] Converted current_value:`, JSON.stringify(currentValue, null, 2));
 
             // 3. Gọi processDeviceLinks có sẵn
             await this.deviceLinksService.processDeviceLinks(device.device_id, currentValue);
