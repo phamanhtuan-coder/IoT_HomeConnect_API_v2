@@ -269,7 +269,9 @@ let error_list: { device_serial: string | null; error: string }[] = [];
         try {
             
         const { device_serial, stage, status } = input;
-            console.log(device_serial)
+        console.log('device_serial', device_serial)
+        console.log('stage', stage)
+        console.log('status', status)
         
         const production = await this.prisma.production_tracking.findFirst({
             where: { device_serial: device_serial, is_deleted: false },
@@ -368,9 +370,9 @@ let error_list: { device_serial: string | null; error: string }[] = [];
                     stage_logs: stageLogList
                 });
             } else if (status === StatusSerialStage.FIRMWARE_UPLOADING) {
-                if (production.status !== StatusSerialStage.FIRMWARE_UPLOADING) {
-                    return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: Đang nạp firmware');
-                }
+                // if (production.status !== StatusSerialStage.FIRMWARE_UPLOADING) {
+                //     return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: Đang nạp firmware');
+                // }
 
                 stageLog = {
                     ...stageLog,
@@ -398,9 +400,9 @@ let error_list: { device_serial: string | null; error: string }[] = [];
                     stage_logs: stageLogList
                 });
             } else if (status === StatusSerialStage.FIRMWARE_FAILED) {
-                if (production.status !== StatusSerialStage.FIRMWARE_UPLOADING) {
-                    return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: Đang nạp firmware');
-                }
+                // if (production.status !== StatusSerialStage.FIRMWARE_UPLOADING) {
+                //     return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: Đang nạp firmware');
+                // }
 
                 stageLog = {
                     ...stageLog,
@@ -433,9 +435,9 @@ let error_list: { device_serial: string | null; error: string }[] = [];
         }
         else if (stage === StageSerialStage.QC) {
             if (status === StatusSerialStage.FIRMWARE_UPLOADED) {
-                if (production.status !== StatusSerialStage.FIRMWARE_UPLOADED) {
-                    return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: Đã nạp firmware');
-                }
+                // if (production.status !== StatusSerialStage.FIRMWARE_UPLOADED) {
+                //     return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: Đã nạp firmware');
+                // }
 
                 stageLog = {
                     ...stageLog,
@@ -464,9 +466,9 @@ let error_list: { device_serial: string | null; error: string }[] = [];
                 });
             }
             else if (status === StatusSerialStage.TESTING) {
-                if (production.status !== StatusSerialStage.TESTING) {
-                    return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: Đang kiểm thử');
-                }
+                // if (production.status !== StatusSerialStage.TESTING) {
+                //     return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: Đang kiểm thử');
+                // }
 
                 // Hoàn thành stage QC
                 stageLog = {
@@ -502,9 +504,9 @@ let error_list: { device_serial: string | null; error: string }[] = [];
         }
         else if (stage === StageSerialStage.COMPLETED) {
             if (status === StatusSerialStage.PENDING_PACKAGING) {
-                if (production.status !== StatusSerialStage.PENDING_PACKAGING) {
-                    return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: Đang chờ xuất kho');
-                }
+                // if (production.status !== StatusSerialStage.PENDING_PACKAGING) {
+                //     return errorResponse(ErrorCodes.BAD_REQUEST, 'Trạng thái yêu cầu cập nhật không hợp lệ với trạng thái hiện tại! Trạng thái hiện tại: Đang chờ xuất kho');
+                // }
 
                 stageLog = {
                     ...stageLog,

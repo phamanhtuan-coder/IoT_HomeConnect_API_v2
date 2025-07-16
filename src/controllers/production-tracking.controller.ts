@@ -29,6 +29,7 @@ export class ProductionTrackingController {
     }
 
     UpdateProductionSerial = async (req: Request, res: Response, next: NextFunction) => {
+        console.log('update production serial', req.body);
         const result = await this.productionTrackingService.UpdateProductionSerial(req.body as ProductionTrackingSerialUpdateInput, req.body.employeeId);
 
         res.status(200).json(result);

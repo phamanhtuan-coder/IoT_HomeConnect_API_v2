@@ -30,7 +30,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
 
 /**
  * @swagger
- * /api/shared-permissions/{permissionId}:
+ * /api/shared-permissions/{serialNumber}:
  *   delete:
  *     tags:
  *       - Shared Permission
@@ -42,7 +42,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  *       - Bearer: []
  *     parameters:
  *       - in: path
- *         name: permissionId
+ *         name: serialNumber
  *         required: true
  *         type: string
  *         description: ID của quyền chia sẻ cần xóa
@@ -63,7 +63,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  * Yêu cầu xác thực và kiểm tra vai trò nhóm.
  */
 router.delete(
-    '/:permissionId',
+    '/remove-user-shared/:serialNumber',
     authMiddleware,
     groupRoleMiddleware,
     asyncHandler(sharedPermissionController.revokeShareDevice)
@@ -71,7 +71,7 @@ router.delete(
 
 /**
  * @swagger
- * /api/shared-permissions/recipient/{permissionId}:
+ * /api/shared-permissions/recipient/{serialNumber}:
  *   delete:
  *     tags:
  *       - Shared Permission
@@ -83,7 +83,7 @@ router.delete(
  *       - Bearer: []
  *     parameters:
  *       - in: path
- *         name: permissionId
+ *         name: serialNumber
  *         required: true
  *         type: string
  *         description: ID của quyền chia sẻ cần từ chối
@@ -104,7 +104,7 @@ router.delete(
  * Yêu cầu xác thực.
  */
 router.delete(
-    '/recipient/:permissionId',
+    '/recipient/:serialNumber',
     authMiddleware,
     asyncHandler(sharedPermissionController.revokeShareByRecipient)
 );
@@ -119,6 +119,12 @@ router.get(
     '/get-shared-users/:serialNumber',
     authMiddleware,
     asyncHandler(sharedPermissionController.getSharedUsersBySerialNumber)
+);
+
+router.post(
+    '/approve-share-permission',
+    authMiddleware,
+    asyncHandler(sharedPermissionController.approveSharePermission)
 );
 
 export default router;

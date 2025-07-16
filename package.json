@@ -18,7 +18,13 @@
     "test:integration": "jest --testPathPatterns=\"integration.test.ts\"",
     "test:simple": "jest --testPathPatterns=\"simple-device-test.ts\"",
     "test:demo": "ts-node src/__tests__/device-simulator-script.ts",
-    "test:quick-demo": "powershell -ExecutionPolicy Bypass -File scripts/run-tests.ps1 demo"
+    "test:quick-demo": "powershell -ExecutionPolicy Bypass -File scripts/run-tests.ps1 demo",
+    "seed": "ts-node scripts/seed-mock-data.ts seed",
+    "clear-mock": "ts-node scripts/seed-mock-data.ts clear",
+    "db:seed": "node prisma/seed.js",
+    "db:clear": "node prisma/clear.js",
+    "db:reset": "npm run db:clear && npm run db:seed",
+    "db:test": "node prisma/test-seed.js"
   },
   "keywords": [],
   "author": "",

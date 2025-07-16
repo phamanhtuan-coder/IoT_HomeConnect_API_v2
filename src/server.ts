@@ -5,6 +5,7 @@ import { initSocket } from './sockets';
 import { appConfig } from './config/app';
 import admin from './config/firebase';
 import { setSocketInstance } from './services/device.service';
+import { setSocketInstance as setDeviceLinksSocketInstance } from './services/device-links.service';
 import { setSocketInstance as setDoorSocketInstance } from './services/door.service';
 
 // Check Firebase Admin initialization
@@ -17,6 +18,8 @@ initSocket(io);
 
 // Pass Socket.IO instance to services
 setSocketInstance(io);
+setSocketInstance(io);
+setDeviceLinksSocketInstance(io);
 setDoorSocketInstance(io);
 
 // Use httpServer instead of app.listen to properly support Socket.IO

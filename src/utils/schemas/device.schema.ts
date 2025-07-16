@@ -22,6 +22,15 @@ export const deviceIdSchema = z.object({
     }),
 });
 
+export const deviceComponentsSchema = z.object({
+    params: z.object({
+        deviceId: z.string({
+            required_error: `[${ERROR_CODES.DEVICE_ID_REQUIRED}]Device ID is required`,
+            invalid_type_error: `[${ERROR_CODES.DEVICE_ID_INVALID}]Device ID must be a string`
+        }).min(1, `[${ERROR_CODES.DEVICE_ID_INVALID}]Device ID cannot be empty`),
+    }),
+});
+
 export const serialNumberSchema = z.object({
     params: z.object({
         serialNumber: z.string().min(1, 'Serial number is required').max(50, 'Serial number too long'),

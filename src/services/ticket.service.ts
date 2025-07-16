@@ -180,6 +180,7 @@ class TicketService {
 				description,
 				evidence,
 				status: TICKET_STATUS.PENDING,
+				assigned_to: accountByAssignedTo?.account_id,
 				created_at: new Date(),
 				updated_at: new Date(),
 			},
@@ -412,11 +413,27 @@ class TicketService {
 	}
 
 	async getTicketsByUser(userId: string): Promise<any> {
-		const filters = {
-			field: 'tickets.user_id',
-			condition: '=',
-			value: userId,
-		}
+		const account = await this.prisma.account.findFirst({
+			where: { account_id: userId, deleted_at: null },
+		});
+		if (!account) throwError(ErrorCodes.NOT_FOUND, 'Không tìm thấy tài khoản');
+
+		const filters = [{
+			logic: 'OR',
+			filters: [
+				{
+					field: 'tickets.user_id',
+					condition: '=',
+					value: userId,
+				},
+				{
+					field: 'tickets.assigned_to',
+					condition: '=',
+					value: userId,
+				}
+			]
+
+		}]
 
 		const result = await this.getAllTickets(filters, 1, 10);
 		return result;
@@ -425,7 +442,7 @@ class TicketService {
 	async getAllTickets(filters: any, page: number = 1, limit: number = 10, sort: string = 'created_at', order: string = 'desc'): Promise<any> {
 		const get_attr = `
 		tickets.ticket_id, tickets.device_serial, tickets.description,
-		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, tickets.is_deleted,
+		tickets.status, tickets.assigned_to, tickets.resolved_at, tickets.resolve_solution, tickets.is_deleted, tickets.ticket_type_id,
 		ticket_types.type_name as ticket_type_name,
 		ticket_types.priority,
 		COALESCE(CONCAT_WS(' ', customer.surname, customer.lastname), 'N/A') as user_name,
@@ -484,6 +501,20 @@ class TicketService {
 			STATUS_CODE.OK,
 			null
 		);
+	}
+
+	async getPendingShareTicketsByUser(userId: string): Promise<any> {
+		const filters = {
+			logic: 'AND',
+			filters: [
+				{ field: 'tickets.user_id', condition: '=', value: userId },
+				{ field: 'tickets.ticket_type_id', condition: '=', value: TICKET_TYPE.SHARE_PERMISSION },
+				{ field: 'tickets.status', condition: '=', value: TICKET_STATUS.PENDING },
+			],
+		};
+
+		const result = await this.getAllTickets(filters, 1, 20);
+		return result;
 	}
 }
 

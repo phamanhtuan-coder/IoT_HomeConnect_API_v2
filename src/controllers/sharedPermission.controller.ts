@@ -25,8 +25,8 @@ class SharedPermissionController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { permissionId } = req.params;
-            await this.sharedPermissionService.revokeShareDevice(parseInt(permissionId), accountId, req.groupRole as GroupRole);
+            const { serialNumber } = req.params;
+            await this.sharedPermissionService.revokeShareDevice(serialNumber, accountId, req.groupRole as GroupRole);
             res.status(204).send();
         } catch (error) {
             next(error);
@@ -44,8 +44,8 @@ class SharedPermissionController {
         if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         try {
-            const { permissionId } = req.params;
-            await this.sharedPermissionService.revokeShareByRecipient(parseInt(permissionId), accountId);
+            const { serialNumber } = req.params;
+            await this.sharedPermissionService.revokeShareByRecipient(serialNumber, accountId);
             res.status(204).send();
         } catch (error) {
             next(error);
@@ -78,6 +78,30 @@ class SharedPermissionController {
             next(error);
         }
     }
+
+    /**
+     * Approve or reject share permission request
+     * @param req Request Express với ticketId, recipientId và isApproved trong body
+     * @param res Response Express
+     * @param next Middleware tiếp theo
+     */
+    approveSharePermission = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const accountId = req.user?.userId || req.user?.employeeId;
+            if (!accountId) throwError(ErrorCodes.UNAUTHORIZED, 'Không tìm thấy tài khoản');
+
+            const { ticketId, isApproved } = req.body;
+            if (!ticketId || typeof isApproved !== 'boolean') {
+                throwError(ErrorCodes.BAD_REQUEST, 'ticketId và isApproved là bắt buộc');
+            }
+
+            const result = await this.sharedPermissionService.approveSharePermission(ticketId, accountId, isApproved);
+            res.status(200).json(result);
+        } catch (error) {
+            console.log(error);
+            next(error);
+        }
+    };
 }
 
 export default SharedPermissionController;

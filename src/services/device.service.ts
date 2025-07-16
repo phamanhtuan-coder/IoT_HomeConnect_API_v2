@@ -192,6 +192,92 @@ class DeviceService {
         }));
     }
 
+    /**
+     * Lấy danh sách thiết bị kèm components theo tài khoản
+     * @param accountId ID của account
+     * @param search Từ khóa tìm kiếm
+     * @returns Promise<any[]> Danh sách thiết bị kèm components
+     */
+    async getDevicesByAccountWithComponents(accountId: string, search: string): Promise<any[]> {
+        const devices = await this.prisma.devices.findMany({
+            where: {
+                account_id: accountId,
+                is_deleted: false,
+            },
+            include: {
+                device_templates: {
+                    include: {
+                        categories: {
+                            include: {
+                                categories: true
+                            }
+                        },
+                        template_components: {
+                            where: { is_deleted: false },
+                            include: {
+                                components: {
+                                    where: { is_deleted: false }
+                                }
+                            }
+                        }
+                    }
+                },
+                spaces: {
+                    include: {
+                        houses: true
+                    }
+                },
+                firmware: true
+            },
+        });
+
+        const searchValue = search?.toLowerCase().trim();
+        const filteredDevices = searchValue
+        ? devices.filter(device =>
+            device.name?.toLowerCase().includes(searchValue) ||
+            device.serial_number?.toLowerCase().includes(searchValue)
+            )
+        : devices;
+
+        return filteredDevices.map((device) => {
+            // Map device info
+            const deviceInfo = {
+                ...this.mapPrismaDeviceToAuthDevice(device),    
+                device_type_id: device.device_templates?.device_type_id ?? null,
+                device_type_name: device.device_templates?.categories?.name ?? null,
+                device_type_parent_name: device.device_templates?.categories?.categories?.name ?? null,
+                device_type_parent_image: device.device_templates?.categories?.categories?.image ? `data:image/png;base64,${device.device_templates?.categories?.categories?.image}` : null,
+                device_template_name: device.device_templates?.name ?? null,
+                device_template_status: device.device_templates?.status ?? null,
+                device_base_capabilities: device.device_templates?.base_capabilities ?? null
+            };
+
+            // Map components
+            const components = device.device_templates?.template_components?.map(templateComponent => {
+                const component = templateComponent.components;
+                if (!component) return null;
+
+                return {
+                    component_id: component.component_id,
+                    name: component.name,
+                    name_display: component.name_display || component.name,
+                    datatype: component.datatype,
+                    flow_type: component.flow_type,
+                    unit: component.unit,
+                    default_value: component.default_value,
+                    min: component.min,
+                    max: component.max,
+                    quantity_required: templateComponent.quantity_required || 1
+                };
+            }).filter(Boolean) || [];
+
+            return {
+                ...deviceInfo,
+                components: components
+            };
+        });
+    }
+
     async getDevicesByGroup(groupId: number): Promise<Device[]> {
         const devices = await this.prisma.devices.findMany({
             where: {
@@ -845,6 +931,51 @@ class DeviceService {
         return [...AVAILABLE_LED_EFFECTS]; // Spread to create mutable copy
     }
 
+    async updateDeviceCurrentValue(serial_number: string, current_value: any, accountId: string): Promise<Device> {
+        const device = await this.prisma.devices.findFirst({
+            where: { serial_number, is_deleted: false }
+        });
+
+        if (!device) throwError(ErrorCodes.NOT_FOUND, "Device not found");
+
+        // Validate current_value structure
+        if (!Array.isArray(current_value)) {
+            throwError(ErrorCodes.BAD_REQUEST, 'current_value must be an array');
+        }
+
+        // Validate each component in current_value
+        for (const component of current_value) {
+            if (!component.component_id || !component.instances || !Array.isArray(component.instances)) {
+                throwError(ErrorCodes.BAD_REQUEST, 'Invalid current_value structure');
+            }
+
+            for (const instance of component.instances) {
+                if (!instance.index || instance.value === undefined) {
+                    throwError(ErrorCodes.BAD_REQUEST, 'Invalid instance structure');
+                }
+            }
+        }
+
+        const updatedDevice = await this.prisma.devices.update({
+            where: { serial_number },
+            data: {
+                current_value: current_value,
+                updated_at: new Date()
+            }
+        });
+
+        try {
+            // 🚀 QUAN TRỌNG: Sau khi update current_value, tự động trigger device links
+            const DeviceLinksService = (await import('./device-links.service')).default;
+            const deviceLinksService = new DeviceLinksService();
+            await deviceLinksService.processDeviceLinks(device!.device_id, current_value);
+        } catch (error) {
+            console.error('Error processing device links:', error);
+        }
+
+        return this.mapPrismaDeviceToAuthDevice(updatedDevice);
+    }
+
     private validateLEDSupport(capabilities: any): void {
         const mergedCapabilities = capabilities.merged_capabilities?.capabilities || [];
         const deviceCapabilities = Array.isArray(mergedCapabilities) ? mergedCapabilities : [];
@@ -893,7 +1024,7 @@ class DeviceService {
     /**
      * Tổng hợp thông tin từ components trong template thành current_value
      * @param templateId - ID của device template
-     * @returns Object chứa tổng hợp thông tin components
+     * @returns Array chứa tổng hợp thông tin components theo component_id
      */
     private async aggregateComponentsToCurrentValue(templateId: string): Promise<any> {
         // Lấy tất cả components trong template
@@ -910,54 +1041,110 @@ class DeviceService {
         });
 
         if (!templateComponents || templateComponents.length === 0) {
-            return {};
+            return [];
         }
 
-        const currentValue: any = {};
+        const currentValue: any[] = [];
 
         templateComponents.forEach(templateComponent => {
             const component = templateComponent.components;
             if (!component) return;
 
             const quantity = templateComponent.quantity_required || 1;
-            const baseKey = component.name;
 
-            // Nếu có flow_type thì tạo entries cho current_value
+            // Nếu có flow_type thì tạo component entry với instances
             if (component.flow_type) {
-                if (quantity === 1) {
-                    // Nếu chỉ có 1 component, không cần index
-                    currentValue[baseKey] = {
-                        flow_type: component.flow_type,
+                const instances: any[] = [];
+                for (let i = 0; i < quantity; i++) {
+                    instances.push({
+                        index: i + 1,
                         value: component.default_value || null,
-                        unit: component.unit || null,
-                        datatype: component.datatype || 'STRING',
-                        name_display: component.name_display || component.name,
-                        ...(component.datatype === 'NUMBER' && {
-                            min: component.min || null,
-                            max: component.max || null
-                        })
-                    };
-                } else {
-                    // Nếu có nhiều component, tạo với index
-                    for (let i = 0; i < quantity; i++) {
-                        const indexedKey = `${i + 1}`;
-                        currentValue[indexedKey] = {
-                            flow_type: component.flow_type,
-                            value: component.default_value || null,
-                            unit: component.unit || null,
-                            datatype: component.datatype || 'STRING',
-                            name_display: `${component.name_display || component.name} ${i + 1}`,
-                            ...(component.datatype === 'NUMBER' && {
-                                min: component.min || null,
-                                max: component.max || null
-                            })
-                        };
+                        name_display: `${component.name_display || component.name}${quantity > 1 ? ` ${i + 1}` : ''}`
+                    });
+                }
+
+                // Tạo object chứa thông tin chung và instances
+                const componentEntry: any = {
+                    component_id: component.component_id,
+                    flow_type: component.flow_type,
+                    unit: component.unit || null,
+                    datatype: component.datatype || 'STRING',
+                    instances: instances
+                };
+
+                // Thêm min, max cho NUMBER datatype
+                if (component.datatype === 'NUMBER') {
+                    componentEntry.min = component.min || null;
+                    componentEntry.max = component.max || null;
+                }
+
+                currentValue.push(componentEntry);
+            }
+        });
+
+        return currentValue;
+    }
+
+    /**
+     * Lấy danh sách components của thiết bị theo device template
+     * @param deviceId ID của thiết bị
+     * @param accountId ID của account
+     * @returns Promise<any[]> Danh sách components
+     */
+    async getDeviceComponents(deviceId: string, accountId: string): Promise<any[]> {
+        // Lấy thông tin thiết bị và template
+        const device = await this.prisma.devices.findFirst({
+            where: { 
+                device_id: deviceId,
+                is_deleted: false 
+            },
+            include: {
+                device_templates: {
+                    include: {
+                        template_components: {
+                            where: { is_deleted: false },
+                            include: {
+                                components: {
+                                    where: { is_deleted: false }
+                                }
+                            }
+                        }
                     }
                 }
             }
         });
 
-        return currentValue;
+        if (!device) {
+            throwError(ErrorCodes.NOT_FOUND, "Device not found");
+        }
+
+        // Kiểm tra quyền truy cập thiết bị
+        await this.checkDevicePermission(device!.serial_number, accountId, false);
+
+        if (!device!.device_templates?.template_components) {
+            return [];
+        }
+
+        // Map template components thành format cho frontend
+        const components = device!.device_templates.template_components.map(templateComponent => {
+            const component = templateComponent.components;
+            if (!component) return null;
+
+            return {
+                component_id: component.component_id,
+                name: component.name,
+                name_display: component.name_display || component.name,
+                datatype: component.datatype,
+                flow_type: component.flow_type,
+                unit: component.unit,
+                default_value: component.default_value,
+                min: component.min,
+                max: component.max,
+                quantity_required: templateComponent.quantity_required || 1
+            };
+        }).filter(Boolean);
+
+        return components;
     }
 
     private mapPrismaDeviceToAuthDevice(device: any): Device {
