@@ -53,7 +53,7 @@ class AutomationService {
                 return;
             }
 
-            console.log(`✅ [Automation] Found device: ${device.name} (${device.device_id})`);
+            console.log(`✅ [Automation] Found device: ${device.name}`);
 
             // 2. Chuyển đổi sensor data thành current_value format
             const currentValue = this.convertSensorDataToCurrentValue(sensorData);
