@@ -7,6 +7,7 @@ import admin from './config/firebase';
 import { setSocketInstance } from './services/device.service';
 import { setSocketInstance as setDeviceLinksSocketInstance } from './services/device-links.service';
 import { setSocketInstance as setDoorSocketInstance } from './services/door.service';
+import { OutputEventService } from './services/output-event.service';
 
 // Check Firebase Admin initialization
 console.log('Firebase Admin SDK version:', admin.SDK_VERSION);
@@ -21,6 +22,7 @@ setSocketInstance(io);
 setSocketInstance(io);
 setDeviceLinksSocketInstance(io);
 setDoorSocketInstance(io);
+OutputEventService.setSocketInstance(io);
 
 // Use httpServer instead of app.listen to properly support Socket.IO
 httpServer.listen(Number(appConfig.port), '0.0.0.0', () => {

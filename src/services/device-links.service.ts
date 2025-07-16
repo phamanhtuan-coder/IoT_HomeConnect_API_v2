@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { throwError, ErrorCodes } from '../utils/errors';
 import { Server } from 'socket.io';
+import { OutputEventService } from './output-event.service';
 
 let io: Server | null = null;
 
@@ -290,39 +291,45 @@ class DeviceLinksService {
      */
     async processDeviceLinks(deviceId: string, sensorData: any): Promise<void> {
         try {
-            console.log('sensorData', sensorData)
-            // Lấy tất cả device_links cho input_device_id này
+            // Lấy tất cả device_links cho input_device_id này, include component để lấy unit
             const deviceLinks = await this.prisma.device_links.findMany({
                 where: { input_device_id: deviceId, deleted_at: null },
-                include: { output_device: true }
+                include: { output_device: true, component: true }
             });
 
-            console.log('deviceLinks', deviceLinks)
             if (!deviceLinks.length) return;
 
             // Group theo output_device_id
             const linksByOutput: { [outputId: string]: any[] } = {};
-            console.log('linksByOutput - before', linksByOutput)
             for (const link of deviceLinks) {
                 if (!linksByOutput[link.output_device_id]) linksByOutput[link.output_device_id] = [];
                 linksByOutput[link.output_device_id].push(link);
             }
-
-            console.log('linksByOutput - result', linksByOutput)
 
             for (const [outputDeviceId, links] of Object.entries(linksByOutput)) {
                 let shouldTrigger = true;
                 let hasOr = false;
                 let orResult = false;
                 for (const link of links) {
-                    const field = link.component_id; // component_id là tên field (ví dụ: gas, temp, humidity)
-                    const valueActive = link.value_active;
-                    const value = sensorData[field];
+                    // Lấy key từ component.unit (hoặc field_key nếu có)
+                    const field = link.component?.unit; // unit phải trùng với key trong sensorData (ví dụ: 'gas', 'temperature', ...)
+                    const value = sensorData[field]; // sensorData là object phẳng
+                    let valueActiveObj = {};
                     
+                    try {
+                        valueActiveObj = typeof link.value_active === 'string'
+                            ? JSON.parse(link.value_active)
+                            : link.value_active;
+                    } catch {
+                        valueActiveObj = {};
+                    }
+
+                    const valueActive = valueActiveObj[field];
+
                     if (link.logic_operator === 'OR') {
                         hasOr = true;
+                        console.log('So sánh', this.compareValue(value, valueActive))
                         orResult = orResult || this.compareValue(value, valueActive);
-                        console.log('OrResult:', orResult)
                     } else {
                         // AND logic
                         if (!this.compareValue(value, valueActive)) {
@@ -332,6 +339,7 @@ class DeviceLinksService {
                     }
                 }
                 if ((hasOr && orResult) || (!hasOr && shouldTrigger)) {
+                    console.log('Thoả điều kiện, chuẩn bị gửi sự kiện output:')
                     // Trigger output: lấy output_value của dòng đầu tiên (hoặc customize theo nhu cầu)
                     await this.triggerOutputDevice(links[0]);
                 }
@@ -345,6 +353,8 @@ class DeviceLinksService {
      * So sánh giá trị sensor với value_active (hỗ trợ >, >=, <, <=, ==)
      */
     private compareValue(value: any, valueActive: string): boolean {
+        console.log('value:', value)
+        console.log('valueActive:', valueActive)
         if (value === undefined || value === null) return false;
         if (typeof valueActive === 'string') {
             if (valueActive.startsWith('>=')) return value >= parseFloat(valueActive.slice(2));
@@ -400,30 +410,26 @@ class DeviceLinksService {
     private async triggerOutputDevice(link: any): Promise<void> {
         try {
             const outputDevice = link.output_device;
-            console.log('------- Link', link)
-            if (!io || !outputDevice?.serial_number) return;
-    
-            /* 1️⃣  Chuyển output_value (string | JSON | array) → mảng string */
+            if (!outputDevice?.serial_number) return;
+
+            // 1️⃣  Chuyển output_value (string | JSON | array) → mảng string hoặc object
             let values: (string | { action?: string, value?: string })[] = [];
             try {
                 if (Array.isArray(link.output_value)) {
-                    values = link.output_value;                         // đã là mảng
+                    values = link.output_value;
                 } else if (typeof link.output_value === 'string') {
-                    const parsed = JSON.parse(link.output_value);       // thử parse JSON
+                    const parsed = JSON.parse(link.output_value);
                     values = Array.isArray(parsed) ? parsed : [parsed];
                 }
             } catch {
-                values = [link.output_value];                           // fallback: 1 phần tử
+                values = [link.output_value];
             }
-            
-            console.log('values:', values)
-            /* 2️⃣  Gửi lần lượt từng sự kiện trong mảng */
+
             for (const item of values) {
-                // Mặc định action = output_action; có thể ghi đè bởi item
                 let action: string = link.output_action || 'turn_on';
                 let value: string | null = null;
-                
-                // Hỗ trợ cú pháp “action:value” (VD "brightness:100")
+                let extraData: any = { link_id: link.id };
+
                 if (typeof item === 'string') {
                     if (item.includes(':')) {
                         [action, value] = item.split(':');
@@ -431,23 +437,17 @@ class DeviceLinksService {
                         action = item;
                     }
                 } else if (typeof item === 'object' && item !== null && 'action' in item) {
-                    // Cho phép truyền object { action, value }
                     action = (item as any).action || action;
                     value = (item as any).value || null;
-                    console.log('item:', item);
                 }
-    
-                
-                io.emit('device_command', {
-                    device_serial: outputDevice.serial_number,
+
+                await OutputEventService.handleOutputValue({
+                    serialNumber: outputDevice.serial_number,
                     action,
                     value,
-                    link_id: link.id,
-                    timestamp: new Date().toISOString()
+                    extraData
                 });
-                console.log(`✅ [TriggerOutput] Đã emit ${action} → ${outputDevice.serial_number}`);
             }
-    
         } catch (error) {
             console.error('❌ [TriggerOutput] Error triggering output device:', error);
         }

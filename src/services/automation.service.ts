@@ -56,10 +56,10 @@ class AutomationService {
             console.log(`✅ [Automation] Found device: ${device.name}`);
 
             // 2. Chuyển đổi sensor data thành current_value format
-            const currentValue = this.convertSensorDataToCurrentValue(sensorData);
+            // const currentValue = this.convertSensorDataToCurrentValue(sensorData);
 
             // 3. Gọi processDeviceLinks có sẵn
-            await this.deviceLinksService.processDeviceLinks(device.device_id, currentValue);
+            await this.deviceLinksService.processDeviceLinks(device.device_id, sensorData);
 
         } catch (error) {
             console.error('❌ [Automation] Error checking automation:', error);
