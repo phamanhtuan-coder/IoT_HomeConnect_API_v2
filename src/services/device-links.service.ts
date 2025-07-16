@@ -290,20 +290,25 @@ class DeviceLinksService {
      */
     async processDeviceLinks(deviceId: string, sensorData: any): Promise<void> {
         try {
-            console.log(sensorData)
+            console.log('sensorData', sensorData)
             // Lấy tất cả device_links cho input_device_id này
             const deviceLinks = await this.prisma.device_links.findMany({
                 where: { input_device_id: deviceId, deleted_at: null },
                 include: { output_device: true }
             });
+
+            console.log('deviceLinks', deviceLinks)
             if (!deviceLinks.length) return;
 
             // Group theo output_device_id
             const linksByOutput: { [outputId: string]: any[] } = {};
+            console.log('linksByOutput - before', linksByOutput)
             for (const link of deviceLinks) {
                 if (!linksByOutput[link.output_device_id]) linksByOutput[link.output_device_id] = [];
                 linksByOutput[link.output_device_id].push(link);
             }
+
+            console.log('linksByOutput - result', linksByOutput)
 
             for (const [outputDeviceId, links] of Object.entries(linksByOutput)) {
                 let shouldTrigger = true;
@@ -313,6 +318,12 @@ class DeviceLinksService {
                     const field = link.component_id; // component_id là tên field (ví dụ: gas, temp, humidity)
                     const valueActive = link.value_active;
                     const value = sensorData[field];
+                    console.log('value', value)
+                    console.log('valueActive', valueActive)
+                    console.log('field', field)
+                    console.log('link', link)
+                    console.log('sensorData', sensorData)
+                    
                     if (link.logic_operator === 'OR') {
                         hasOr = true;
                         orResult = orResult || this.compareValue(value, valueActive);
