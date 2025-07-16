@@ -269,7 +269,9 @@ let error_list: { device_serial: string | null; error: string }[] = [];
         try {
             
         const { device_serial, stage, status } = input;
-            console.log(device_serial)
+        console.log('device_serial', device_serial)
+        console.log('stage', stage)
+        console.log('status', status)
         
         const production = await this.prisma.production_tracking.findFirst({
             where: { device_serial: device_serial, is_deleted: false },
