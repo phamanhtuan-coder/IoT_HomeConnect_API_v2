@@ -56,7 +56,7 @@ export const UpdateProductionSchema = z.object({
             StatusSerialStage.FIXING_PRODUCT,
             StatusSerialStage.FIXING_ALL,
             StatusSerialStage.FAILED,
-            StatusSerialStage.COMPLETED_PACKAGING
+            StatusSerialStage.PENDING_IMPORT
         ], {
             required_error: `[${ERROR_CODES.PRODUCTION_TRACKING_STATUS_REQUIRED}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_STATUS_REQUIRED]}`,
             invalid_type_error: `[${ERROR_CODES.PRODUCTION_TRACKING_STATUS_INVALID}]${ERROR_MESSAGES[ERROR_CODES.PRODUCTION_TRACKING_STATUS_INVALID]}`
