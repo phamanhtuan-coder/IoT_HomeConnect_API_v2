@@ -177,6 +177,15 @@ class AuthController {
         if (!userId) throwError(ErrorCodes.UNAUTHORIZED, 'User not authenticated');
 
         const result = await this.userDeviceService.logoutAllDevices(userId, ipAddress);
+
+        const notificationService = new NotificationService();
+        await notificationService.sendFCMNotificationToUser(
+            userId,
+            'Đăng xuất',
+            'Bạn đã bị đăng xuất khỏi tất cả thiết bị',
+            { type: 'FORCE_LOGOUT' }
+        );
+    
         res.status(204).send(result);
     };
 
