@@ -62,7 +62,7 @@ class AuthService {
         const accessToken = jwt.sign(
             { userId: account!.account_id, username: account!.username, role: account!.role_id || 'user' } as UserJwtPayload,
             appConfig.jwtSecret,
-            { expiresIn: '1h' }
+            { expiresIn: '3h' }
         );
 
         const response: TokenResponse = {
