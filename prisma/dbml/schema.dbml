@@ -1,0 +1,1172 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table account {
+  account_id String [pk]
+  customer_id String
+  employee_id String
+  role_id Int
+  username String [not null]
+  password String
+  verification_code String
+  verification_expiry DateTime
+  report Int
+  is_new Boolean
+  status Int
+  created_at DateTime
+  updated_at DateTime
+  deleted_at DateTime
+  is_locked Boolean [default: false]
+  locked_at DateTime
+  role role
+  employee employee
+  customer customer
+  device_templates device_templates [not null]
+  devices devices [not null]
+  notification notification [not null]
+  ownership_history_ownership_history_from_user_idToaccount ownership_history [not null]
+  ownership_history_ownership_history_to_user_idToaccount ownership_history [not null]
+  planning planning [not null]
+  shared_permissions shared_permissions [not null]
+  sync_tracking sync_tracking [not null]
+  tickets_tickets_user_idToaccount tickets [not null]
+  tickets_tickets_assigned_toToaccount tickets [not null]
+  user_devices user_devices [not null]
+  user_groups user_groups [not null]
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table address_book {
+  id Int [pk, increment]
+  customer_id String
+  receiver_name String
+  phone String
+  district String
+  city String
+  ward String
+  street String
+  detail String
+  is_default Boolean
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  customer customer
+}
+
+Table alert_types {
+  alert_type_id Int [pk, increment]
+  alert_type_name String [not null]
+  priority Int [default: 1]
+  is_deleted Boolean [default: false]
+  created_at DateTime
+  updated_at DateTime
+  alerts alerts [not null]
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table alerts {
+  alert_id Int [pk, increment]
+  device_serial String
+  space_id Int
+  message String
+  timestamp DateTime
+  status String [default: 'unread']
+  alert_type_id Int [not null]
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  devices devices
+  spaces spaces
+  alert_types alert_types [not null]
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table attribute {
+  id Int [pk, increment]
+  name String
+  datatype String
+  required Boolean
+  group_attribute_id Int
+  is_hide Boolean
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  attribute_group attribute_group
+  attribute_category attribute_category [not null]
+  attribute_product attribute_product [not null]
+}
+
+Table attribute_category {
+  id Int [pk, increment]
+  attribute_id Int
+  category_id Int
+  created_at DateTime
+  updated_at DateTime
+  deleted_at DateTime
+  categories categories
+  attribute attribute
+}
+
+Table attribute_group {
+  id Int [pk, increment]
+  name String
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  attribute attribute [not null]
+}
+
+Table attribute_product {
+  product_id String [not null]
+  attribute_id Int [not null]
+  is_hide Boolean
+  value String
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  product product [not null]
+  attribute attribute [not null]
+
+  indexes {
+    (product_id, attribute_id) [pk]
+  }
+}
+
+Table batch_product_detail {
+  id Int [pk, increment]
+  exp_batch_id String
+  imp_batch_id String [not null]
+  batch_production_id String [not null]
+  serial_number String
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  detail_export detail_export
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table blog {
+  id Int [pk, increment]
+  category_id Int
+  product_id String
+  title String
+  author String
+  content String
+  content_normal String
+  image String
+  score Int
+  is_hide Boolean
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  employee employee
+  categories categories
+  product product
+}
+
+Table cart {
+  id Int [pk, increment]
+  customer_id String [not null]
+  product_id String
+  quantity Int
+  selected Boolean [not null]
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  customer customer [not null]
+  product product
+}
+
+Table categories {
+  category_id Int [pk, increment]
+  name String
+  key String
+  slug String
+  parent_id Int
+  image String
+  description String
+  is_hide Boolean
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  attribute_category attribute_category [not null]
+  blog blog [not null]
+  categories categories
+  other_categories categories [not null]
+  device_templates device_templates [not null]
+  product product [not null]
+}
+
+Table components {
+  component_id String [pk]
+  name String [not null]
+  supplier String
+  unit_cost Decimal
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  status Boolean [default: false]
+  name_display String
+  datatype DataType [not null, default: 'STRING']
+  flow_type String
+  default_value String
+  unit String
+  min Int
+  max Int
+  template_components template_components [not null]
+  device_links device_links [not null]
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table contact {
+  id Int [pk, increment]
+  fullname String
+  title String
+  content String
+  email String
+  status Int [default: 1]
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+}
+
+Table customer {
+  id String [pk]
+  surname String
+  lastname String
+  image String
+  phone String
+  email String [unique]
+  email_verified Boolean [default: false]
+  birthdate DateTime
+  gender Boolean
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  account account [not null]
+  address_book address_book [not null]
+  cart cart [not null]
+  liked liked [not null]
+  order order [not null]
+  payment_info payment_info [not null]
+  review_product review_product [not null]
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table detail_export {
+  batch_code String [pk]
+  export_id Int [not null]
+  order_id String
+  product_id String [not null]
+  quantity Int
+  note String
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  batch_product_detail batch_product_detail [not null]
+  export_warehouse export_warehouse [not null]
+  order order
+  product product [not null]
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table detail_import {
+  batch_code String [pk]
+  import_id String [not null]
+  product_id String [not null]
+  quantity Int
+  import_price Float
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  import_warehouse import_warehouse [not null]
+  product product [not null]
+}
+
+Table device_templates {
+  template_id String [pk]
+  device_type_id Int
+  name String [not null]
+  created_by String
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  device_template_note String
+  status String [default: 'pending']
+  production_cost Float [default: 0]
+  base_capabilities Json
+  categories categories
+  account account
+  devices devices [not null]
+  firmware firmware [not null]
+  production_batches production_batches [not null]
+  template_components template_components [not null]
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table devices {
+  device_id String [unique, not null]
+  serial_number String [unique, not null]
+  template_id String [not null]
+  space_id Int
+  account_id String
+  group_id Int
+  hub_id String
+  firmware_id String
+  name String [not null]
+  power_status Boolean [default: false]
+  attribute Json
+  wifi_ssid String
+  wifi_password String
+  current_value Json
+  link_status String [default: 'unlinked']
+  last_reset_at DateTime
+  lock_status String [default: 'unlocked']
+  locked_at DateTime
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  production_tracking_id Int
+  runtime_capabilities Json
+  alerts alerts [not null]
+  device_templates device_templates [not null]
+  spaces spaces
+  account account
+  groups groups
+  firmware firmware
+  production_tracking production_tracking
+  firmware_update_history firmware_update_history [not null]
+  hourly_values hourly_values [not null]
+  ownership_history ownership_history [not null]
+  shared_permissions shared_permissions [not null]
+  tickets tickets [not null]
+  input_links device_links [not null]
+  output_links device_links [not null]
+
+  indexes {
+    (device_id, serial_number) [pk]
+  }
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table device_capabilities {
+  id Int [pk, increment]
+  keyword String [unique, not null]
+  note String
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table employee {
+  id String [pk]
+  surname String
+  lastname String
+  image String
+  email String
+  birthdate DateTime
+  gender Boolean
+  phone String
+  status Int
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  warehouse_id Int
+  account account [not null]
+  blog blog [not null]
+  warehouse warehouse
+  export_warehouse export_warehouse [not null]
+  import_warehouse import_warehouse [not null]
+  order_order_saler_idToemployee order [not null]
+  order_order_shipper_idToemployee order [not null]
+}
+
+Table export_warehouse {
+  id Int [pk, increment]
+  export_code String
+  export_number Int
+  employee_id String
+  export_date DateTime
+  file_authenticate String
+  total_profit Float
+  note String
+  status Int [not null, default: 0]
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  detail_export detail_export [not null]
+  employee employee
+}
+
+Table firmware {
+  firmware_id String [pk]
+  version String [not null]
+  file_path String [not null]
+  template_id String
+  is_mandatory Boolean [default: false]
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  note String
+  name String [not null]
+  is_approved Boolean [default: false]
+  logs Json
+  tested_at DateTime
+  devices devices [not null]
+  runtime_capabilities Json
+  device_templates device_templates
+  firmware_update_history firmware_update_history [not null]
+  production_batches production_batches [not null]
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table firmware_update_history {
+  update_id Int [pk, increment]
+  device_serial String
+  firmware_id String [not null]
+  updated_at DateTime
+  status String [default: 'success']
+  created_at DateTime
+  is_deleted Boolean [default: false]
+  devices devices
+  firmware firmware [not null]
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table groups {
+  group_id Int [pk, increment]
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  group_name String [not null]
+  group_description String
+  icon_color String
+  icon_name String
+  devices devices [not null]
+  houses houses [not null]
+  user_groups user_groups [not null]
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table hourly_values {
+  hourly_value_id Int [pk, increment]
+  device_serial String
+  space_id Int
+  hour_timestamp DateTime
+  avg_value Json
+  sample_count Int
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  devices devices
+  spaces spaces
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table houses {
+  house_id Int [pk, increment]
+  group_id Int
+  address String
+  icon_name String
+  icon_color String
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  house_name String [not null]
+  groups groups
+  spaces spaces [not null]
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table image_product {
+  id Int [pk, increment]
+  product_id String
+  image String
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  product product
+}
+
+Table import_warehouse {
+  id String [pk]
+  import_number Int
+  employee_id String
+  warehouse_id Int
+  import_date DateTime
+  file_authenticate String
+  total_money Float
+  note String
+  status Int
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  detail_import detail_import [not null]
+  employee employee
+  warehouse warehouse
+}
+
+Table liked {
+  id Int [pk, increment]
+  customer_id String [not null]
+  product_id String
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  customer customer [not null]
+  product product
+}
+
+Table notification {
+  id Int [pk, increment]
+  account_id String
+  role_id Int
+  text String
+  type String
+  is_read Boolean
+  id_reference String
+  created_at DateTime
+  updated_at DateTime
+  deleted_at DateTime
+  account account
+  role role
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table order {
+  id String [pk]
+  order_number Int
+  customer_id String
+  saler_id String
+  shipper_id String
+  export_date DateTime
+  total_import_money Float
+  discount Float
+  vat Float
+  total_money Float
+  shipping_fee Int
+  amount Float
+  profit Float
+  address String
+  payment_method String
+  payment_account String
+  phone String
+  name_recipient String
+  note String
+  platform_order String
+  status Int [default: 0]
+  image_shipped String
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  detail_export detail_export [not null]
+  customer customer
+  employee_order_saler_idToemployee employee
+  employee_order_shipper_idToemployee employee
+  order_detail order_detail [not null]
+}
+
+Table order_detail {
+  id Int [pk, increment]
+  order_id String
+  product_id String
+  unit String
+  warrenty_time Int
+  sale_price Float
+  discount Float
+  quantity_sold Float
+  amount Float
+  delivery_date DateTime
+  receiving_date DateTime
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  product product
+  order order
+}
+
+Table ownership_history {
+  history_id Int [increment, not null]
+  device_serial String
+  from_user_id String
+  to_user_id String
+  transferred_at DateTime
+  legal_expired_date DateTime
+  is_expired Boolean [default: false]
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  ticket_id String [not null]
+  tickets tickets [not null]
+  devices devices
+  account_ownership_history_from_user_idToaccount account
+  account_ownership_history_to_user_idToaccount account
+
+  indexes {
+    (history_id, ticket_id) [pk]
+  }
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table payment_info {
+  id Int [pk, increment]
+  customer_id String
+  account_number String
+  bank String
+  name_account String
+  is_default Boolean
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  customer customer
+}
+
+Table permission {
+  id Int [pk, increment]
+  name String
+  code String
+  type String
+  show_in_menu String
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  permission_role permission_role [not null]
+}
+
+Table permission_role {
+  id Int [pk, increment]
+  role_id Int [not null]
+  permission_id Int [not null]
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  permission permission [not null]
+  role role [not null]
+}
+
+Table product {
+  id String [pk]
+  name String
+  slug String
+  description String
+  description_normal String
+  image String
+  selling_price Float
+  category_id Int
+  unit_id Int
+  warrenty_time_id Int
+  delta Int
+  is_hide Boolean
+  status Int
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  attribute_product attribute_product [not null]
+  blog blog [not null]
+  cart cart [not null]
+  detail_export detail_export [not null]
+  detail_import detail_import [not null]
+  image_product image_product [not null]
+  liked liked [not null]
+  order_detail order_detail [not null]
+  categories categories
+  unit unit
+  warrenty_time warrenty_time
+  review_product review_product [not null]
+  warehouse_inventory warehouse_inventory [not null]
+}
+
+Table planning {
+  planning_id String [pk]
+  status String [not null, default: 'pending']
+  logs Json
+  created_by String [not null]
+  created_at DateTime [not null]
+  updated_at DateTime [not null]
+  is_deleted Boolean [not null, default: false]
+  planning_note String
+  account account [not null]
+  production_batches production_batches [not null]
+}
+
+Table production_batches {
+  batch_id Int [increment, not null]
+  production_batch_id String [unique, not null]
+  template_id String [not null]
+  quantity Int [not null]
+  status String [not null, default: 'pending']
+  created_at DateTime [not null]
+  updated_at DateTime [not null]
+  is_deleted Boolean [not null, default: false]
+  batch_note String
+  logs Json
+  planning_id String [not null]
+  firmware_id String
+  device_templates device_templates [not null]
+  planning planning [not null]
+  firmware firmware
+  production_tracking production_tracking [not null]
+
+  indexes {
+    (batch_id, planning_id, production_batch_id) [pk]
+  }
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table production_tracking {
+  production_id Int [pk, increment]
+  device_serial String
+  stage String [not null]
+  status String [not null, default: 'pending']
+  created_at DateTime [not null]
+  updated_at DateTime [not null]
+  is_deleted Boolean [not null, default: false]
+  production_batch_id String [not null]
+  state_logs Json
+  devices devices [not null]
+  production_batches production_batches [not null]
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table review_product {
+  id Int [pk, increment]
+  customer_id String
+  product_id String
+  comment String
+  image String
+  rating Int
+  response String
+  note String
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  customer customer
+  product product
+}
+
+Table role {
+  id Int [pk, increment]
+  name String
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  account account [not null]
+  notification notification [not null]
+  permission_role permission_role [not null]
+}
+
+Table shared_permissions {
+  permission_id Int [pk, increment]
+  device_serial String
+  shared_with_user_id String
+  permission_type String [default: 'readonly']
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  devices devices
+  account account
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table slideshow {
+  id Int [pk, increment]
+  text_button String
+  link String
+  image String
+  status Int
+  created_at DateTime
+  updated_at DateTime
+  deleted_at DateTime
+}
+
+Table spaces {
+  space_id Int [pk, increment]
+  house_id Int
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  space_name String [not null]
+  icon_color String
+  icon_name String
+  space_description String
+  alerts alerts [not null]
+  devices devices [not null]
+  hourly_values hourly_values [not null]
+  houses houses
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table sync_tracking {
+  sync_id Int [pk, increment]
+  account_id String
+  user_device_id String
+  ip_address String
+  last_synced_at DateTime
+  sync_type String
+  sync_status String
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  account account
+  user_devices user_devices
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table template_components {
+  template_component_id Int [pk, increment]
+  template_id String
+  component_id String
+  quantity_required Int [default: 1]
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  device_templates device_templates
+  components components
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table ticket_types {
+  ticket_type_id Int [pk, increment]
+  type_name String [not null]
+  priority Int [default: 1]
+  is_active Boolean [default: true]
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  tickets tickets [not null]
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table tickets {
+  ticket_id String [pk]
+  user_id String
+  device_serial String
+  ticket_type_id Int [not null]
+  description String
+  evidence Json
+  status String [default: 'pending']
+  created_at DateTime
+  updated_at DateTime
+  assigned_to String
+  resolved_at DateTime
+  resolve_solution String
+  is_deleted Boolean [default: false]
+  ownership_history ownership_history [not null]
+  account_tickets_user_idToaccount account
+  devices devices
+  ticket_types ticket_types [not null]
+  account_tickets_assigned_toToaccount account
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table unit {
+  id Int [pk, increment]
+  name String
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  product product [not null]
+}
+
+Table user_devices {
+  user_device_id String [pk]
+  user_id String
+  device_name String [not null]
+  device_id String [not null]
+  device_uuid String [unique]
+  device_token String
+  last_login DateTime
+  last_out DateTime
+  created_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  sync_tracking sync_tracking [not null]
+  account account
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table user_groups {
+  user_group_id Int [pk, increment]
+  account_id String
+  group_id Int
+  role String [default: 'member']
+  joined_at DateTime
+  updated_at DateTime
+  is_deleted Boolean [default: false]
+  account account
+  groups groups
+
+  Note: 'This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments'
+}
+
+Table warehouse {
+  id Int [pk, increment]
+  name String
+  address String
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  province Int
+  district Int
+  ward Int
+  employee employee [not null]
+  import_warehouse import_warehouse [not null]
+}
+
+Table warehouse_inventory {
+  id Int [pk, increment]
+  product_id String
+  batch_code String
+  stock Int
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  product product
+}
+
+Table warrenty_time {
+  id Int [pk, increment]
+  name String
+  time Int
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  product product [not null]
+}
+
+Table device_links {
+  id Int [pk, increment]
+  input_device_id String [not null]
+  output_device_id String [not null]
+  component_id String [not null]
+  value_active String [not null]
+  output_action OutputAction [not null, default: 'turn_on']
+  output_value String [not null]
+  logic_operator LogicOperator [not null, default: 'AND']
+  created_at DateTime [default: `now()`]
+  updated_at DateTime
+  deleted_at DateTime
+  input_device devices [not null]
+  output_device devices [not null]
+  component components [not null]
+}
+
+Enum DataType {
+  STRING
+  NUMBER
+  BOOLEAN
+  DATE
+  ENUM
+}
+
+Enum LogicOperator {
+  AND
+  OR
+}
+
+Enum OutputAction {
+  turn_on
+  turn_off
+}
+
+Ref: account.role_id > role.id [delete: No Action]
+
+Ref: account.employee_id > employee.id [delete: No Action]
+
+Ref: account.customer_id > customer.id [delete: No Action]
+
+Ref: address_book.customer_id > customer.id [delete: No Action]
+
+Ref: alerts.device_serial > devices.serial_number [delete: No Action]
+
+Ref: alerts.space_id > spaces.space_id [delete: No Action]
+
+Ref: alerts.alert_type_id > alert_types.alert_type_id [delete: No Action]
+
+Ref: attribute.group_attribute_id > attribute_group.id [delete: No Action]
+
+Ref: attribute_category.category_id > categories.category_id [delete: No Action]
+
+Ref: attribute_category.attribute_id > attribute.id [delete: No Action]
+
+Ref: attribute_product.product_id > product.id [delete: No Action]
+
+Ref: attribute_product.attribute_id > attribute.id [delete: No Action]
+
+Ref: batch_product_detail.exp_batch_id > detail_export.batch_code [delete: No Action]
+
+Ref: blog.author > employee.id [delete: No Action]
+
+Ref: blog.category_id > categories.category_id [delete: No Action]
+
+Ref: blog.product_id > product.id [delete: No Action]
+
+Ref: cart.customer_id > customer.id [delete: No Action]
+
+Ref: cart.product_id > product.id [delete: No Action]
+
+Ref: categories.parent_id - categories.category_id [delete: No Action]
+
+Ref: detail_export.export_id > export_warehouse.id [delete: No Action]
+
+Ref: detail_export.order_id > order.id [delete: No Action]
+
+Ref: detail_export.product_id > product.id [delete: No Action]
+
+Ref: detail_import.import_id > import_warehouse.id [delete: No Action]
+
+Ref: detail_import.product_id > product.id [delete: No Action]
+
+Ref: device_templates.device_type_id > categories.category_id [delete: No Action]
+
+Ref: device_templates.created_by > account.account_id [delete: No Action]
+
+Ref: devices.template_id > device_templates.template_id [delete: No Action]
+
+Ref: devices.space_id > spaces.space_id [delete: No Action]
+
+Ref: devices.account_id > account.account_id [delete: No Action]
+
+Ref: devices.group_id > groups.group_id [delete: No Action]
+
+Ref: devices.firmware_id > firmware.firmware_id [delete: No Action]
+
+Ref: devices.production_tracking_id > production_tracking.production_id [delete: No Action]
+
+Ref: employee.warehouse_id > warehouse.id [delete: No Action]
+
+Ref: export_warehouse.employee_id > employee.id [delete: No Action]
+
+Ref: firmware.template_id > device_templates.template_id [delete: No Action]
+
+Ref: firmware_update_history.device_serial > devices.serial_number [delete: No Action]
+
+Ref: firmware_update_history.firmware_id > firmware.firmware_id [delete: No Action]
+
+Ref: hourly_values.device_serial > devices.serial_number [delete: No Action]
+
+Ref: hourly_values.space_id > spaces.space_id [delete: No Action]
+
+Ref: houses.group_id > groups.group_id [delete: No Action]
+
+Ref: image_product.product_id > product.id [delete: No Action]
+
+Ref: import_warehouse.employee_id > employee.id [delete: No Action]
+
+Ref: import_warehouse.warehouse_id > warehouse.id [delete: No Action]
+
+Ref: liked.customer_id > customer.id [delete: No Action]
+
+Ref: liked.product_id > product.id [delete: No Action]
+
+Ref: notification.account_id > account.account_id [delete: No Action]
+
+Ref: notification.role_id > role.id [delete: No Action]
+
+Ref: order.customer_id > customer.id [delete: No Action]
+
+Ref: order.saler_id > employee.id [delete: No Action]
+
+Ref: order.shipper_id > employee.id [delete: No Action]
+
+Ref: order_detail.product_id > product.id [delete: No Action]
+
+Ref: order_detail.order_id > order.id [delete: No Action]
+
+Ref: ownership_history.ticket_id > tickets.ticket_id [delete: No Action]
+
+Ref: ownership_history.device_serial > devices.serial_number [delete: No Action]
+
+Ref: ownership_history.from_user_id > account.account_id [delete: No Action]
+
+Ref: ownership_history.to_user_id > account.account_id [delete: No Action]
+
+Ref: payment_info.customer_id > customer.id [delete: No Action]
+
+Ref: permission_role.permission_id > permission.id [delete: No Action]
+
+Ref: permission_role.role_id > role.id [delete: No Action]
+
+Ref: product.category_id > categories.category_id [delete: No Action]
+
+Ref: product.unit_id > unit.id [delete: No Action]
+
+Ref: product.warrenty_time_id > warrenty_time.id [delete: No Action]
+
+Ref: planning.created_by > account.account_id [delete: No Action]
+
+Ref: production_batches.template_id > device_templates.template_id [delete: No Action]
+
+Ref: production_batches.planning_id > planning.planning_id [delete: No Action]
+
+Ref: production_batches.firmware_id > firmware.firmware_id [delete: No Action]
+
+Ref: production_tracking.production_batch_id > production_batches.production_batch_id [delete: No Action]
+
+Ref: review_product.customer_id > customer.id [delete: No Action]
+
+Ref: review_product.product_id > product.id [delete: No Action]
+
+Ref: shared_permissions.device_serial > devices.serial_number [delete: No Action]
+
+Ref: shared_permissions.shared_with_user_id > account.account_id [delete: No Action]
+
+Ref: spaces.house_id > houses.house_id [delete: No Action]
+
+Ref: sync_tracking.account_id > account.account_id [delete: No Action]
+
+Ref: sync_tracking.user_device_id > user_devices.user_device_id [delete: No Action]
+
+Ref: template_components.template_id > device_templates.template_id [delete: No Action]
+
+Ref: template_components.component_id > components.component_id [delete: No Action]
+
+Ref: tickets.user_id > account.account_id [delete: No Action]
+
+Ref: tickets.device_serial > devices.serial_number [delete: No Action]
+
+Ref: tickets.ticket_type_id > ticket_types.ticket_type_id [delete: No Action]
+
+Ref: tickets.assigned_to > account.account_id [delete: No Action]
+
+Ref: user_devices.user_id > account.account_id [delete: No Action]
+
+Ref: user_groups.account_id > account.account_id [delete: No Action]
+
+Ref: user_groups.group_id > groups.group_id [delete: No Action]
+
+Ref: warehouse_inventory.product_id > product.id [delete: No Action]
+
+Ref: device_links.input_device_id > devices.device_id
+
+Ref: device_links.output_device_id > devices.device_id
+
+Ref: device_links.component_id > components.component_id

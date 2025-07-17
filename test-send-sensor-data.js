@@ -1,7 +1,8 @@
 const { io } = require('socket.io-client');
 const readline = require('readline');
 
-const SOCKET_URL = 'http://localhost:7777';
+// Đảm bảo đúng URL và namespace nếu server dùng /device
+const SOCKET_URL = 'http://localhost:7777/device';
 
 // === Cấu hình mặc định ===
 const DEFAULT_SENSOR_DATA = {
@@ -31,6 +32,7 @@ async function main() {
   console.log('=== Test gửi sensorData và nhận device_command ===');
   // Cho phép nhập deviceId và các giá trị sensor
   const deviceId = await promptInput(`Nhập deviceId [${DEFAULT_SENSOR_DATA.deviceId}]: `) || DEFAULT_SENSOR_DATA.deviceId;
+  const serialNumber = await promptInput(`Nhập serialNumber [${DEFAULT_SENSOR_DATA.serialNumber}]: `) || DEFAULT_SENSOR_DATA.serialNumber;
   const gas = parseFloat(await promptInput(`Nhập giá trị gas [${DEFAULT_SENSOR_DATA.gas}]: `) || DEFAULT_SENSOR_DATA.gas);
   const temperature = parseFloat(await promptInput(`Nhập nhiệt độ [${DEFAULT_SENSOR_DATA.temperature}]: `) || DEFAULT_SENSOR_DATA.temperature);
   const humidity = parseFloat(await promptInput(`Nhập độ ẩm [${DEFAULT_SENSOR_DATA.humidity}]: `) || DEFAULT_SENSOR_DATA.humidity);
@@ -38,6 +40,7 @@ async function main() {
   const sensorData = {
     ...DEFAULT_SENSOR_DATA,
     deviceId,
+    serialNumber,
     gas,
     temperature,
     humidity,
@@ -46,13 +49,17 @@ async function main() {
 
   console.log('\n📤 Sending sensorData:', JSON.stringify(sensorData, null, 2));
 
+  // Kết nối đúng namespace và truyền serialNumber trong query
   const socket = io(SOCKET_URL, {
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    query: { serialNumber }
   });
-
+  
   socket.on('connect', () => {
-    console.log('🔌 Socket.IO connected:', socket.id);
-    socket.emit('sensorData', sensorData);
+    setTimeout(() => {
+      socket.emit('sensorData', sensorData);
+      console.log('✅ Đã gửi event sensorData lên server!');
+    }, 1000);
   });
 
   socket.on('device_command', (msg) => {
