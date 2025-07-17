@@ -410,6 +410,7 @@ class FirmwareService {
             FROM firmware f
             JOIN device_templates dt ON f.template_id = dt.template_id
             WHERE f.is_deleted = false
+            ORDER BY f.created_at DESC
         `;
 
         return {
