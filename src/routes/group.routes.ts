@@ -93,7 +93,7 @@ router.post(
     '/members',
     authMiddleware,
     validateMiddleware(userGroupSchema),
-    groupRoleMiddleware,
+    // groupRoleMiddleware,
     asyncHandler(groupController.addUserToGroup)
 );
 

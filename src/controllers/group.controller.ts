@@ -98,14 +98,14 @@ class GroupController {
     addUserToGroup = async (req: Request, res: Response, next: NextFunction) => {
         const { groupId, username, role } = req.body;
 
-        if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
-            throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can add users');
-        }
+        // if (!req.groupRole || ![GroupRole.OWNER, GroupRole.VICE].includes(req.groupRole)) {
+        //     throwError(ErrorCodes.FORBIDDEN, 'Only owner or vice can add users');
+        // }
 
         // VICE không thể thêm người dùng với role OWNER
-        if (req.groupRole === GroupRole.VICE && role === GroupRole.OWNER) {
-            throwError(ErrorCodes.FORBIDDEN, 'Vice cannot assign owner role');
-        }
+        // if (req.groupRole === GroupRole.VICE && role === GroupRole.OWNER) {
+        //     throwError(ErrorCodes.FORBIDDEN, 'Vice cannot assign owner role');
+        // }
 
         try {
             const userGroup = await this.groupService.addUserToGroup(groupId, username, role);
