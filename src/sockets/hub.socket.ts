@@ -1,4 +1,3 @@
-// src/sockets/hub.socket.ts - DATABASE-DRIVEN HUB MANAGEMENT
 import { Server, Socket } from 'socket.io';
 import prisma from '../config/database';
 import {
@@ -7,6 +6,7 @@ import {
     setupESP01EventHandlers,
     createEnhancedCommand
 } from './handlers/door.handlers';
+import { setupMegaGardenHandlers } from './handlers/garden.handlers';
 
 // ===== DYNAMIC HUB DEVICE REGISTRY =====
 interface HubDevice {
@@ -30,6 +30,20 @@ const managedDeviceRegistry = new Map<string, ManagedDevice>();
 const socketToHub = new Map<string, string>(); // socketId -> hubSerial
 const connectedSockets = new Map<string, Socket>();
 
+// ✅ GARDEN HUB CONFIGURATION
+const GARDEN_HUB_SERIAL = "SERL29JUN2501JYXECBR32V8BD77RW82";
+const GARDEN_MANAGED_DEVICES = [
+    "MEGA27JUN2501GARDEN_HUB_001",
+    "RELAY27JUN2501FAN001CONTROL001",
+    "RELAY27JUN2501ALARM01CONTROL01",
+    "RELAY27JUN2501LIGHT001CONTROL1",
+    "RELAY27JUN2501LIGHT002CONTROL1",
+    "RELAY27JUN2501PUMP002CONTROL01",
+    "RELAY27JUN2501HEATER1CONTROL01",
+    "RELAY27JUN2501COOLER1CONTROL01",
+    "RELAY27JUN2501RESERVE8CONTROL1"
+];
+
 export const setupHubSocket = (io: Server) => {
     console.log('[HUB] Initializing Database-Driven Hub Socket...');
 
@@ -39,13 +53,15 @@ export const setupHubSocket = (io: Server) => {
             isIoTDevice,
             accountId,
             hub_managed,
-            optimized
+            optimized,
+            garden_hub
         } = socket.handshake.query as {
             serialNumber?: string;
             isIoTDevice?: string;
             accountId?: string;
             hub_managed?: string;
             optimized?: string;
+            garden_hub?: string;
         };
 
         const userAgent = socket.handshake.headers['user-agent'] || '';
@@ -53,12 +69,12 @@ export const setupHubSocket = (io: Server) => {
         // Detect device type
         const isHub = userAgent.includes('ESP-Hub-Opt') ||
             hub_managed === 'true' ||
-            optimized === 'true';
+            optimized === 'true' ||
+            garden_hub === 'true';
 
         const isESP01 = userAgent.includes('ESP-01') ||
             socket.handshake.headers['x-esp-device'] === 'ESP-01';
 
-        // ✅ IMPROVED DIRECT DEVICE DETECTION
         const isDirectDevice = (userAgent.includes('ESP8266') || userAgent.includes('ESP32')) &&
             !isHub && !isESP01 && isIoTDevice === 'true' && !accountId;
 
@@ -67,12 +83,59 @@ export const setupHubSocket = (io: Server) => {
             userAgent.includes('ESP32') ||
             isIoTDevice === 'true';
 
-        // Handle ESP Socket Hub
+        // ✅ Handle Garden Hub Specifically
+        if (isHub && serialNumber === GARDEN_HUB_SERIAL && garden_hub === 'true') {
+            console.log(`[HUB] Garden Hub connecting: ${serialNumber}`);
+
+            // Register hub
+            const hubData: HubDevice = {
+                hubSerial: serialNumber,
+                hubSocket: socket,
+                managedDevices: GARDEN_MANAGED_DEVICES,
+                isOnline: true,
+                lastSeen: new Date()
+            };
+
+            hubRegistry.set(serialNumber, hubData);
+            socketToHub.set(socket.id, serialNumber);
+            connectedSockets.set(socket.id, socket);
+
+            // Register managed garden devices
+            GARDEN_MANAGED_DEVICES.forEach(deviceSerial => {
+                const deviceData: ManagedDevice = {
+                    serialNumber: deviceSerial,
+                    hubSerial: serialNumber,
+                    isOnline: true,
+                    lastSeen: new Date()
+                };
+                managedDeviceRegistry.set(deviceSerial, deviceData);
+                console.log(`[HUB] Registered garden device ${deviceSerial} under hub ${serialNumber}`);
+            });
+
+            socket.data = {
+                serialNumber,
+                deviceType: 'GARDEN_HUB_GATEWAY',
+                isHub: true,
+                managedDevices: GARDEN_MANAGED_DEVICES
+            };
+
+            // Join rooms
+            await socket.join(`hub:${serialNumber}`);
+            await socket.join(`device:${serialNumber}`);
+
+            console.log(`[HUB] ${serialNumber} connected successfully with ${GARDEN_MANAGED_DEVICES.length} garden devices`);
+
+            // Setup garden handlers
+            setupMegaGardenHandlers(socket, io, serialNumber);
+
+            return;
+        }
+
+        // Handle Other ESP Socket Hubs
         if (isHub && serialNumber && isIoTDevice === 'true' && !accountId) {
             console.log(`[HUB] ESP Socket Hub connecting: ${serialNumber}`);
 
             try {
-                // ✅ VERIFY HUB EXISTS IN DATABASE
                 const hubDevice = await prisma.devices.findFirst({
                     where: { serial_number: serialNumber, is_deleted: false }
                 });
@@ -84,7 +147,6 @@ export const setupHubSocket = (io: Server) => {
                     return;
                 }
 
-                // ✅ QUERY MANAGED DEVICES FROM DATABASE
                 const managedDevices = await prisma.devices.findMany({
                     where: {
                         hub_id: serialNumber,
@@ -103,7 +165,6 @@ export const setupHubSocket = (io: Server) => {
                     console.log(`[HUB]   - ${device.serial_number} (${device.name})`);
                 });
 
-                // ✅ REGISTER HUB AND MANAGED DEVICES
                 const hubData: HubDevice = {
                     hubSerial: serialNumber,
                     hubSocket: socket,
@@ -116,7 +177,6 @@ export const setupHubSocket = (io: Server) => {
                 socketToHub.set(socket.id, serialNumber);
                 connectedSockets.set(socket.id, socket);
 
-                // Register managed devices
                 managedDevices.forEach(device => {
                     const deviceData: ManagedDevice = {
                         serialNumber: device.serial_number,
@@ -128,7 +188,6 @@ export const setupHubSocket = (io: Server) => {
                     console.log(`[HUB] Registered device ${device.serial_number} under hub ${serialNumber}`);
                 });
 
-                // Set socket data
                 socket.data = {
                     serialNumber,
                     deviceType: 'ESP_SOCKET_HUB',
@@ -136,13 +195,11 @@ export const setupHubSocket = (io: Server) => {
                     managedDevices: managedDevices.map(d => d.serial_number)
                 };
 
-                // Join rooms
                 await socket.join(`hub:${serialNumber}`);
                 await socket.join(`device:${serialNumber}`);
 
                 console.log(`[HUB] ${serialNumber} connected successfully with ${managedDevices.length} managed devices`);
 
-                // Setup handlers
                 setupDoorHubHandlers(socket, io, serialNumber);
 
             } catch (error) {
@@ -154,13 +211,12 @@ export const setupHubSocket = (io: Server) => {
             return;
         }
 
-        // ✅ Handle ESP8266/ESP32 Direct Devices (Rolling/Sliding doors)
+        // Handle ESP8266/ESP32 Direct Devices (Rolling/Sliding doors)
         if (isDirectDevice && serialNumber) {
             console.log(`[DIRECT_DEVICE] ESP Direct Device connecting: ${serialNumber}`);
             console.log(`[DIRECT_DEVICE] User-Agent: ${userAgent}`);
 
             try {
-                // ✅ VERIFY DEVICE EXISTS AND IS NOT HUB-MANAGED
                 const device = await prisma.devices.findFirst({
                     where: { serial_number: serialNumber, is_deleted: false },
                 });
@@ -172,7 +228,6 @@ export const setupHubSocket = (io: Server) => {
                     return;
                 }
 
-                // ✅ CHECK IF DEVICE SHOULD BE DIRECT (not hub-managed)
                 if (device.hub_id && device.hub_id.trim() !== '') {
                     console.log(`[DIRECT_DEVICE] ${serialNumber} is hub-managed by ${device.hub_id} - rejecting direct connection`);
                     socket.emit('connection_error', {
@@ -183,7 +238,6 @@ export const setupHubSocket = (io: Server) => {
                     return;
                 }
 
-                // ✅ DETECT DEVICE TYPE FROM USER-AGENT
                 let deviceType = 'ESP_DEVICE';
                 if (userAgent.includes('Rolling-Door') || (userAgent.includes('ESP32') && userAgent.includes('Door'))) {
                     deviceType = 'ESP32_ROLLING_DOOR';
@@ -191,7 +245,6 @@ export const setupHubSocket = (io: Server) => {
                     deviceType = 'ESP8266_SLIDING_DOOR';
                 }
 
-                // Set socket data
                 socket.data = {
                     serialNumber,
                     deviceType: deviceType,
@@ -199,13 +252,11 @@ export const setupHubSocket = (io: Server) => {
                     isDirect: true
                 };
 
-                // Join rooms
                 await socket.join(`door:${serialNumber}`);
                 await socket.join(`device:${serialNumber}`);
 
                 console.log(`[DIRECT_DEVICE] ${serialNumber} connected successfully as ${deviceType}`);
 
-                // ✅ SETUP DOOR DEVICE HANDLERS (same as rolling door)
                 setupDoorDeviceHandlers(socket, io, serialNumber);
 
             } catch (error) {
@@ -222,7 +273,6 @@ export const setupHubSocket = (io: Server) => {
             console.log(`[DEVICE] ESP Device connecting: ${serialNumber}`);
 
             try {
-                // ✅ VERIFY DEVICE EXISTS AND CHECK HUB RELATIONSHIP
                 const device = await prisma.devices.findFirst({
                     where: { serial_number: serialNumber, is_deleted: false },
                 });
@@ -234,7 +284,6 @@ export const setupHubSocket = (io: Server) => {
                     return;
                 }
 
-                // Check if device is hub-managed by checking hub_id field
                 if (device.hub_id && device.hub_id.trim() !== '') {
                     console.log(`[DEVICE] ${serialNumber} is managed by hub ${device.hub_id} - should connect via hub`);
                     socket.emit('connection_error', {
@@ -245,7 +294,6 @@ export const setupHubSocket = (io: Server) => {
                     return;
                 }
 
-                // Set socket data
                 socket.data = {
                     serialNumber,
                     deviceType: isESP01 ? 'ESP_01_DEVICE' : 'ESP_8266_DEVICE',
@@ -253,13 +301,11 @@ export const setupHubSocket = (io: Server) => {
                     isESP01: isESP01
                 };
 
-                // Join rooms
                 await socket.join(`door:${serialNumber}`);
                 await socket.join(`device:${serialNumber}`);
 
                 console.log(`[DEVICE] ${serialNumber} connected successfully (direct connection)`);
 
-                // Setup handlers based on device type
                 if (isESP01) {
                     setupESP01EventHandlers(socket, io, serialNumber, device);
                 } else {
@@ -291,18 +337,15 @@ export const setupHubSocket = (io: Server) => {
         if (serialNumber && accountId) {
             console.log(`[CLIENT] ✅ Client connected for ${serialNumber} by user ${accountId}`);
 
-            // Join client room
             await socket.join(`door:${serialNumber}`);
             console.log(`[CLIENT] Joined room: door:${serialNumber}`);
 
-            // Handle door commands from clients
             socket.on('door_command', async (commandData) => {
                 try {
                     console.log(`[CLIENT] 📨 Door command received for ${serialNumber}:`, commandData);
 
                     const targetSerial = commandData.serialNumber || serialNumber;
 
-                    // ✅ DYNAMIC HUB LOOKUP FROM DATABASE
                     const isHubManaged = await isDeviceManagedByHub(targetSerial);
                     let routedViaHub = false;
 
@@ -311,17 +354,15 @@ export const setupHubSocket = (io: Server) => {
                         const hub = hubRegistry.get(hubSerial!);
 
                         if (hub && hub.isOnline) {
-                            // Create enhanced command
                             const doorCommand = createEnhancedCommand(
                                 commandData.action,
                                 targetSerial,
                                 commandData.state || {},
-                                commandData.door_type || "SERVO"
+                                commandData.door_type || (hubSerial === GARDEN_HUB_SERIAL ? "GARDEN" : "SERVO")
                             );
 
-                            console.log(`[CLIENT] 🔄 Created door command via hub ${hubSerial}:`, doorCommand);
+                            console.log(`[CLIENT] 🔄 Created command via hub ${hubSerial}:`, doorCommand);
 
-                            // Send via hub
                             io.to(`hub:${hubSerial}`).emit('command', doorCommand);
                             console.log(`[CLIENT] ✅ Command sent via hub ${hubSerial} to ${targetSerial}`);
                             routedViaHub = true;
@@ -331,7 +372,6 @@ export const setupHubSocket = (io: Server) => {
                     }
 
                     if (!routedViaHub) {
-                        // Try direct connection
                         const deviceRoom = io.sockets.adapter.rooms.get(`device:${targetSerial}`);
 
                         if (deviceRoom && deviceRoom.size > 0) {
@@ -357,7 +397,6 @@ export const setupHubSocket = (io: Server) => {
                         }
                     }
 
-                    // Acknowledge command sent
                     socket.emit('door_command_sent', {
                         success: true,
                         serialNumber: targetSerial,
@@ -377,7 +416,6 @@ export const setupHubSocket = (io: Server) => {
                 }
             });
 
-            // Handle status requests
             socket.on('door_status_request', async (requestData) => {
                 try {
                     const targetSerial = requestData.serialNumber || serialNumber;
@@ -388,7 +426,6 @@ export const setupHubSocket = (io: Server) => {
                         timestamp: new Date().toISOString()
                     };
 
-                    // Check if device is hub-managed
                     const isHubManaged = await isDeviceManagedByHub(targetSerial);
 
                     if (isHubManaged.managed && isHubManaged.hubSerial) {
@@ -403,7 +440,6 @@ export const setupHubSocket = (io: Server) => {
                 }
             });
 
-            // Handle config requests
             socket.on('door_config_request', async (requestData) => {
                 try {
                     const targetSerial = requestData.serialNumber || serialNumber;
@@ -414,7 +450,6 @@ export const setupHubSocket = (io: Server) => {
                         timestamp: new Date().toISOString()
                     };
 
-                    // Check if device is hub-managed
                     const isHubManaged = await isDeviceManagedByHub(targetSerial);
 
                     if (isHubManaged.managed && isHubManaged.hubSerial) {
@@ -439,7 +474,6 @@ export const setupHubSocket = (io: Server) => {
         }
     });
 
-    // Health monitoring
     setInterval(() => {
         const connectedDevices = io.sockets.adapter.rooms;
         const deviceCount = Array.from(connectedDevices.keys()).filter((room: string) => room.startsWith('device:')).length;
@@ -453,18 +487,20 @@ export const setupHubSocket = (io: Server) => {
             total_managed_devices: managedDeviceRegistry.size,
             timestamp: new Date().toISOString()
         });
-    }, 60000); // Every minute
+    }, 60000);
 
     console.log('[HUB] ✅ Database-Driven Hub Socket setup completed');
-    console.log('[HUB] 🎯 Ready for dynamic ESP01 door control operations!');
+    console.log('[HUB] 🎯 Ready for dynamic ESP01 door and garden control operations!');
 };
 
-// ===== DATABASE-DRIVEN HELPER FUNCTIONS =====
-
-/**
- * ✅ Check if device is managed by a hub using database query
- */
 async function isDeviceManagedByHub(deviceSerial: string): Promise<{managed: boolean, hubSerial?: string}> {
+    if (GARDEN_MANAGED_DEVICES.includes(deviceSerial)) {
+        return {
+            managed: true,
+            hubSerial: GARDEN_HUB_SERIAL
+        };
+    }
+
     try {
         const device = await prisma.devices.findFirst({
             where: {
@@ -490,10 +526,11 @@ async function isDeviceManagedByHub(deviceSerial: string): Promise<{managed: boo
     }
 }
 
-/**
- * ✅ Get all devices managed by a specific hub
- */
 export async function getHubManagedDevices(hubSerial: string): Promise<string[]> {
+    if (hubSerial === GARDEN_HUB_SERIAL) {
+        return GARDEN_MANAGED_DEVICES;
+    }
+
     try {
         const devices = await prisma.devices.findMany({
             where: {
@@ -512,9 +549,6 @@ export async function getHubManagedDevices(hubSerial: string): Promise<string[]>
     }
 }
 
-/**
- * ✅ Update hub online status in database
- */
 export async function updateHubStatus(hubSerial: string, isOnline: boolean): Promise<void> {
     try {
         await prisma.devices.update({
@@ -523,7 +557,7 @@ export async function updateHubStatus(hubSerial: string, isOnline: boolean): Pro
                 link_status: isOnline ? 'linked' : 'unlinked',
                 updated_at: new Date(),
                 attribute: {
-                    device_type: 'ESP_SOCKET_HUB',
+                    device_type: hubSerial === GARDEN_HUB_SERIAL ? 'GARDEN_HUB_GATEWAY' : 'ESP_SOCKET_HUB',
                     status: isOnline ? 'online' : 'offline',
                     last_seen: new Date().toISOString(),
                     managed_devices_count: isOnline ? await getHubManagedDevices(hubSerial).then(devices => devices.length) : 0
@@ -537,9 +571,6 @@ export async function updateHubStatus(hubSerial: string, isOnline: boolean): Pro
     }
 }
 
-/**
- * ✅ Get hub status information
- */
 export function getHubStatus(): { hubs: HubDevice[], devices: ManagedDevice[] } {
     return {
         hubs: Array.from(hubRegistry.values()),
@@ -547,16 +578,11 @@ export function getHubStatus(): { hubs: HubDevice[], devices: ManagedDevice[] } 
     };
 }
 
-/**
- * ✅ Check if device is online (direct or via hub)
- */
 export function isDeviceOnline(deviceSerial: string): boolean {
-    // Check direct connection
     if (connectedSockets.has(deviceSerial)) {
         return true;
     }
 
-    // Check via hub
     const managedDevice = managedDeviceRegistry.get(deviceSerial);
     if (managedDevice && managedDevice.isOnline) {
         const hub = hubRegistry.get(managedDevice.hubSerial);
@@ -566,15 +592,11 @@ export function isDeviceOnline(deviceSerial: string): boolean {
     return false;
 }
 
-/**
- * ✅ Handle hub disconnection
- */
 export async function handleHubDisconnection(hubSerial: string): Promise<void> {
     const hub = hubRegistry.get(hubSerial);
     if (hub) {
         hub.isOnline = false;
 
-        // Mark all managed devices as offline
         hub.managedDevices.forEach(deviceSerial => {
             const device = managedDeviceRegistry.get(deviceSerial);
             if (device) {
@@ -585,6 +607,5 @@ export async function handleHubDisconnection(hubSerial: string): Promise<void> {
         console.log(`[HUB] Hub ${hubSerial} disconnected, marked ${hub.managedDevices.length} devices as offline`);
     }
 
-    // Update database
     await updateHubStatus(hubSerial, false);
 }
